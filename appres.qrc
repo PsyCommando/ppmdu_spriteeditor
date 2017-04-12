@@ -1,0 +1,11 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+
+    <qresource prefix="/imgs">
+        <file alias="test.png">resources/imgs/test.png</file>
+    </qresource>
+
+    <qresource lang="en">
+        <file alias="test.txt">resources/test.txt</file>
+    </qresource>
+</RCC>
