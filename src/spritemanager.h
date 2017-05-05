@@ -115,70 +115,6 @@ namespace spr_manager
         using QAbstractItemModel::beginInsertRows;
         using QAbstractItemModel::endRemoveRows;
         using QAbstractItemModel::endInsertRows;
-//        TreeElement *child(int row)override
-//        {
-//            if( !IsContainerLoaded() )
-//                return nullptr;
-//            return m_container->child(row);
-//        }
-
-//        int childCount() const override
-//        {
-//            if( !IsContainerLoaded() )
-//                return 0;
-//            return m_container->childCount();
-//        }
-
-//        int childNumber() const
-//        {
-//            if( IsContainerLoaded() )
-//                return m_container->childNumber();
-//            return 0;
-//        }
-
-//        int columnCount() const override
-//        {
-//            return 1; //Always just 1 column
-//        }
-
-//        int row() const override
-//        {
-//            return 0;
-//        }
-
-//        TreeElement *parentItem() override
-//        {
-//            return nullptr;
-//        }
-
-//        QVariant data(int column) const override
-//        {
-//            return QVariant();
-//        }
-
-//        bool insertChildren(int position, int count)
-//        {
-//            if (position < 0 || position > childItems.size())
-//                return false;
-
-//            for (int row = 0; row < count; ++row)
-//            {
-//                childItems.insert(position, item);
-//            }
-
-//            return true;
-//        }
-
-//        bool removeChildren(int position, int count)
-//        {
-//            if (position < 0 || position + count > childItems.size())
-//                return false;
-
-//            for (int row = 0; row < count; ++row)
-//                delete childItems.takeAt(position);
-
-//            return true;
-//        }
 
     public:
 
@@ -205,9 +141,13 @@ namespace spr_manager
         void ExportContainer(const QString & fname);
         void ImportContainer(const QString & fname);
 
+        void NewContainer( SpriteContainer::eContainerType type );
+
         //Access
         int             GetNbSpritesInContainer()const;
         const QString & GetContainerSrcFile()const;
+
+        SpriteContainer::eContainerType GetType()const;
 
     private:
         QScopedPointer<SpriteContainer> m_container;

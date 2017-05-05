@@ -24,6 +24,12 @@ public:
         m_parentItem = parentItem;
     }
 
+    explicit TreeElement(const TreeElement & cp)
+    {
+        m_elemty     = cp.m_elemty;
+        m_parentItem = cp.m_parentItem;
+    }
+
     virtual ~TreeElement()
     {
     }

@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QStack>
 #include <QHash>
+#include <cassert>
 #include <src/treeelem.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 
@@ -361,6 +362,12 @@ public:
     {
         //AddSprite(this);
         InitElemTypes();
+        m_efxcnt.m_parentItem = this;
+        m_palcnt.m_parentItem = this;
+        m_imgcnt.m_parentItem = this;
+        m_frmcnt.m_parentItem = this;
+        m_seqcnt.m_parentItem = this;
+        m_anmtbl.m_parentItem = this;
     }
 
     Sprite( TreeElement * parent, QByteArray && raw )
@@ -376,6 +383,76 @@ public:
     {
         //AddSprite(this);
         InitElemTypes();
+        m_efxcnt.m_parentItem = this;
+        m_palcnt.m_parentItem = this;
+        m_imgcnt.m_parentItem = this;
+        m_frmcnt.m_parentItem = this;
+        m_seqcnt.m_parentItem = this;
+        m_anmtbl.m_parentItem = this;
+    }
+
+    Sprite( const Sprite & cp )
+        :TreeElement(cp),
+          m_efxcnt(this),
+          m_palcnt(this),
+          m_imgcnt(this),
+          m_frmcnt(this),
+          m_seqcnt(this),
+          m_anmtbl(this)
+    {
+        operator=(cp);
+    }
+
+    Sprite & operator=(const Sprite & cp)
+    {
+        //
+        m_efxcnt = cp.m_efxcnt;
+        m_palcnt = cp.m_palcnt;
+        m_imgcnt = cp.m_imgcnt;
+        m_frmcnt = cp.m_frmcnt;
+        m_seqcnt = cp.m_seqcnt;
+        m_anmtbl = cp.m_anmtbl;
+        //Update the pointer to our instance
+        m_efxcnt.m_parentItem = this;
+        m_palcnt.m_parentItem = this;
+        m_imgcnt.m_parentItem = this;
+        m_frmcnt.m_parentItem = this;
+        m_seqcnt.m_parentItem = this;
+        m_anmtbl.m_parentItem = this;
+        //
+        m_raw = cp.m_raw;
+    }
+
+    Sprite( Sprite && mv )
+        :TreeElement(mv),
+          m_efxcnt(this),
+          m_palcnt(this),
+          m_imgcnt(this),
+          m_frmcnt(this),
+          m_seqcnt(this),
+          m_anmtbl(this)
+    {
+        operator=(mv);
+    }
+
+    Sprite & operator=(Sprite && mv)
+    {
+        //
+        m_efxcnt = std::move(mv.m_efxcnt);
+        m_palcnt = std::move(mv.m_palcnt);
+        m_imgcnt = std::move(mv.m_imgcnt);
+        m_frmcnt = std::move(mv.m_frmcnt);
+        m_seqcnt = std::move(mv.m_seqcnt);
+        m_anmtbl = std::move(mv.m_anmtbl);
+        //Update the pointer to our instance
+        m_efxcnt.m_parentItem = this;
+        m_palcnt.m_parentItem = this;
+        m_imgcnt.m_parentItem = this;
+        m_frmcnt.m_parentItem = this;
+        m_seqcnt.m_parentItem = this;
+        m_anmtbl.m_parentItem = this;
+        //
+        m_raw = std::move(mv.m_raw);
     }
 
     ~Sprite()
@@ -392,8 +469,7 @@ public:
         m_anmtbl.setElemTy(eTreeElemType::Fixed);
     }
 
-    //Raw data buffer
-    QByteArray m_raw;
+
 
 public:
 
@@ -412,18 +488,18 @@ public:
         if (m_parentItem)
             return m_parentItem->indexOf(const_cast<Sprite*>(this));
 
-        return 0;
+        return -1;
     }
 
     int indexOf( TreeElement * ptr )const override
     {
         //Search a matching child in the list!
-        for( int idx = 1; idx <= NBChilds; ++idx )
+        for( int idx = 0; idx < NBChilds; ++idx )
         {
             if(ElemPtr(idx) == ptr)
                 return idx;
         }
-        return 0;
+        return -1;
     }
 
     int columnCount() const override
@@ -440,7 +516,7 @@ public:
     {
         if( column != 0 )
             return QVariant();
-        QString sprname = "Sprite#" + QString(childNumber());
+        QString sprname = QString("Sprite#%1").arg(childNumber());
         return QVariant(sprname);
     }
 
@@ -457,19 +533,20 @@ private:
     {
         switch(idx)
         {
-        case 1:
+        case 0:
             return &m_efxcnt;
-        case 2:
+        case 1:
             return &m_palcnt;
-        case 3:
+        case 2:
             return &m_imgcnt;
-        case 4:
+        case 3:
             return &m_frmcnt;
-        case 5:
+        case 4:
             return &m_seqcnt;
-        case 6:
+        case 5:
             return &m_anmtbl;
         };
+        assert(false);
         return nullptr;
     }
 
@@ -485,6 +562,10 @@ private:
     FramesContainer         m_frmcnt;
     AnimSequences           m_seqcnt;
     AnimTable               m_anmtbl;
+
+public:
+    //Raw data buffer
+    QByteArray              m_raw;
 };
 
 #endif // SPRITE_H

@@ -54,8 +54,14 @@
           <height>0</height>
          </size>
         </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::ActionsContextMenu</enum>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="tabKeyNavigation">
+         <bool>true</bool>
         </property>
         <property name="showDropIndicator" stdset="0">
          <bool>false</bool>
@@ -69,30 +75,9 @@
           <height>8</height>
          </size>
         </property>
-        <property name="indentation">
-         <number>20</number>
-        </property>
-        <property name="rootIsDecorated">
+        <attribute name="headerVisible">
          <bool>true</bool>
-        </property>
-        <property name="uniformRowHeights">
-         <bool>true</bool>
-        </property>
-        <property name="sortingEnabled">
-         <bool>true</bool>
-        </property>
-        <property name="animated">
-         <bool>false</bool>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-        <property name="headerHidden">
-         <bool>true</bool>
-        </property>
-        <property name="expandsOnDoubleClick">
-         <bool>true</bool>
-        </property>
+        </attribute>
        </widget>
       </item>
      </layout>
@@ -108,7 +93,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="documentMode">
       <bool>false</bool>
@@ -906,8 +891,8 @@
      <property name="title">
       <string>&amp;New</string>
      </property>
-     <addaction name="actionSprite"/>
-     <addaction name="actionSprite_Pack_File"/>
+     <addaction name="actionNewSprite"/>
+     <addaction name="actionNewSprite_Pack_File"/>
     </widget>
     <addaction name="menu_New"/>
     <addaction name="action_Open"/>
@@ -1000,14 +985,20 @@
     <enum>QAction::QuitRole</enum>
    </property>
   </action>
-  <action name="actionSprite">
+  <action name="actionNewSprite">
    <property name="text">
     <string>Sprite..</string>
    </property>
+   <property name="toolTip">
+    <string>Create a new sprite</string>
+   </property>
   </action>
-  <action name="actionSprite_Pack_File">
+  <action name="actionNewSprite_Pack_File">
    <property name="text">
     <string>Sprite Pack File..</string>
+   </property>
+   <property name="toolTip">
+    <string>Create a new sprite database file.</string>
    </property>
   </action>
   <action name="actionUndo">

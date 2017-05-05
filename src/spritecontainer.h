@@ -70,12 +70,12 @@ namespace spr_manager
                 return QVariant();
 
             if (!index.isValid())
-                return QVariant();
+                return QVariant("root");
 
             if (role != Qt::DisplayRole && role != Qt::EditRole)
                 return QVariant();
 
-            TreeElement *item = getItem(index);
+            TreeElement *item = const_cast<SpriteContainer*>(this)->getItem(index);
             return item->data(index.column());
         }
 
@@ -90,7 +90,7 @@ namespace spr_manager
             if (!ContainerLoaded())
                 return 0;
 
-            TreeElement *parentItem = getItem(parent);
+            TreeElement *parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
             return parentItem->childCount();
         }
 
@@ -98,15 +98,15 @@ namespace spr_manager
         {
             if(!ContainerLoaded())
                 return false;
-            TreeElement * parentItem = getItem(parent);
+            TreeElement * parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
 
-            if(!parentItem)
-                return parentItem->childCount();
+            if(parentItem)
+                return parentItem->childCount() > 0;
             else
                 return false;
         }
 
-        TreeElement *getItem(const QModelIndex &index) const
+        TreeElement *getItem(const QModelIndex &index)
         {
             if (index.isValid())
             {
@@ -117,10 +117,11 @@ namespace spr_manager
             return m_rootelem;
         }
 
+
         template<class _MANAGERTY>
-            QModelIndex index(int row, int column, const QModelIndex &parent, const _MANAGERTY * manager ) const
+            QModelIndex index(int row, int column, const QModelIndex &parent, const _MANAGERTY * manager )
         {
-            if (!parent.isValid() && parent.column() != 0)
+            if ( column != 0)
                 return QModelIndex();
 
             TreeElement *parentItem = getItem(parent);
@@ -132,13 +133,14 @@ namespace spr_manager
         }
 
         template<class _MANAGERTY>
-            QModelIndex parent(const QModelIndex &index, const _MANAGERTY * manager) const
+            QModelIndex parent(const QModelIndex &index, const _MANAGERTY * manager)
         {
-            if (!index.isValid())
+            if (!index.isValid() )
                 return QModelIndex();
 
             TreeElement *childItem = getItem(index);
             TreeElement *parentItem = childItem->parent();
+            assert(parentItem != nullptr);
 
             if (parentItem == m_rootelem)
                 return QModelIndex();

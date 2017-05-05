@@ -80,21 +80,25 @@ void MainWindow::DisplayEffectsPage()
 void MainWindow::LoadContainer(const QString &path)
 {
     spr_manager::SpriteManager::Instance().OpenContainer(path);
+    updateActions();
 }
 
 void MainWindow::SaveContainer(const QString &path)
 {
     spr_manager::SpriteManager::Instance().SaveContainer(path);
+    updateActions();
 }
 
 void MainWindow::ExportContainer(const QString &path)
 {
     spr_manager::SpriteManager::Instance().ExportContainer(path);
+    updateActions();
 }
 
 void MainWindow::ImportContainer(const QString &path)
 {
     spr_manager::SpriteManager::Instance().ImportContainer(path);
+    updateActions();
 }
 
 void MainWindow::on_action_Open_triggered()
@@ -114,14 +118,14 @@ void MainWindow::on_action_Open_triggered()
 
         //Open
         sprman.OpenContainer(fileName);
-
-        //Fill the treeview!
-
+        sprman.submit();
 
         //Fill the properties page!
 
         //Display!
         DisplayPropertiesPage();
+
+        updateActions();
     }
 }
 
@@ -193,4 +197,48 @@ void MainWindow::on_action_Settings_triggered()
 void MainWindow::on_action_About_triggered()
 {
 
+}
+
+void MainWindow::updateActions()
+{
+//    bool hasSelection = ! ui->tv_sprcontent->selectionModel()->selection().isEmpty();
+//    removeRowAction->setEnabled(hasSelection);
+//    removeColumnAction->setEnabled(hasSelection);
+
+//    bool hasCurrent = view->selectionModel()->currentIndex().isValid();
+//    insertRowAction->setEnabled(hasCurrent);
+//    insertColumnAction->setEnabled(hasCurrent);
+
+//    if (hasCurrent) {
+//        view->closePersistentEditor(view->selectionModel()->currentIndex());
+
+//        int row = view->selectionModel()->currentIndex().row();
+//        int column = view->selectionModel()->currentIndex().column();
+//        if (view->selectionModel()->currentIndex().parent().isValid())
+//            statusBar()->showMessage(tr("Position: (%1,%2)").arg(row).arg(column));
+//        else
+//            statusBar()->showMessage(tr("Position: (%1,%2) in top level").arg(row).arg(column));
+//    }
+}
+
+void MainWindow::on_actionNewSprite_triggered()
+{
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::WAN );
+    sprman.submit();
+
+    //Display!
+    DisplayPropertiesPage();
+    updateActions();
+}
+
+void MainWindow::on_actionNewSprite_Pack_File_triggered()
+{
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::PACK );
+    sprman.submit();
+
+    //Display!
+    DisplayPropertiesPage();
+    updateActions();
 }

@@ -33,6 +33,8 @@ public:
     void ExportContainer( const QString & path );
     void ImportContainer( const QString & path );
 
+private:
+    void updateActions();
 
 private slots:
     void on_action_Open_triggered();
@@ -64,6 +66,10 @@ private slots:
     void on_action_Settings_triggered();
 
     void on_action_About_triggered();
+
+    void on_actionNewSprite_triggered();
+
+    void on_actionNewSprite_Pack_File_triggered();
 
 private:
     Ui::MainWindow *ui;

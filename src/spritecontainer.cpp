@@ -4,6 +4,7 @@
 #include <cassert>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
+#include <src/spritemanager.h>
 
 namespace spr_manager
 {
@@ -55,6 +56,7 @@ namespace spr_manager
         }
 
         QByteArray data = container.readAll();
+        SpriteManager & manager = SpriteManager::Instance();
 
         m_spr.clear();
         //Lets identify the format
@@ -65,19 +67,35 @@ namespace spr_manager
             m_spr.reserve(ldr.size());
 
             //Load the raw data into each sprites but don't parse them yet!
+            manager.beginInsertRows( QModelIndex(), 0, ldr.size() - 1);
+
             for( size_t cnt = 0; cnt < ldr.size(); ++cnt )
             {
                 Sprite newspr(this);
                 ldr.CopyEntryData( cnt, std::back_inserter(newspr.m_raw) );
                 m_spr.push_back(std::move(newspr));
             }
+            manager.endInsertRows();
 
+            m_cntTy = eContainerType::PACK;
         }
-        else if( m_srcpath.endsWith(WANFileExt) || m_srcpath.endsWith(WATFileExt) )
+        else if( m_srcpath.endsWith(WANFileExt) )
         {           
             //We load the whole sprite
+            manager.beginInsertRows( QModelIndex(), 0, 0);
             m_spr.push_back(Sprite(this));
             std::copy( data.begin(), data.end(), std::back_inserter(m_spr.front().m_raw) );
+            manager.endInsertRows();
+            m_cntTy = eContainerType::WAN;
+        }
+        else if( m_srcpath.endsWith(WATFileExt) )
+        {
+            //We load the whole sprite
+            manager.beginInsertRows( QModelIndex(), 0, 0);
+            m_spr.push_back(Sprite(this));
+            std::copy( data.begin(), data.end(), std::back_inserter(m_spr.front().m_raw) );
+            manager.endInsertRows();
+            m_cntTy = eContainerType::WAT;
         }
 
     }
@@ -128,8 +146,13 @@ namespace spr_manager
 
     SpriteContainer::sprid_t SpriteContainer::AddSprite()
     {
+        SpriteManager & manager = SpriteManager::Instance();
         size_t offset = m_spr.size();
+
+        manager.beginInsertRows( QModelIndex(), offset, offset );
         m_spr.push_back( Sprite(this) );
+        manager.endInsertRows();
+
         return offset;
     }
 
