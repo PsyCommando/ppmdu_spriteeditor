@@ -2,31 +2,10 @@
 #define BYTEUTILS_HPP
 #include <cstdint>
 #include <limits>
+#include <cassert>
 
 namespace utils
 {
-
-    /*
-     * readBytes
-    */
-//    template<class Ty, class init>
-//        Ty readBytes( init & where, init end, bool blittleendian = true )
-//    {
-//        static const size_t TYSZ = sizeof(Ty);
-//        Ty buf = 0;
-
-//        if(!blittleendian)
-//        {
-//            for( int cnt = TYSZ-1 ; cnt >= 0 && where != end; --cnt, ++where )
-//                buf |= *where << ((TYSZ-1) - cnt);
-//        }
-//        else
-//        {
-//            for( size_t cnt = 0 ; cnt < TYSZ && where != end; ++cnt, ++where )
-//                buf |= *where << ((TYSZ-1) - cnt);
-//        }
-//        return buf;
-//    }
 
     /*********************************************************************************************
         readBytesAs
@@ -79,27 +58,6 @@ namespace utils
         value = readBytesAs<Ty>(where, end, blittleendian);
         return where;
     }
-
-    /*
-     * writeBytes
-    */
-//    template<class Ty, class outit>
-//        outit writeBytes(Ty value, outit where, bool blittleendian = true )
-//    {
-//        static const size_t TYSZ = sizeof(Ty);
-
-//        if(blittleendian)
-//        {
-//            for( int cnt = (TYSZ-1); cnt >= 0; --cnt, ++where )
-//                (*where) = (value >> cnt) && 0xFF;
-//        }
-//        else
-//        {
-//            for( int cnt = 0; cnt < TYSZ; ++cnt, ++where )
-//                (*where) = (value >> cnt) && 0xFF;
-//        }
-//        return where;
-//    }
 
 
     /*********************************************************************************************

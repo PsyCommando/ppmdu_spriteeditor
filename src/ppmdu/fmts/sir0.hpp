@@ -11,9 +11,9 @@ namespace fmt
     extern const std::array<char,4> SIR0_MagicNum;
 
     /*
-     * SIR0_Data
+     * SIR0hdr
     */
-    class SIR0_Data
+    struct SIR0hdr
     {
     public:
         static const size_t     HDRLEN = 16;
@@ -22,11 +22,11 @@ namespace fmt
         uint32_t                ptrtranslatetbl;
         std::vector<uint32_t>   ptroffsetslist;
 
-        template<class init>
-            static bool IsSIR0(init where, init end)
+
+        template<class _init>
+            bool isSIR0(_init where, _init end)
         {
-            assert(false);
-            return false;
+            return std::equal(SIR0_MagicNum.begin(), SIR0_MagicNum.end(), where );
         }
 
         //
@@ -38,10 +38,6 @@ namespace fmt
             where = utils::readBytesAs( where, end, ptrsub );
             where = utils::readBytesAs( where, end, ptrtranslatetbl );
             std::advance(where, sizeof(uint32_t)); //Skip over the empty space here
-
-            //Read the Ptroffset list!
-            assert(false);
-
             return where;
         }
 

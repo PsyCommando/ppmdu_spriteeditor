@@ -3,9 +3,15 @@
 #include <QByteArray>
 #include <QStack>
 #include <QHash>
+#include <QPixmap>
+#include <QRgb>
+#include <QImage>
+#include <QVector>
 #include <cassert>
 #include <src/treeelem.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
+#include <src/ppmdu/fmts/wa_sprite.hpp>
+
 
 extern const char * ElemName_EffectOffset ;
 extern const char * ElemName_Palette      ;
@@ -28,7 +34,7 @@ template<const char** _STRELEMNAME>
     class BaseTreeTerminalChild : public TreeElement
 {
 protected:
-    constexpr QString ElemName()
+    constexpr QString ElemName()const
     {
         return QString(*_STRELEMNAME);
     }
@@ -78,7 +84,7 @@ public:
         class BaseListContainerChild : public TreeElement
     {
     protected:
-        constexpr QString ElemName()
+        constexpr QString ElemName()const
         {
             return QString(*_STRELEMNAME);
         }
@@ -358,7 +364,8 @@ public:
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this)
+          m_anmtbl(this),
+          m_bparsed(false)
     {
         //AddSprite(this);
         InitElemTypes();
@@ -379,7 +386,8 @@ public:
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this)
+          m_anmtbl(this),
+          m_bparsed(false)
     {
         //AddSprite(this);
         InitElemTypes();
@@ -398,7 +406,8 @@ public:
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this)
+          m_anmtbl(this),
+          m_bparsed(false)
     {
         operator=(cp);
     }
@@ -412,6 +421,7 @@ public:
         m_frmcnt = cp.m_frmcnt;
         m_seqcnt = cp.m_seqcnt;
         m_anmtbl = cp.m_anmtbl;
+        m_bparsed = cp.m_bparsed;
         //Update the pointer to our instance
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
@@ -421,6 +431,7 @@ public:
         m_anmtbl.m_parentItem = this;
         //
         m_raw = cp.m_raw;
+        InitElemTypes();
     }
 
     Sprite( Sprite && mv )
@@ -430,7 +441,8 @@ public:
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this)
+          m_anmtbl(this),
+          m_bparsed(false)
     {
         operator=(mv);
     }
@@ -444,6 +456,7 @@ public:
         m_frmcnt = std::move(mv.m_frmcnt);
         m_seqcnt = std::move(mv.m_seqcnt);
         m_anmtbl = std::move(mv.m_anmtbl);
+        m_bparsed = mv.m_bparsed;
         //Update the pointer to our instance
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
@@ -453,6 +466,7 @@ public:
         m_anmtbl.m_parentItem = this;
         //
         m_raw = std::move(mv.m_raw);
+        InitElemTypes();
     }
 
     ~Sprite()
@@ -461,12 +475,25 @@ public:
 
     void InitElemTypes()
     {
+        setDataTy(eTreeElemDataType::sprite);
+
         m_efxcnt.setElemTy(eTreeElemType::Fixed);
+        m_efxcnt.setDataTy(eTreeElemDataType::effectOffsets);
+
         m_palcnt.setElemTy(eTreeElemType::Fixed);
+        m_palcnt.setDataTy(eTreeElemDataType::palette);
+
         m_imgcnt.setElemTy(eTreeElemType::Fixed);
+        m_imgcnt.setDataTy(eTreeElemDataType::images);
+
         m_frmcnt.setElemTy(eTreeElemType::Fixed);
+        m_frmcnt.setDataTy(eTreeElemDataType::frames);
+
         m_seqcnt.setElemTy(eTreeElemType::Fixed);
+        m_seqcnt.setDataTy(eTreeElemDataType::animSequences);
+
         m_anmtbl.setElemTy(eTreeElemType::Fixed);
+        m_anmtbl.setDataTy(eTreeElemDataType::animTable);
     }
 
 
@@ -520,12 +547,53 @@ public:
         return QVariant(sprname);
     }
 
+    void OnClicked() override
+    {
+        if( m_raw.size() != 0 && !m_bparsed )
+            ParseSpriteData();
+    }
+
+    /**/
+    void ParseSpriteData()
+    {
+        m_sprhndl.Parse( m_raw.begin(), m_raw.end() );
+        m_bparsed = true;
+    }
+
     //You don't!!
     bool insertChildren(int, int) override {return false;}
     bool removeChildren(int, int) override {return false;}
 
     inline bool operator==( const Sprite & other)const  {return getID() == other.getID();}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
+
+    QImage & MakePreviewFrame()
+    {
+        if(m_bparsed)
+        {
+            QByteArray indexed8;
+            for(auto pixpair : m_sprhndl.m_images.m_images.front())
+            {
+                indexed8.push_back((pixpair >> 4) & 0x0F );
+                indexed8.push_back(pixpair & 0x0F);
+            }
+            m_previewImg = QImage( (unsigned char *) indexed8.data(), 32, 32, QImage::Format_Indexed8);
+            QVector<QRgb> colortbl;
+
+            for( size_t cntcol = 0; cntcol < m_sprhndl.m_images.m_pal.colors.size(); ++cntcol )
+            {
+                uint32_t colval = m_sprhndl.m_images.m_pal.colors[cntcol];
+                QColor tmpcol;
+                tmpcol.setRed( (colval >> 24) & 0xFF );
+                tmpcol.setGreen( (colval >> 16) & 0xFF );
+                tmpcol.setBlue( (colval >> 8) & 0xFF );
+                tmpcol.setAlpha(255);
+                colortbl.push_back(tmpcol.rgba()); //shift by 8 right to align with the format QT uses
+            }
+            m_previewImg.setColorTable(colortbl);
+        }
+        return m_previewImg;
+    }
 
 private:
 
@@ -563,9 +631,17 @@ private:
     AnimSequences           m_seqcnt;
     AnimTable               m_anmtbl;
 
+    bool                    m_bparsed;
 public:
+    bool wasParsed()const
+    {
+        return m_bparsed;
+    }
+
     //Raw data buffer
     QByteArray              m_raw;
+    QImage                  m_previewImg;
+    fmt::WA_SpriteHandler   m_sprhndl;
 };
 
 #endif // SPRITE_H

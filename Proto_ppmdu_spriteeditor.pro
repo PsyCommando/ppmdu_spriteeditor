@@ -11,6 +11,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Proto_ppmdu_spriteeditor
 TEMPLATE = app
 
+CONFIG += c++14
+
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -30,7 +32,10 @@ SOURCES += main.cpp\
     src/sprite.cpp \
     src/spritemanager.cpp \
     src/ppmdu/fmts/sir0.cpp \
-    src/ppmdu/fmts/packfile.cpp
+    src/ppmdu/fmts/packfile.cpp \
+    src/ppmdu/fmts/px_compression.cpp \
+    src/ppmdu/fmts/pxhandler.cpp \
+    src/ppmdu/fmts/wa_sprite.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -41,7 +46,12 @@ HEADERS  += mainwindow.h \
     src/ppmdu/utils/byteutils.hpp \
     src/ppmdu/fmts/packfile.hpp \
     src/treeelem.hpp \
-    src/ppmdu/utils/sequentialgenerator.hpp
+    src/ppmdu/utils/sequentialgenerator.hpp \
+    src/ppmdu/fmts/integer_encoding.hpp \
+    src/ppmdu/fmts/px_compression.hpp \
+    src/ppmdu/fmts/compression_handler.hpp \
+    src/ppmdu/fmts/wa_sprite.hpp \
+    src/ppmdu/utils/algo.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui

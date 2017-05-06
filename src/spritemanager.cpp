@@ -3,6 +3,10 @@
 
 namespace spr_manager
 {
+    const QString ShortNameNone     = "NONE";
+    const QString ShortNamePackFile = "PACK";
+    const QString ShortNameWAN      = "WAN";
+    const QString ShortNameWAT      = "WAT";
 
     void SpriteManager::OpenContainer(const QString &fname)
     {
@@ -12,7 +16,7 @@ namespace spr_manager
 
     void SpriteManager::CloseContainer()
     {
-
+        Reset();
     }
 
     void SpriteManager::SaveContainer()
@@ -32,7 +36,7 @@ namespace spr_manager
 
     void SpriteManager::ImportContainer(const QString &fname)
     {
-
+        Reset();
     }
 
     void SpriteManager::NewContainer(SpriteContainer::eContainerType type)
@@ -68,6 +72,42 @@ namespace spr_manager
         if(!m_container)
             return SpriteContainer::eContainerType::NONE;
         return m_container->GetContainerType();
+    }
+
+    void SpriteManager::Reset()
+    {
+        m_container.reset(nullptr);
+    }
+
+    bool SpriteManager::ContainerIsPackFile()const
+    {
+        if(m_container)
+            return m_container->ContainerIsPackFile();
+        return false;
+    }
+
+    bool SpriteManager::ContainerIsSingleSprite()const
+    {
+        if(m_container)
+            return m_container->ContainerIsSingleSprite();
+        return false;
+    }
+
+    QString SpriteManager::getContentShortName()const
+    {
+        if(m_container)
+        {
+            switch( m_container->GetContainerType() )
+            {
+            case SpriteContainer::eContainerType::PACK:
+                return ShortNamePackFile;
+            case SpriteContainer::eContainerType::WAN:
+                return ShortNameWAN;
+            case SpriteContainer::eContainerType::WAT:
+                return ShortNameWAT;
+            };
+        }
+        return ShortNameNone;
     }
 
 };

@@ -11,6 +11,21 @@ enum struct eTreeElemType
     Fixed,
 };
 
+enum struct eTreeElemDataType
+{
+    None,
+    sprite,
+    effectOffsets,
+    palette,
+    images,
+    image,
+    frames,
+    frame,
+    animSequences,
+    animSequence,
+    animTable,
+};
+
 /*
  * TreeElement
  * Helper base class for displaying the data content of a sprite!
@@ -20,13 +35,15 @@ class TreeElement
 public:
     explicit TreeElement(TreeElement *parentItem = 0)
     {
-        m_elemty     = eTreeElemType::Editable;
+        m_elemty     = eTreeElemType::Fixed;
+        m_dataty     = eTreeElemDataType::None;
         m_parentItem = parentItem;
     }
 
     explicit TreeElement(const TreeElement & cp)
     {
         m_elemty     = cp.m_elemty;
+        m_dataty     = cp.m_dataty;
         m_parentItem = cp.m_parentItem;
     }
 
@@ -45,10 +62,16 @@ public:
 
     eTreeElemType           getElemTy()const { return m_elemty; }
     void                    setElemTy( eTreeElemType ty ) { m_elemty = ty; }
+    eTreeElemDataType       getDataTy()const { return m_dataty; }
+    void                    setDataTy( eTreeElemDataType ty ) { m_dataty = ty; }
+
     virtual TreeElement *   parent() { return m_parentItem; }
+
+    virtual void OnClicked(){}
 
     TreeElement         *m_parentItem;
     eTreeElemType        m_elemty;
+    eTreeElemDataType    m_dataty;
 };
 
 

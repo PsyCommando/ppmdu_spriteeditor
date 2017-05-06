@@ -2,14 +2,19 @@
 #include "ui_mainwindow.h"
 #include <QApplication>
 #include <QFileDialog>
+#include <QGraphicsPixmapItem>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    m_pStatusFileType.reset(new QLabel("     "));
+    m_pPreviewScene.reset(new QGraphicsScene());
     ui->setupUi(this);
     HideAllTabs();
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
+    ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
+    ui->gvPropPreviewSprite->setScene(m_pPreviewScene.data());
 }
 
 MainWindow::~MainWindow()
@@ -41,7 +46,6 @@ void MainWindow::HideAllTabs()
 void MainWindow::ShowATab(QWidget *ptab)
 {
     HideAllTabs();
-    //Show properties
     ui->tabMain->insertTab(0, ptab, ptab->windowTitle() );
     ptab->show();
     ptab->setFocus();
@@ -118,13 +122,14 @@ void MainWindow::on_action_Open_triggered()
 
         //Open
         sprman.OpenContainer(fileName);
-        sprman.submit();
+        //sprman.submit();
+
 
         //Fill the properties page!
 
         //Display!
         DisplayPropertiesPage();
-
+        setupListView();
         updateActions();
     }
 }
@@ -219,26 +224,129 @@ void MainWindow::updateActions()
 //        else
 //            statusBar()->showMessage(tr("Position: (%1,%2) in top level").arg(row).arg(column));
 //    }
+
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    m_pStatusFileType->setText(sprman.getContentShortName());
+
+
 }
 
 void MainWindow::on_actionNewSprite_triggered()
 {
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
     sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::WAN );
-    sprman.submit();
+    //sprman.submit();
 
     //Display!
     DisplayPropertiesPage();
     updateActions();
+    setupListView();
 }
 
 void MainWindow::on_actionNewSprite_Pack_File_triggered()
 {
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
     sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::PACK );
-    sprman.submit();
+    //sprman.submit();
 
     //Display!
     DisplayPropertiesPage();
     updateActions();
+    setupListView();
+}
+
+void MainWindow::setupListView()
+{
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    if( sprman.ContainerIsSingleSprite() )
+    {
+        ui->tv_sprcontent->setRootIsDecorated(false);
+        ui->tv_sprcontent->expandToDepth(1);
+    }
+    else
+    {
+        ui->tv_sprcontent->setRootIsDecorated(true);
+        ui->tv_sprcontent->collapseAll();
+    }
+}
+
+void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
+{
+    TreeElement * pcur = static_cast<TreeElement*>(index.internalPointer());
+    if(!pcur)
+        return;
+
+    pcur->OnClicked();
+
+    switch( pcur->getDataTy() )
+    {
+        //Open the appropriate tab
+    case eTreeElemDataType::sprite:
+        {
+            Sprite * spr = static_cast<Sprite*>(pcur);
+
+            m_pPreviewScene->setBackgroundBrush(Qt::white);
+
+            QImage mypix = spr->MakePreviewFrame();
+            //QGraphicsPixmapItem * ppix = m_pPreviewScene->add(mypix);
+            ui->lbl_testpreview->setPixmap(QPixmap::fromImage(mypix));
+
+            QPixmap paltest(256,16);
+            QPainter mypaint(&paltest);
+            for( size_t cntr = 0; cntr < 16; ++cntr )
+            {
+                mypaint.setBrush(QBrush( QColor(mypix.colorTable().at(cntr)) ));
+                mypaint.drawRect( cntr * 16, 0, 16, 16 );
+            }
+            ui->lbl_test_palette->clear();
+
+            ui->lbl_test_palette->setPixmap(paltest);
+            ui->gvPropPreviewSprite->setScene(m_pPreviewScene.data());
+            ui->gvPropPreviewSprite->show();
+            DisplayPropertiesPage();
+            break;
+        }
+    case eTreeElemDataType::palette:
+        {
+            DisplayPalettePage();
+            break;
+        }
+    case eTreeElemDataType::effectOffsets:
+        {
+            DisplayEffectsPage();
+            break;
+        }
+    case eTreeElemDataType::animTable:
+        {
+            DisplayAnimTablePage();
+            break;
+        }
+    case eTreeElemDataType::frame:
+        {
+            DisplayAnimFramePage();
+            break;
+        }
+    case eTreeElemDataType::animSequence:
+        {
+            DisplayAnimSequencePage();
+            break;
+        }
+    default:
+        HideAllTabs();
+    };
+}
+
+void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
+{
+    QModelIndex entry = ui->tv_sprcontent->indexAt(pos);
+    if( entry.isValid() )
+    {
+        //This is triggered when clicking on an item
+        //remove/copy/duplicate/etc
+    }
+    else
+    {
+        //This is triggered when clicking in the white unused space
+        //Add sprite/frame/sequence/image/etc
+    }
 }

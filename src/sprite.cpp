@@ -1,4 +1,5 @@
 #include "sprite.h"
+#include <src/ppmdu/fmts/wa_sprite.hpp>
 
 const char * ElemName_EffectOffset  = "Effect Offsets";
 const char * ElemName_Palette       = "Palette";

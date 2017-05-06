@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QTreeView>
 #include <QTreeWidget>
+#include <QLabel>
+#include <QGraphicsView>
+#include <QGraphicsScene>
 #include "src/spritemanager.h"
 
 namespace Ui {
@@ -35,6 +38,9 @@ public:
 
 private:
     void updateActions();
+
+    //Tweak the list view to better display either single sprites or pack files!!
+    void setupListView();
 
 private slots:
     void on_action_Open_triggered();
@@ -71,8 +77,14 @@ private slots:
 
     void on_actionNewSprite_Pack_File_triggered();
 
+    void on_tv_sprcontent_clicked(const QModelIndex &index);
+
+    void on_tv_sprcontent_customContextMenuRequested(const QPoint &pos);
+
 private:
     Ui::MainWindow *ui;
+    QScopedPointer<QLabel>          m_pStatusFileType;
+    QScopedPointer<QGraphicsScene>  m_pPreviewScene;
 };
 
 #endif // MAINWINDOW_H

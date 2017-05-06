@@ -16,6 +16,7 @@ namespace spr_manager
 
 
 
+
     /*
      * SpriteManager
     */
@@ -109,6 +110,9 @@ namespace spr_manager
             return m_container->insertRows(position, rows, parent, this);
         }
 
+        //Returns a short string to indicate in the status bar the kind of container working on!
+        QString getContentShortName()const;
+
     public:
         using QAbstractItemModel::createIndex;
         using QAbstractItemModel::beginRemoveRows;
@@ -130,6 +134,8 @@ namespace spr_manager
 
         //Info
         inline bool IsContainerLoaded()const { return (m_container != nullptr); }
+        bool ContainerIsPackFile()const;
+        bool ContainerIsSingleSprite()const;
 
         //IO
         void OpenContainer(const QString & fname);
@@ -142,6 +148,10 @@ namespace spr_manager
         void ImportContainer(const QString & fname);
 
         void NewContainer( SpriteContainer::eContainerType type );
+
+        //
+        //Empty the sprite list and etc.
+        void Reset();
 
         //Access
         int             GetNbSpritesInContainer()const;
