@@ -84,7 +84,6 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QScopedPointer<QLabel>          m_pStatusFileType;
-    QScopedPointer<QGraphicsScene>  m_pPreviewScene;
 };
 
 #endif // MAINWINDOW_H

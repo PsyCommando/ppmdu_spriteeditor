@@ -35,7 +35,8 @@ SOURCES += main.cpp\
     src/ppmdu/fmts/packfile.cpp \
     src/ppmdu/fmts/px_compression.cpp \
     src/ppmdu/fmts/pxhandler.cpp \
-    src/ppmdu/fmts/wa_sprite.cpp
+    src/ppmdu/fmts/wa_sprite.cpp \
+    src/ppmdu/utils/imgutils.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -51,7 +52,8 @@ HEADERS  += mainwindow.h \
     src/ppmdu/fmts/px_compression.hpp \
     src/ppmdu/fmts/compression_handler.hpp \
     src/ppmdu/fmts/wa_sprite.hpp \
-    src/ppmdu/utils/algo.hpp
+    src/ppmdu/utils/algo.hpp \
+    src/ppmdu/utils/imgutils.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui

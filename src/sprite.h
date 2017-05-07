@@ -8,9 +8,11 @@
 #include <QImage>
 #include <QVector>
 #include <cassert>
+#include <cstdint>
 #include <src/treeelem.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
+#include <src/ppmdu/utils/imgutils.hpp>
 
 
 extern const char * ElemName_EffectOffset ;
@@ -331,30 +333,6 @@ public:
 //
 class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
 {
-    //static QHash<unsigned long long,Sprite> spriteIDs;
-//    static unsigned long long               spriteCnt;
-//    static QStack<unsigned long long>       spriteIDRecycler;
-//    unsigned long long                      m_id;
-
-//    static void AddSprite( Sprite * spr )
-//    {
-//        unsigned long long id = spriteCnt;
-//        if( spriteIDRecycler.empty() )
-//            ++spriteCnt;
-//        else
-//        {
-//            id = spriteIDRecycler.front();
-//            spriteIDRecycler.pop_front();
-//        }
-//        //spriteIDs.insert(id,*spr);
-//        spr->m_id = id;
-//    }
-
-//    static void RemSprite(Sprite * spr)
-//    {
-//        spriteIDRecycler.push_back(spr->m_id);
-//    }
-
 public:
     Sprite( TreeElement * parent )
         :TreeElement(parent),
@@ -432,6 +410,7 @@ public:
         //
         m_raw = cp.m_raw;
         InitElemTypes();
+        return *this;
     }
 
     Sprite( Sprite && mv )
@@ -467,6 +446,7 @@ public:
         //
         m_raw = std::move(mv.m_raw);
         InitElemTypes();
+        return *this;
     }
 
     ~Sprite()
@@ -567,32 +547,124 @@ public:
     inline bool operator==( const Sprite & other)const  {return getID() == other.getID();}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
 
-    QImage & MakePreviewFrame()
+
+    QPixmap & MakePreviewPalette()
+    {
+        m_previewPal = utils::PaintPaletteToPixmap( utils::ConvertSpritePalette(m_sprhndl.m_images.m_pal.colors) );
+        return m_previewPal;
+    }
+
+    QPixmap & MakePreviewFrame()
     {
         if(m_bparsed)
         {
-            QByteArray indexed8;
-            for(auto pixpair : m_sprhndl.m_images.m_images.front())
-            {
-                indexed8.push_back((pixpair >> 4) & 0x0F );
-                indexed8.push_back(pixpair & 0x0F);
-            }
-            m_previewImg = QImage( (unsigned char *) indexed8.data(), 32, 32, QImage::Format_Indexed8);
-            QVector<QRgb> colortbl;
+//            QByteArray indexed8;
+//            for(auto pixpair : m_sprhndl.m_images.m_images.front())
+//            {
+//                indexed8.push_back((pixpair >> 4) & 0x0F );
+//                indexed8.push_back(pixpair & 0x0F);
+//            }
+//            m_previewImg = QImage( (unsigned char *) indexed8.data(), 32, 32, QImage::Format_Indexed8);
+//            QVector<QRgb> colortbl;
 
-            for( size_t cntcol = 0; cntcol < m_sprhndl.m_images.m_pal.colors.size(); ++cntcol )
-            {
-                uint32_t colval = m_sprhndl.m_images.m_pal.colors[cntcol];
-                QColor tmpcol;
-                tmpcol.setRed( (colval >> 24) & 0xFF );
-                tmpcol.setGreen( (colval >> 16) & 0xFF );
-                tmpcol.setBlue( (colval >> 8) & 0xFF );
-                tmpcol.setAlpha(255);
-                colortbl.push_back(tmpcol.rgba()); //shift by 8 right to align with the format QT uses
-            }
-            m_previewImg.setColorTable(colortbl);
+//            for( size_t cntcol = 0; cntcol < m_sprhndl.m_images.m_pal.colors.size(); ++cntcol )
+//            {
+//                uint32_t colval = m_sprhndl.m_images.m_pal.colors[cntcol];
+//                QColor tmpcol;
+//                tmpcol.setRed( (colval >> 24) & 0xFF );
+//                tmpcol.setGreen( (colval >> 16) & 0xFF );
+//                tmpcol.setBlue( (colval >> 8) & 0xFF );
+//                tmpcol.setAlpha(255);
+//                colortbl.push_back(tmpcol.rgba()); //shift by 8 right to align with the format QT uses
+//            }
+//            m_previewImg.setColorTable(colortbl);
+
+            return m_previewImg = std::move(AssembleFrame(0));
         }
         return m_previewImg;
+    }
+
+
+    QPixmap AssembleFrame(size_t frameid)
+    {
+        if(!m_bparsed || (frameid >= m_sprhndl.m_images.m_frames.size()))
+            return QPixmap();
+
+        QPixmap  resultimg(256,512);
+        QPainter qpaint(&resultimg);
+        QTransform deftrans = qpaint.transform();
+
+
+        //#1 - Grab all our images and assemble them!
+        size_t lowestX = 256;
+        size_t lowestY = 512;
+        size_t highestX = 0;
+        size_t highestY = 0;
+        int    lastimage = -1;
+        size_t cntstep = 0;
+        for( const fmt::ImageDB::step_t & step : m_sprhndl.m_images.m_frames[frameid] )
+        {
+            qpaint.setTransform(deftrans);
+            auto imgres = step.GetResolution();
+            size_t offsetx = step.getXOffset()-128;
+            size_t offsety = step.getYOffset();
+
+            if( offsetx < lowestX )
+                lowestX = offsetx;
+            if( offsety < lowestY )
+                lowestY = offsety;
+
+            if( (offsetx + imgres.first) > highestX )
+                highestX = offsetx + imgres.first;
+            if( (offsety + imgres.second) > highestY )
+                highestY = offsety + imgres.second;
+
+            if( step.frmidx != 0xFFFF || (step.frmidx == 0xFFFF && lastimage != -1) )
+            {
+                int imgidx = (step.frmidx != 0xFFFF)? step.frmidx : lastimage;
+
+                lastimage = step.frmidx;
+                QPixmap curpixmap;
+                const std::vector<uint8_t> & curimg = m_sprhndl.m_images.m_images[imgidx];
+                if( step.isColorPal256() )
+                {
+                    curpixmap = std::move( utils::UntileIntoImg( step.GetResolution().first,
+                                                                 step.GetResolution().second,
+                                                                 QByteArray::fromRawData( (char *)curimg.data(), curimg.size() ),
+                                                                 utils::ConvertSpritePalette(m_sprhndl.m_images.m_pal.colors) ) );
+                }
+                else
+                {
+                    //Turn 4bb pixels into 8bpp pixels
+                    QByteArray expanded(utils::Expand4BppTo8Bpp( QByteArray::fromRawData((char *)curimg.data(), curimg.size()) ));
+                    curpixmap = std::move(utils::UntileIntoImg( step.GetResolution().first,
+                                                                step.GetResolution().second,
+                                                                expanded,
+                                                                utils::ConvertSpritePalette(m_sprhndl.m_images.m_pal.colors) ) );
+
+                    //imgstrips.push_back(  QImage( m_sprhndl.m_images.m_images[step.frmidx].data(), step.GetResolution().first, step.GetResolution().second, QImage::Format_Indexed8) );
+                }
+
+                //Transform
+                if(step.isHFlip())
+                    curpixmap = std::move(curpixmap.transformed( QTransform().scale(-1, 1)));
+                if(step.isVFlip())
+                    curpixmap = std::move(curpixmap.transformed( QTransform().scale(1, -1)));
+
+                qpaint.drawPixmap( offsetx, offsety, imgres.first, imgres.second, curpixmap);
+
+                //DEBUG!!!
+                curpixmap.save(QString("./step%1.png").arg(cntstep),"png");
+                resultimg.save(QString("./step%1_res.png").arg(cntstep),"png");
+            }
+            ++cntstep;
+        }
+        //m_sprhndl.m_images.m_images;
+        //m_sprhndl.m_images.m_frames;
+        //m_sprhndl.m_images.m_pal;
+
+        //Crop
+        return std::move(resultimg.copy( lowestX, lowestY, (highestX - lowestX), (highestY - lowestY) ));
     }
 
 private:
@@ -640,7 +712,8 @@ public:
 
     //Raw data buffer
     QByteArray              m_raw;
-    QImage                  m_previewImg;
+    QPixmap                 m_previewImg;
+    QPixmap                 m_previewPal;
     fmt::WA_SpriteHandler   m_sprhndl;
 };
 

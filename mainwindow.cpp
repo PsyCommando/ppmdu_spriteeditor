@@ -9,12 +9,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     m_pStatusFileType.reset(new QLabel("     "));
-    m_pPreviewScene.reset(new QGraphicsScene());
     ui->setupUi(this);
     HideAllTabs();
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
-    ui->gvPropPreviewSprite->setScene(m_pPreviewScene.data());
 }
 
 MainWindow::~MainWindow()
@@ -285,24 +283,12 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             Sprite * spr = static_cast<Sprite*>(pcur);
 
-            m_pPreviewScene->setBackgroundBrush(Qt::white);
-
-            QImage mypix = spr->MakePreviewFrame();
+            //QPixmap mypix = spr->MakePreviewFrame();
             //QGraphicsPixmapItem * ppix = m_pPreviewScene->add(mypix);
-            ui->lbl_testpreview->setPixmap(QPixmap::fromImage(mypix));
+            ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
 
-            QPixmap paltest(256,16);
-            QPainter mypaint(&paltest);
-            for( size_t cntr = 0; cntr < 16; ++cntr )
-            {
-                mypaint.setBrush(QBrush( QColor(mypix.colorTable().at(cntr)) ));
-                mypaint.drawRect( cntr * 16, 0, 16, 16 );
-            }
-            ui->lbl_test_palette->clear();
 
-            ui->lbl_test_palette->setPixmap(paltest);
-            ui->gvPropPreviewSprite->setScene(m_pPreviewScene.data());
-            ui->gvPropPreviewSprite->show();
+            ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
             DisplayPropertiesPage();
             break;
         }
