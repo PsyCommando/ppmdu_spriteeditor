@@ -24,6 +24,7 @@ enum struct eTreeElemDataType
     animSequences,
     animSequence,
     animTable,
+    animGroup,
 };
 
 /*
@@ -68,6 +69,7 @@ public:
     virtual TreeElement *   parent() { return m_parentItem; }
 
     virtual void OnClicked(){}
+    virtual void OnExpanded(){}
 
     TreeElement         *m_parentItem;
     eTreeElemType        m_elemty;

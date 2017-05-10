@@ -7,8 +7,11 @@
 #include <QRgb>
 #include <QImage>
 #include <QVector>
+#include <QAbstractItemModel>
+#include <QTableWidget>
 #include <cassert>
 #include <cstdint>
+#include <list>
 #include <src/treeelem.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
@@ -24,14 +27,15 @@ extern const char * ElemName_Frame        ;
 extern const char * ElemName_AnimSequence ;
 extern const char * ElemName_AnimSequences;
 extern const char * ElemName_AnimTable    ;
+extern const char * ElemName_AnimGroup    ;
 
 //============================================================================================
 //
 //============================================================================================
-/*
+/*******************************************************************
  * BaseTreeTerminalChild
  *  Base class for implementing terminal tree nodes elements!
-*/
+*******************************************************************/
 template<const char** _STRELEMNAME>
     class BaseTreeTerminalChild : public TreeElement
 {
@@ -68,7 +72,7 @@ public:
     {
         if( column != 0 )
             return QVariant();
-        QString sprname = ElemName() + "#" + QString(childNumber());
+        QString sprname = QString("%1#%2").arg(ElemName()).arg(childNumber());
         return QVariant(sprname);
     }
 
@@ -79,9 +83,9 @@ public:
 };
 
 
-/*
+/*******************************************************************
  * BaseListContainerChild
-*/
+*******************************************************************/
     template<const char** _STRELEMNAME, class _CHILD_TY>
         class BaseListContainerChild : public TreeElement
     {
@@ -127,7 +131,7 @@ public:
         {
             if( column != 0 )
                 return QVariant();
-            QString sprname = ElemName() + "#" + QString(childNumber());
+            QString sprname = QString("%1#%2").arg(ElemName()).arg(childNumber());
             return QVariant(sprname);
         }
 
@@ -159,9 +163,11 @@ public:
 //
 //============================================================================================
 
+class Sprite;
+
+//*******************************************************************
 //
-//
-//
+//*******************************************************************
 class EffectOffsetContainer : public BaseTreeTerminalChild<&ElemName_EffectOffset>
 {
 public:
@@ -178,9 +184,9 @@ public:
     }
 };
 
+//*******************************************************************
 //
-//
-//
+//*******************************************************************
 class PaletteContainer : public BaseTreeTerminalChild<&ElemName_Palette>
 {
 public:
@@ -195,30 +201,73 @@ public:
             return QVariant();
         return QVariant(ElemName());
     }
+
+
+    QVector<QRgb> m_pal;
 };
 
+//*******************************************************************
 //
-//
-//
+//*******************************************************************
 
-class Image : public BaseTreeTerminalChild<&ElemName_Image>, public utils::BaseSequentialIDGen<Image>
+class Image : public BaseTreeTerminalChild<&ElemName_Image>
 {
 public:
     Image(TreeElement * parent)
-        :BaseTreeTerminalChild(parent),BaseSequentialIDGen()
+        :BaseTreeTerminalChild(parent)/*,m_width(0), m_height(0)*/
     {
+        setDataTy(eTreeElemDataType::image);
     }
 
-    inline bool operator==( const Image & other)const  {return getID() == other.getID();}
+    inline bool operator==( const Image & other)const  {return this == &other;}
     inline bool operator!=( const Image & other)const  {return !operator==(other);}
 
+    void importImage4bpp(const fmt::ImageDB::img_t & img, int w, int h)
+    {
+        QVector<QRgb> dummy(16);
+        m_raw = std::move( utils::Untile( w, h, utils::Expand4BppTo8Bpp(img) ) );
+        m_img = utils::RawToImg( w, h, m_raw, dummy );
+    }
+
+    fmt::ImageDB::img_t exportImage4bpp(int & w, int & h)
+    {
+        fmt::ImageDB::img_t imgtmp(utils::TileFromImg(m_img));
+        return std::move(utils::Reduce8bppTo4bpp(imgtmp));
+    }
+
+    void importImage8bpp(const fmt::ImageDB::img_t & img, int w, int h)
+    {
+        QVector<QRgb> dummy(256);
+        m_raw = utils::Untile(w, h, img);
+        m_img = utils::RawToImg( w, h, m_raw, dummy);
+    }
+
+    fmt::ImageDB::img_t exportImage8bpp(int & w, int & h)
+    {
+        return std::move(utils::TileFromImg(m_img));
+    }
+
+    QPixmap makePixmap( const QVector<QRgb> & palette )
+    {
+        m_img.setColorTable(palette);
+        return QPixmap::fromImage(m_img, Qt::ColorOnly | Qt::ThresholdDither | Qt::AvoidDither);
+    }
+
+private:
+//    int         m_width;
+//    int         m_height;
+    QImage              m_img;
+    fmt::ImageDB::img_t m_raw; //Need this because QImage doesn't own the buffer...
 };
 
+//*******************************************************************
+//
+//*******************************************************************
 class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>
 {
 public:
 
-    ImageContainer( TreeElement * parent )
+    ImageContainer( TreeElement * parent)
         :BaseListContainerChild(parent)
     {}
 
@@ -229,29 +278,91 @@ public:
         return QVariant(ElemName());
     }
 
-};
+    void importImages8bpp(const fmt::ImageDB::imgtbl_t & imgs, const fmt::ImageDB::frmtbl_t & frms)
+    {
+        assert(false);
+    }
 
-//
-//
-//
-class MFrame : public BaseTreeTerminalChild<&ElemName_Frame>, public utils::BaseSequentialIDGen<MFrame>
-{
-public:
-    MFrame( TreeElement * parent )
-        :BaseTreeTerminalChild(parent),BaseSequentialIDGen()
-    {}
+    void importImages4bpp(const fmt::ImageDB::imgtbl_t & imgs, const fmt::ImageDB::frmtbl_t & frms)
+    {
+        removeChildren(0, childCount());
+        insertChildren(0, imgs.size());
+        int w = 256;
+        int h = 256;
 
-    inline bool operator==( const MFrame & other)const  {return getID() == other.getID();}
-    inline bool operator!=( const MFrame & other)const  {return !operator==(other);}
+        for( size_t cntid = 0; cntid < imgs.size(); ++cntid )
+        {
+            for( size_t frmid = 0; frmid < frms.size(); ++frmid )
+            {
+                auto itstep = frms[frmid].begin();
+                for( size_t stepid= 0; stepid < frms[frmid].size(); ++stepid, ++itstep )
+                {
+                    if( itstep->frmidx == cntid)
+                    {
+                        auto res = itstep->GetResolution();
+                        w = res.first;
+                        h = res.second;
+                    }
+
+                }
+            }
+            m_container[cntid].importImage4bpp(imgs[cntid], w, h );
+        }
+    }
+
+    fmt::ImageDB::imgtbl_t exportImages4bpp()
+    {
+        int w = 0;
+        int h = 0;
+        fmt::ImageDB::imgtbl_t images(childCount());
+        for( int cntid = 0; cntid < childCount(); ++cntid )
+        {
+            images[cntid] = std::move(m_container[cntid].exportImage4bpp(w,h));
+        }
+        return std::move(images);
+    }
 
 private:
 };
 
+//*******************************************************************
+//
+//*******************************************************************
+class MFrame : public BaseTreeTerminalChild<&ElemName_Frame>
+{
+public:
+    MFrame( TreeElement * parent )
+        :BaseTreeTerminalChild(parent)
+    {
+        setDataTy(eTreeElemDataType::frame);
+    }
 
-//
-//
-//
+    inline bool operator==( const MFrame & other)const  {return this == &other;}
+    inline bool operator!=( const MFrame & other)const  {return !operator==(other);}
 
+//    inline fmt::frmid_t getID()const {return m_id;}
+//    inline void setID(fmt::frmid_t id) {m_id = id;}
+
+    void importFrame(const fmt::ImageDB::frm_t & frm/*, fmt::frmid_t id*/)
+    {
+//        m_id    = id;
+        m_parts = frm;
+    }
+
+    fmt::ImageDB::frm_t exportFrame()
+    {
+        return m_parts;
+    }
+
+private:
+    //fmt::frmid_t        m_id;
+    fmt::ImageDB::frm_t m_parts;
+};
+
+
+//*******************************************************************
+//
+//*******************************************************************
 class FramesContainer : public BaseListContainerChild<&ElemName_FrameCnt, MFrame>
 {
 public:
@@ -267,30 +378,72 @@ public:
         return QVariant(ElemName());
     }
 
+
+    void importFrames( const fmt::ImageDB::frmtbl_t & frms )
+    {
+        removeChildren(0, childCount());
+        insertChildren(0, frms.size());
+
+        for( fmt::frmid_t cntid = 0; cntid < frms.size(); ++cntid )
+            m_container[cntid].importFrame(frms[cntid]);
+    }
+
+    fmt::ImageDB::frmtbl_t exportFrames()
+    {
+        fmt::ImageDB::frmtbl_t frms(childCount());
+        for( int cntid = 0; cntid < childCount(); ++cntid )
+        {
+            frms[cntid] = std::move(m_container[cntid].exportFrame());
+        }
+        return std::move(frms);
+    }
+
 private:
+
 };
 
+//*******************************************************************
 //
-//
-//
-
-class AnimSequence : public BaseTreeTerminalChild<&ElemName_AnimSequence>, public utils::BaseSequentialIDGen<AnimSequence>
+//*******************************************************************
+class AnimSequence : public BaseTreeTerminalChild<&ElemName_AnimSequence>
 {
 public:
     AnimSequence( TreeElement * parent )
-        :BaseTreeTerminalChild(parent),BaseSequentialIDGen()
+        :BaseTreeTerminalChild(parent)
     {}
 
-    inline bool operator==( const AnimSequence & other)const  {return getID() == other.getID();}
+    inline bool operator==( const AnimSequence & other)const  {return this == &other;}
     inline bool operator!=( const AnimSequence & other)const  {return !operator==(other);}
+
+//    inline fmt::AnimDB::animseqid_t getID()const {return m_id;}
+//    inline void setID(fmt::AnimDB::animseqid_t id){m_id = id;}
+
+    void importSeq( const fmt::AnimDB::animseq_t & seq/*, fmt::AnimDB::animseqid_t id*/ )
+    {
+        //m_id = id;
+        m_seq = seq;
+    }
+
+    fmt::AnimDB::animseq_t exportSeq()const
+    {
+        return m_seq;
+    }
+
+    inline int getSeqLength()const {return m_seq.size();}
+
+private:
+    //fmt::AnimDB::animseqid_t m_id;
+    fmt::AnimDB::animseq_t   m_seq;
 };
 
+//*******************************************************************
 //
-//
-//
+// Not an animation group!!!! This is just a list of animation sequences!
+//*******************************************************************
 class AnimSequences : public BaseListContainerChild<&ElemName_AnimSequences, AnimSequence>
 {
 public:
+
     AnimSequences( TreeElement * parent )
         :BaseListContainerChild(parent)
     {}
@@ -302,18 +455,143 @@ public:
         return QVariant(ElemName());
     }
 
+    AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id )
+    {
+//        for( size_t cntchild = 0; cntchild < childCount(); ++cntchild )
+//        {
+//            AnimSequence * pchild = static_cast<AnimSequence*>(child(cntchild));
+//            if( pchild && pchild->getID() == id )
+//                 return pchild;
+//        }
+//        return nullptr;
+        return static_cast<AnimSequence*>(child(id));
+    }
+
+    void removeSequence( fmt::AnimDB::animseqid_t id )
+    {
+//        for( size_t cntchild = 0; cntchild < childCount(); ++cntchild )
+//        {
+//            AnimSequence * pchild = static_cast<AnimSequence*>(child(cntchild));
+//            if( pchild && pchild->getID() == id )
+//                 removeChildren(cntchild,1);
+//        }
+        removeChildren(id,1);
+    }
+
+
+    void importSequences( const fmt::AnimDB::animseqtbl_t & src )
+    {
+        removeChildren(0, childCount());
+        insertChildren(0, src.size());
+
+        for( fmt::AnimDB::animseqid_t cntid = 0; cntid < src.size(); ++cntid )
+            m_container[cntid].importSeq(src.at(cntid));
+    }
+
+    fmt::AnimDB::animseqtbl_t exportSequences()
+    {
+        fmt::AnimDB::animseqtbl_t seqs(childCount());
+        for( int cntid = 0; cntid < childCount(); ++cntid )
+        {
+            seqs[cntid] = std::move(m_container[cntid].exportSeq());
+        }
+        return std::move(seqs);
+    }
+
 private:
 };
 
+//*******************************************************************
 //
+//*******************************************************************
+class AnimGroup : public BaseTreeTerminalChild<&ElemName_AnimGroup>
+{
+public:
+    AnimGroup( TreeElement * parent )
+        :BaseTreeTerminalChild(parent)
+    {setDataTy(eTreeElemDataType::animGroup);}
+
+    int columnCount()const override
+    {
+        return 1;
+    }
+
+    QVariant data(int column) const override
+    {
+        if( column == 0 )
+            return QVariant( QString("%1 %2").arg(ElemName()).arg(childNumber()) );
+        else if(column == 1)
+            return QVariant(QString("%1").arg(unk16));
+        else if(column == 2)
+            return QVariant(QString("%1").arg(m_seqlist.size()));
+        else
+            return QVariant();
+    }
+
+    void importGroup(const fmt::AnimDB::animgrp_t & grp/*, fmt::AnimDB::animgrpid_t id*/)
+    {
+//        m_id = id;
+        m_seqlist.reserve(grp.seqs.size());
+        for( const auto & seq : grp.seqs )
+            m_seqlist.push_back(seq);
+
+        unk16 = grp.unk16;
+    }
+
+    fmt::AnimDB::animgrp_t exportGroup()
+    {
+        fmt::AnimDB::animgrp_t dest;
+        dest.seqs.resize(m_seqlist.size());
+        std::copy(m_seqlist.begin(), m_seqlist.end(), dest.seqs.begin());
+        dest.unk16 = unk16;
+        return std::move(dest);
+    }
+
+//    inline fmt::AnimDB::animgrpid_t getGrpId()const {return m_id;}
+
+    inline bool operator==( const AnimGroup & other)const  {return this == &other;}
+    inline bool operator!=( const AnimGroup & other)const  {return !operator==(other);}
+
+    void fillTableWidget( QTableWidget * tbl, AnimSequences & seqs )
+    {
+        tbl->setRowCount(m_seqlist.size());
+
+        int cntrow = 0;
+        for( auto seq : m_seqlist )
+        {
+            tbl->setItem(cntrow, 0, new QTableWidgetItem(QString("Sequence ID ").arg(seq)) );
+            AnimSequence * pseq = static_cast<AnimSequence*>(seqs.child(seq));
+            if( pseq )
+                tbl->setItem(cntrow, 1, new QTableWidgetItem(QString("%1").arg(pseq->getSeqLength())) );
+            ++cntrow;
+        }
+    }
+
+
+    void removeSequenceReferences( fmt::AnimDB::animseqid_t id )
+    {
+        for( auto & seq : m_seqlist )
+        {
+            if(seq == id)
+                seq = -1;
+        }
+    }
+
+private:
+//    fmt::AnimDB::animgrpid_t        m_id;
+    QList<fmt::AnimDB::animseqid_t> m_seqlist;
+    uint16_t                        unk16;
+};
+
+//*******************************************************************
 //
-//
-class AnimTable : public BaseTreeTerminalChild<&ElemName_AnimTable>
+//*******************************************************************
+class AnimTable : public BaseListContainerChild<&ElemName_AnimTable, AnimGroup>
 {
 public:
 
     AnimTable( TreeElement * parent )
-        :BaseTreeTerminalChild(parent)
+        :BaseListContainerChild(parent)
     {}
 
     QVariant data(int column) const override
@@ -322,15 +600,80 @@ public:
             return QVariant();
         return QVariant(ElemName());
     }
+
+    //Load the animation table
+    void importAnimationTable( const fmt::AnimDB::animtbl_t & orig )
+    {
+        for(auto id : orig)
+            m_animtbl.push_back(id);
+    }
+
+    fmt::AnimDB::animtbl_t exportAnimationTable()
+    {
+        fmt::AnimDB::animtbl_t dest;
+        dest.reserve(m_animtbl.size());
+        for( auto id : m_animtbl )
+            dest.push_back(id);
+        return std::move(dest);
+    }
+
+    void importAnimationGroups( fmt::AnimDB::animgrptbl_t & animgrps )
+    {
+        m_container.reserve(animgrps.size());
+        removeChildren(0, childCount());
+        insertChildren(0, animgrps.size());
+
+        for( fmt::AnimDB::animgrpid_t cntgrp = 0; cntgrp < animgrps.size(); ++cntgrp )
+            m_container[cntgrp].importGroup(animgrps[cntgrp]);
+    }
+
+    fmt::AnimDB::animgrptbl_t exportAnimationGroups()
+    {
+        fmt::AnimDB::animgrptbl_t grps(childCount());
+        for( int cntgrp = 0; cntgrp < childCount(); ++cntgrp )
+        {
+            grps[cntgrp] = std::move(m_container[cntgrp].exportGroup());
+        }
+        return std::move(grps);
+    }
+
+    //Clears any references to a group from the animation table!
+    void DeleteGroupRefs( fmt::AnimDB::animgrpid_t id )
+    {
+        int idx = -1;
+        do
+        {
+            idx = m_animtbl.indexOf(id);
+            if( idx != -1 )
+                m_animtbl[idx] = -1;
+        }while( idx != -1 );
+    }
+
+    void DeleteGroupChild( fmt::AnimDB::animgrpid_t id )
+    {
+        DeleteGroupRefs(id);
+//        for( size_t cntchild = 0; cntchild < childCount(); ++cntchild )
+//        {
+//            AnimGroup   * pchild = static_cast<AnimGroup*>(child(cntchild));
+//            if( pchild && pchild->getGrpId() == id )
+                 removeChildren(id,1);
+//        }
+    }
+
+    inline int getAnimTableSize()const {return m_animtbl.size();}
+    inline fmt::AnimDB::animgrpid_t & getAnimTableEntry(int entry) {return m_animtbl[entry];}
+
+private:
+    QList<fmt::AnimDB::animgrpid_t> m_animtbl;
 };
 
 //============================================================================================
 //
 //============================================================================================
 
+//*******************************************************************
 //
-//
-//
+//*******************************************************************
 class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
 {
 public:
@@ -393,6 +736,7 @@ public:
     Sprite & operator=(const Sprite & cp)
     {
         //
+        m_sprhndl= cp.m_sprhndl;
         m_efxcnt = cp.m_efxcnt;
         m_palcnt = cp.m_palcnt;
         m_imgcnt = cp.m_imgcnt;
@@ -478,6 +822,7 @@ public:
 
 
 
+
 public:
 
     TreeElement *child(int row) override
@@ -533,10 +878,30 @@ public:
             ParseSpriteData();
     }
 
+    void OnExpanded() override
+    {
+        if( m_raw.size() != 0 && !m_bparsed )
+            ParseSpriteData();
+    }
+
     /**/
     void ParseSpriteData()
     {
         m_sprhndl.Parse( m_raw.begin(), m_raw.end() );
+        m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
+        m_anmtbl.importAnimationGroups( m_sprhndl.getAnimGroups() );
+
+        m_palcnt.m_pal = std::move(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //conver the palette once, so we don't do it constantly
+
+        m_seqcnt.importSequences( m_sprhndl.getAnimSeqs());
+        m_frmcnt.importFrames(m_sprhndl.getFrames());
+
+        if( m_sprhndl.getImageFmtInfo().is256Colors() )
+            m_imgcnt.importImages8bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
+        else
+            m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
+
+
         m_bparsed = true;
     }
 
@@ -550,7 +915,7 @@ public:
 
     QPixmap & MakePreviewPalette()
     {
-        m_previewPal = utils::PaintPaletteToPixmap( utils::ConvertSpritePalette(m_sprhndl.m_images.m_pal.colors) );
+        m_previewPal = utils::PaintPaletteToPixmap(getPalette()); // utils::ConvertSpritePalette(m_sprhndl.getPalette()) );
         return m_previewPal;
     }
 
@@ -558,27 +923,6 @@ public:
     {
         if(m_bparsed)
         {
-//            QByteArray indexed8;
-//            for(auto pixpair : m_sprhndl.m_images.m_images.front())
-//            {
-//                indexed8.push_back((pixpair >> 4) & 0x0F );
-//                indexed8.push_back(pixpair & 0x0F);
-//            }
-//            m_previewImg = QImage( (unsigned char *) indexed8.data(), 32, 32, QImage::Format_Indexed8);
-//            QVector<QRgb> colortbl;
-
-//            for( size_t cntcol = 0; cntcol < m_sprhndl.m_images.m_pal.colors.size(); ++cntcol )
-//            {
-//                uint32_t colval = m_sprhndl.m_images.m_pal.colors[cntcol];
-//                QColor tmpcol;
-//                tmpcol.setRed( (colval >> 24) & 0xFF );
-//                tmpcol.setGreen( (colval >> 16) & 0xFF );
-//                tmpcol.setBlue( (colval >> 8) & 0xFF );
-//                tmpcol.setAlpha(255);
-//                colortbl.push_back(tmpcol.rgba()); //shift by 8 right to align with the format QT uses
-//            }
-//            m_previewImg.setColorTable(colortbl);
-
             return m_previewImg = std::move(AssembleFrame(0));
         }
         return m_previewImg;
@@ -587,7 +931,7 @@ public:
 
     QPixmap AssembleFrame(size_t frameid)
     {
-        if(!m_bparsed || (frameid >= m_sprhndl.m_images.m_frames.size()))
+        if(!m_bparsed || (frameid >= m_sprhndl.getFrames().size()))
             return QPixmap();
 
         QPixmap  resultimg(256,512);
@@ -602,7 +946,7 @@ public:
         size_t highestY = 0;
         int    lastimage = -1;
         size_t cntstep = 0;
-        for( const fmt::ImageDB::step_t & step : m_sprhndl.m_images.m_frames[frameid] )
+        for( const fmt::step_t & step : m_sprhndl.getFrame(frameid))
         {
             qpaint.setTransform(deftrans);
             auto imgres = step.GetResolution();
@@ -625,13 +969,13 @@ public:
 
                 lastimage = step.frmidx;
                 QPixmap curpixmap;
-                const std::vector<uint8_t> & curimg = m_sprhndl.m_images.m_images[imgidx];
+                const std::vector<uint8_t> & curimg = m_sprhndl.getImage(imgidx);
                 if( step.isColorPal256() )
                 {
                     curpixmap = std::move( utils::UntileIntoImg( step.GetResolution().first,
                                                                  step.GetResolution().second,
                                                                  QByteArray::fromRawData( (char *)curimg.data(), curimg.size() ),
-                                                                 utils::ConvertSpritePalette(m_sprhndl.m_images.m_pal.colors) ) );
+                                                                 getPalette() ) );
                 }
                 else
                 {
@@ -640,7 +984,7 @@ public:
                     curpixmap = std::move(utils::UntileIntoImg( step.GetResolution().first,
                                                                 step.GetResolution().second,
                                                                 expanded,
-                                                                utils::ConvertSpritePalette(m_sprhndl.m_images.m_pal.colors) ) );
+                                                                getPalette() ) );
 
                     //imgstrips.push_back(  QImage( m_sprhndl.m_images.m_images[step.frmidx].data(), step.GetResolution().first, step.GetResolution().second, QImage::Format_Indexed8) );
                 }
@@ -666,6 +1010,11 @@ public:
         //Crop
         return std::move(resultimg.copy( lowestX, lowestY, (highestX - lowestX), (highestY - lowestY) ));
     }
+
+
+    static Sprite * ParentSprite( TreeElement * parentspr ) {return static_cast<Sprite*>(parentspr); }
+
+    QVector<QRgb> & getPalette() { return m_palcnt.m_pal; }
 
 private:
 
@@ -715,6 +1064,7 @@ public:
     QPixmap                 m_previewImg;
     QPixmap                 m_previewPal;
     fmt::WA_SpriteHandler   m_sprhndl;
+    //QVector<QRgb>           m_palette;
 };
 
 #endif // SPRITE_H

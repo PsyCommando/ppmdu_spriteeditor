@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     HideAllTabs();
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
+    DisplayStartScreen();
 }
 
 MainWindow::~MainWindow()
@@ -30,6 +31,9 @@ void MainWindow::HideAllTabs()
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabpal));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabseq));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabproperties));
+    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabWelcome));
+    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabanimgrp));
+    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabimage));
 
     ui->tabanims->hide();
     ui->tabeffects->hide();
@@ -37,6 +41,9 @@ void MainWindow::HideAllTabs()
     ui->tabpal->hide();
     ui->tabseq->hide();
     ui->tabproperties->hide();
+    ui->tabWelcome->hide();
+    ui->tabanimgrp->hide();
+    ui->tabimage->hide();
 
     ui->tabMain->setUpdatesEnabled(true);
 }
@@ -49,34 +56,53 @@ void MainWindow::ShowATab(QWidget *ptab)
     ptab->setFocus();
 }
 
-void MainWindow::DisplayPropertiesPage()
+void MainWindow::DisplayStartScreen()
 {
+    ShowATab(ui->tabWelcome);
+}
+
+void MainWindow::DisplayPropertiesPage(Sprite * spr)
+{
+    ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
+    ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
     ShowATab(ui->tabproperties);
 }
 
-void MainWindow::DisplayAnimFramePage()
+void MainWindow::DisplayAnimFramePage(Sprite *spr)
 {
     ShowATab(ui->tabframeseditor);
 }
 
-void MainWindow::DisplayAnimSequencePage()
+void MainWindow::DisplayAnimSequencePage(Sprite *spr)
 {
     ShowATab(ui->tabseq);
 }
 
-void MainWindow::DisplayAnimTablePage()
+void MainWindow::DisplayAnimTablePage(Sprite * spr)
 {
     ShowATab(ui->tabanims);
 }
 
-void MainWindow::DisplayPalettePage()
+void MainWindow::DisplayPalettePage(Sprite *spr)
 {
     ShowATab(ui->tabpal);
 }
 
-void MainWindow::DisplayEffectsPage()
+void MainWindow::DisplayEffectsPage(Sprite *spr)
 {
     ShowATab(ui->tabeffects);
+}
+
+void MainWindow::DisplayAnimGroupPage(Sprite *spr)
+{
+
+    ShowATab(ui->tabanimgrp);
+}
+
+void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
+{
+    ui->lbl_imgpreview->setPixmap( img->makePixmap(spr->getPalette()).scaled( ui->lbl_imgpreview->size(), Qt::KeepAspectRatio) );
+    ShowATab(ui->tabimage);
 }
 
 void MainWindow::LoadContainer(const QString &path)
@@ -119,14 +145,11 @@ void MainWindow::on_action_Open_triggered()
         }
 
         //Open
-        sprman.OpenContainer(fileName);
-        //sprman.submit();
-
-
-        //Fill the properties page!
+        spr_manager::SpriteContainer * sprcnt = sprman.OpenContainer(fileName);
 
         //Display!
-        DisplayPropertiesPage();
+        if(sprcnt && sprcnt->hasChildren())
+            DisplayPropertiesPage(&sprcnt->GetSprite(0));
         setupListView();
         updateActions();
     }
@@ -149,7 +172,24 @@ void MainWindow::on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, Q
 
 void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
 {
+    TreeElement * pcur = static_cast<TreeElement*>(index.internalPointer());
+    if(!pcur)
+        return;
 
+    ui->tv_sprcontent->setUpdatesEnabled(false);
+    pcur->OnExpanded();
+    ui->tv_sprcontent->setCurrentIndex(index);
+    switch( pcur->getDataTy() )
+    {
+        //Open the appropriate tab
+    case eTreeElemDataType::sprite:
+        {
+            Sprite * spr = static_cast<Sprite*>(pcur);
+            DisplayPropertiesPage(spr);
+            break;
+        }
+    };
+    ui->tv_sprcontent->setUpdatesEnabled(true);
 }
 
 void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
@@ -204,51 +244,29 @@ void MainWindow::on_action_About_triggered()
 
 void MainWindow::updateActions()
 {
-//    bool hasSelection = ! ui->tv_sprcontent->selectionModel()->selection().isEmpty();
-//    removeRowAction->setEnabled(hasSelection);
-//    removeColumnAction->setEnabled(hasSelection);
-
-//    bool hasCurrent = view->selectionModel()->currentIndex().isValid();
-//    insertRowAction->setEnabled(hasCurrent);
-//    insertColumnAction->setEnabled(hasCurrent);
-
-//    if (hasCurrent) {
-//        view->closePersistentEditor(view->selectionModel()->currentIndex());
-
-//        int row = view->selectionModel()->currentIndex().row();
-//        int column = view->selectionModel()->currentIndex().column();
-//        if (view->selectionModel()->currentIndex().parent().isValid())
-//            statusBar()->showMessage(tr("Position: (%1,%2)").arg(row).arg(column));
-//        else
-//            statusBar()->showMessage(tr("Position: (%1,%2) in top level").arg(row).arg(column));
-//    }
-
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
     m_pStatusFileType->setText(sprman.getContentShortName());
-
-
 }
 
 void MainWindow::on_actionNewSprite_triggered()
 {
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
-    sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::WAN );
-    //sprman.submit();
+    spr_manager::SpriteContainer * sprcnt = sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::WAN );
+
+    if(sprcnt)
+        DisplayPropertiesPage(&sprcnt->GetSprite(0));
 
     //Display!
-    DisplayPropertiesPage();
     updateActions();
     setupListView();
 }
 
 void MainWindow::on_actionNewSprite_Pack_File_triggered()
 {
-    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
-    sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::PACK );
-    //sprman.submit();
+    spr_manager::SpriteManager   & sprman = spr_manager::SpriteManager::Instance();
+    spr_manager::SpriteContainer * sprcnt = sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::PACK );
 
     //Display!
-    DisplayPropertiesPage();
     updateActions();
     setupListView();
 }
@@ -282,39 +300,50 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
     case eTreeElemDataType::sprite:
         {
             Sprite * spr = static_cast<Sprite*>(pcur);
-
-            //QPixmap mypix = spr->MakePreviewFrame();
-            //QGraphicsPixmapItem * ppix = m_pPreviewScene->add(mypix);
-            ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
-
-
-            ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
-            DisplayPropertiesPage();
+            DisplayPropertiesPage(spr);
             break;
         }
     case eTreeElemDataType::palette:
         {
-            DisplayPalettePage();
+            Sprite * spr = static_cast<Sprite*>(pcur->parent());
+            DisplayPalettePage(spr);
             break;
         }
     case eTreeElemDataType::effectOffsets:
         {
-            DisplayEffectsPage();
+            Sprite * spr = static_cast<Sprite*>(pcur->parent());
+            DisplayEffectsPage(spr);
             break;
         }
     case eTreeElemDataType::animTable:
         {
-            DisplayAnimTablePage();
+            Sprite * spr = static_cast<Sprite*>(pcur->parent());
+            DisplayAnimTablePage(spr);
             break;
         }
     case eTreeElemDataType::frame:
         {
-            DisplayAnimFramePage();
+            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            DisplayAnimFramePage(spr);
+            break;
+        }
+    case eTreeElemDataType::image:
+        {
+            Image  * img = static_cast<Image*>(pcur);
+            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            DisplayImagePage(spr,img);
             break;
         }
     case eTreeElemDataType::animSequence:
         {
-            DisplayAnimSequencePage();
+            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            DisplayAnimSequencePage(spr);
+            break;
+        }
+    case eTreeElemDataType::animGroup:
+        {
+            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            DisplayAnimGroupPage(spr);
             break;
         }
     default:

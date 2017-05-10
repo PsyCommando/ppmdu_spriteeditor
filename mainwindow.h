@@ -24,12 +24,15 @@ public:
     //Internal processing stuff
     void HideAllTabs();
     void ShowATab(QWidget * ptab);
-    void DisplayPropertiesPage();
-    void DisplayAnimFramePage();
-    void DisplayAnimSequencePage();
-    void DisplayAnimTablePage();
-    void DisplayPalettePage();
-    void DisplayEffectsPage();
+    void DisplayStartScreen();
+    void DisplayPropertiesPage(Sprite * spr);
+    void DisplayAnimFramePage(Sprite * spr);
+    void DisplayAnimSequencePage(Sprite * spr);
+    void DisplayAnimTablePage(Sprite * spr);
+    void DisplayPalettePage(Sprite * spr);
+    void DisplayEffectsPage(Sprite * spr);
+    void DisplayAnimGroupPage(Sprite * spr);
+    void DisplayImagePage(Sprite * spr, Image * img);
 
     void LoadContainer( const QString & path );
     void SaveContainer( const QString & path );

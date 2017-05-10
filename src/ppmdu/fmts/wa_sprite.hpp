@@ -17,10 +17,12 @@ Description: Utilities for reading and writing WAN sprites, WAT sprites, and etc
 
 namespace fmt
 {
-    //Palette
-    typedef uint32_t rgbx_t;
+    //Palette colors
+    typedef uint32_t            rgbx_t;        //Data type for storing a color's 4 bytes data under the format RRGGBBXX (XX is unused)
+    typedef int16_t             frmid_t;       //-1 is a nodraw frame
+    typedef std::vector<rgbx_t> rbgx24pal_t;
 
-
+    //Frame resolutions
     extern const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues;
     enum struct eFrameRes : uint16_t
     {
@@ -41,11 +43,7 @@ namespace fmt
         Invalid,
     };
 
-
-    /*
-     *
-     * Possible formats that a wa_ sprite might take.
-    */
+    //Sprite formats variants
     enum struct eSpriteType : uint16_t
     {
         Prop        = 0,
@@ -55,8 +53,12 @@ namespace fmt
         INVALID,
     };
 
-    /*
-    */
+//-----------------------------------------------------------------------------
+//  Data
+//-----------------------------------------------------------------------------
+    /**********************************************************************
+     *  img info header for sprites
+    **********************************************************************/
     struct imgfmtinfo
     {
         uint32_t ptrimgtable;   //pointer to the image data pointer table
@@ -81,10 +83,12 @@ namespace fmt
             beg = utils::readBytesAs( beg, end, nbimgs );
             return beg;
         }
+
+        inline bool is256Colors()const {return colordepth != 0;}
     };
 
-    /*
-    */
+    /**********************************************************************
+    **********************************************************************/
     struct animfmtinfo
     {
         uint32_t ptroamtbl;     //pointer to the frame assembly table/oam data
@@ -118,13 +122,32 @@ namespace fmt
     };
 
 
+    /**********************************************************************
+    **********************************************************************/
+    struct effectoffset
+    {
+        uint16_t xoff = 0;
+        uint16_t yoff = 0;
+    };
 
 
-//-----------------------------------------------------------------------------
-//  ImageDB
-//-----------------------------------------------------------------------------
-    /**/
-    struct ImageDB
+    /**********************************************************************
+    **********************************************************************/
+    struct palettedata
+    {
+        rbgx24pal_t colors;
+        //uint32_t ptrpalbeg; //
+        uint16_t unk3;      //force4bb
+        uint16_t nbcol;
+        uint16_t unk4;
+        uint16_t unk5;
+        //4bytes of zeroes here
+    };
+
+    /**********************************************************************
+     * Assembly step for assemnbling a frame
+    **********************************************************************/
+    struct step_t
     {
         static const uint16_t ATTR0_FlagBitsMask = 0xFF00;   //1111 1111 0000 0000
         static const uint16_t ATTR1_FlagBitsMask = 0xFE00;   //1111 1110 0000 0000
@@ -149,117 +172,156 @@ namespace fmt
 
         static const uint16_t  ATTR01_ResMask    = 0xC000;   //1100 0000 0000 0000
 
-        /*
-        */
-        struct palettedata
+        enum struct eObjMode: uint16_t
         {
-            std::vector<rgbx_t> colors;
-            //uint32_t ptrpalbeg; //
-            uint16_t unk3;      //force4bb
-            uint16_t nbcol;
-            uint16_t unk4;
-            uint16_t unk5;
-            //4bytes of zeroes here
+            Normal      = 0,
+            SemiTransp  = 0x400,
+            Window      = 0x800,
+            Invalid,
         };
 
-        typedef std::vector<uint8_t> img_t;
-        typedef int16_t              frmid_t; //-1 is a nodraw frame
-        struct step_t
+        frmid_t  frmidx;
+        uint16_t unk0;
+        uint16_t attr0;
+        uint16_t attr1;
+        uint16_t attr2;
+
+        template<class _init>
+            _init read(_init beg, _init end)
         {
-            enum struct eObjMode: uint16_t
-            {
-                Normal      = 0,
-                SemiTransp  = 0x400,
-                Window      = 0x800,
-                Invalid,
-            };
+            beg = utils::readBytesAs( beg, end, frmidx );
+            beg = utils::readBytesAs( beg, end, unk0 );
+            beg = utils::readBytesAs( beg, end, attr0 );
+            beg = utils::readBytesAs( beg, end, attr1 );
+            beg = utils::readBytesAs( beg, end, attr2 );
+            return beg;
+        }
 
-            frmid_t  frmidx;
-            uint16_t unk0;
-            uint16_t attr0;
-            uint16_t attr1;
-            uint16_t attr2;
-
-            template<class _init>
-                _init read(_init beg, _init end)
-            {
-                beg = utils::readBytesAs( beg, end, frmidx );
-                beg = utils::readBytesAs( beg, end, unk0 );
-                beg = utils::readBytesAs( beg, end, attr0 );
-                beg = utils::readBytesAs( beg, end, attr1 );
-                beg = utils::readBytesAs( beg, end, attr2 );
-                return beg;
-            }
-
-            template<class _outit>
-                _outit write(_outit where)
-            {
-                where = utils::writeBytesFrom( frmidx,  where);
-                where = utils::writeBytesFrom( unk0,    where);
-                where = utils::writeBytesFrom( attr0,   where);
-                where = utils::writeBytesFrom( attr1,   where);
-                where = utils::writeBytesFrom( attr2,   where);
-                return where;
-            }
+        template<class _outit>
+            _outit write(_outit where)
+        {
+            where = utils::writeBytesFrom( frmidx,  where);
+            where = utils::writeBytesFrom( unk0,    where);
+            where = utils::writeBytesFrom( attr0,   where);
+            where = utils::writeBytesFrom( attr1,   where);
+            where = utils::writeBytesFrom( attr2,   where);
+            return where;
+        }
 
 
-            inline bool isColorPal256()const            {return (ATTR0_ColPalMask & attr0) != 0;}
-            inline bool isMosaicOn()const               {return (ATTR0_MosaicMask & attr0) != 0;}
-            inline eObjMode ObjMode()const              {return static_cast<eObjMode>(attr0 & ATTR0_ObjModeMask);}
-            inline bool isDisabled()const               {return !isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
-            inline bool isDoubleSize()const             {return isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
-            inline bool isRotAndScalingOn()const        {return (ATTR0_RotNScaleMask & attr0) != 0;}
-            inline uint16_t getYOffset()const           {return (ATTR0_YOffsetMask & attr0);}
+        inline bool isColorPal256()const            {return (ATTR0_ColPalMask & attr0) != 0;}
+        inline bool isMosaicOn()const               {return (ATTR0_MosaicMask & attr0) != 0;}
+        inline eObjMode ObjMode()const              {return static_cast<eObjMode>(attr0 & ATTR0_ObjModeMask);}
+        inline bool isDisabled()const               {return !isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
+        inline bool isDoubleSize()const             {return isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
+        inline bool isRotAndScalingOn()const        {return (ATTR0_RotNScaleMask & attr0) != 0;}
+        inline uint16_t getYOffset()const           {return (ATTR0_YOffsetMask & attr0);}
 
-            inline bool isVFlip()const                  {return (ATTR1_VFlipMask & attr1) != 0;}
-            inline bool isHFlip()const                  {return (ATTR1_HFlipMask & attr1) != 0;}
-            inline bool islast()const                   {return (ATTR1_IsLastMask & attr1) != 0;}
-            inline uint8_t getRnSParam()const           {return static_cast<uint8_t>((ATTR1_RotNScalePrm & attr1) >> 9);}
-            inline uint16_t getXOffset()const           {return (ATTR1_XOffsetMask & attr1);}
+        inline bool isVFlip()const                  {return (ATTR1_VFlipMask & attr1) != 0;}
+        inline bool isHFlip()const                  {return (ATTR1_HFlipMask & attr1) != 0;}
+        inline bool islast()const                   {return (ATTR1_IsLastMask & attr1) != 0;}
+        inline uint8_t getRnSParam()const           {return static_cast<uint8_t>((ATTR1_RotNScalePrm & attr1) >> 9);}
+        inline uint16_t getXOffset()const           {return (ATTR1_XOffsetMask & attr1);}
 
-            inline uint8_t getPalNb()const              {return static_cast<uint8_t>((ATTR2_PalNumberMask & attr2) >> 12);}
-            inline uint8_t getPriority()const           {return static_cast<uint8_t>((ATTR2_PriorityMask  & attr2) >> 10);}
-            inline uint16_t getTileNum()const           {return (ATTR2_TileNumMask & attr2);}
-            inline eFrameRes getResolutionType()const   { return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
+        inline uint8_t getPalNb()const              {return static_cast<uint8_t>((ATTR2_PalNumberMask & attr2) >> 12);}
+        inline uint8_t getPriority()const           {return static_cast<uint8_t>((ATTR2_PriorityMask  & attr2) >> 10);}
+        inline uint16_t getTileNum()const           {return (ATTR2_TileNumMask & attr2);}
+        inline eFrameRes getResolutionType()const   { return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
 
-            inline std::pair<uint16_t,uint16_t> GetResolution()const
-            {
-                uint8_t  flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
-                assert(flagresval < 12);
-                return FrameResValues[flagresval];
-            }
+        inline std::pair<uint16_t,uint16_t> GetResolution()const
+        {
+            uint8_t  flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
+            assert(flagresval < 12);
+            return FrameResValues[flagresval];
+        }
 
 
-            inline void setColorPal256  (bool bis256)   {attr0 = (bis256)? (ATTR0_ColPalMask | attr0) : (attr0 ^ ATTR0_ColPalMask);}
-            inline void setMosaicOn     (bool bon)      {attr0 = (bon)? (ATTR0_MosaicMask | attr0) : (attr0 ^ ATTR0_MosaicMask);}
-            inline void setObjMode      (eObjMode mode) {attr0 = ((static_cast<uint16_t>(mode) | attr0) & ATTR0_ObjModeMask);}
-            inline void setDisabled     (bool bon)      {attr0 = (bon)? (ATTR0_DblSzDisabled | attr0) : (attr0 ^ ATTR0_DblSzDisabled);}
-            inline void setDoubleSize   (bool bon)      {setDisabled(bon);}
-            inline void setRotAndScaling(bool bon)      {attr0 = (bon)? (ATTR0_RotNScaleMask | attr0) : (attr0 ^ ATTR0_RotNScaleMask);}
-            inline void setYOffset      (uint16_t y)    {attr0 = (attr0 & ATTR0_FlagBitsMask) | (ATTR0_YOffsetMask & y);}
+        inline void setColorPal256  (bool bis256)   {attr0 = (bis256)? (ATTR0_ColPalMask | attr0) : (attr0 ^ ATTR0_ColPalMask);}
+        inline void setMosaicOn     (bool bon)      {attr0 = (bon)? (ATTR0_MosaicMask | attr0) : (attr0 ^ ATTR0_MosaicMask);}
+        inline void setObjMode      (eObjMode mode) {attr0 = ((static_cast<uint16_t>(mode) | attr0) & ATTR0_ObjModeMask);}
+        inline void setDisabled     (bool bon)      {attr0 = (bon)? (ATTR0_DblSzDisabled | attr0) : (attr0 ^ ATTR0_DblSzDisabled);}
+        inline void setDoubleSize   (bool bon)      {setDisabled(bon);}
+        inline void setRotAndScaling(bool bon)      {attr0 = (bon)? (ATTR0_RotNScaleMask | attr0) : (attr0 ^ ATTR0_RotNScaleMask);}
+        inline void setYOffset      (uint16_t y)    {attr0 = (attr0 & ATTR0_FlagBitsMask) | (ATTR0_YOffsetMask & y);}
 
-            inline void setVFlip        (bool bon)      {attr1 = (bon)? (ATTR1_VFlipMask | attr1) : (attr1 ^ ATTR1_VFlipMask);}
-            inline void setHFlip        (bool bon)      {attr1 = (bon)? (ATTR1_HFlipMask | attr1) : (attr1 ^ ATTR1_HFlipMask);}
-            inline void setLast         (bool blast)    {attr1 = (blast)? (ATTR1_IsLastMask | attr1) : (attr1 ^ ATTR1_IsLastMask);}
-            inline void setRnSParam     (uint8_t param) {attr1 = (attr1 & ~ATTR1_RotNScalePrm) | ((param << 9) & ATTR1_RotNScalePrm);}
-            inline void setXOffset      (uint16_t x)    {attr1 = (attr1 & ATTR1_FlagBitsMask) | (ATTR1_XOffsetMask & x);}
+        inline void setVFlip        (bool bon)      {attr1 = (bon)? (ATTR1_VFlipMask | attr1) : (attr1 ^ ATTR1_VFlipMask);}
+        inline void setHFlip        (bool bon)      {attr1 = (bon)? (ATTR1_HFlipMask | attr1) : (attr1 ^ ATTR1_HFlipMask);}
+        inline void setLast         (bool blast)    {attr1 = (blast)? (ATTR1_IsLastMask | attr1) : (attr1 ^ ATTR1_IsLastMask);}
+        inline void setRnSParam     (uint8_t param) {attr1 = (attr1 & ~ATTR1_RotNScalePrm) | ((param << 9) & ATTR1_RotNScalePrm);}
+        inline void setXOffset      (uint16_t x)    {attr1 = (attr1 & ATTR1_FlagBitsMask) | (ATTR1_XOffsetMask & x);}
 
-            inline void setPalNb        (uint8_t palnb) {attr2 = (attr2 & ~ATTR2_PalNumberMask) | (ATTR2_PalNumberMask & palnb);}
-            inline void setPriority     (uint8_t prio)  {attr2 = (attr2 & ~ATTR2_PriorityMask) | (ATTR2_PriorityMask & prio);}
-            inline void setTileNum      (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_TileNumMask) | (ATTR2_TileNumMask & tnum);}
+        inline void setPalNb        (uint8_t palnb) {attr2 = (attr2 & ~ATTR2_PalNumberMask) | (ATTR2_PalNumberMask & palnb);}
+        inline void setPriority     (uint8_t prio)  {attr2 = (attr2 & ~ATTR2_PriorityMask) | (ATTR2_PriorityMask & prio);}
+        inline void setTileNum      (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_TileNumMask) | (ATTR2_TileNumMask & tnum);}
 
-            inline void setResolutionType(eFrameRes res)
-            {
-                uint16_t flagval = static_cast<uint16_t>(res);
-                attr1 = (attr1 & ~ATTR01_ResMask) | ((flagval << 14) & ATTR01_ResMask);
-                attr0 = (attr0 & ~ATTR01_ResMask) | ((flagval << 12) & ATTR01_ResMask);
-            }
-        };
-        typedef std::list<step_t> frm_t;
+        inline void setResolutionType(eFrameRes res)
+        {
+            uint16_t flagval = static_cast<uint16_t>(res);
+            attr1 = (attr1 & ~ATTR01_ResMask) | ((flagval << 14) & ATTR01_ResMask);
+            attr0 = (attr0 & ~ATTR01_ResMask) | ((flagval << 12) & ATTR01_ResMask);
+        }
+    };
 
-        std::vector<img_t> m_images;    //contains decoded raw linear images
-        std::vector<frm_t> m_frames;    //References on how to assemble raw images into individual animation frames.
-        palettedata        m_pal;
+    /**********************************************************************
+     *
+    **********************************************************************/
+    struct animfrm_t
+    {
+        uint8_t duration;
+        uint8_t flag;
+        int16_t frmidx;
+        int16_t xoffs;
+        int16_t yoffs;
+        int16_t shadowxoffs;
+        int16_t shadowyoffs;
+
+        bool isnull()const
+        {
+            return !duration && !flag && !frmidx && !xoffs && !yoffs && !shadowxoffs && !shadowyoffs;
+        }
+
+        template<class _init>
+            _init read(_init beg, _init end)
+        {
+            beg = utils::readBytesAs(beg, end, duration);
+            beg = utils::readBytesAs(beg, end, flag);
+            beg = utils::readBytesAs(beg, end, frmidx);
+            beg = utils::readBytesAs(beg, end, xoffs);
+            beg = utils::readBytesAs(beg, end, yoffs);
+            beg = utils::readBytesAs(beg, end, shadowxoffs);
+            beg = utils::readBytesAs(beg, end, shadowyoffs);
+            return beg;
+        }
+
+        template<class _outit>
+            _outit write(_outit where)
+        {
+            where = utils::writeBytesFrom(duration,    where);
+            where = utils::writeBytesFrom(flag,        where);
+            where = utils::writeBytesFrom(frmidx,      where);
+            where = utils::writeBytesFrom(xoffs,       where);
+            where = utils::writeBytesFrom(yoffs,       where);
+            where = utils::writeBytesFrom(shadowxoffs, where);
+            where = utils::writeBytesFrom(shadowyoffs, where);
+            return where;
+        }
+    };
+
+//-----------------------------------------------------------------------------
+//  ImageDB
+//-----------------------------------------------------------------------------
+    /**********************************************************************
+     * Sub component of a sprite for handling image data.
+    **********************************************************************/
+    struct ImageDB
+    {
+        typedef std::vector<uint8_t>    img_t;
+        typedef std::list<step_t>       frm_t;
+        typedef std::vector<img_t>      imgtbl_t;
+        typedef std::vector<frm_t>      frmtbl_t;
+        imgtbl_t    m_images;    //contains decoded raw linear images
+        frmtbl_t    m_frames;    //References on how to assemble raw images into individual animation frames.
+        palettedata m_pal;
 
         template<class _init>
         void ParsePalette(_init itsrcbeg, _init itsrcend, uint32_t paloff)
@@ -383,72 +445,35 @@ namespace fmt
 //-----------------------------------------------------------------------------
 //  AnimDB
 //-----------------------------------------------------------------------------
-    /*
-    */
+    /**********************************************************************
+     * Sub component of a sprite for handling animation data.
+    **********************************************************************/
     struct AnimDB
     {
-        /*
-        */
-        struct animfrm_t
-        {
-            uint8_t duration;
-            uint8_t flag;
-            int16_t frmidx;
-            int16_t xoffs;
-            int16_t yoffs;
-            int16_t shadowxoffs;
-            int16_t shadowyoffs;
-
-            bool isnull()const
-            {
-                return !duration && !flag && !frmidx && !xoffs && !yoffs && !shadowxoffs && !shadowyoffs;
-            }
-
-            template<class _init>
-                _init read(_init beg, _init end)
-            {
-                beg = utils::readBytesAs(beg, end, duration);
-                beg = utils::readBytesAs(beg, end, flag);
-                beg = utils::readBytesAs(beg, end, frmidx);
-                beg = utils::readBytesAs(beg, end, xoffs);
-                beg = utils::readBytesAs(beg, end, yoffs);
-                beg = utils::readBytesAs(beg, end, shadowxoffs);
-                beg = utils::readBytesAs(beg, end, shadowyoffs);
-                return beg;
-            }
-
-            template<class _outit>
-                _outit write(_outit where)
-            {
-                where = utils::writeBytesFrom(duration,    where);
-                where = utils::writeBytesFrom(flag,        where);
-                where = utils::writeBytesFrom(frmidx,      where);
-                where = utils::writeBytesFrom(xoffs,       where);
-                where = utils::writeBytesFrom(yoffs,       where);
-                where = utils::writeBytesFrom(shadowxoffs, where);
-                where = utils::writeBytesFrom(shadowyoffs, where);
-                return where;
-            }
-        };
-
-        typedef int                             animseqid_t;    //Id for an animation sequence
-        typedef int                             animgrpid_t;    //Id for an animation group
-        typedef std::list<animfrm_t>            animseq_t;      //A single sequence of animated frames
-        static const animseqid_t NullSeq = -1;  //Represents an entry not refering to any sequence
-        static const animgrpid_t NullGrp = -1;  //Represents an entry not refering to any group
-
-        /**/
-        struct animgrp_t //A group is a set of animation sequences
+        //A single sequence of animated frames
+        typedef int                                         animseqid_t;   //Id for an animation sequence
+        typedef int                                         animgrpid_t;   //Id for an animation group
+        typedef std::list<animfrm_t>                        animseq_t;
+        typedef std::vector<animgrpid_t>                    animtbl_t;
+        /**********************************************************************
+         * A group is a set of animation sequences
+        **********************************************************************/
+        struct animgrp_t
         {
             std::vector<animseqid_t> seqs;
             uint16_t                 unk16;
         };
-
-        std::unordered_map<animseqid_t, animseq_t>  m_animsequences;    //A table containing all uniques animation sequences
-        std::unordered_map<animgrpid_t, animgrp_t>  m_animgrps;         //A table of all the unique animation groups
-        std::vector<animgrpid_t>                    m_animtbl;          //A table of pointers to the animation group associated to an animation
+        typedef std::unordered_map<animgrpid_t, animgrp_t>  animgrptbl_t;
+        typedef std::unordered_map<animseqid_t, animseq_t>  animseqtbl_t;
 
 
+
+        static const animseqid_t NullSeq = -1;  //Represents an entry not refering to any sequence
+        static const animgrpid_t NullGrp = -1;  //Represents an entry not refering to any group
+
+        animseqtbl_t  m_animsequences;    //A table containing all uniques animation sequences
+        animgrptbl_t  m_animgrps;         //A table of all the unique animation groups
+        animtbl_t     m_animtbl;          //A table of pointers to the animation group associated to an animation
 
         template<class _init>
             animseqid_t ParseAnimSeq( std::unordered_map<uint32_t,animgrpid_t> & animseqreftable,
@@ -553,24 +578,15 @@ namespace fmt
         animseqid_t curseqid;
     };
 
-    /*
-    */
-    struct effectoffset
-    {
-        uint16_t xoff = 0;
-        uint16_t yoff = 0;
-    };
-
-
 //-----------------------------------------------------------------------------
 //  WA_SpriteHandler
 //-----------------------------------------------------------------------------
 
-    /*
+    /**********************************************************************
      *
      * This class is used as a sort of in-between between the file representation and in-memory representation of a wa_ sprite.
      * Basically it contains the raw data of a sprite, and provides ways to translates those to and from.
-    */
+    **********************************************************************/
     class WA_SpriteHandler
     {
     public:
@@ -581,45 +597,9 @@ namespace fmt
         {
             auto itsrcbeg = itbeg;
 
-            //#1. Parse SIR0 hdr
-            fmt::SIR0hdr hdr;
-            itbeg = hdr.Read(itbeg, itend);
-
-            //#2. Parse Sprite hdr
-            itbeg = std::next( itsrcbeg, hdr.ptrsub );
-            uint32_t ptraniminfo = utils::readBytesAs<uint32_t>( itbeg, itend );
-            uint32_t ptrimginfo  = utils::readBytesAs<uint32_t>( itbeg, itend );
-            m_sprty = static_cast<eSpriteType>(utils::readBytesAs<uint16_t>( itbeg, itend ));
-            itbeg = utils::readBytesAs( itbeg, itend, m_unk12 );
-
-            if( m_sprty >= eSpriteType::INVALID )
-                throw std::runtime_error("WA_SpriteHandler::Parse(): Invalid sprite type!!"); //STOP HERE!!
-            assert( m_sprty < eSpriteType::INVALID );
-
-            //#3. Parse the fmt subsections
-            if( ptraniminfo != 0 )
-            {
-                itbeg = std::next( itsrcbeg, ptraniminfo );
-                itbeg = m_animfmt.read(itbeg, itend);
-            }
-
-            if( ptrimginfo != 0 )
-            {
-                itbeg = std::next( itsrcbeg, ptrimginfo );
-                m_imgfmt.read(itbeg, itend);
-            }
-
-            //#4. Build Frame Table + Load Image Data And Palette
-            m_images.ParseImgData(itsrcbeg, itend, m_imgfmt, m_animfmt);
-
-            //#5. Build Animation Tables
-            m_animtions.ParseAnimTbl(itsrcbeg, itend, m_animfmt);
-
-            //#6. Build Effect Offset Table
-            if(m_animfmt.ptrefxtbl != 0)
-            {
-                //#TODO
-            }
+            ParseHeaders(itbeg, itend);
+            ParseImageInfo(itbeg, itend);
+            ParseAnimInfoAndData(itbeg, itend);
         }
 
         template<class _outit>
@@ -631,15 +611,30 @@ namespace fmt
         }
 
         // ----------- Data Access -----------
+        inline ImageDB::frm_t      & getFrame(frmid_t frmid)                   {return m_images.m_frames.at(frmid);}
+        inline ImageDB::frmtbl_t   & getFrames()                               {return m_images.m_frames;}
+        inline ImageDB::img_t      & getImage(size_t imgidx)                   {return m_images.m_images.at(imgidx);}
+        inline ImageDB::imgtbl_t   & getImages()                               {return m_images.m_images;}
+        inline rbgx24pal_t         & getPalette()                              {return m_images.m_pal.colors;}
+        inline palettedata         & getPaletteData()                          {return m_images.m_pal;}
+        inline AnimDB::animtbl_t   & getAnimationTable()                       {return m_animtions.m_animtbl;}
+        inline AnimDB::animgrp_t   & getAnimGroup(AnimDB::animgrpid_t id)      {return m_animtions.m_animgrps[id];}
+        inline AnimDB::animgrptbl_t& getAnimGroups()                           {return m_animtions.m_animgrps; }
+        inline AnimDB::animseq_t   & getAnimSeq(AnimDB::animseqid_t id)        {return m_animtions.m_animsequences[id];}
+        inline AnimDB::animseqtbl_t& getAnimSeqs()                             {return m_animtions.m_animsequences;}
+        inline OffsetsDB           & getEffectOffset()                         {return m_efxoffsets;}
 
-    //private:
+        inline const animfmtinfo   & getAnimFmtInfo()const                     {return m_animfmt;}
+        inline const imgfmtinfo    & getImageFmtInfo()const                    {return m_imgfmt;}
+
+    private:
 
         //pointer to the sprite header
         //uint32_t    m_ptrsprhdr;
 
         //Sprite Header
-        //uint32_t    m_ptraniminfo;
-        //uint32_t    m_ptrimginfo;
+        uint32_t    m_offsetAnimInfo;
+        uint32_t    m_offsetImgInfo;
         eSpriteType m_sprty;
         uint16_t    m_unk12;
 
@@ -651,6 +646,52 @@ namespace fmt
         ImageDB     m_images;
         AnimDB      m_animtions;
         OffsetsDB   m_efxoffsets;
+
+    private:
+        template<class _init>
+            void ParseHeaders(_init itbeg, _init itend )
+        {
+            auto itsrcbeg = itbeg;
+            //#1. Parse SIR0 hdr
+            fmt::SIR0hdr hdr;
+            itbeg = hdr.Read(itbeg, itend);
+
+            //#2. Parse Sprite hdr
+            itbeg = std::next( itsrcbeg, hdr.ptrsub );
+            itbeg = utils::readBytesAs( itbeg, itend, m_offsetAnimInfo );
+            itbeg  = utils::readBytesAs( itbeg, itend, m_offsetImgInfo );
+            m_sprty = static_cast<eSpriteType>(utils::readBytesAs<uint16_t>( itbeg, itend ));
+            itbeg = utils::readBytesAs( itbeg, itend, m_unk12 );
+
+            if( m_sprty >= eSpriteType::INVALID )
+                throw std::runtime_error("WA_SpriteHandler::Parse(): Invalid sprite type!!"); //STOP HERE!!
+            assert( m_sprty < eSpriteType::INVALID );
+
+            if( m_offsetAnimInfo != 0 )
+                m_animfmt.read(std::next( itsrcbeg, m_offsetAnimInfo ), itend); //Parse anim info chunk
+
+            if( m_offsetImgInfo != 0 )
+                m_imgfmt.read(std::next( itsrcbeg, m_offsetImgInfo ), itend);
+        }
+
+
+        template<class _init>
+            void ParseImageInfo(_init itbeg, _init itend )
+        {
+            m_images.ParseImgData(itbeg, itend, m_imgfmt, m_animfmt);
+        }
+
+        template<class _init>
+            void ParseAnimInfoAndData(_init itbeg, _init itend )
+        {
+            //Parse animations
+            m_animtions.ParseAnimTbl(itbeg, itend, m_animfmt);
+            if(m_animfmt.ptrefxtbl != 0)
+            {
+                //1. Calculate effect table length/end
+                //#TODO
+            }
+        }
     };
 };
 

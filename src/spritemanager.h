@@ -113,6 +113,12 @@ namespace spr_manager
         //Returns a short string to indicate in the status bar the kind of container working on!
         QString getContentShortName()const;
 
+
+        //Tool for retrieving animation table templates names
+        inline QStringList       & getAnimSlotNames() {return m_animslotnames;}
+        inline const QStringList & getAnimSlotNames()const {return m_animslotnames;}
+        QStringList                     m_animslotnames;
+
     public:
         using QAbstractItemModel::createIndex;
         using QAbstractItemModel::beginRemoveRows;
@@ -138,7 +144,7 @@ namespace spr_manager
         bool ContainerIsSingleSprite()const;
 
         //IO
-        void OpenContainer(const QString & fname);
+        SpriteContainer * OpenContainer(const QString & fname);
         void CloseContainer();
 
         void SaveContainer();
@@ -147,7 +153,7 @@ namespace spr_manager
         void ExportContainer(const QString & fname);
         void ImportContainer(const QString & fname);
 
-        void NewContainer( SpriteContainer::eContainerType type );
+        SpriteContainer * NewContainer( SpriteContainer::eContainerType type );
 
         //
         //Empty the sprite list and etc.

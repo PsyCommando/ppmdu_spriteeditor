@@ -8,10 +8,11 @@ namespace spr_manager
     const QString ShortNameWAN      = "WAN";
     const QString ShortNameWAT      = "WAT";
 
-    void SpriteManager::OpenContainer(const QString &fname)
+    SpriteContainer * SpriteManager::OpenContainer(const QString &fname)
     {
         m_container.reset( new SpriteContainer(fname) );
         m_container->LoadContainer();
+        return m_container.data();
     }
 
     void SpriteManager::CloseContainer()
@@ -39,7 +40,7 @@ namespace spr_manager
         Reset();
     }
 
-    void SpriteManager::NewContainer(SpriteContainer::eContainerType type)
+    SpriteContainer * SpriteManager::NewContainer(SpriteContainer::eContainerType type)
     {
         m_container.reset( new SpriteContainer() );
         m_container->SetContainerType(type);
@@ -49,6 +50,7 @@ namespace spr_manager
             //We want to add a single empty sprite for a single sprite!
             m_container->AddSprite();
         }
+        return m_container.data();
     }
 
     int SpriteManager::GetNbSpritesInContainer() const

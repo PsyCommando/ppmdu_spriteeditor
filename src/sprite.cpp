@@ -10,6 +10,7 @@ const char * ElemName_Frame         = "Frame";
 const char * ElemName_AnimSequence  = "Anim Sequence";
 const char * ElemName_AnimSequences = "Anim Sequences";
 const char * ElemName_AnimTable     = "Animation Table";
+const char * ElemName_AnimGroup     = "Anim Group";
 
 
 //const QString EffectOffsetContainer::ElemName = "Effect Offsets";
