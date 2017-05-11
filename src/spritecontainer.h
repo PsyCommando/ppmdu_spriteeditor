@@ -79,7 +79,7 @@ namespace spr_manager
             return item->data(index.column());
         }
 
-        QVariant headerData(int /*section*/, Qt::Orientation /*orientation*/, int role = Qt::DisplayRole) const
+        QVariant headerData(int section, Qt::Orientation /*orientation*/, int role = Qt::DisplayRole) const
         {
             //nothing really
             return QVariant();
@@ -182,6 +182,7 @@ namespace spr_manager
 
             return success;
         }
+
 
     public:
         void appendChild(TreeElement *item)

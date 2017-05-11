@@ -43,9 +43,28 @@ public:
 
     explicit TreeElement(const TreeElement & cp)
     {
+        operator=(cp);
+    }
+
+    TreeElement & operator=(const TreeElement & cp)
+    {
         m_elemty     = cp.m_elemty;
         m_dataty     = cp.m_dataty;
         m_parentItem = cp.m_parentItem;
+        return *this;
+    }
+
+    explicit TreeElement(TreeElement && mv)
+    {
+        operator=(mv);
+    }
+
+    TreeElement & operator=(TreeElement && mv)
+    {
+        m_elemty     = std::move(mv.m_elemty);
+        m_dataty     = std::move(mv.m_dataty);
+        m_parentItem = std::move(mv.m_parentItem);
+        return *this;
     }
 
     virtual ~TreeElement()

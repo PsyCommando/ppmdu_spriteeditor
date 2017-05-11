@@ -24,3 +24,73 @@ const char * ElemName_AnimGroup     = "Anim Group";
 
 //unsigned long long Sprite::spriteCnt = 0;
 //QStack<unsigned long long> Sprite::spriteIDRecycler;
+
+Sprite * EffectOffsetContainer::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
+
+Sprite *AnimTable::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
+
+Sprite *AnimGroup::parentSprite()
+{
+    static_cast<AnimTable*>(parent())->parentSprite();
+}
+
+Sprite *AnimSequences::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
+
+Sprite *AnimSequence::parentSprite()
+{
+    static_cast<AnimSequences*>(parent())->parentSprite();
+}
+
+Sprite *FramesContainer::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
+
+Sprite *MFrame::parentSprite()
+{
+    return static_cast<FramesContainer*>(parent())->parentSprite();
+}
+
+Sprite *ImageContainer::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
+
+Sprite *Image::parentSprite()
+{
+    return static_cast<ImageContainer*>(parent())->parentSprite();
+}
+
+Sprite *PaletteContainer::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
+
+QVariant Image::imgData(int column, int role)
+{
+    QVariant res;
+    switch(column)
+    {
+    case 0: //preview
+        if( role == Qt::DecorationRole )
+            res.setValue(makePixmap(parentSprite()->getPalette()));
+        else if( role == Qt::SizeHintRole )
+            res.setValue( QSize(m_img.size().width() *2, m_img.size().height() *2) );
+        break;
+    case 1: //depth
+        res.setValue(QString("%1bpp").arg(m_depth));
+        break;
+    case 2: //resolution
+        res.setValue(QString("%1x%2").arg(m_img.width()).arg(m_img.height()));
+    };
+    return std::move(res);
+}

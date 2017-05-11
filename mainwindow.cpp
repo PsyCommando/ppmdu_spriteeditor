@@ -34,6 +34,7 @@ void MainWindow::HideAllTabs()
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabWelcome));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabanimgrp));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabimage));
+    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabImages));
 
     ui->tabanims->hide();
     ui->tabeffects->hide();
@@ -44,6 +45,7 @@ void MainWindow::HideAllTabs()
     ui->tabWelcome->hide();
     ui->tabanimgrp->hide();
     ui->tabimage->hide();
+    ui->tabImages->hide();
 
     ui->tabMain->setUpdatesEnabled(true);
 }
@@ -103,6 +105,13 @@ void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
 {
     ui->lbl_imgpreview->setPixmap( img->makePixmap(spr->getPalette()).scaled( ui->lbl_imgpreview->size(), Qt::KeepAspectRatio) );
     ShowATab(ui->tabimage);
+}
+
+void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
+{
+    ui->tblviewImagesTest->setModel(pimgs->getModel());
+    pimgs->fillImgListTable(ui->tblImagesList, spr->getPalette());
+    ShowATab(ui->tabImages);
 }
 
 void MainWindow::LoadContainer(const QString &path)
@@ -305,44 +314,57 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         }
     case eTreeElemDataType::palette:
         {
-            Sprite * spr = static_cast<Sprite*>(pcur->parent());
+            PaletteContainer    * pal = static_cast<PaletteContainer*>(pcur);
+            Sprite              * spr = pal->parentSprite();
             DisplayPalettePage(spr);
             break;
         }
     case eTreeElemDataType::effectOffsets:
         {
-            Sprite * spr = static_cast<Sprite*>(pcur->parent());
+            EffectOffsetContainer * efx = static_cast<EffectOffsetContainer*>(pcur);
+            Sprite * spr = efx->parentSprite();
             DisplayEffectsPage(spr);
             break;
         }
     case eTreeElemDataType::animTable:
         {
-            Sprite * spr = static_cast<Sprite*>(pcur->parent());
+            AnimTable   * tbl = static_cast<AnimTable*>(pcur);
+            Sprite      * spr = tbl->parentSprite();
             DisplayAnimTablePage(spr);
             break;
         }
     case eTreeElemDataType::frame:
         {
-            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            MFrame * frm = static_cast<MFrame*>(pcur);
+            Sprite * spr = frm->parentSprite();
             DisplayAnimFramePage(spr);
             break;
         }
     case eTreeElemDataType::image:
         {
             Image  * img = static_cast<Image*>(pcur);
-            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            Sprite * spr = img->parentSprite();
             DisplayImagePage(spr,img);
+            break;
+        }
+    case eTreeElemDataType::images:
+        {
+            ImageContainer  * imgs  = static_cast<ImageContainer*>(pcur);
+            Sprite          * spr   = imgs->parentSprite();
+            DisplayImageListPage(spr,imgs);
             break;
         }
     case eTreeElemDataType::animSequence:
         {
-            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            AnimSequence    * seq   = static_cast<AnimSequence*>(pcur);
+            Sprite          * spr   = seq->parentSprite();
             DisplayAnimSequencePage(spr);
             break;
         }
     case eTreeElemDataType::animGroup:
         {
-            Sprite * spr = static_cast<Sprite*>(pcur->parent()->parent());
+            AnimGroup   * grp = static_cast<AnimGroup*>(pcur);
+            Sprite      * spr = grp->parentSprite();
             DisplayAnimGroupPage(spr);
             break;
         }

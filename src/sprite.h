@@ -9,6 +9,8 @@
 #include <QVector>
 #include <QAbstractItemModel>
 #include <QTableWidget>
+#include <QHeaderView>
+#include <QLabel>
 #include <cassert>
 #include <cstdint>
 #include <list>
@@ -32,6 +34,7 @@ extern const char * ElemName_AnimGroup    ;
 //============================================================================================
 //
 //============================================================================================
+
 /*******************************************************************
  * BaseTreeTerminalChild
  *  Base class for implementing terminal tree nodes elements!
@@ -97,10 +100,32 @@ public:
         typedef _CHILD_TY               child_t;
         typedef QList<child_t> container_t;
 
+        typedef BaseListContainerChild<_STRELEMNAME, _CHILD_TY> my_t;
+
     public:
         BaseListContainerChild(TreeElement * parent)
             :TreeElement(parent)
         {}
+
+        BaseListContainerChild(const my_t & cp)
+            :TreeElement(cp),m_container(cp.m_container)
+        {}
+
+        BaseListContainerChild(my_t && mv)
+            :TreeElement(std::forward(mv)),m_container(std::move(mv.m_container))
+        {}
+
+        my_t & operator=(const my_t & cp)
+        {
+            m_container = cp.m_container;
+            return *this;
+        }
+
+        my_t & operator=(my_t && mv)
+        {
+            m_container = std::move(mv.m_container);
+            return *this;
+        }
 
         virtual ~BaseListContainerChild() {}
 
@@ -182,6 +207,8 @@ public:
             return QVariant();
         return QVariant(ElemName());
     }
+
+    Sprite * parentSprite();
 };
 
 //*******************************************************************
@@ -202,6 +229,7 @@ public:
         return QVariant(ElemName());
     }
 
+    Sprite * parentSprite();
 
     QVector<QRgb> m_pal;
 };
@@ -214,7 +242,7 @@ class Image : public BaseTreeTerminalChild<&ElemName_Image>
 {
 public:
     Image(TreeElement * parent)
-        :BaseTreeTerminalChild(parent)/*,m_width(0), m_height(0)*/
+        :BaseTreeTerminalChild(parent), m_depth(0)
     {
         setDataTy(eTreeElemDataType::image);
     }
@@ -224,6 +252,7 @@ public:
 
     void importImage4bpp(const fmt::ImageDB::img_t & img, int w, int h)
     {
+        m_depth = 4;
         QVector<QRgb> dummy(16);
         m_raw = std::move( utils::Untile( w, h, utils::Expand4BppTo8Bpp(img) ) );
         m_img = utils::RawToImg( w, h, m_raw, dummy );
@@ -237,6 +266,7 @@ public:
 
     void importImage8bpp(const fmt::ImageDB::img_t & img, int w, int h)
     {
+        m_depth = 8;
         QVector<QRgb> dummy(256);
         m_raw = utils::Untile(w, h, img);
         m_img = utils::RawToImg( w, h, m_raw, dummy);
@@ -253,23 +283,221 @@ public:
         return QPixmap::fromImage(m_img, Qt::ColorOnly | Qt::ThresholdDither | Qt::AvoidDither);
     }
 
+    void makeImageTableRow( QTableWidget * tbl, const QVector<QRgb> & pal, int rowid )
+    {
+        //0. Image Preview
+        QLabel * preview = new QLabel("");
+
+        tbl->setCellWidget(rowid, 0, preview);
+
+        preview->setScaledContents(true);
+        preview->setAlignment(Qt::AlignCenter);
+        preview->setMinimumWidth(m_img.width());
+        preview->setMinimumHeight(m_img.height());
+        preview->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+
+        if( tbl->horizontalHeader()->sectionSize(0 < m_img.width() ) )
+        {
+            tbl->setColumnWidth(0, m_img.width());
+            tbl->horizontalHeader()->resizeSection(0, m_img.width());
+        }
+        if( tbl->verticalHeader()->sectionSize(rowid) < m_img.height() )
+        {
+            tbl->setRowHeight(rowid, m_img.height());
+            tbl->verticalHeader()->resizeSection(rowid, m_img.height());
+        }
+
+        preview->setPixmap(makePixmap(pal).scaled(preview->width(), preview->height(), Qt::AspectRatioMode::KeepAspectRatio));
+
+        //1. BPP
+        QTableWidgetItem * bpp = new QTableWidgetItem( QString("%1").arg(m_depth) );
+        bpp->setFlags( bpp->flags() & (~Qt::ItemFlag::ItemIsEditable) );
+        tbl->setItem(rowid, 1, bpp);
+
+        //2. Resolution
+        QTableWidgetItem * resolution = new QTableWidgetItem( QString("%1x%2").arg(m_img.width()).arg(m_img.height()) );
+        resolution->setFlags( resolution->flags() & (~Qt::ItemFlag::ItemIsEditable) );
+        tbl->setItem(rowid, 2, resolution);
+    }
+
+    Sprite       * parentSprite();
+    const Sprite * parentSprite()const {return const_cast<Image*>(this)->parentSprite();}
+
+    int nbimgcolumns()const
+    {
+        return 3;
+    }
+
+    //Those can be re-implemented!
+    QVariant imgData(int column, int role);
+
 private:
 //    int         m_width;
 //    int         m_height;
     QImage              m_img;
     fmt::ImageDB::img_t m_raw; //Need this because QImage doesn't own the buffer...
+    int                 m_depth;    //Original image depth in bpp
 };
 
 //*******************************************************************
 //
 //*******************************************************************
-class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>
+class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>/*, public QAbstractItemModel*/
 {
-public:
 
+public:
+    class ImagesManager : public QAbstractItemModel
+    {
+        ImageContainer * m_parentcnt;
+        // QAbstractItemModel interface
+    public:
+        ImagesManager(ImageContainer * parent)
+            :QAbstractItemModel(), m_parentcnt(parent)
+        {}
+
+        QModelIndex index(int row, int column, const QModelIndex &parent) const override
+        {
+            TreeElement *parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
+            TreeElement *childItem  = parentItem->child(row);
+            if (childItem)
+                return createIndex(row, column, childItem);
+            else
+                return QModelIndex();
+        }
+        QModelIndex parent(const QModelIndex &child) const override
+        {
+            TreeElement *childItem = const_cast<ImagesManager*>(this)->getItem(child);
+            TreeElement *parentItem = childItem->parent();
+            assert(parentItem != nullptr);
+
+            if (parentItem == m_parentcnt)
+                return QModelIndex();
+
+            return createIndex(parentItem->childNumber(), 0, parentItem);
+        }
+        int rowCount(const QModelIndex &parent) const override
+        {
+            TreeElement *parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
+            return parentItem->childCount();
+        }
+        int columnCount(const QModelIndex &parent) const override
+        {
+            if (parent.isValid())
+                return static_cast<Image*>(parent.internalPointer())->nbimgcolumns();
+            else
+                return 3;
+        }
+        bool hasChildren(const QModelIndex &parent) const override
+        {
+            TreeElement * parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
+            if(parentItem)
+                return parentItem->childCount() > 0;
+            else
+                return false;
+        }
+        QVariant data(const QModelIndex &index, int role) const override
+        {
+            if (!index.isValid())
+                return QVariant("root");
+
+            if (role != Qt::DisplayRole &&
+                role != Qt::DecorationRole &&
+                role != Qt::SizeHintRole &&
+                role != Qt::EditRole)
+                return QVariant();
+
+            Image *img = static_cast<Image*>( const_cast<ImagesManager*>(this)->getItem(index));
+            return img->imgData(index.column(), role);
+        }
+        QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+        {
+            if( role != Qt::DisplayRole )
+                return QVariant();
+
+            if( orientation == Qt::Orientation::Vertical )
+            {
+                return std::move(QVariant( QString("%1").arg(section) ));
+            }
+            else if( orientation == Qt::Orientation::Horizontal )
+            {
+                switch(section)
+                {
+                case 0:
+                    return std::move(QVariant( QString("Preview") ));
+                case 1:
+                    return std::move(QVariant( QString("Bit Depth") ));
+                case 2:
+                    return std::move(QVariant( QString("Resolution") ));
+                };
+            }
+            return QVariant();
+        }
+        bool insertRows(int row, int count, const QModelIndex &parent) override
+        {
+            TreeElement *parentItem = getItem(parent);
+            bool success;
+
+            beginInsertRows(parent, row, row + count - 1);
+            success = parentItem->insertChildren(row, count);
+            endInsertRows();
+
+            return success;
+        }
+        bool removeRows(int row, int count, const QModelIndex &parent) override
+        {
+            TreeElement *parentItem = getItem(parent);
+            bool success = true;
+
+            beginRemoveRows(parent, row, row + count - 1);
+            success = parentItem->removeChildren(row, count);
+            endRemoveRows();
+
+            return success;
+        }
+        bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override
+        {
+            assert(false);
+            return false;
+        }
+
+        TreeElement *getItem(const QModelIndex &index)
+        {
+            if (index.isValid())
+            {
+                TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
+                if (item)
+                    return item;
+            }
+            return m_parentcnt;
+        }
+    };
+
+public:
     ImageContainer( TreeElement * parent)
-        :BaseListContainerChild(parent)
+        :BaseListContainerChild(parent),m_manager(new ImagesManager(this))
+    {setDataTy(eTreeElemDataType::images);}
+
+    ImageContainer( const ImageContainer & cp)
+        :BaseListContainerChild(cp),m_manager(new ImagesManager(this))
     {}
+
+    ImageContainer( ImageContainer && mv)
+        :BaseListContainerChild(mv),m_manager(new ImagesManager(this))
+    {}
+
+    ImageContainer & operator=( const ImageContainer & cp )
+    {
+        BaseListContainerChild::operator=(cp);
+        m_manager.reset(new ImagesManager(this));
+        return *this;
+    }
+
+    ImageContainer & operator=( ImageContainer && mv )
+    {
+        BaseListContainerChild::operator=(mv);
+        m_manager.reset(new ImagesManager(this));
+        return *this;
+    }
 
     QVariant data(int column) const override
     {
@@ -322,7 +550,32 @@ public:
         return std::move(images);
     }
 
+    void fillImgListTable(QTableWidget * tbl, const QVector<QRgb> & pal)
+    {
+        tbl->setUpdatesEnabled(false);
+        tbl->clearContents();
+        tbl->setRowCount(childCount());
+        //tbl->setColumnCount(3);
+
+        for( size_t cnti = 0; cnti < childCount(); ++cnti )
+        {
+            Image * pimg = static_cast<Image*>(child(cnti));
+            if(pimg)
+                pimg->makeImageTableRow(tbl, pal, cnti);
+            else
+                assert(false);
+        }
+        tbl->setUpdatesEnabled(true);
+    }
+
+    Sprite * parentSprite();
+
+
+    ImagesManager * getModel(){return m_manager.data();}
+
 private:
+    QScopedPointer<ImagesManager> m_manager;
+
 };
 
 //*******************************************************************
@@ -353,6 +606,8 @@ public:
     {
         return m_parts;
     }
+
+    Sprite * parentSprite();
 
 private:
     //fmt::frmid_t        m_id;
@@ -398,6 +653,8 @@ public:
         return std::move(frms);
     }
 
+    Sprite * parentSprite();
+
 private:
 
 };
@@ -430,6 +687,7 @@ public:
     }
 
     inline int getSeqLength()const {return m_seq.size();}
+    Sprite * parentSprite();
 
 private:
     //fmt::AnimDB::animseqid_t m_id;
@@ -497,6 +755,8 @@ public:
         }
         return std::move(seqs);
     }
+
+    Sprite * parentSprite();
 
 private:
 };
@@ -576,6 +836,8 @@ public:
                 seq = -1;
         }
     }
+
+    Sprite * parentSprite();
 
 private:
 //    fmt::AnimDB::animgrpid_t        m_id;
@@ -662,6 +924,8 @@ public:
 
     inline int getAnimTableSize()const {return m_animtbl.size();}
     inline fmt::AnimDB::animgrpid_t & getAnimTableEntry(int entry) {return m_animtbl[entry];}
+
+    Sprite * parentSprite();
 
 private:
     QList<fmt::AnimDB::animgrpid_t> m_animtbl;
@@ -1014,7 +1278,8 @@ public:
 
     static Sprite * ParentSprite( TreeElement * parentspr ) {return static_cast<Sprite*>(parentspr); }
 
-    QVector<QRgb> & getPalette() { return m_palcnt.m_pal; }
+    const QVector<QRgb> & getPalette()const { return m_palcnt.m_pal; }
+    QVector<QRgb>       & getPalette() { return m_palcnt.m_pal; }
 
 private:
 

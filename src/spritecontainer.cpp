@@ -5,6 +5,7 @@
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/spritemanager.h>
+#include <src/sprite.h>
 
 namespace spr_manager
 {

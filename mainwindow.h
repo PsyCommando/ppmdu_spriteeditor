@@ -33,6 +33,7 @@ public:
     void DisplayEffectsPage(Sprite * spr);
     void DisplayAnimGroupPage(Sprite * spr);
     void DisplayImagePage(Sprite * spr, Image * img);
+    void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs);
 
     void LoadContainer( const QString & path );
     void SaveContainer( const QString & path );
