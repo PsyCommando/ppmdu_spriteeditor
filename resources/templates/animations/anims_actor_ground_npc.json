@@ -1,0 +1,20 @@
+{
+    "name":"Ground NPC Actor",
+    "requiredspritetype":1,
+    "animgroups":
+    [
+        {"index":"0",   "name":"Run",      "baselength":4,     "sequences":[ "Down", "Down-Left", "Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right" ]},
+        {"index":"1",   "name":"unused" ,  "baselength":null,  "sequences":null},
+        {"index":"2",   "name":"special",  "baselength":null,  "sequences":[ "Down", "Down-Left", "Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right" ]},
+        {"index":"3",   "name":"special",  "baselength":null,  "sequences":null},
+        {"index":"4",   "name":"unused",   "baselength":null,  "sequences":null},
+        {"index":"6",   "name":"Sleep",    "baselength":3,     "sequences":[ "Down", "Down-Left", "Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right" ]},
+        {"index":"6",   "name":"Damaged",  "baselength":2,     "sequences":[ "Down", "Down-Left", "Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right" ]},
+        {"index":"7",   "name":"Idle",     "baselength":4,     "sequences":[ "Down", "Down-Left", "Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right" ]},
+        {"index":"8",   "name":"unused",   "baselength":null,  "sequences":null},
+        {"index":"9",   "name":"unused",   "baselength":null,  "sequences":null},
+        {"index":"10",  "name":"unused",   "baselength":null,  "sequences":null},
+        {"index":"11",  "name":"Shake",    "baselength":10,    "sequences":[ "Down", "Down-Left", "Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right" ]},
+        
+    ],
+}

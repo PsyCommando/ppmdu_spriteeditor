@@ -7,6 +7,7 @@
 #include <QTreeView>
 #include <QAbstractItemModel>
 #include <QList>
+#include <QDebug>
 #include <cstdint>
 #include "sprite.h"
 #include <src/treeelem.hpp>
@@ -140,7 +141,7 @@ namespace spr_manager
 
             TreeElement *childItem = getItem(index);
             TreeElement *parentItem = childItem->parent();
-            assert(parentItem != nullptr);
+            Q_ASSERT(parentItem != nullptr);
 
             if (parentItem == m_rootelem)
                 return QModelIndex();

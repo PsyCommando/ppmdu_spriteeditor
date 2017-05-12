@@ -14,7 +14,8 @@ Description:
 #include <sstream>
 #include <string>
 #include <cstdint>
-#include <utils/gbyteutils.hpp>
+#include <src/ppmdu/utils/byteutils.hpp>
+#include <src/ppmdu/utils/algo.hpp>
 
 namespace utils
 {
@@ -42,11 +43,11 @@ namespace utils
         static const int SizeOfT  = sizeof(T);
         static const int BitsUsed = (SizeOfT * 8) - SizeOfT; //The number of bits we can use from the integer (we give up one bit per byte!)
     
-        if( ( val & ~(utils::do_exponent_of_2_<BitsUsed>::value - 1) ) > 0 )
+        if( ( val & ~(utils::ExponentOfTwo(BitsUsed) - 1) ) > 0 )
         {
             std::stringstream sstr;
             sstr << "ERROR: the integer specified has a value too high for being properly encoded! The highest "
-                 << SizeOfT << " bit(s) is/are reserved for the encoding! Strip those bits first!";
+                 << BitsUsed << " bit(s) is/are reserved for the encoding! Strip those bits first!";
             throw std::overflow_error(sstr.str());
         }
 
@@ -164,7 +165,7 @@ namespace utils
         _init DecodeIntegers( _init itbeg, _init itend, _outit & itout )
     {
         typedef typename _outit::container_type::value_type val_ty;
-        static_assert( sizeof(val_ty) > sizeof(typename typename _init::value_type), 
+        static_assert( sizeof(val_ty) > sizeof(typename _init::value_type),
                        "DecodeIntegers(): Output type is smaller than the input type!" );
         
         bool wasNullTerminated = false;

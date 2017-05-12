@@ -111,7 +111,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>4</number>
+        <number>2</number>
        </property>
        <property name="documentMode">
         <bool>false</bool>
@@ -543,6 +543,22 @@
            <string>Export..</string>
           </property>
          </widget>
+         <widget class="QCheckBox" name="chkAnimSeqLoop">
+          <property name="geometry">
+           <rect>
+            <x>180</x>
+            <y>10</y>
+            <width>101</width>
+            <height>17</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Loop</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
         </widget>
         <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
@@ -562,16 +578,31 @@
            </widget>
           </item>
           <item>
-           <widget class="QColumnView" name="cvAnimSeqPreview">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-              <horstretch>0</horstretch>
-              <verstretch>2</verstretch>
-             </sizepolicy>
+           <widget class="QTableView" name="tblseqfrmlst">
+            <property name="editTriggers">
+             <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::CurrentChanged|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
             </property>
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
+            <property name="alternatingRowColors">
+             <bool>true</bool>
             </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <property name="showGrid">
+             <bool>false</bool>
+            </property>
+            <property name="cornerButtonEnabled">
+             <bool>false</bool>
+            </property>
+            <attribute name="horizontalHeaderStretchLastSection">
+             <bool>true</bool>
+            </attribute>
+            <attribute name="verticalHeaderStretchLastSection">
+             <bool>true</bool>
+            </attribute>
            </widget>
           </item>
          </layout>
@@ -631,6 +662,26 @@
                </colorrole>
               </disabled>
              </palette>
+            </property>
+            <property name="verticalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+            <property name="horizontalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+            <property name="sceneRect">
+             <rectf>
+              <x>-256.000000000000000</x>
+              <y>-256.000000000000000</y>
+              <width>512.000000000000000</width>
+              <height>512.000000000000000</height>
+             </rectf>
+            </property>
+            <property name="resizeAnchor">
+             <enum>QGraphicsView::AnchorUnderMouse</enum>
+            </property>
+            <property name="viewportUpdateMode">
+             <enum>QGraphicsView::FullViewportUpdate</enum>
             </property>
            </widget>
           </item>
@@ -734,70 +785,6 @@
         <attribute name="title">
          <string>Images</string>
         </attribute>
-        <widget class="QTableWidget" name="tblImagesList">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>10</y>
-           <width>311</width>
-           <height>412</height>
-          </rect>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>200</width>
-           <height>412</height>
-          </size>
-         </property>
-         <property name="verticalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOn</enum>
-         </property>
-         <property name="editTriggers">
-          <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::CurrentChanged|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-         </property>
-         <property name="dragEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="dragDropOverwriteMode">
-          <bool>false</bool>
-         </property>
-         <property name="dragDropMode">
-          <enum>QAbstractItemView::DragOnly</enum>
-         </property>
-         <property name="defaultDropAction">
-          <enum>Qt::MoveAction</enum>
-         </property>
-         <property name="alternatingRowColors">
-          <bool>true</bool>
-         </property>
-         <property name="selectionBehavior">
-          <enum>QAbstractItemView::SelectRows</enum>
-         </property>
-         <property name="cornerButtonEnabled">
-          <bool>false</bool>
-         </property>
-         <attribute name="horizontalHeaderStretchLastSection">
-          <bool>true</bool>
-         </attribute>
-         <attribute name="verticalHeaderStretchLastSection">
-          <bool>true</bool>
-         </attribute>
-         <column>
-          <property name="text">
-           <string>Preview</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>BPP</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Resolution</string>
-          </property>
-         </column>
-        </widget>
         <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
@@ -940,14 +927,20 @@
           </item>
          </layout>
         </widget>
-        <widget class="QTableView" name="tblviewImagesTest">
+        <widget class="QTableView" name="tblviewImages">
          <property name="geometry">
           <rect>
-           <x>330</x>
+           <x>10</x>
            <y>10</y>
-           <width>411</width>
+           <width>731</width>
            <height>411</height>
           </rect>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="dragEnabled">
           <bool>true</bool>
@@ -1438,52 +1431,52 @@
         <attribute name="title">
          <string>Animation Group</string>
         </attribute>
-        <widget class="QWidget" name="layoutWidget">
+        <widget class="QLabel" name="label_15">
+         <property name="geometry">
+          <rect>
+           <x>11</x>
+           <y>11</y>
+           <width>99</width>
+           <height>16</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Sequences in Group:</string>
+         </property>
+        </widget>
+        <widget class="QTableWidget" name="tblanimgrps">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>10</y>
-           <width>751</width>
-           <height>281</height>
+           <y>30</y>
+           <width>741</width>
+           <height>192</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_11">
-          <item>
-           <widget class="QLabel" name="label_15">
-            <property name="text">
-             <string>Sequences in Group:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTableWidget" name="tblanimgrps">
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
-            </property>
-            <attribute name="horizontalHeaderStretchLastSection">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="verticalHeaderStretchLastSection">
-             <bool>true</bool>
-            </attribute>
-            <row>
-             <property name="text">
-              <string>Slot</string>
-             </property>
-            </row>
-            <column>
-             <property name="text">
-              <string>Name</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Length</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-         </layout>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOn</enum>
+         </property>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <row>
+          <property name="text">
+           <string>Slot</string>
+          </property>
+         </row>
+         <column>
+          <property name="text">
+           <string>Name</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Length</string>
+          </property>
+         </column>
         </widget>
        </widget>
        <widget class="QWidget" name="tabpal">
@@ -1696,17 +1689,6 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_Open">
-   <property name="text">
-    <string>&amp;Open..</string>
-   </property>
-   <property name="toolTip">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a sprite file, or a sprite container for editing!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
-   </property>
-  </action>
   <action name="action_Save">
    <property name="text">
     <string>&amp;Save</string>
@@ -1790,6 +1772,17 @@
    </property>
    <property name="text">
     <string>&amp;Recent</string>
+   </property>
+  </action>
+  <action name="action_Open">
+   <property name="text">
+    <string>&amp;Open..</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a sprite file, or a sprite container for editing!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>

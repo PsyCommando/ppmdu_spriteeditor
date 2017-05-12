@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QString>
+#include <QDebug>
 
 namespace Ui {
 class ProcessingConsole;

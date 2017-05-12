@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QList>
 #include <QString>
+#include <QDebug>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 
@@ -30,11 +31,12 @@ int main(int argc, char *argv[])
     parser.addOptions(PGRM_Options);
     parser.process(a);
 
-//    try
-//    {
+    try
+    {
         //Should we display the UI?
         if( ShouldDisplayUI(parser) )
         {
+            qInfo() <<"Staring in GUI mode!\n";
             MainWindow w;
             w.show();
             w.setFocus();
@@ -42,6 +44,7 @@ int main(int argc, char *argv[])
         }
         else
         {
+            qInfo() <<"Staring in console mode!\n";
             //If not, we're always in processing mode!
             ProcessingConsole w;
             w.show();
@@ -49,14 +52,12 @@ int main(int argc, char *argv[])
             //##TODO##
             //Execute the tasks here!
             w.WriteLine( "AYY LMAO!" );
-
-
             return a.exec();
         }
-//    }
-//    catch(const std::exception & e)
-//    {
-//        //std::cerr << e.what() <<"\n";
-//        return -1;
-//    }
+    }
+    catch(const std::exception & e)
+    {
+        qFatal("main(): %s\n", e.what());
+        return -1;
+    }
 }

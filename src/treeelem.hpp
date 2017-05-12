@@ -5,6 +5,7 @@
 #include <QVariant>
 #include <QList>
 
+
 enum struct eTreeElemType
 {
     Editable,
@@ -85,7 +86,9 @@ public:
     eTreeElemDataType       getDataTy()const { return m_dataty; }
     void                    setDataTy( eTreeElemDataType ty ) { m_dataty = ty; }
 
-    virtual TreeElement *   parent() { return m_parentItem; }
+    virtual TreeElement       * parent()                        {return m_parentItem;}
+    virtual const TreeElement * parent()const                   {return m_parentItem;}
+    virtual void                setParent(TreeElement * parent) {m_parentItem = parent;}
 
     virtual void OnClicked(){}
     virtual void OnExpanded(){}

@@ -1,7 +1,6 @@
 #include "spritecontainer.h"
 #include <QMessageBox>
 #include <QString>
-#include <cassert>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/spritemanager.h>
@@ -132,7 +131,7 @@ namespace spr_manager
         }
 
         //
-        assert(false);
+        Q_ASSERT(false);
 
 
         //If is a pack file, we gotta load everything first then rebuild the file

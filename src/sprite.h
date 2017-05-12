@@ -11,7 +11,7 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QLabel>
-#include <cassert>
+#include <QDebug>
 #include <cstdint>
 #include <list>
 #include <src/treeelem.hpp>
@@ -368,7 +368,7 @@ public:
         {
             TreeElement *childItem = const_cast<ImagesManager*>(this)->getItem(child);
             TreeElement *parentItem = childItem->parent();
-            assert(parentItem != nullptr);
+            Q_ASSERT(parentItem != nullptr);
 
             if (parentItem == m_parentcnt)
                 return QModelIndex();
@@ -456,7 +456,7 @@ public:
         }
         bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override
         {
-            assert(false);
+            Q_ASSERT(false);
             return false;
         }
 
@@ -508,7 +508,7 @@ public:
 
     void importImages8bpp(const fmt::ImageDB::imgtbl_t & imgs, const fmt::ImageDB::frmtbl_t & frms)
     {
-        assert(false);
+        Q_ASSERT(false);
     }
 
     void importImages4bpp(const fmt::ImageDB::imgtbl_t & imgs, const fmt::ImageDB::frmtbl_t & frms)
@@ -563,7 +563,7 @@ public:
             if(pimg)
                 pimg->makeImageTableRow(tbl, pal, cnti);
             else
-                assert(false);
+                Q_ASSERT(false);
         }
         tbl->setUpdatesEnabled(true);
     }
@@ -665,12 +665,23 @@ private:
 class AnimSequence : public BaseTreeTerminalChild<&ElemName_AnimSequence>
 {
 public:
+    typedef fmt::AnimDB::animseq_t::iterator        iterator;
+    typedef fmt::AnimDB::animseq_t::const_iterator  const_iterator;
+
+
     AnimSequence( TreeElement * parent )
         :BaseTreeTerminalChild(parent)
-    {}
+    {setDataTy(eTreeElemDataType::animSequence);}
 
     inline bool operator==( const AnimSequence & other)const  {return this == &other;}
     inline bool operator!=( const AnimSequence & other)const  {return !operator==(other);}
+
+    inline iterator         begin()     {return m_seq.begin();}
+    inline const_iterator   begin()const{return m_seq.begin();}
+    inline iterator         end()       {return m_seq.end();}
+    inline const_iterator   end()const  {return m_seq.end();}
+    inline size_t           size()const {return m_seq.size();}
+    inline bool             empty()const{return m_seq.empty();}
 
 //    inline fmt::AnimDB::animseqid_t getID()const {return m_id;}
 //    inline void setID(fmt::AnimDB::animseqid_t id){m_id = id;}
@@ -687,10 +698,12 @@ public:
     }
 
     inline int getSeqLength()const {return m_seq.size();}
+    inline fmt::AnimDB::animseq_t & getSequence() {return m_seq;}
+    const inline fmt::AnimDB::animseq_t & getSequence()const {return m_seq;}
+
     Sprite * parentSprite();
 
 private:
-    //fmt::AnimDB::animseqid_t m_id;
     fmt::AnimDB::animseq_t   m_seq;
 };
 
@@ -715,13 +728,6 @@ public:
 
     AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id )
     {
-//        for( size_t cntchild = 0; cntchild < childCount(); ++cntchild )
-//        {
-//            AnimSequence * pchild = static_cast<AnimSequence*>(child(cntchild));
-//            if( pchild && pchild->getID() == id )
-//                 return pchild;
-//        }
-//        return nullptr;
         return static_cast<AnimSequence*>(child(id));
     }
 
@@ -1262,8 +1268,8 @@ public:
                 qpaint.drawPixmap( offsetx, offsety, imgres.first, imgres.second, curpixmap);
 
                 //DEBUG!!!
-                curpixmap.save(QString("./step%1.png").arg(cntstep),"png");
-                resultimg.save(QString("./step%1_res.png").arg(cntstep),"png");
+                //curpixmap.save(QString("./step%1.png").arg(cntstep),"png");
+                //resultimg.save(QString("./step%1_res.png").arg(cntstep),"png");
             }
             ++cntstep;
         }
@@ -1280,6 +1286,12 @@ public:
 
     const QVector<QRgb> & getPalette()const { return m_palcnt.m_pal; }
     QVector<QRgb>       & getPalette() { return m_palcnt.m_pal; }
+
+    inline AnimSequences        & getAnimSequences()        {return m_seqcnt;}
+    inline const AnimSequences  & getAnimSequences()const   {return m_seqcnt;}
+
+    inline AnimSequence         * getAnimSequence(fmt::AnimDB::animseqid_t id)        {return m_seqcnt.getSequenceByID(id);}
+    //inline const AnimSequences  * getAnimSequence(fmt::AnimDB::animseqid_t id)const   {return m_seqcnt.getSequenceByID(id);}
 
 private:
 
@@ -1300,7 +1312,7 @@ private:
         case 5:
             return &m_anmtbl;
         };
-        assert(false);
+        Q_ASSERT(false);
         return nullptr;
     }
 

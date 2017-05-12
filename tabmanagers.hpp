@@ -2,6 +2,7 @@
 #define TABMANAGERS_HPP
 #include <QImage>
 #include <QPixmap>
+#include <QDebug>
 #include <QTableWidget>
 #include <src/spritemanager.h>
 

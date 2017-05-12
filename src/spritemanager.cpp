@@ -81,6 +81,25 @@ namespace spr_manager
         m_container.reset(nullptr);
     }
 
+    void SpriteManager::AddSpriteToContainer(Sprite &&spr)
+    {
+        if( ContainerIsPackFile() && m_container )
+        {
+            SpriteContainer::sprid_t id = m_container->AddSprite();
+            qDebug() << "SpriteManager::AddSpriteToContainer(): Adding new sprite to slot#" <<id <<"!\n";
+            spr.setParent(m_container.data());
+            m_container->GetSprite(id) = qMove(spr);
+        }
+        else
+            qCritical() << "SpriteManager::AddSpriteToContainer() : Tried to add a sprite to a single sprite!!\n";
+
+    }
+
+    void SpriteManager::RemSpriteFromContainer(QModelIndex index)
+    {
+
+    }
+
     bool SpriteManager::ContainerIsPackFile()const
     {
         if(m_container)

@@ -11,6 +11,19 @@ namespace utils
 {
 
     /************************************************************************************
+        ExponentOfTwo
+            Calculate exponents of 2 at compile time!
+    ************************************************************************************/
+    constexpr int ExponentOfTwo( int exp )
+    {
+        if(exp == 1)
+            return 2;
+        else
+            return ExponentOfTwo(exp - 1) * 2;
+    }
+
+
+    /************************************************************************************
         advAsMuchAsPossible
             Advance an iterator until either the given number of increments are made,
             or the end is reached!

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <qstring.h>
 #include <QTreeView>
+#include <QDebug>
 #include <QAbstractItemModel>
 #include <src/treeelem.hpp>
 
@@ -110,15 +111,6 @@ namespace spr_manager
             return m_container->insertRows(position, rows, parent, this);
         }
 
-        //Returns a short string to indicate in the status bar the kind of container working on!
-        QString getContentShortName()const;
-
-
-        //Tool for retrieving animation table templates names
-        inline QStringList       & getAnimSlotNames() {return m_animslotnames;}
-        inline const QStringList & getAnimSlotNames()const {return m_animslotnames;}
-        QStringList                     m_animslotnames;
-
     public:
         using QAbstractItemModel::createIndex;
         using QAbstractItemModel::beginRemoveRows;
@@ -159,14 +151,27 @@ namespace spr_manager
         //Empty the sprite list and etc.
         void Reset();
 
+        void AddSpriteToContainer  ( Sprite && spr );
+        void RemSpriteFromContainer( QModelIndex index );
+
         //Access
         int             GetNbSpritesInContainer()const;
         const QString & GetContainerSrcFile()const;
 
         SpriteContainer::eContainerType GetType()const;
 
+        //Returns a short string to indicate in the status bar the kind of container working on!
+        QString getContentShortName()const;
+
+        //Tool for retrieving animation table templates names
+        inline QStringList       & getAnimSlotNames() {return m_animslotnames;}
+        inline const QStringList & getAnimSlotNames()const {return m_animslotnames;}
+
+        inline SpriteContainer * getContainer() {return m_container.data();}
+
     private:
         QScopedPointer<SpriteContainer> m_container;
+        QStringList m_animslotnames;
 
     };
 

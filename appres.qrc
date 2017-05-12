@@ -6,4 +6,5 @@
     <qresource lang="en" prefix="/">
         <file alias="test.txt">resources/test.txt</file>
     </qresource>
+    <qresource prefix="/templates"/>
 </RCC>

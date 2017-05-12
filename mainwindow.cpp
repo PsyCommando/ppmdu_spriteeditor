@@ -3,6 +3,10 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
+#include <QThread>
+#include <QThreadPool>
+
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -11,9 +15,11 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pStatusFileType.reset(new QLabel("     "));
     ui->setupUi(this);
     HideAllTabs();
+    ui->gvAnimSeqViewport->setScene(&m_animscene);
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
     DisplayStartScreen();
+    InitAnimScene();
 }
 
 MainWindow::~MainWindow()
@@ -25,6 +31,10 @@ void MainWindow::HideAllTabs()
 {
     //Hide all
     ui->tabMain->setUpdatesEnabled(false);
+
+    //Stop any animations
+    InitAnimScene();
+
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabanims));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabeffects));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabframeseditor));
@@ -53,18 +63,23 @@ void MainWindow::HideAllTabs()
 void MainWindow::ShowATab(QWidget *ptab)
 {
     HideAllTabs();
+    qDebug() << "MainWindow::ShowATab(): Hiding tabs!\n";
     ui->tabMain->insertTab(0, ptab, ptab->windowTitle() );
+    qDebug() << "MainWindow::ShowATab(): Adding tab to be displayed!\n";
     ptab->show();
     ptab->setFocus();
+    qDebug() << "MainWindow::ShowATab(): Tab displayed!\n";
 }
 
 void MainWindow::DisplayStartScreen()
 {
+    qDebug() << "MainWindow::DisplayStartScreen(): Showing start screen!\n";
     ShowATab(ui->tabWelcome);
 }
 
 void MainWindow::DisplayPropertiesPage(Sprite * spr)
 {
+    qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
     ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
     ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
     ShowATab(ui->tabproperties);
@@ -75,9 +90,16 @@ void MainWindow::DisplayAnimFramePage(Sprite *spr)
     ShowATab(ui->tabframeseditor);
 }
 
-void MainWindow::DisplayAnimSequencePage(Sprite *spr)
+void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
 {
+    qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
     ShowATab(ui->tabseq);
+    m_curanim.reset(new AnimViewerManager(&m_animscene, ui->chkAnimSeqLoop->isChecked()));
+    m_curanim->setSequence(aniseq, spr);
+    qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anime viewer!\n";
+    ui->gvAnimSeqViewport->setScene(&m_animscene);
+    ui->gvAnimSeqViewport->centerOn(m_curanim->getPixPtr());
+    qDebug() << "MainWindow::DisplayAnimSequencePage(): Scene set!\n";
 }
 
 void MainWindow::DisplayAnimTablePage(Sprite * spr)
@@ -103,14 +125,19 @@ void MainWindow::DisplayAnimGroupPage(Sprite *spr)
 
 void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
 {
-    ui->lbl_imgpreview->setPixmap( img->makePixmap(spr->getPalette()).scaled( ui->lbl_imgpreview->size(), Qt::KeepAspectRatio) );
+    qDebug() << "MainWindow::DisplayImagePage(): Displaying image page!\n";
+    QPixmap apixm = qMove(img->makePixmap(spr->getPalette()).scaled( ui->lbl_imgpreview->size(), Qt::KeepAspectRatio));
+    qDebug() << "MainWindow::DisplayImagePage(): Pixmap generated!\n";
+    ui->lbl_imgpreview->setPixmap(apixm);
+    qDebug() << "MainWindow::DisplayImagePage(): Pixmap assigned!\n";
     ShowATab(ui->tabimage);
 }
 
 void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
 {
-    ui->tblviewImagesTest->setModel(pimgs->getModel());
-    pimgs->fillImgListTable(ui->tblImagesList, spr->getPalette());
+    qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
+    ui->tblviewImages->setModel(pimgs->getModel());
+    qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
     ShowATab(ui->tabImages);
 }
 
@@ -138,6 +165,41 @@ void MainWindow::ImportContainer(const QString &path)
     updateActions();
 }
 
+void MainWindow::updateActions()
+{
+    qInfo() <<"MainWindow::updateActions(): Updating!\n";
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    m_pStatusFileType->setText(sprman.getContentShortName());
+
+    if( sprman.ContainerIsPackFile() )
+    {
+        qInfo() <<"MainWindow::updateActions(): Adding pack file specific menu entries!\n";
+        m_pActionAddSprite.reset(ui->menu_Edit->addAction(QString("Add sprite.."), this, &(MainWindow::OnActionAddSprite)));
+        m_pActionRemSprite.reset(ui->menu_Edit->addAction(QString("Remove sprite.."), this, &(MainWindow::OnActionRemSprite)));
+    }
+    else
+    {
+        qInfo() <<"MainWindow::updateActions(): Removing pack file specific menu entries!\n";
+        ui->menu_Edit->removeAction(m_pActionAddSprite.data());
+        ui->menu_Edit->removeAction(m_pActionRemSprite.data());
+        m_pActionAddSprite.reset(nullptr);
+        m_pActionRemSprite.reset(nullptr);
+    }
+}
+
+void MainWindow::OnActionAddSprite()
+{
+    qInfo() <<"MainWindow::OnActionAddSprite(): Adding sprite!\n";
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    sprman.AddSpriteToContainer(Sprite(sprman.getContainer()));
+}
+
+void MainWindow::OnActionRemSprite()
+{
+    qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+}
+
 void MainWindow::on_action_Open_triggered()
 {
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
@@ -150,11 +212,23 @@ void MainWindow::on_action_Open_triggered()
         //DO OPEN FILE HERE!
         if( sprman.IsContainerLoaded() )
         {
+            qDebug() << "MainWindow::on_action_Open_triggered(): Asking for saving changes!\n";
             //Ask to save or discard changes!!
+            int choice = AskSaveChanges();
+            switch(choice)
+            {
+            case QMessageBox::StandardButton::Save:
+                this->on_action_Save_triggered();
+                break;
+            case QMessageBox::StandardButton::Cancel:
+                return;
+            };
         }
 
         //Open
+        qInfo() <<"Opening file " <<fileName <<"!\n";
         spr_manager::SpriteContainer * sprcnt = sprman.OpenContainer(fileName);
+        qInfo() <<fileName <<" loaded!\n";
 
         //Display!
         if(sprcnt && sprcnt->hasChildren())
@@ -162,11 +236,15 @@ void MainWindow::on_action_Open_triggered()
         setupListView();
         updateActions();
     }
+    else
+        qWarning() << "Got an empty path!\n";
 }
 
 void MainWindow::on_action_Quit_triggered()
 {
+    qDebug() <<"Quitting!\n";
     QApplication::instance()->exit();
+    qDebug() <<"After exit call!\n";
 }
 
 void MainWindow::on_tv_sprcontent_itemSelectionChanged()
@@ -176,7 +254,11 @@ void MainWindow::on_tv_sprcontent_itemSelectionChanged()
 
 void MainWindow::on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
-
+    qDebug() << "MainWindow::on_tv_sprcontent_currentItemChanged(): ";
+    if(current)
+        qDebug() <<"Selected element #" <<current->parent()->indexOfChild(current) <<"!\n";
+    else
+        qDebug() <<"Unselected!\n";
 }
 
 void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
@@ -185,9 +267,13 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
     if(!pcur)
         return;
 
+    qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Expanding! Disabling updates!\n";
     ui->tv_sprcontent->setUpdatesEnabled(false);
     pcur->OnExpanded();
+    qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Changing current index!\n";
     ui->tv_sprcontent->setCurrentIndex(index);
+
+    qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Opening proper tab!\n";
     switch( pcur->getDataTy() )
     {
         //Open the appropriate tab
@@ -198,6 +284,7 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
             break;
         }
     };
+    qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Enabling updates!\n";
     ui->tv_sprcontent->setUpdatesEnabled(true);
 }
 
@@ -251,11 +338,7 @@ void MainWindow::on_action_About_triggered()
 
 }
 
-void MainWindow::updateActions()
-{
-    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
-    m_pStatusFileType->setText(sprman.getContentShortName());
-}
+
 
 void MainWindow::on_actionNewSprite_triggered()
 {
@@ -293,6 +376,23 @@ void MainWindow::setupListView()
         ui->tv_sprcontent->setRootIsDecorated(true);
         ui->tv_sprcontent->collapseAll();
     }
+}
+
+void MainWindow::InitAnimScene()
+{
+    if( m_curanim )
+    {
+        m_curanim->Stop();
+        m_animscene.removeItem( m_curanim->getPixPtr() );
+        m_curanim.reset();
+    }
+
+    m_animscene.clear();
+    m_animscene.setSceneRect(-256, -256, 512, 512 );
+    m_animscene.setBackgroundBrush(QBrush(Qt::darkGray));
+    m_animscene.addLine(0, -256, 0, 256);
+    m_animscene.addLine(-256, 0, 256, 0);
+
 }
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
@@ -358,7 +458,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             AnimSequence    * seq   = static_cast<AnimSequence*>(pcur);
             Sprite          * spr   = seq->parentSprite();
-            DisplayAnimSequencePage(spr);
+            DisplayAnimSequencePage(spr,seq);
             break;
         }
     case eTreeElemDataType::animGroup:
@@ -386,4 +486,37 @@ void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
         //This is triggered when clicking in the white unused space
         //Add sprite/frame/sequence/image/etc
     }
+}
+
+void MainWindow::on_tblviewImagesTest_doubleClicked(const QModelIndex &index)
+{
+    Image * pcur = static_cast<Image*>(index.internalPointer());
+
+    if(!pcur)
+        return;
+
+    DisplayImagePage( pcur->parentSprite(), pcur );
+}
+
+void MainWindow::on_btnSeqPlay_clicked()
+{
+    if(!m_curanim)
+        return;
+    qDebug() << "MainWindow::on_btnSeqPlay_clicked(): Pressed play!\n";
+    m_curanim->Play();
+}
+
+void MainWindow::on_btnSeqStop_clicked()
+{
+    if(!m_curanim)
+        return;
+    qDebug() << "MainWindow::on_btnSeqStop_clicked(): Pressed stop!\n";
+    m_curanim->Stop();
+}
+
+void MainWindow::on_chkAnimSeqLoop_toggled(bool checked)
+{
+    if(!m_curanim)
+        return;
+    m_curanim->loop(checked);
 }

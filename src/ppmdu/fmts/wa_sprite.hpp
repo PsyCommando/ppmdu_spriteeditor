@@ -24,6 +24,8 @@ namespace fmt
 
     //Frame resolutions
     extern const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues;
+    //Possible resolutions for individual parts of an assembled frame.
+    //The value of the bits matches the 2 first bits of attr1 and attr2 respectively for representing the resolution!
     enum struct eFrameRes : uint16_t
     {
         Square_8x8   = 0,
@@ -57,7 +59,8 @@ namespace fmt
 //  Data
 //-----------------------------------------------------------------------------
     /**********************************************************************
-     *  img info header for sprites
+     * imgfmtinfo
+     *      Chunk of the header containing information on the image format and data.
     **********************************************************************/
     struct imgfmtinfo
     {
@@ -84,10 +87,34 @@ namespace fmt
             return beg;
         }
 
+        template<class _outit>
+        _outit write( _outit where )
+        {
+            where = utils::writeBytesFrom( ptrimgtable,    where);
+            where = utils::writeBytesFrom( ptrpal,         where);
+            where = utils::writeBytesFrom( unk13,          where);
+            where = utils::writeBytesFrom( colordepth,     where);
+            where = utils::writeBytesFrom( unk11,          where);
+            where = utils::writeBytesFrom( nbimgs,         where);
+            return where;
+        }
+
+        //Utility function for pushing the pointer offsets of the pointers in this struct into the specified container
+        //Used for building the SIR0 wrapper
+        template<class _STDCNT>
+            uint32_t MarkPointers( uint32_t imgfmtbegoffset, _STDCNT ptrcnt )
+        {
+            ptrcnt.push_back(imgfmtbegoffset); //ptrimgtable
+            ptrcnt.push_back(imgfmtbegoffset += sizeof(uint32_t)); //ptrpal
+            return imgfmtbegoffset;
+        }
+
         inline bool is256Colors()const {return colordepth != 0;}
     };
 
     /**********************************************************************
+     * animfmtinfo
+     *      Chunk of the header containing informaton on how to handle animations.
     **********************************************************************/
     struct animfmtinfo
     {
@@ -119,10 +146,24 @@ namespace fmt
             beg = utils::readBytesAs( beg, end, unk10 );
             return beg;
         }
+
+
+        //Utility function for pushing the pointer offsets of the pointers in this struct into the specified container
+        //Used for building the SIR0 wrapper
+        template<class _STDCNT>
+            uint32_t MarkPointers( uint32_t animfmtinfobegoffset, _STDCNT ptrcnt )
+        {
+            ptrcnt.push_back(animfmtinfobegoffset); //ptroamtbl
+            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptrefxtbl
+            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptranimtbl
+            return animfmtinfobegoffset;
+        }
     };
 
 
     /**********************************************************************
+     * effectoffset
+     *      An offset from the effect offset table.
     **********************************************************************/
     struct effectoffset
     {
@@ -132,6 +173,9 @@ namespace fmt
 
 
     /**********************************************************************
+     * palettedata
+     *      Header chunk for the color palette. Contains data on how to
+     *      parse the colors.
     **********************************************************************/
     struct palettedata
     {
@@ -145,7 +189,10 @@ namespace fmt
     };
 
     /**********************************************************************
-     * Assembly step for assemnbling a frame
+     * step_t
+     *      Part of an assembled frame. Contains details on where to place
+     *      the part and if any special operation is ran on it.
+     *      Contains OAM attribute data as it is stored in NDS memory.
     **********************************************************************/
     struct step_t
     {
@@ -172,6 +219,10 @@ namespace fmt
 
         static const uint16_t  ATTR01_ResMask    = 0xC000;   //1100 0000 0000 0000
 
+        /*
+         * eObjMode
+         *
+        */
         enum struct eObjMode: uint16_t
         {
             Normal      = 0,
@@ -263,7 +314,9 @@ namespace fmt
     };
 
     /**********************************************************************
-     *
+     * animfrm_t
+     *      Contains data on how a frame is used in an animation sequence.
+     *      Makes up one animation frame of a sequence.
     **********************************************************************/
     struct animfrm_t
     {
@@ -311,7 +364,8 @@ namespace fmt
 //  ImageDB
 //-----------------------------------------------------------------------------
     /**********************************************************************
-     * Sub component of a sprite for handling image data.
+     * Handles parsing/writing/containing everything related to image data
+     * from a sprite!
     **********************************************************************/
     struct ImageDB
     {
