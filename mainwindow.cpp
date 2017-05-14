@@ -10,12 +10,23 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    m_previewrender(true)
 {
     m_pStatusFileType.reset(new QLabel("     "));
     ui->setupUi(this);
-    HideAllTabs();
-    ui->gvAnimSeqViewport->setScene(&m_animscene);
+    connect( ui->chkAnimSeqLoop, &QCheckBox::toggled, &m_previewrender, &SceneRenderer::loopChanged );
+    connect( ui->btnSeqPlay, &QPushButton::clicked, &m_previewrender, &SceneRenderer::startAnimUpdates );
+    connect( ui->btnSeqStop, &QPushButton::clicked, &m_previewrender, &SceneRenderer::stopAnimUpdates );
+
+    connect( &m_previewrender, SIGNAL(rangechanged(int,int)), ui->sldrAnimSeq, SLOT(setRange(int,int)) );
+    connect( &m_previewrender, SIGNAL(framechanged(int)), ui->sldrAnimSeq, SLOT(setValue(int)) );
+    connect( &m_previewrender, SIGNAL(framechanged(int)), ui->spinCurFrm, SLOT(setValue(int)) );
+
+    connect( ui->spinCurFrm, SIGNAL(valueChanged(int)), &m_previewrender, SLOT(setCurrentFrame(int)) );
+    connect( ui->sldrAnimSeq, SIGNAL(valueChanged(int)), &m_previewrender, SLOT(setCurrentFrame(int)) );
+
+    ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
     DisplayStartScreen();
@@ -94,11 +105,15 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
 {
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
     ShowATab(ui->tabseq);
-    m_curanim.reset(new AnimViewerManager(&m_animscene, ui->chkAnimSeqLoop->isChecked()));
-    m_curanim->setSequence(aniseq, spr);
+    //m_curanim.reset(new AnimViewerManager(&m_animscene, ui->chkAnimSeqLoop->isChecked()));
+    //m_curanim->setSequence(aniseq, spr);
+    m_previewrender.setScene(spr, aniseq->childNumber());
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anime viewer!\n";
-    ui->gvAnimSeqViewport->setScene(&m_animscene);
-    ui->gvAnimSeqViewport->centerOn(m_curanim->getPixPtr());
+    ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
+    ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
+    m_previewrender.getAnimSprite()->setScale(2.0);
+    ui->tblseqfrmlst->setModel(&aniseq->getModel());
+
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Scene set!\n";
 }
 
@@ -380,19 +395,19 @@ void MainWindow::setupListView()
 
 void MainWindow::InitAnimScene()
 {
-    if( m_curanim )
-    {
-        m_curanim->Stop();
-        m_animscene.removeItem( m_curanim->getPixPtr() );
-        m_curanim.reset();
-    }
+//    if( m_curanim )
+//    {
+//        m_curanim->Stop();
+//        m_animscene.removeItem( m_curanim->getPixPtr() );
+//        m_curanim.reset();
+//    }
 
-    m_animscene.clear();
-    m_animscene.setSceneRect(-256, -256, 512, 512 );
-    m_animscene.setBackgroundBrush(QBrush(Qt::darkGray));
-    m_animscene.addLine(0, -256, 0, 256);
-    m_animscene.addLine(-256, 0, 256, 0);
-
+//    m_animscene.clear();
+//    m_animscene.setSceneRect(-256, -256, 512, 512 );
+//    m_animscene.setBackgroundBrush(QBrush(Qt::darkGray));
+//    m_animscene.addLine(0, -256, 0, 256);
+//    m_animscene.addLine(-256, 0, 256, 0);
+    m_previewrender.Reset();
 }
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
@@ -500,23 +515,23 @@ void MainWindow::on_tblviewImagesTest_doubleClicked(const QModelIndex &index)
 
 void MainWindow::on_btnSeqPlay_clicked()
 {
-    if(!m_curanim)
-        return;
+//    if(!m_curanim)
+//        return;
     qDebug() << "MainWindow::on_btnSeqPlay_clicked(): Pressed play!\n";
-    m_curanim->Play();
+    //m_curanim->Play();
 }
 
 void MainWindow::on_btnSeqStop_clicked()
 {
-    if(!m_curanim)
-        return;
+//    if(!m_curanim)
+//        return;
     qDebug() << "MainWindow::on_btnSeqStop_clicked(): Pressed stop!\n";
-    m_curanim->Stop();
+    //m_curanim->Stop();
 }
 
 void MainWindow::on_chkAnimSeqLoop_toggled(bool checked)
 {
-    if(!m_curanim)
-        return;
-    m_curanim->loop(checked);
+//    if(!m_curanim)
+//        return;
+    //m_curanim->loop(checked);
 }

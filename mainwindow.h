@@ -15,6 +15,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include "src/spritemanager.h"
+#include <src/scenerenderer.hpp>
 #include <atomic>
 
 namespace Ui {
@@ -142,9 +143,9 @@ public:
             //QImage      result(origfrm.width() + abs(anifrm.xoffs),origfrm.height() + abs(anifrm.yoffs));
             //QPainter    paintr(result);
 
-            cvfrm.info  = anifrm;
+            cvfrm.info  = anifrm.exportFrame();
             //paintr.drawPixmap( anifrm.xoffs, anifrm.yoffs, origfrm.width(), origfrm.height(), origfrm );
-            cvfrm.frm   = qMove(spr->AssembleFrame(anifrm.frmidx));
+            cvfrm.frm   = qMove(spr->AssembleFrame(anifrm.frmidx()));
             m_anim.push_back(qMove(cvfrm));
         }
 
@@ -354,8 +355,9 @@ private:
     QScopedPointer<QAction> m_pActionAddSprite;
     QScopedPointer<QAction> m_pActionRemSprite;
 
-    QScopedPointer<AnimViewerManager> m_curanim;
-    QGraphicsScene                    m_animscene;
+    //QScopedPointer<AnimViewerManager> m_curanim;
+    //QGraphicsScene                    m_animscene;
+    SceneRenderer                     m_previewrender;
 };
 
 #endif // MAINWINDOW_H

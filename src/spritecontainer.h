@@ -77,7 +77,7 @@ namespace spr_manager
                 return QVariant();
 
             TreeElement *item = const_cast<SpriteContainer*>(this)->getItem(index);
-            return item->data(index.column());
+            return item->data(index.column(), role);
         }
 
         QVariant headerData(int section, Qt::Orientation /*orientation*/, int role = Qt::DisplayRole) const
@@ -229,9 +229,9 @@ namespace spr_manager
             return m_parentItem;
         }
 
-        QVariant data(int column) const override
+        QVariant data(int column, int role) const override
         {
-            if(column != 0)
+            if( (role == Qt::DisplayRole || role == Qt::EditRole) && column != 0)
                 return QVariant(getSrcFnameOnly());
             return QVariant();
         }

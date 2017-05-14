@@ -1,4 +1,6 @@
 #include "sprite.h"
+#include <QGraphicsScene>
+#include <QBitmap>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 
 const char * ElemName_EffectOffset  = "Effect Offsets";
@@ -11,19 +13,7 @@ const char * ElemName_AnimSequence  = "Anim Sequence";
 const char * ElemName_AnimSequences = "Anim Sequences";
 const char * ElemName_AnimTable     = "Animation Table";
 const char * ElemName_AnimGroup     = "Anim Group";
-
-
-//const QString EffectOffsetContainer::ElemName = "Effect Offsets";
-//const QString PaletteContainer::ElemName = "Palette";
-//const QString ImageContainer::ElemName = "Images";
-//const QString MFrame::ElemName = "Frame";
-//const QString FramesContainer::ElemName = "Frames";
-//const QString AnimSequence::ElemName = "Seq";
-//const QString AnimSequences::ElemName = "Sequences";
-//const QString AnimTable::ElemName = "Anim. Table";
-
-//unsigned long long Sprite::spriteCnt = 0;
-//QStack<unsigned long long> Sprite::spriteIDRecycler;
+const char * ElemName_AnimFrame     = "Anim Frame";
 
 Sprite * EffectOffsetContainer::parentSprite()
 {
@@ -37,7 +27,7 @@ Sprite *AnimTable::parentSprite()
 
 Sprite *AnimGroup::parentSprite()
 {
-    static_cast<AnimTable*>(parent())->parentSprite();
+    return static_cast<AnimTable*>(parent())->parentSprite();
 }
 
 Sprite *AnimSequences::parentSprite()
@@ -47,7 +37,7 @@ Sprite *AnimSequences::parentSprite()
 
 Sprite *AnimSequence::parentSprite()
 {
-    static_cast<AnimSequences*>(parent())->parentSprite();
+    return static_cast<AnimSequences*>(parent())->parentSprite();
 }
 
 Sprite *FramesContainer::parentSprite()
@@ -58,6 +48,94 @@ Sprite *FramesContainer::parentSprite()
 Sprite *MFrame::parentSprite()
 {
     return static_cast<FramesContainer*>(parent())->parentSprite();
+}
+
+QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect & out_area) const
+{
+    Sprite * pspr = const_cast<MFrame*>(this)->parentSprite();
+    //QRect dim;
+
+    //#TODO: Implement checks for the other paramters for a frame, and for mosaic and etc!
+    QImage      imgres(512,512, QImage::Format_RGB32);
+    QPainter    painter(&imgres);
+    QRect       bounds = calcFrameBounds();
+
+    //Make first color transparent
+    const fmt::step_t * plast = nullptr;
+    QVector<QRgb> pal = pspr->getPalette();
+    QColor firstcol(pal.front());
+    firstcol.setAlpha(0);
+    pal.front() = firstcol.rgba();
+
+    //Draw all the parts of the frame
+    for( const fmt::step_t & part : m_parts )
+    {
+        auto res = part.GetResolution();
+        Image* pimg = pspr->getImage(part.getFrameIndex()); // returns null if -1 frame or out of range!
+        QPixmap pix;
+        if(!pimg && plast) //check for -1 frames
+        {
+            Image* plastimg = pspr->getImage(plast->getFrameIndex());
+            pix = qMove(QPixmap(plastimg->makePixmap(pal)));
+        }
+        else if(pimg)
+        {
+            pix = qMove(QPixmap(pimg->makePixmap(pal)));
+            plast = &part;
+        }
+        //TODO : do something faster to handle opacity!
+        //pix.setMask(pix.createMaskFromColor( QColor(pspr->getPalette().front()), Qt::MaskMode::MaskInColor ));
+
+        if(part.isHFlip())
+            pix = qMove( pix.transformed( QTransform().scale(-1, 1) ) );
+        if(part.isVFlip())
+            pix = qMove( pix.transformed( QTransform().scale(1, -1) ) );
+
+        int finalx = (part.getXOffset());
+        int finaly = (part.getYOffset());
+        painter.drawPixmap( xoffset + finalx, yoffset + finaly, res.first, res.second, pix );
+    }
+
+    //imgres.save("./mframeassemble.png", "png");
+
+//    dim.setX(xoffset - bounds.x());
+//    dim.setY(yoffset - bounds.y());
+//    dim.setWidth(bounds.width());
+//    dim.setHeight(bounds.height());
+
+    out_area = bounds;
+
+    return imgres.copy( xoffset + bounds.x(),
+                        yoffset + bounds.y(),
+                        bounds.width(),
+                        bounds.height() );
+}
+
+QRect MFrame::calcFrameBounds() const
+{
+    int smallestx = 512;
+    int biggestx = 0;
+    int smallesty  = 256;
+    int biggesty  = 0;
+
+    for( const fmt::step_t & part : m_parts )
+    {
+        auto imgres = part.GetResolution();
+        int xoff = part.getXOffset();
+        int yoff = part.getYOffset();
+
+        if( xoff < smallestx)
+            smallestx = xoff;
+        if( (xoff + imgres.first) >= biggestx )
+            biggestx = (xoff + imgres.first);
+
+        if( yoff < smallesty)
+            smallesty = yoff;
+        if( (yoff + imgres.second) >= biggesty )
+            biggesty = (yoff + imgres.second);
+    }
+
+    return QRect( smallestx, smallesty, (biggestx - smallestx), (biggesty - smallesty) );
 }
 
 Sprite *ImageContainer::parentSprite()

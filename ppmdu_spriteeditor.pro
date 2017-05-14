@@ -39,7 +39,9 @@ SOURCES += main.cpp\
     src/ppmdu/utils/imgutils.cpp \
     tabmanagers.cpp \
     diagsingleimgcropper.cpp \
-    dialognewsprite.cpp
+    dialognewsprite.cpp \
+    src/sprite_anim.cpp \
+    src/scenerenderer.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -59,7 +61,10 @@ HEADERS  += mainwindow.h \
     src/ppmdu/utils/imgutils.hpp \
     tabmanagers.hpp \
     diagsingleimgcropper.hpp \
-    dialognewsprite.hpp
+    dialognewsprite.hpp \
+    src/sprite_img.hpp \
+    src/sprite_anim.hpp \
+    src/scenerenderer.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui \

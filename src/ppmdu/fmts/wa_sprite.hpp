@@ -205,13 +205,13 @@ namespace fmt
         static const uint16_t ATTR0_ObjModeMask  = 0x0C00;   //0000 1100 0000 0000
         static const uint16_t ATTR0_DblSzDisabled= 0x0200;   //0000 0010 0000 0000 (Whether the obj is disabled if rot&scaling is off, or if double sized when rot&scaling is on!)
         static const uint16_t ATTR0_RotNScaleMask= 0x0100;   //0000 0001 0000 0000
-        static const uint16_t ATTR0_YOffsetMask  = ~ATTR0_FlagBitsMask;   //0000 0000 1111 1111
+        static const uint16_t ATTR0_YOffsetMask  = static_cast<uint16_t>(~ATTR0_FlagBitsMask);   //0000 0000 1111 1111
 
         static const uint16_t ATTR1_VFlipMask    = 0x2000;   //0010 0000 0000 0000
         static const uint16_t ATTR1_HFlipMask    = 0x1000;   //0001 0000 0000 0000
         static const uint16_t ATTR1_IsLastMask   = 0x0800;   //0000 1000 0000 0000
         static const uint16_t ATTR1_RotNScalePrm = 0x3E00;   //0011 1110 0000 0000
-        static const uint16_t ATTR1_XOffsetMask  = ~ATTR1_FlagBitsMask;   //0000 0001 1111 1111
+        static const uint16_t ATTR1_XOffsetMask  = static_cast<uint16_t>(~ATTR1_FlagBitsMask);   //0000 0001 1111 1111
 
         static const uint16_t ATTR2_PalNumberMask= 0xF000;   //1111 0000 0000 0000
         static const uint16_t ATTR2_PriorityMask = 0x0C00;   //0000 1100 0000 0000
@@ -279,6 +279,8 @@ namespace fmt
         inline uint16_t getTileNum()const           {return (ATTR2_TileNumMask & attr2);}
         inline eFrameRes getResolutionType()const   { return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
 
+        inline frmid_t getFrameIndex()const         {return frmidx;}
+
         inline std::pair<uint16_t,uint16_t> GetResolution()const
         {
             uint8_t  flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
@@ -304,6 +306,8 @@ namespace fmt
         inline void setPalNb        (uint8_t palnb) {attr2 = (attr2 & ~ATTR2_PalNumberMask) | (ATTR2_PalNumberMask & palnb);}
         inline void setPriority     (uint8_t prio)  {attr2 = (attr2 & ~ATTR2_PriorityMask) | (ATTR2_PriorityMask & prio);}
         inline void setTileNum      (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_TileNumMask) | (ATTR2_TileNumMask & tnum);}
+
+        inline void setFrameIndex   (frmid_t id)    {frmidx = id;}
 
         inline void setResolutionType(eFrameRes res)
         {
