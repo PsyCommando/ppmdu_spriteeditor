@@ -246,6 +246,7 @@ void MainWindow::on_action_Open_triggered()
         qInfo() <<"Opening file " <<fileName <<"!\n";
         spr_manager::SpriteContainer * sprcnt = sprman.OpenContainer(fileName);
         qInfo() <<fileName <<" loaded!\n";
+        m_lastSavePath = fileName;
 
         //Display!
         if(sprcnt && sprcnt->hasChildren())
@@ -313,11 +314,43 @@ void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
 void MainWindow::on_action_Save_triggered()
 {
     //QSaveFile;
+    if(!m_lastSavePath.isEmpty())
+        SaveAs(m_lastSavePath);
+    else
+        on_actionSave_As_triggered();
 }
 
 void MainWindow::on_actionSave_As_triggered()
 {
     //QSaveFile;
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+
+    QString filetypestr;
+    switch(sprman.GetType())
+    {
+    case spr_manager::SpriteContainer::eContainerType::PACK:
+        {
+            filetypestr = tr("Pack Files (*.bin)");
+            break;
+        }
+    case spr_manager::SpriteContainer::eContainerType::WAN:
+        {
+            filetypestr = tr("WAN Sprite (*.wan)");
+            break;
+        }
+    case spr_manager::SpriteContainer::eContainerType::WAT:
+        {
+            filetypestr = tr("WAT Sprite (*.wat)");
+            break;
+        }
+    default:
+        {
+            Warn(tr("Invalid Type!"), tr("The container you're trying to save doesn't seems to have a type somehow. Try changing the type of container."));
+            return;
+        }
+    };
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save File As"), QString(), filetypestr);
+    SaveAs(filename);
 }
 
 void MainWindow::on_action_Export_triggered()
@@ -355,8 +388,7 @@ void MainWindow::on_action_Settings_triggered()
 
 void MainWindow::on_action_About_triggered()
 {
-    DialogAbout abt(this);
-    abt.setModal(true);
+    DialogAbout abt;
     abt.show();
 }
 
@@ -398,6 +430,20 @@ void MainWindow::setupListView()
         ui->tv_sprcontent->setRootIsDecorated(true);
         ui->tv_sprcontent->collapseAll();
     }
+}
+
+void MainWindow::SaveAs(const QString &path)
+{
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    if (!path.isEmpty())
+    {
+        qInfo() <<"Saving file " <<path <<"!\n";
+        sprman.SaveContainer(path);
+        qInfo() <<path <<" saved!\n";
+        m_lastSavePath = path;
+    }
+    else
+        qWarning() << "Got an empty path!\n";
 }
 
 void MainWindow::InitAnimScene()

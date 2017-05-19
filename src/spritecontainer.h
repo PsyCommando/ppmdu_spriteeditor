@@ -9,6 +9,7 @@
 #include <QList>
 #include <QDebug>
 #include <cstdint>
+#include <QtConcurrent/QtConcurrent>
 #include "sprite.h"
 #include <src/treeelem.hpp>
 /*

@@ -881,6 +881,8 @@ namespace fmt
             curseqid = 0;
             unordered_map<uint32_t,animgrpid_t> animgrpreftable; //(pointer, assignedid) used to avoid duplicating groups when the same group is refered to in multiple locations
             unordered_map<uint32_t,animgrpid_t> animseqreftable; //(pointer, assignedid) used to avoid duplicate sequences
+            begseqptrtbl = std::numeric_limits<uint32_t>::max();
+
 
             //Parse anim table first!
             if( animinf.ptranimtbl != 0 )
@@ -896,19 +898,15 @@ namespace fmt
                     animtblbeg = utils::readBytesAs( animtblbeg, itsrcend, curptr );
                     animtblbeg = utils::readBytesAs( animtblbeg, itsrcend, grplen );
                     animtblbeg = utils::readBytesAs( animtblbeg, itsrcend, unk16 );
+
+                    //Track the smallest pointer, to find the start of the groups sequence array table!
+                    if( curptr != 0 && begseqptrtbl > curptr )
+                        begseqptrtbl = curptr;
+
                     //Parse it
                     m_animtbl[cntptr] = ParseAnimGroup( animgrpreftable, animseqreftable, itsrcbeg, itsrcend, curptr, grplen, unk16 );
                 }
             }
-
-            //Find smallest pointer in animgrp tbl
-            uint32_t smallest = std::numeric_limits<uint32_t>::max();
-            for(const auto & seq : animseqreftable)
-            {
-                if(seq.first < smallest)
-                    smallest = seq.first;
-            }
-            begseqptrtbl = smallest;
         }
 
 
@@ -1139,10 +1137,10 @@ namespace fmt
             uint32_t begseqptrtbl = 0;
             //Parse animations
             m_animtions.ParseAnimTbl(itbeg, itend, m_animfmt, begseqptrtbl);
-            if(m_animfmt.ptrefxtbl != 0)
+            if(m_animfmt.ptrefxtbl != 0 && begseqptrtbl != std::numeric_limits<uint32_t>::max())
             {
                 //1. Calculate effect table length/end
-                size_t nbentries = (begseqptrtbl - m_animfmt.ptrefxtbl) / sizeof(uint16_t);
+                int nbentries = (begseqptrtbl - m_animfmt.ptrefxtbl) / sizeof(uint16_t);
                 m_efxoffsets.reserve(nbentries);
                 m_animtions.ParseEfxOffsets(itbeg, itend, m_animfmt, m_animfmt.ptrefxtbl, begseqptrtbl);
 

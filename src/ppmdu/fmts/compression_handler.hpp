@@ -135,10 +135,12 @@ namespace filetypes
         if( fmt == eCompressionFormats::AT4PX || fmt == eCompressionFormats::PKDPX )
         {
             //We have to use a temporary buffer here, because of the way the algorithm works.
-            //std::vector<uint8_t> buffer;
-            compression::DecompressPX( hdr.pxinfo, itsrcbeg, itsrcend, itout );
+            std::vector<uint8_t> buffer;
+            //#FIXME: huge wast of time here!!!!! The px functions only handle std::vector..
+            std::vector<uint8_t> crutch(itsrcbeg, itsrcend); //Have to do this for now, until I rewrite the px utilities..
+            compression::DecompressPX( hdr.pxinfo, crutch.begin(), crutch.end(), buffer);
 
-            //itout = std::copy( buffer.begin(), buffer.end(), itout );
+            itout = std::copy( buffer.begin(), buffer.end(), itout );
             std::advance( itsrcbeg, hdr.pxinfo.compressedsz );
         }
         else if(fmt == eCompressionFormats::AT4PN)
@@ -159,7 +161,10 @@ namespace filetypes
     {
         //#1. Compress
         std::vector<uint8_t> outbuffer;
-        compression::px_info_header hdr = compression::CompressPX( itsrcbeg, itsrcend, std::back_inserter(outbuffer), compression::ePXCompLevel::LEVEL_3, true );
+        //#FIXME: huge wast of time here!!!!! The px functions only handle std::vector..
+        std::vector<uint8_t> crutch(itsrcbeg, itsrcend); //Have to do this for now, until I rewrite the px utilities..
+
+        compression::px_info_header hdr = compression::CompressPX( crutch.begin(), crutch.end(), std::back_inserter(outbuffer), compression::ePXCompLevel::LEVEL_3, true );
 
         //#2. Write header!
         std::array<uint8_t,CompressionMagicNumberLen> magic;

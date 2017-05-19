@@ -2,7 +2,8 @@
 #include <QMessageBox>
 #include <QString>
 #include <QSaveFile>
-#include <QtConcurrent/QtConcurrent>
+#include <QtConcurrent>
+#include <QtConcurrentMap>
 #include <QFuture>
 #include <QFutureWatcher>
 #include <src/ppmdu/utils/byteutils.hpp>
@@ -142,14 +143,15 @@ namespace spr_manager
             {
                 fmt::PackFileWriter writer;
 
-                auto lambdasavesprites = [&writer](auto & curspr)
+                QFuture<void>     savequeue = QtConcurrent::map( m_spr.begin(),
+                                                                 m_spr.end(),
+                                                                 [&writer](Sprite & curspr)
                 {
                     if(curspr.wasParsed())
                         curspr.CommitSpriteData();
                     writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
-                };
+                });
 
-                QFuture<void>     savequeue = QtConcurrent::map( m_spr.begin(), m_spr.end(), lambdasavesprites );
                 DialogProgressBar prgbar(savequeue);
                 prgbar.setModal(true);
                 prgbar.show();

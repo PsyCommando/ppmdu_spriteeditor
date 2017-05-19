@@ -293,6 +293,8 @@ private:
     //Tweak the list view to better display either single sprites or pack files!!
     void setupListView();
 
+    void SaveAs( const QString & path );
+
     int AskSaveChanges()
     {
         QMessageBox msgBox(this);
@@ -302,6 +304,17 @@ private:
         msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
         msgBox.setDefaultButton(QMessageBox::Save);
         return msgBox.exec();
+    }
+
+    void Warn(const QString & title, const QString & text)
+    {
+        QMessageBox msgBox(this);
+        msgBox.setIcon(QMessageBox::Icon::Warning);
+        msgBox.setText(title);
+        msgBox.setInformativeText(text);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        msgBox.exec();
     }
 
     void InitAnimScene();
@@ -364,6 +377,7 @@ private:
     //QScopedPointer<AnimViewerManager> m_curanim;
     //QGraphicsScene                    m_animscene;
     SceneRenderer                     m_previewrender;
+    QString                 m_lastSavePath;
 };
 
 #endif // MAINWINDOW_H

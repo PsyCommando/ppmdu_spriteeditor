@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui concurrent
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -33,7 +33,7 @@ SOURCES += main.cpp\
     src/spritemanager.cpp \
     src/ppmdu/fmts/sir0.cpp \
     src/ppmdu/fmts/packfile.cpp \
-#    src/ppmdu/fmts/px_compression.cpp \
+    src/ppmdu/fmts/px_compression.cpp \
     src/ppmdu/fmts/pxhandler.cpp \
     src/ppmdu/fmts/wa_sprite.cpp \
     src/ppmdu/utils/imgutils.cpp \

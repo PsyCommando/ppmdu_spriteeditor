@@ -28,7 +28,7 @@ namespace utils
     inline uint8_t HandleEncodeByte( uint8_t thebyte, bool islowest, bool hasHigherNonZero )
     {
         uint8_t curbyte = thebyte & 0x7Fu;
-        if( islowest || !hasHigherNonZero && curbyte == 0 ) //If we're the last byte OR we don't have a higher non-zero byte, and the byte we're handling is 0, return the current byte as-is !
+        if( (islowest || !hasHigherNonZero) && curbyte == 0 ) //If we're the last byte OR we don't have a higher non-zero byte, and the byte we're handling is 0, return the current byte as-is !
              return curbyte;
         else
             return ( curbyte | 0x80 );

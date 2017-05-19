@@ -271,16 +271,15 @@ public:
         return QVariant();
     }
 
-    void OnClicked() override
+    inline void OnClicked() override
     {
         if( m_raw.size() != 0 && !m_bparsed )
             ParseSpriteData();
     }
 
-    void OnExpanded() override
+    inline void OnExpanded() override
     {
-        if( m_raw.size() != 0 && !m_bparsed )
-            ParseSpriteData();
+        OnClicked();
     }
 
     /**/
