@@ -246,6 +246,7 @@ public:
 
     //QTreeModel
     QVariant data(const QModelIndex & index, int role) const;
+    QVariant data(int column, int role)const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     int      columnCount(const QModelIndex &parent) const;
 
@@ -396,7 +397,7 @@ public:
 
     fmt::AnimDB::animgrptbl_t exportAnimationGroups()
     {
-        fmt::AnimDB::animgrptbl_t grps(childCount());
+        fmt::AnimDB::animgrptbl_t grps;
         for( int cntgrp = 0; cntgrp < childCount(); ++cntgrp )
         {
             grps[cntgrp] = std::move(m_container[cntgrp].exportGroup());

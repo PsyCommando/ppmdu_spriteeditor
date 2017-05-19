@@ -111,7 +111,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>3</number>
        </property>
        <property name="documentMode">
         <bool>false</bool>
@@ -129,49 +129,74 @@
         <attribute name="title">
          <string>Start Screen</string>
         </attribute>
-        <widget class="QLabel" name="label_13">
+        <widget class="QWidget" name="">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>10</y>
-           <width>731</width>
-           <height>311</height>
+           <width>761</width>
+           <height>531</height>
           </rect>
          </property>
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Getting Started!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Please open or create a sprite, or sprite container!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Explorers of sky has those sprite container files:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* MONSTER/m_ground.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* MONSTER/monster.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* MONSTER/m_attack.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* EFFECT/effect.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;And it also contains loose sprite files as *.wan and *.wat files in the following directories:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* GROUND/&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* FONT/&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::RichText</enum>
-         </property>
-         <property name="scaledContents">
-          <bool>true</bool>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-         <property name="margin">
-          <number>10</number>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_14">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>440</y>
-           <width>151</width>
-           <height>71</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Buy me a coffee, please? :3&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://ko-fi.com/A036WFJ&quot;&gt;&lt;img src=&quot;qrc:/imgs/resources/imgs/kofi2.png&quot; height=&quot;36&quot;/&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::RichText</enum>
-         </property>
+         <layout class="QFormLayout" name="tabWelcomeLayout">
+          <property name="leftMargin">
+           <number>5</number>
+          </property>
+          <property name="topMargin">
+           <number>5</number>
+          </property>
+          <property name="rightMargin">
+           <number>5</number>
+          </property>
+          <property name="bottomMargin">
+           <number>5</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="lblGetStarted">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Getting Started!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Please open or create a sprite, or sprite container!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Explorers of sky has those sprite container files:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* MONSTER/m_ground.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* MONSTER/monster.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* MONSTER/m_attack.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* EFFECT/effect.bin&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;And it also contains loose sprite files as *.wan and *.wat files in the following directories:&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* GROUND/&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;* FONT/&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::RichText</enum>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="margin">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>128</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lblDonate">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Buy me a coffee, please? :3&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://ko-fi.com/A036WFJ&quot;&gt;&lt;img src=&quot;qrc:/imgs/resources/imgs/kofi2.png&quot; height=&quot;36&quot;/&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::RichText</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
        <widget class="QWidget" name="tabproperties">
@@ -204,7 +229,7 @@
            <item row="1" column="0">
             <widget class="QLabel" name="lblPropPreview">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -219,6 +244,12 @@
               <size>
                <width>512</width>
                <height>512</height>
+              </size>
+             </property>
+             <property name="sizeIncrement">
+              <size>
+               <width>8</width>
+               <height>8</height>
               </size>
              </property>
              <property name="palette">
@@ -611,7 +642,7 @@
              <bool>false</bool>
             </property>
             <attribute name="horizontalHeaderDefaultSectionSize">
-             <number>25</number>
+             <number>56</number>
             </attribute>
             <attribute name="horizontalHeaderHighlightSections">
              <bool>false</bool>
@@ -799,6 +830,13 @@
                <widget class="QPushButton" name="btnImageExport">
                 <property name="text">
                  <string>Export..</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QPushButton" name="btnImageCrop">
+                <property name="text">
+                 <string>Crop..</string>
                 </property>
                </widget>
               </item>
@@ -1297,160 +1335,120 @@
         <attribute name="title">
          <string>Animation Table</string>
         </attribute>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="geometry">
-          <rect>
-           <x>370</x>
-           <y>430</y>
-           <width>371</width>
-           <height>71</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string/>
-         </property>
-         <widget class="QPushButton" name="btnAnimTblExport">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>40</y>
-            <width>75</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Export..</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btnAnimTblImport">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>10</y>
-            <width>75</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Import..</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btnAnimTblAdd">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>75</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Add</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="btnAnimTblRem">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>40</y>
-            <width>75</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Remove</string>
-          </property>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>370</x>
-           <y>210</y>
-           <width>371</width>
-           <height>211</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Animation Sequences:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QColumnView" name="cvAnimTblSeqList">
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>370</x>
-           <y>10</y>
-           <width>371</width>
-           <height>191</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>Sequence Preview:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGraphicsView" name="gvAnimTablePreview"/>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="layoutWidget">
+        <widget class="QWidget" name="">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>10</y>
-           <width>351</width>
-           <height>491</height>
+           <width>788</width>
+           <height>531</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_5">
+         <layout class="QHBoxLayout" name="horizontalLayout_10">
           <item>
-           <widget class="QLabel" name="label_11">
-            <property name="text">
-             <string>Animation Table:</string>
-            </property>
-           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>Animation Table:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QTableView" name="tvAnimTbl"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <item>
+               <widget class="QPushButton" name="btnAnimTblAddAnim">
+                <property name="text">
+                 <string>Add..</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btnAnimTblRemAnim">
+                <property name="text">
+                 <string>Remove</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnAnimTblImportTemplate">
+              <property name="text">
+               <string>Import template..</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnAnimTblExportTemplate">
+              <property name="text">
+               <string>Export template..</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="QColumnView" name="cvAnimTable">
-            <property name="baseSize">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
-            </property>
-            <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>16</width>
-              <height>16</height>
-             </size>
-            </property>
-           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Sequences in current animation:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QTableView" name="tvAnimTblAnimSeqs"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <item>
+               <widget class="QPushButton" name="btnAnimTblAddSeq">
+                <property name="text">
+                 <string>Add..</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="btnAnimTblRemSeq">
+                <property name="text">
+                 <string>Remove</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Sequence Preview:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGraphicsView" name="gvAnimTablePreview"/>
+            </item>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -1511,6 +1509,72 @@
         <attribute name="title">
          <string>Palette</string>
         </attribute>
+        <widget class="QGraphicsView" name="gvPaletteEdit">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>20</y>
+           <width>311</width>
+           <height>311</height>
+          </rect>
+         </property>
+         <property name="backgroundBrush">
+          <brush brushstyle="NoBrush">
+           <color alpha="255">
+            <red>0</red>
+            <green>0</green>
+            <blue>0</blue>
+           </color>
+          </brush>
+         </property>
+         <property name="sceneRect">
+          <rectf>
+           <x>0.000000000000000</x>
+           <y>0.000000000000000</y>
+           <width>256.000000000000000</width>
+           <height>256.000000000000000</height>
+          </rectf>
+         </property>
+        </widget>
+        <widget class="QGroupBox" name="groupBox_9">
+         <property name="geometry">
+          <rect>
+           <x>340</x>
+           <y>20</y>
+           <width>421</width>
+           <height>311</height>
+          </rect>
+         </property>
+         <property name="title">
+          <string>Edit</string>
+         </property>
+         <widget class="QPushButton" name="btnPaletteImport">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>75</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Import..</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="btnPaletteExport">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>50</y>
+            <width>75</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Export..</string>
+          </property>
+         </widget>
+        </widget>
        </widget>
        <widget class="QWidget" name="tabeffects">
         <attribute name="title">
@@ -1702,6 +1766,7 @@
      <string>Help</string>
     </property>
     <addaction name="action_About"/>
+    <addaction name="actionShow_Start_Screen"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
@@ -1811,6 +1876,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionShow_Start_Screen">
+   <property name="text">
+    <string>Show Start Screen </string>
    </property>
   </action>
  </widget>

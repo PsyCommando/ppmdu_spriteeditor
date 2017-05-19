@@ -5,7 +5,8 @@
 #include <QVariant>
 #include <QList>
 #include <QAbstractItemModel>
-
+#include <QMutex>
+#include <QMutexLocker>
 
 enum struct eTreeElemType
 {
@@ -97,9 +98,12 @@ public:
     virtual void OnClicked(){}
     virtual void OnExpanded(){}
 
+    QMutex & getMutex() { return m_mtxhierarchy; }
+
     TreeElement         *m_parentItem;
     eTreeElemType        m_elemty;
     eTreeElemDataType    m_dataty;
+    QMutex               m_mtxhierarchy;
 };
 
 
@@ -223,6 +227,7 @@ public:
         int childCount() const override         {return m_container.size();}
         int childNumber() const override
         {
+            QMutexLocker lk(&const_cast<typename std::add_pointer<my_t>::type>(this)->getMutex());
             if (m_parentItem)
                 return m_parentItem->indexOf(const_cast<BaseListContainerChild*>(this));
 
@@ -231,6 +236,7 @@ public:
 
         int indexOf( TreeElement * ptr )const override
         {
+            QMutexLocker lk(&const_cast<typename std::add_pointer<my_t>::type>(this)->getMutex());
             child_t * ptras = static_cast<child_t *>(ptr);
             //Search a matching child in the list!
             if( ptras )
@@ -272,6 +278,7 @@ public:
 
         bool insertChildren(int position, int count) override
         {
+            QMutexLocker lk(&getMutex());
             int i = 0;
             for( ; i < count; ++i )
                 m_container.insert(position, child_t(this) );
@@ -280,6 +287,7 @@ public:
 
         bool removeChildren(int position, int count) override
         {
+            QMutexLocker lk(&getMutex());
             if( (position + count) >= m_container.size() )
                 return false;
 

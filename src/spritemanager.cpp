@@ -22,12 +22,13 @@ namespace spr_manager
 
     void SpriteManager::SaveContainer()
     {
-
+        m_container->WriteContainer();
     }
 
     void SpriteManager::SaveContainer(const QString &fname)
     {
-
+        m_container->SetContainerSrcPath(fname);
+        m_container->WriteContainer();
     }
 
     void SpriteManager::ExportContainer(const QString &fname)

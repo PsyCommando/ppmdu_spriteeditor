@@ -33,7 +33,7 @@ SOURCES += main.cpp\
     src/spritemanager.cpp \
     src/ppmdu/fmts/sir0.cpp \
     src/ppmdu/fmts/packfile.cpp \
-    src/ppmdu/fmts/px_compression.cpp \
+#    src/ppmdu/fmts/px_compression.cpp \
     src/ppmdu/fmts/pxhandler.cpp \
     src/ppmdu/fmts/wa_sprite.cpp \
     src/ppmdu/utils/imgutils.cpp \
@@ -41,7 +41,11 @@ SOURCES += main.cpp\
     diagsingleimgcropper.cpp \
     dialognewsprite.cpp \
     src/sprite_anim.cpp \
-    src/scenerenderer.cpp
+    src/scenerenderer.cpp \
+    src/sprite_img.cpp \
+    dialogexport.cpp \
+    dialogabout.cpp \
+    dialogprogressbar.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -64,12 +68,22 @@ HEADERS  += mainwindow.h \
     dialognewsprite.hpp \
     src/sprite_img.hpp \
     src/sprite_anim.hpp \
-    src/scenerenderer.hpp
+    src/scenerenderer.hpp \
+    dialogexport.hpp \
+    dialogabout.hpp \
+    dialogprogressbar.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui \
     diagsingleimgcropper.ui \
-    dialognewsprite.ui
+    dialognewsprite.ui \
+    dialogexport.ui \
+    dialogabout.ui \
+    dialogprogressbar.ui
 
 RESOURCES += \
     appres.qrc
+
+QMAKE_CXXFLAGS_WARN_OFF -= -Wunused-parameter
+
+DISTFILES +=

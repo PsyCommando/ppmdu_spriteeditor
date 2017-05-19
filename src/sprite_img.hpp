@@ -40,6 +40,25 @@ public:
     }
 
     Sprite * parentSprite();
+
+    std::vector<fmt::effectoffset> exportEffects()const
+    {
+        return m_efx;
+    }
+
+    void importEffects( const std::vector<fmt::effectoffset> & efx )
+    {
+        m_efx = efx;
+    }
+
+    //Fill the widget with the current effect data!
+    void fillList()
+    {
+
+    }
+
+private:
+    std::vector<fmt::effectoffset> m_efx;
 };
 
 //*******************************************************************
@@ -387,6 +406,18 @@ public:
         return std::move(images);
     }
 
+    fmt::ImageDB::imgtbl_t exportImages8bpp()
+    {
+        int w = 0;
+        int h = 0;
+        fmt::ImageDB::imgtbl_t images(childCount());
+        for( int cntid = 0; cntid < childCount(); ++cntid )
+        {
+            images[cntid] = std::move(m_container[cntid].exportImage8bpp(w,h));
+        }
+        return std::move(images);
+    }
+
 //    void fillImgListTable(QTableWidget * tbl, const QVector<QRgb> & pal)
 //    {
 //        tbl->setUpdatesEnabled(false);
@@ -449,7 +480,12 @@ public:
 
     Sprite * parentSprite();
 
-    QImage AssembleFrame(int xoffset, int yoffset, QRect &out_area)const;
+    QPixmap AssembleFrameToPixmap(int xoffset, int yoffset, QRect * out_area = nullptr) const
+    {
+        return qMove( QPixmap::fromImage(AssembleFrame(xoffset, yoffset, out_area)) );
+    }
+
+    QImage AssembleFrame(int xoffset, int yoffset, QRect *out_area = nullptr)const;
     QRect calcFrameBounds()const;
 
 

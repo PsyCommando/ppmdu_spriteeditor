@@ -143,9 +143,13 @@ public:
             //QImage      result(origfrm.width() + abs(anifrm.xoffs),origfrm.height() + abs(anifrm.yoffs));
             //QPainter    paintr(result);
 
+            MFrame * pfrm = spr->getFrame(anifrm.frmidx());
+            if(!pfrm)
+                qFatal(":Bad frame index (%d)!", anifrm.frmidx());
+
             cvfrm.info  = anifrm.exportFrame();
             //paintr.drawPixmap( anifrm.xoffs, anifrm.yoffs, origfrm.width(), origfrm.height(), origfrm );
-            cvfrm.frm   = qMove(spr->AssembleFrame(anifrm.frmidx()));
+            cvfrm.frm   = qMove(pfrm->AssembleFrameToPixmap(0,0));
             m_anim.push_back(qMove(cvfrm));
         }
 
@@ -348,6 +352,8 @@ private slots:
     void on_btnSeqStop_clicked();
 
     void on_chkAnimSeqLoop_toggled(bool checked);
+
+    void on_btnImageCrop_clicked();
 
 private:
     Ui::MainWindow *ui;

@@ -1,5 +1,6 @@
 #ifndef SPRITE_H
 #define SPRITE_H
+#include <QObject>
 #include <QByteArray>
 #include <QStack>
 #include <QHash>
@@ -21,40 +22,55 @@
 #include <src/ppmdu/utils/imgutils.hpp>
 #include <src/sprite_img.hpp>
 #include <src/sprite_anim.hpp>
-
-
-
-
-
-//============================================================================================
-//
-//============================================================================================
+#include <src/ppmdu/fmts/compression_handler.hpp>
 
 class Sprite;
 
+/*
+*/
+class SpritePropertiesHandler : public QObject
+{
+    Q_OBJECT
+    Sprite * m_powner;
+public:
+    SpritePropertiesHandler( Sprite * owner, QObject * parent = nullptr );
+    ~SpritePropertiesHandler();
+
+    void sendSpriteLoaded();
+
+    void setOwner( Sprite * own );
+
+public slots:
+    void setSpriteType( fmt::eSpriteType ty );
+
+signals:
+    void spriteLoaded();
+};
 
 
-
-//============================================================================================
-//
-//============================================================================================
 
 //*******************************************************************
-//
+//Sprite
 //*******************************************************************
 class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
 {
 public:
+    friend class SpritePropertiesHandler;
+
+
+public:
     Sprite( TreeElement * parent )
         :TreeElement(parent),
           BaseSequentialIDGen(),
+          m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
           m_anmtbl(this),
-          m_bparsed(false)
+          m_bparsed(false),
+          m_targetgompression(filetypes::eCompressionFormats::INVALID)
     {
         //AddSprite(this);
         InitElemTypes();
@@ -69,6 +85,7 @@ public:
     Sprite( TreeElement * parent, QByteArray && raw )
         :TreeElement(parent),
           BaseSequentialIDGen(),
+          m_prophndlr(this),
           m_raw(raw),
           m_efxcnt(this),
           m_palcnt(this),
@@ -76,7 +93,8 @@ public:
           m_frmcnt(this),
           m_seqcnt(this),
           m_anmtbl(this),
-          m_bparsed(false)
+          m_bparsed(false),
+          m_targetgompression(filetypes::eCompressionFormats::INVALID)
     {
         //AddSprite(this);
         InitElemTypes();
@@ -90,19 +108,22 @@ public:
 
     Sprite( const Sprite & cp )
         :TreeElement(cp),
+          m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
           m_anmtbl(this),
-          m_bparsed(false)
+          m_bparsed(false),
+          m_targetgompression(filetypes::eCompressionFormats::INVALID)
     {
         operator=(cp);
     }
 
     Sprite & operator=(const Sprite & cp)
     {
+        m_prophndlr.setOwner(this);
         //
         m_sprhndl= cp.m_sprhndl;
         m_efxcnt = cp.m_efxcnt;
@@ -127,6 +148,7 @@ public:
 
     Sprite( Sprite && mv )
         :TreeElement(mv),
+          m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
@@ -140,6 +162,7 @@ public:
 
     Sprite & operator=(Sprite && mv)
     {
+        m_prophndlr.setOwner(this);
         //
         m_efxcnt = std::move(mv.m_efxcnt);
         m_palcnt = std::move(mv.m_palcnt);
@@ -189,6 +212,15 @@ public:
     }
 
 
+    void FillSpriteProperties()
+    {
+
+    }
+
+    SpritePropertiesHandler & getEventHandler()
+    {
+        return m_prophndlr;
+    }
 
 
 public:
@@ -239,21 +271,6 @@ public:
         return QVariant();
     }
 
-//    QVariant headerData(int section, bool bhorizontal, int role) const override
-//    {
-//        if(bhorizontal)
-//        {
-//            if(section == 0  && (role == Qt::DisplayRole || role == Qt::EditRole))
-//                return qMove(QVariant(QString("Sprite#%1").arg(childNumber())));
-//        }
-//        else
-//        {
-//            return qMove(QVariant(QString("%1").arg(section)));
-//        }
-//        return QVariant();
-//    }
-
-
     void OnClicked() override
     {
         if( m_raw.size() != 0 && !m_bparsed )
@@ -269,11 +286,14 @@ public:
     /**/
     void ParseSpriteData()
     {
+        if(IsRawDataCompressed(&m_targetgompression))
+            DecompressRawData();
+
         m_sprhndl.Parse( m_raw.begin(), m_raw.end() );
         m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
         m_anmtbl.importAnimationGroups( m_sprhndl.getAnimGroups() );
 
-        m_palcnt.m_pal = std::move(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //conver the palette once, so we don't do it constantly
+        m_palcnt.m_pal = std::move(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //convert the palette once, so we don't do it constantly
 
         m_seqcnt.importSequences( m_sprhndl.getAnimSeqs());
         m_frmcnt.importFrames(m_sprhndl.getFrames());
@@ -285,6 +305,35 @@ public:
 
 
         m_bparsed = true;
+    }
+
+    /*
+     * Turns the data from the data structure to its native format into the m_raw container!
+    */
+    void CommitSpriteData()
+    {
+        QByteArray buffer;
+        auto       itback = std::back_inserter(buffer);
+
+        //First convert the data from the UI
+        m_sprhndl.getAnimationTable()   = m_anmtbl.exportAnimationTable();
+        m_sprhndl.getAnimGroups()       = m_anmtbl.exportAnimationGroups();
+        m_sprhndl.getPalette()          = utils::ConvertSpritePaletteFromQt(m_palcnt.m_pal);
+        m_sprhndl.getAnimSeqs()         = m_seqcnt.exportSequences();
+        m_sprhndl.getFrames()           = m_frmcnt.exportFrames();
+
+        if( m_sprhndl.getImageFmtInfo().is256Colors() ) //#FIXME : FIgure out something better!!!!
+            m_sprhndl.getImages() = m_imgcnt.exportImages8bpp();
+        else
+            m_sprhndl.getImages() = m_imgcnt.exportImages4bpp();
+
+        //Write the data
+        itback = m_sprhndl.Write(itback);
+        m_raw  = qMove(buffer);
+
+        //Compress if needed at the end!
+        if(m_targetgompression != filetypes::eCompressionFormats::INVALID)
+            CompressRawData(m_targetgompression);
     }
 
     //You don't!!
@@ -305,99 +354,19 @@ public:
     {
         if(m_bparsed)
         {
-            return m_previewImg = std::move(AssembleFrame(0));
+            return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0)) );
         }
         return m_previewImg;
     }
 
-
-    QPixmap AssembleFrame(size_t frameid)
+    void setTargetCompression(filetypes::eCompressionFormats fmt)
     {
-        if(!m_bparsed || (frameid >= m_sprhndl.getFrames().size()))
-            return QPixmap();
-
-        QPixmap  resultimg(256,512);
-        QPainter qpaint(&resultimg);
-        QTransform deftrans = qpaint.transform();
-
-
-        //#1 - Grab all our images and assemble them!
-        size_t lowestX = 256;
-        size_t lowestY = 512;
-        size_t highestX = 0;
-        size_t highestY = 0;
-        int    lastimage = -1;
-        size_t cntstep = 0;
-        for( const fmt::step_t & step : m_sprhndl.getFrame(frameid))
-        {
-            qpaint.setTransform(deftrans);
-            auto imgres = step.GetResolution();
-            size_t offsetx = step.getXOffset()-128;
-            size_t offsety = step.getYOffset();
-
-            if( offsetx < lowestX )
-                lowestX = offsetx;
-            if( offsety < lowestY )
-                lowestY = offsety;
-
-            if( (offsetx + imgres.first) > highestX )
-                highestX = offsetx + imgres.first;
-            if( (offsety + imgres.second) > highestY )
-                highestY = offsety + imgres.second;
-
-            if( step.frmidx != -1 || (step.frmidx == -1 && lastimage != -1) )
-            {
-                fmt::frmid_t imgidx = (step.frmidx != -1)? step.frmidx : lastimage;
-                if(step.frmidx != -1)
-                    lastimage = step.frmidx;
-
-                if(imgidx == -1)
-                    qDebug("Sprite::AssembleFrame():Got a fully -1 frame sequence!!!!\n");
-
-
-                QPixmap curpixmap;
-                const std::vector<uint8_t> & curimg = m_sprhndl.getImage(imgidx);
-                if( step.isColorPal256() )
-                {
-                    curpixmap = std::move( utils::UntileIntoImg( step.GetResolution().first,
-                                                                 step.GetResolution().second,
-                                                                 QByteArray::fromRawData( (char *)curimg.data(), curimg.size() ),
-                                                                 getPalette() ) );
-                }
-                else
-                {
-                    //Turn 4bb pixels into 8bpp pixels
-                    QByteArray expanded(utils::Expand4BppTo8Bpp( QByteArray::fromRawData((char *)curimg.data(), curimg.size()) ));
-                    curpixmap = std::move(utils::UntileIntoImg( step.GetResolution().first,
-                                                                step.GetResolution().second,
-                                                                expanded,
-                                                                getPalette() ) );
-
-                    //imgstrips.push_back(  QImage( m_sprhndl.m_images.m_images[step.frmidx].data(), step.GetResolution().first, step.GetResolution().second, QImage::Format_Indexed8) );
-                }
-
-                //Transform
-                if(step.isHFlip())
-                    curpixmap = std::move(curpixmap.transformed( QTransform().scale(-1, 1)));
-                if(step.isVFlip())
-                    curpixmap = std::move(curpixmap.transformed( QTransform().scale(1, -1)));
-
-                qpaint.drawPixmap( offsetx, offsety, imgres.first, imgres.second, curpixmap);
-
-                //DEBUG!!!
-                //curpixmap.save(QString("./step%1.png").arg(cntstep),"png");
-                //resultimg.save(QString("./step%1_res.png").arg(cntstep),"png");
-            }
-            ++cntstep;
-        }
-        //m_sprhndl.m_images.m_images;
-        //m_sprhndl.m_images.m_frames;
-        //m_sprhndl.m_images.m_pal;
-
-        //Crop
-        return std::move(resultimg.copy( lowestX, lowestY, (highestX - lowestX), (highestY - lowestY) ));
+        m_targetgompression = fmt;
     }
-
+    inline filetypes::eCompressionFormats getTargetCompression()const
+    {
+        return m_targetgompression;
+    }
 
     static Sprite * ParentSprite( TreeElement * parentspr ) {return static_cast<Sprite*>(parentspr); }
 
@@ -425,7 +394,36 @@ public:
         return const_cast<Sprite*>(this)->m_imgcnt.getImage(idx);
     }
 
+    inline const QByteArray & getRawData()const
+    {
+        return m_raw;
+    }
+
 private:
+
+    inline bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const
+    {
+        filetypes::eCompressionFormats fmt = filetypes::IndentifyCompression( m_raw.begin(), m_raw.end() );
+        if(outfmt)
+            (*outfmt) = fmt;
+        return fmt < filetypes::eCompressionFormats::INVALID;
+    }
+
+    void DecompressRawData()
+    {
+        QByteArray buffer;
+        auto                 itback = std::back_inserter(buffer);
+        filetypes::Decompress(m_raw.begin(), m_raw.end(), itback);
+        m_raw = std::move(buffer);
+    }
+
+    void CompressRawData(filetypes::eCompressionFormats cpfmt)
+    {
+        QByteArray buffer;
+        auto                 itback = std::back_inserter(buffer);
+        filetypes::Compress( cpfmt, m_raw.begin(), m_raw.end(), itback);
+        m_raw = std::move(buffer);
+    }
 
     TreeElement * ElemPtr( int idx )
     {
@@ -462,6 +460,11 @@ private:
     AnimTable               m_anmtbl;
 
     bool                    m_bparsed;
+    filetypes::eCompressionFormats m_targetgompression;
+
+
+    SpritePropertiesHandler m_prophndlr;
+
 public:
     bool wasParsed()const
     {
@@ -473,7 +476,6 @@ public:
     QPixmap                 m_previewImg;
     QPixmap                 m_previewPal;
     fmt::WA_SpriteHandler   m_sprhndl;
-    //QVector<QRgb>           m_palette;
 };
 
 #endif // SPRITE_H

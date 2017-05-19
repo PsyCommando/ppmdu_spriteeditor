@@ -14,6 +14,7 @@ namespace utils
 
     //
     QVector<QRgb> ConvertSpritePalette(std::vector<uint32_t> & colors);
+    std::vector<uint32_t> ConvertSpritePaletteFromQt(const QVector<QRgb> & colors);
 
     //
     QPixmap PaintPaletteToPixmap( const QVector<QRgb> & colors );

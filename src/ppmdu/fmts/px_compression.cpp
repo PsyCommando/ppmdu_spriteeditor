@@ -1,6 +1,10 @@
 #ifndef PX_COMPRESSION_CPP
 #define PX_COMPRESSION_CPP
-#include <src/ppmdu/fmts/px_compression.hpp>
+
+#ifndef PX_HEADER_ONLY
+    #include <src/ppmdu/fmts/px_compression.hpp>
+#endif
+
 //!#FIXME: LOTS of probably useless includes here!!!
 #include <iterator>
 #include <cstdint>
@@ -1385,6 +1389,7 @@ namespace compression
         return result;
     }
 
+#ifndef PX_HEADER_ONLY
     px_info_header CompressPX( std::vector<uint8_t>::const_iterator            itdatabeg,
                                std::vector<uint8_t>::const_iterator            itdataend,
                                std::back_insert_iterator<std::vector<uint8_t>> itoutbeg,
@@ -1428,6 +1433,49 @@ namespace compression
 
         return result;
     }
+#else
+    template<class _init, class _outit>
+    void DecompressPX( px_info_header   info,
+                       _init            itdatabeg,
+                       _init            itdataend,
+                       _outit           itout)
+    {
+        using namespace std;
+        //Resize the vector properly
+        std::vector<uint8_t> out_decompresseddata;
+        out_decompresseddata.resize( info.decompressedsz );
+        if(info.decompressedsz != out_decompresseddata.size()) //Those must be the same size !
+        {
+
+            stringstream sstr;
+            sstr << "DecompressPX() : The output buffer is not of the expected size! Current buffer size : "
+                 << out_decompresseddata.size() << " bytes, expected " <<info.decompressedsz <<" bytes!";
+            throw std::runtime_error( sstr.str() );
+        }
+
+        //Create our state
+        px_decompressor<_init, decltype(out_decompresseddata.begin())>
+                        ( itdatabeg,
+                          itdataend,
+                          out_decompresseddata.begin(),
+                          out_decompresseddata.end(),
+                          info,
+                          false ).DecompressPX(); //Run right after construction, we don't use it afterwards anyways
+        itout = std::copy(out_decompresseddata.begin(), out_decompresseddata.end(), itout);
+    }
+
+
+    template<class _init, class _outit>
+    px_info_header CompressPX( _init            itdatabeg,
+                               _init            itdataend,
+                               _outit           itoutbeg,
+                               ePXCompLevel     compressionlvl = ePXCompLevel::LEVEL_3,
+                               bool             bZealousSearch = true )
+    {
+        return px_compressor<_init,  decltype(itoutbeg)>
+                 ( itdatabeg, itdataend, itoutbeg, false ).Compress(compressionlvl, bZealousSearch );
+    }
+#endif
 
 };
 #endif

@@ -92,7 +92,7 @@ public:
                 //
                 if(pfrm != nullptr )
                 {
-                    target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), area));
+                    target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), &area));
                     //target = target.copy(area);
                 }
                 else
@@ -148,6 +148,7 @@ public:
         m_seqloadwatch.setFuture(m_seqloadupdate);
         emit loading();
         m_loading = true;
+        emit framechanged(boundingRect());
         //qDebug("AnimatedSpriteItem::ScheduleSequenceLoad(): Scheduled!\n");
     }
 
@@ -173,10 +174,10 @@ public:
 //        tmp.setHeight( tmp.height() * scale() );
 //        return tmp;
         QRectF bbox;//(m_biggestFrame);
-        bbox.setX( -256 );
-        bbox.setY( -256 );
-        bbox.setWidth(512);
-        bbox.setHeight(512);
+        bbox.setX( -512 );
+        bbox.setY( -512 );
+        bbox.setWidth(1024);
+        bbox.setHeight(1024);
         return bbox;
         //return QRectF(m_cachedframes[m_curfrm].img.rect());
     }
@@ -196,12 +197,13 @@ public:
         else
         {
 //            QPen    oldpen      = painter->pen();
-//            QBrush  oldbrush    = painter->brush();
+            QBrush  oldbgbrush    = painter->background();
             QMutexLocker lk(&m_mtxcache);
             int curfrm = m_curfrm;
 
 //            painter->setPen( QColor( 0, 0, 0, 0 ) );
-//            painter->setBrush(QBrush(QColor(25, 25, 25, 64)));
+            painter->setBackground(QBrush(QColor(m_spr->getPalette().front())));
+            painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
 //            painter->drawEllipse(m_cachedframes[curfrm].shadowx,
 //                                 m_cachedframes[curfrm].shadowy,
 //                                 10, 10);
@@ -212,7 +214,7 @@ public:
                                  m_cachedframes[curfrm].img );
 
 //            painter->setPen(oldpen);
-//            painter->setBrush(oldbrush);
+            //painter->setBackground(oldbgbrush);
         }
     }
 
@@ -323,12 +325,12 @@ public:
 
         m_animsprite = new AnimatedSpriteItem(spr, id, m_shouldLoop);
         connect(this, &SceneRenderer::tick, m_animsprite, &AnimatedSpriteItem::tick);
-        connect(this, &SceneRenderer::setloop, m_animsprite, &AnimatedSpriteItem::setloop);
+        //connect(this, &SceneRenderer::setloop, m_animsprite, &AnimatedSpriteItem::setloop);
         connect(this, SIGNAL(setCurFrm(int)), m_animsprite, SLOT(setCurFrame(int)) );
 
         connect(m_animsprite, SIGNAL(framechanged(QRectF)), &m_animScene, SLOT(update(QRectF)) );
-        connect(m_animsprite, SIGNAL(framechanged(int)), this, SLOT(OnFrameChanged(int)) );
-        connect(m_animsprite, SIGNAL(rangechanged(int,int)), this, SLOT(OnRangeChanged(int,int)) );
+//        connect(m_animsprite, SIGNAL(framechanged(int)), this, SLOT(OnFrameChanged(int)) );
+//        connect(m_animsprite, SIGNAL(rangechanged(int,int)), this, SLOT(OnRangeChanged(int,int)) );
 
         connect(m_animsprite, SIGNAL(loopcomplete()), this, SLOT(loopComplete()));
         m_animsprite->ScheduleSequenceLoad();
@@ -345,6 +347,10 @@ public:
         }
         m_animScene.clear();
         //m_animScene.setSceneRect( -256, -128, 512, 256 );
+
+        //X/Y axis
+        m_animScene.addLine(-512,    0, 512,   0);
+        m_animScene.addLine(   0, -512,   0, 512);
     }
 
     AnimatedSpriteItem * getAnimSprite() {return m_animsprite;}

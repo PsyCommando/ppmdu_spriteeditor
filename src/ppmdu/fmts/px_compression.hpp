@@ -14,6 +14,8 @@ Description: Utilities for dealing with what we've dubbed "PX" compression. A cu
 #include <array>
 #include <vector>
 
+#define PX_HEADER_ONLY
+
 namespace compression
 {
 
@@ -144,7 +146,7 @@ namespace compression
                                bool                                   displayprogress = true,
                                bool                                   blogenabled     = false );
 
-
+#ifndef PX_HEADER_ONLY
     px_info_header CompressPX( std::vector<uint8_t>::const_iterator            itdatabeg,
                                std::vector<uint8_t>::const_iterator            itdataend,
                                std::back_insert_iterator<std::vector<uint8_t>> itoutbeg,
@@ -153,9 +155,15 @@ namespace compression
                                bool                                            displayprogress = true,
                                bool                                            blogenabled     = false );
 
-
+#endif
 
 
 };
+
+#ifdef PX_HEADER_ONLY
+    #include "px_compression.cpp"
+#endif
+
+
 
 #endif

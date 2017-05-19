@@ -5,10 +5,102 @@
 #include <vector>
 #include <cassert>
 #include <src/ppmdu/utils/byteutils.hpp>
+#include <src/ppmdu/fmts/integer_encoding.hpp>
 
 namespace fmt
 {
     extern const std::array<char,4> SIR0_MagicNum;
+    extern const uint8_t            SIR0_PADDING;
+
+
+
+//======================================================================================================================================
+//  Functions for encoding pointer offset lists.
+//======================================================================================================================================
+
+    /*
+        EncodeASIR0Offset
+
+    */
+    template<class _backinsoutit>
+        inline _backinsoutit EncodeASIR0Offset( _backinsoutit itw, uint32_t offset )
+    {
+        bool hasHigherNonZero = false; //This tells the loop whether it needs to encode null bytes, if at least one higher byte was non-zero
+        //Encode every bytes of the 4 bytes integer we have to
+        for( int32_t i = sizeof(int32_t); i > 0; --i )
+        {
+            uint8_t currentbyte = ( offset >> (7 * (i - 1)) ) & 0x7Fu;
+            if( i == 1 )                                            //the lowest byte to encode is special
+                *(itw++) = currentbyte;               //If its the last byte to append, leave the highest bit to 0 !
+            else if( currentbyte != 0 || hasHigherNonZero )         //if any bytes but the lowest one! If not null OR if we have encoded a higher non-null byte before!
+            {
+                *(itw++) = (currentbyte | 0x80u);       //Set the highest bit to 1, to signifie that the next byte must be appended
+                hasHigherNonZero = true;
+            }
+        }
+        return itw;
+    }
+
+    /*
+        EncodeSIR0PtrOffsetList
+    */
+    template<class _backinsoutit, class _fwdinit>
+        _backinsoutit EncodeSIR0PtrOffsetList( _fwdinit itbeg, _fwdinit itend, _backinsoutit itw )
+    {
+
+        uint32_t offsetSoFar = 0; //used to add up the sum of all the offsets up to the current one
+        for( ; itbeg != itend; ++itbeg )
+        {
+            const auto & anoffset = *itbeg;
+            itw                   = EncodeASIR0Offset( itw, (anoffset - offsetSoFar) );
+            offsetSoFar           = anoffset; //set the value to the latest offset, so we can properly subtract it from the next offset.
+        }
+        //Append the closing 0
+        *(itw++) = 0;
+        return itw;
+    }
+
+    /*
+        DecodeSIR0PtrOffsetList
+    */
+    template<class _init>
+        std::vector<uint32_t> DecodeSIR0PtrOffsetList( _init beg, _init end )
+    {
+        using namespace std;
+        vector<uint32_t> decodedptroffsets;
+
+        auto itcurbyte  = beg;
+        auto itlastbyte = end;
+
+        uint32_t offsetsum = 0; //This is used to sum up all offsets and obtain the offset relative to the file, and not the last offset
+        uint32_t buffer    = 0; //temp buffer to assemble longer offsets
+        uint8_t curbyte    = *itcurbyte;
+        bool    LastHadBitFlag = false; //This contains whether the byte read on the previous turn of the loop had the bit flag indicating to append the next byte!
+
+        while( itcurbyte != itlastbyte && ( LastHadBitFlag || (*itcurbyte) != 0 ) )
+        {
+            curbyte = *itcurbyte;
+            buffer |= curbyte & 0x7Fu;
+
+            if( (0x80u & curbyte) != 0 )
+            {
+                LastHadBitFlag = true;
+                buffer <<= 7u;
+            }
+            else
+            {
+                LastHadBitFlag = false;
+                offsetsum += buffer;
+                decodedptroffsets.push_back(offsetsum);
+                buffer = 0;
+            }
+
+            ++itcurbyte;
+        }
+
+        return std::move(decodedptroffsets);
+    }
+
 
     /*
      * SIR0hdr
@@ -22,6 +114,14 @@ namespace fmt
         uint32_t                ptrtranslatetbl;
         std::vector<uint32_t>   ptroffsetslist;
 
+        SIR0hdr()
+        {
+            ptrtranslatetbl = 0;
+            //Add the value of the 2 pointers in the header.
+            ptroffsetslist.push_back(4);
+            ptroffsetslist.push_back(8);
+        }
+
 
         template<class _init>
             bool isSIR0(_init where, _init end)
@@ -31,42 +131,50 @@ namespace fmt
 
         //
         template<class init>
-            init Read( init where, init end )
+            init Read( init where, init end, bool bdecodeptrlst = true )
         {
             init beg = where;
             where = utils::fillBytes( where, end, magic.begin(), magic.end() );
             where = utils::readBytesAs( where, end, ptrsub );
             where = utils::readBytesAs( where, end, ptrtranslatetbl );
             std::advance(where, sizeof(uint32_t)); //Skip over the empty space here
-            return where;
+            init afterhdr = where;
+
+            //decode pointers
+            if(bdecodeptrlst)
+                ptroffsetslist = std::move(DecodeSIR0PtrOffsetList(std::next(beg, ptrtranslatetbl), end));
+            return afterhdr;
         }
 
-        //
-        template<class outit>
-            outit Write( outit where )
+        /*
+         *  Write
+         *  - where    : Where to write the SIR0 header + ptr list and data!
+         *  - itdatabeg: Beginning of the data to be wrapped in the SIR0.
+         *  - itdataend: End of the data to be wrapped in the SIR0.
+        */
+        template<class outit, class datainit>
+            outit Write( outit where, datainit itdatabeg, datainit itdataend, uint8_t padchar = SIR0_PADDING )
         {
-            outit cntbeg = where;
-            where = utils::fillBytes( SIR0_MagicNum.begin(), SIR0_MagicNum.end(), where );
-            where = utils::writeBytesFrom( where, ptrsub );
-            where = utils::writeBytesFrom( where, ptrtranslatetbl );
+            where = std::copy( SIR0_MagicNum.begin(), SIR0_MagicNum.end(), where );
+            where = utils::writeBytesFrom( ptrsub, where);
+            where = utils::writeBytesFrom( ptrtranslatetbl , where);
+            where = utils::writeBytesFrom<uint32_t>( 0u, where); //put ending 0!
 
+            //Copy and count data!
+            size_t bytecnt = HDRLEN;
+            for( ; itdatabeg != itdataend; ++ itdatabeg, ++where, ++bytecnt )
+                (*where) = (*itdatabeg);
+
+            //Add padding before the ptr offset list
+            utils::AppendPaddingBytes( where, bytecnt, 16, padchar );
+            bytecnt += 16;
 
             //Write list
-            std::advance(cntbeg, ptrtranslatetbl ); //Skip over to the spot we gotta write the list at!
-            cntbeg = WritePtrOffsetList(cntbeg);
-
-            return where;
+            return EncodeSIR0PtrOffsetList( ptroffsetslist.begin(), ptroffsetslist.end(), where );
         }
 
     private:
 
-        //
-        template<class outit>
-            outit WritePtrOffsetList( outit where )
-        {
-            assert(false);
-            return where;
-        }
     };
 
 }

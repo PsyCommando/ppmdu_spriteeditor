@@ -61,6 +61,13 @@ QVariant AnimSequences::data(const QModelIndex & index, int role) const
     return static_cast<TreeElement*>(index.internalPointer())->data(index.column(), role);
 }
 
+QVariant AnimSequences::data(int column, int role) const
+{
+    if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
+        return QVariant(ElemName());
+    return QVariant();
+}
+
 QVariant AnimSequences::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if( role != Qt::DisplayRole )
@@ -102,7 +109,7 @@ void AnimSequences::importSequences(const fmt::AnimDB::animseqtbl_t &src)
 
 fmt::AnimDB::animseqtbl_t AnimSequences::exportSequences()
 {
-    fmt::AnimDB::animseqtbl_t seqs(childCount());
+    fmt::AnimDB::animseqtbl_t seqs;
     for( int cntid = 0; cntid < childCount(); ++cntid )
         seqs[cntid] = std::move(m_container[cntid].exportSeq());
 
@@ -148,53 +155,28 @@ QVariant AnimFrame::data(int column, int role) const
     {
         MFrame * pframe = const_cast<AnimFrame*>(this)->parentSprite()->getFrame(frmidx());
         if(pframe)
-        {
-            QRect area;
-            return QVariant(QPixmap::fromImage(pframe->AssembleFrame(0,0, area)));
-        }
-//        MFrame * pframe = const_cast<AnimFrame*>(this)->parentSprite()->getFrame(frmidx());
-//        if(pframe && m_cached.isNull() && m_mtxcache.tryLock(1))
-//        {
-//            m_futimg = QtConcurrent::run( this, &AnimFrame::BuildCachedImage, pframe);
-//            connect( &m_futimgwatch, SIGNAL(finished()), &m_updatenotifier, SLOT(imagecached()) );
-//            m_futimgwatch.setFuture(m_futimg);
-//            m_mtxcache.unlock();
-//        }
-//        else if(pframe && !m_cached.isNull() && m_mtxcache.tryLock(1))
-//        {
-//            m_mtxcache.unlock();
-//            QMutexLocker lk(&m_mtxcache);
-//            return QVariant(m_cached);
-//        }
+            return QVariant(QPixmap::fromImage(pframe->AssembleFrame(0,0)));
     }
 
     return QVariant();
 }
 
-//void AnimFrame::update()
-//{
-//    MFrame * pframe = const_cast<AnimFrame*>(this)->parentSprite()->getFrame(frmidx());
-//    if(!pframe)
-//    {
-//        qDebug("AnimFrame::update(): Updated invalid frame..\n");
-//        return;
-//    }
-//    QMutexLocker lk(&const_cast<AnimFrame*>(this)->m_mtxcache);
+Sprite *AnimTable::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
 
-//    m_futimg = QtConcurrent::run( this, &AnimFrame::BuildCachedImage, pframe);
-//    connect( &m_futimgwatch, SIGNAL(finished()), &m_updatenotifier, SLOT(imagecached()) );
-//    m_futimgwatch.setFuture(m_futimg);
-//}
+Sprite *AnimGroup::parentSprite()
+{
+    return static_cast<AnimTable*>(parent())->parentSprite();
+}
 
-//QPixmap AnimFrame::BuildCachedImage( MFrame * pframe ) const
-//{
-//    //**************FIXME!! This is not thread safe!!!!!*******************
-//    //Frames are not mutex-protected and their state can change if the user changes them while we're
-//    //drawing the image!!
-//    //Ideally we might want some external class that renders images for us instead!
+Sprite *AnimSequences::parentSprite()
+{
+    return static_cast<Sprite*>(parent());
+}
 
-
-//    QMutexLocker lk(&const_cast<AnimFrame*>(this)->m_mtxcache);
-//    QRect area;
-//    return qMove(QPixmap::fromImage(pframe->AssembleFrame(0,0, area)));
-//}
+Sprite *AnimSequence::parentSprite()
+{
+    return static_cast<AnimSequences*>(parent())->parentSprite();
+}

@@ -6,7 +6,9 @@
 #include <QThread>
 #include <QThreadPool>
 
-
+#include <dialogexport.hpp>
+#include <diagsingleimgcropper.hpp>
+#include <dialogabout.hpp>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -310,17 +312,20 @@ void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
 
 void MainWindow::on_action_Save_triggered()
 {
-
+    //QSaveFile;
 }
 
 void MainWindow::on_actionSave_As_triggered()
 {
-
+    //QSaveFile;
 }
 
 void MainWindow::on_action_Export_triggered()
 {
-
+    DialogExport exp(this);
+    exp.setModal(true);
+    exp.show();
+    //QSaveFile;
 }
 
 void MainWindow::on_actionSprite_triggered()
@@ -350,7 +355,9 @@ void MainWindow::on_action_Settings_triggered()
 
 void MainWindow::on_action_About_triggered()
 {
-
+    DialogAbout abt(this);
+    abt.setModal(true);
+    abt.show();
 }
 
 
@@ -534,4 +541,22 @@ void MainWindow::on_chkAnimSeqLoop_toggled(bool checked)
 //    if(!m_curanim)
 //        return;
     //m_curanim->loop(checked);
+}
+
+void MainWindow::on_btnImageCrop_clicked()
+{
+    Image * pimg = static_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
+
+    if(pimg)
+    {
+        DiagSingleImgCropper cropper(this, pimg);
+        cropper.setModal(true);
+        cropper.show();
+    }
+    else
+    {
+        QApplication::beep();
+        ui->statusBar->setStatusTip("Can't crop! No valid image selected!");
+        qWarning("MainWindow::on_btnImageCrop_clicked(): Crop clicked, but no valid images was selected!");
+    }
 }

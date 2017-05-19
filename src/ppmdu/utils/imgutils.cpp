@@ -131,6 +131,16 @@ namespace utils
         return std::move(outcol);
     }
 
+    std::vector<uint32_t> ConvertSpritePaletteFromQt(const QVector<QRgb> & colors)
+    {
+        std::vector<uint32_t> outcol;
+        outcol.reserve(colors.size());
+
+        for( const auto & acol : colors )
+            outcol.push_back( (acol << 8) | 0x00000080 ); //Force alpha to 0x80
+        return std::move(outcol);
+    }
+
     std::vector<uint8_t> TileFromImg( const QImage & src )
     {
         static const size_t TileWidth  = 8;

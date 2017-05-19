@@ -1,10 +1,15 @@
 #include "spritecontainer.h"
 #include <QMessageBox>
 #include <QString>
+#include <QSaveFile>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/spritemanager.h>
 #include <src/sprite.h>
+#include <dialogprogressbar.hpp>
 
 namespace spr_manager
 {
@@ -102,8 +107,20 @@ namespace spr_manager
 
     void SpriteContainer::WriteContainer()
     {
+        if( QFile(m_srcpath).exists() )
+        {
+            //Warn overwrite
+            QMessageBox msgBox;
+            msgBox.setText("Overwrite?");
+            msgBox.setInformativeText( "The file already exists.\nOverwrite?");
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+            msgBox.setDefaultButton(QMessageBox::Cancel);
+            if(msgBox.exec() != QMessageBox::Yes)
+                return;
+        }
+
         //
-        QFile container(m_srcpath);
+        QSaveFile container(m_srcpath);
 
         if( !container.open(QIODevice::ReadWrite) || container.error() != QFileDevice::NoError )
         {
@@ -118,25 +135,52 @@ namespace spr_manager
             return;
         }
 
-        if( container.exists())
-        {
-            //Warn overwrite
-            QMessageBox msgBox;
-            msgBox.setText("Overwrite?");
-            msgBox.setInformativeText( "The file already exists.\nOverwrite?");
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-            if(msgBox.exec() != QMessageBox::Yes)
-                return;
-        }
-
         //
-        Q_ASSERT(false);
+        switch(m_cntTy)
+        {
+        case eContainerType::PACK:
+            {
+                fmt::PackFileWriter writer;
 
+                auto lambdasavesprites = [&writer](auto & curspr)
+                {
+                    if(curspr.wasParsed())
+                        curspr.CommitSpriteData();
+                    writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
+                };
 
+                QFuture<void>     savequeue = QtConcurrent::map( m_spr.begin(), m_spr.end(), lambdasavesprites );
+                DialogProgressBar prgbar(savequeue);
+                prgbar.setModal(true);
+                prgbar.show();
+                break;
+            }
+        case eContainerType::WAN:
+        case eContainerType::WAT:
+            {
+                break;
+            }
+        default:
+            {
+                Q_ASSERT(false);
+                qFatal("SpriteContainer::WriteContainer(): Tried to write unknown filetype!!");
+            }
+        };
         //If is a pack file, we gotta load everything first then rebuild the file
 
         //Write stuff
+        if(!container.commit())
+        {
+            //Error during commit!
+            qWarning( container.errorString().toLocal8Bit() );
+            QMessageBox msgBox;
+            msgBox.setText("Failed to commit to file!");
+            msgBox.setInformativeText(container.errorString());
+            msgBox.setStandardButtons(QMessageBox::Ok);
+            msgBox.setDefaultButton(QMessageBox::Ok);
+            msgBox.exec();
+            return;
+        }
     }
 
     Sprite &SpriteContainer::GetSprite(SpriteContainer::sprid_t idx)
