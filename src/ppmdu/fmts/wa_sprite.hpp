@@ -449,6 +449,7 @@ namespace fmt
             std::vector<uint8_t> strip;
             imgstriptblentry     lastentry;
 
+            size_t cntentries = 0;
             for(; imgbeg != imgend; ++imgbeg )
             {
                 //We copy at least 32 bytes minimum
@@ -472,8 +473,12 @@ namespace fmt
                         striptbl.push_back(lastentry);
                     }
 
+
+                    if(lastentry.src == 0)
+                        lastentry.len   += strip.size();
+                    else
+                        lastentry.len   = strip.size();
                     lastentry.src   = 0;
-                    lastentry.len   = strip.size();
                     lastentry.unk14 = 0;
                     lastentry.unk2  = 0;
                     strip.resize(0);
@@ -483,11 +488,20 @@ namespace fmt
                     if(lastentry.src == 0)
                         striptbl.push_back(lastentry); //push the last 0 entry!
 
-                    lastentry.src   = curoffset;
-                    lastentry.len   = strip.size();
+                    if(lastentry.src == 0 || cntentries == 0)
+                    {
+                        lastentry.src   = curoffset;
+                        lastentry.len   = strip.size();
+                    }
+                    else
+                    {
+                        lastentry.len   += strip.size();
+                    }
+
                     lastentry.unk14 = 0;
                     lastentry.unk2  = 0;
                 }
+                ++cntentries;
 
             }
 
@@ -573,8 +587,8 @@ namespace fmt
             itpaldata = utils::readBytesAs( itpaldata, itsrcend, m_pal.unk4 );
             itpaldata = utils::readBytesAs( itpaldata, itsrcend, m_pal.unk5 );
 
-            if(itpaldata == 0)
-                return;
+            if(utils::readBytesAs<uint32_t>( itpaldata, itsrcend ) != 0)
+                throw std::runtime_error("ImageDB::ParsePalette(): Palette data doesn't end with 4 bytes of zeroes!");
 
             //grab colors!
             auto itpalcolor = next(itsrcbeg, ptrbegpal);

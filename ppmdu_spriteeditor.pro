@@ -45,7 +45,8 @@ SOURCES += main.cpp\
     src/sprite_img.cpp \
     dialogexport.cpp \
     dialogabout.cpp \
-    dialogprogressbar.cpp
+    dialogprogressbar.cpp \
+    src/ppmdu/fmts/compression_handler.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \

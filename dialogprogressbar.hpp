@@ -15,6 +15,7 @@ class DialogProgressBar : public QDialog
 
 public:
     explicit DialogProgressBar( const QFuture<void> & fut, QWidget *parent = 0);
+    explicit DialogProgressBar( const QFuture<int>  & fut, QWidget *parent = 0);
     ~DialogProgressBar();
 
 public slots:

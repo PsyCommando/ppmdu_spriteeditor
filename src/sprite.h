@@ -34,7 +34,7 @@ class SpritePropertiesHandler : public QObject
     Sprite * m_powner;
 public:
     SpritePropertiesHandler( Sprite * owner, QObject * parent = nullptr );
-    ~SpritePropertiesHandler();
+    virtual ~SpritePropertiesHandler();
 
     void sendSpriteLoaded();
 
@@ -59,10 +59,12 @@ public:
 
 
 public:
+    typedef std::vector<uint8_t> rawdat_t;
+
     Sprite( TreeElement * parent )
         :TreeElement(parent),
           BaseSequentialIDGen(),
-          m_prophndlr(this),
+          //m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
@@ -82,10 +84,10 @@ public:
         m_anmtbl.m_parentItem = this;
     }
 
-    Sprite( TreeElement * parent, QByteArray && raw )
+    Sprite( TreeElement * parent, rawdat_t && raw )
         :TreeElement(parent),
           BaseSequentialIDGen(),
-          m_prophndlr(this),
+          //m_prophndlr(this),
           m_raw(raw),
           m_efxcnt(this),
           m_palcnt(this),
@@ -108,7 +110,7 @@ public:
 
     Sprite( const Sprite & cp )
         :TreeElement(cp),
-          m_prophndlr(this),
+          //m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
@@ -123,7 +125,7 @@ public:
 
     Sprite & operator=(const Sprite & cp)
     {
-        m_prophndlr.setOwner(this);
+        //m_prophndlr.setOwner(this);
         //
         m_sprhndl= cp.m_sprhndl;
         m_efxcnt = cp.m_efxcnt;
@@ -148,7 +150,7 @@ public:
 
     Sprite( Sprite && mv )
         :TreeElement(mv),
-          m_prophndlr(this),
+          //m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
@@ -162,7 +164,7 @@ public:
 
     Sprite & operator=(Sprite && mv)
     {
-        m_prophndlr.setOwner(this);
+        //m_prophndlr.setOwner(this);
         //
         m_efxcnt = std::move(mv.m_efxcnt);
         m_palcnt = std::move(mv.m_palcnt);
@@ -184,7 +186,7 @@ public:
         return *this;
     }
 
-    ~Sprite()
+    virtual ~Sprite()
     {
     }
 
@@ -212,15 +214,17 @@ public:
     }
 
 
-    void FillSpriteProperties()
+    void FillSpriteProperties(QTableWidget * tbl)
     {
-
+        tbl->clearContents();
+        tbl->setCellWidget(0,0, new QLabel(QString( "Raw Size" )));
+        tbl->setCellWidget(0,1, new QLabel( QString( "%1b" ).arg(m_raw.size()) ));
     }
 
-    SpritePropertiesHandler & getEventHandler()
-    {
-        return m_prophndlr;
-    }
+//    SpritePropertiesHandler & getEventHandler()
+//    {
+//        return m_prophndlr;
+//    }
 
 
 public:
@@ -311,7 +315,7 @@ public:
     */
     void CommitSpriteData()
     {
-        QByteArray buffer;
+        rawdat_t   buffer;
         auto       itback = std::back_inserter(buffer);
 
         //First convert the data from the UI
@@ -393,7 +397,7 @@ public:
         return const_cast<Sprite*>(this)->m_imgcnt.getImage(idx);
     }
 
-    inline const QByteArray & getRawData()const
+    inline const rawdat_t & getRawData()const
     {
         return m_raw;
     }
@@ -410,15 +414,20 @@ private:
 
     void DecompressRawData()
     {
-        QByteArray buffer;
+        filetypes::eCompressionFormats fmt =filetypes::IndentifyCompression(m_raw.begin(), m_raw.end());
+
+        rawdat_t buffer;
         auto                 itback = std::back_inserter(buffer);
-        filetypes::Decompress(m_raw.begin(), m_raw.end(), itback);
+        if(fmt == filetypes::eCompressionFormats::PKDPX)
+            filetypes::DecompressPKDPX(m_raw.begin(), m_raw.end(), itback);
+//        else if(fmt == filetypes::eCompressionFormats::AT4PX)
+//            filetypes::DecompressAT4PX(m_raw.begin(), m_raw.end(), itback);
         m_raw = std::move(buffer);
     }
 
     void CompressRawData(filetypes::eCompressionFormats cpfmt)
     {
-        QByteArray buffer;
+        rawdat_t buffer;
         auto                 itback = std::back_inserter(buffer);
         filetypes::Compress( cpfmt, m_raw.begin(), m_raw.end(), itback);
         m_raw = std::move(buffer);
@@ -462,7 +471,7 @@ private:
     filetypes::eCompressionFormats m_targetgompression;
 
 
-    SpritePropertiesHandler m_prophndlr;
+    //SpritePropertiesHandler m_prophndlr;
 
 public:
     bool wasParsed()const
@@ -471,7 +480,7 @@ public:
     }
 
     //Raw data buffer
-    QByteArray              m_raw;
+    std::vector<uint8_t>    m_raw;
     QPixmap                 m_previewImg;
     QPixmap                 m_previewPal;
     fmt::WA_SpriteHandler   m_sprhndl;

@@ -106,6 +106,44 @@ namespace spr_manager
 
     }
 
+    void WritePack(QSaveFile * pcontainer, spr_manager::SpriteContainer * cnt)
+    {
+        fmt::PackFileWriter writer;
+        QMutex              mtxdata;
+        QVector<QVector<uint8_t>> tmpdata;
+        QScopedPointer<QSaveFile> container(pcontainer);
+
+        QFuture<void> savequeue = QtConcurrent::map( cnt->begin(),
+                                                     cnt->end(),
+                                                     [&writer,&mtxdata,&tmpdata](Sprite & curspr)
+        {
+            if(curspr.wasParsed())
+                curspr.CommitSpriteData();
+
+            QMutexLocker lk(&mtxdata);
+            QVector<uint8_t> curdata;
+            std::copy( curspr.getRawData().begin(), curspr.getRawData().end(), std::back_inserter(curdata) );
+            tmpdata.push_back(curdata);
+            //writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
+        });
+
+
+        DialogProgressBar prgbar(savequeue);
+        prgbar.setModal(true);
+        prgbar.show();
+
+        QFutureSynchronizer<void> futsync;
+        futsync.addFuture(savequeue);
+        futsync.waitForFinished();
+
+        QDataStream outstr(container.data());
+        QByteArray  out;
+        writer.Write(std::back_inserter(out));
+        outstr.writeRawData( out.data(), out.size() );
+        container->commit();
+    }
+
+
     void SpriteContainer::WriteContainer()
     {
         if( QFile(m_srcpath).exists() )
@@ -121,15 +159,15 @@ namespace spr_manager
         }
 
         //
-        QSaveFile container(m_srcpath);
+        QScopedPointer<QSaveFile> pcontainer( new  QSaveFile(m_srcpath));
 
-        if( !container.open(QIODevice::ReadWrite) || container.error() != QFileDevice::NoError )
+        if( !pcontainer->open(QIODevice::WriteOnly) || pcontainer->error() != QFileDevice::NoError )
         {
             //Error can't write file!
-            qWarning( container.errorString().toLocal8Bit() );
+            qWarning( pcontainer->errorString().toLocal8Bit() );
             QMessageBox msgBox;
             msgBox.setText("Failed to write file!");
-            msgBox.setInformativeText(container.errorString());
+            msgBox.setInformativeText(pcontainer->errorString());
             msgBox.setStandardButtons(QMessageBox::Ok);
             msgBox.setDefaultButton(QMessageBox::Ok);
             msgBox.exec();
@@ -141,21 +179,8 @@ namespace spr_manager
         {
         case eContainerType::PACK:
             {
-                fmt::PackFileWriter writer;
-
-                QFuture<void>     savequeue = QtConcurrent::map( m_spr.begin(),
-                                                                 m_spr.end(),
-                                                                 [&writer](Sprite & curspr)
-                {
-                    if(curspr.wasParsed())
-                        curspr.CommitSpriteData();
-                    writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
-                });
-
-                DialogProgressBar prgbar(savequeue);
-                prgbar.setModal(true);
-                prgbar.show();
-                break;
+                WritePack(pcontainer.take(), spr_manager::SpriteManager::Instance().getContainer());
+                return;
             }
         case eContainerType::WAN:
         case eContainerType::WAT:
@@ -171,18 +196,18 @@ namespace spr_manager
         //If is a pack file, we gotta load everything first then rebuild the file
 
         //Write stuff
-        if(!container.commit())
-        {
-            //Error during commit!
-            qWarning( container.errorString().toLocal8Bit() );
-            QMessageBox msgBox;
-            msgBox.setText("Failed to commit to file!");
-            msgBox.setInformativeText(container.errorString());
-            msgBox.setStandardButtons(QMessageBox::Ok);
-            msgBox.setDefaultButton(QMessageBox::Ok);
-            msgBox.exec();
-            return;
-        }
+//        if(!container.commit())
+//        {
+//            //Error during commit!
+//            qWarning( container.errorString().toLocal8Bit() );
+//            QMessageBox msgBox;
+//            msgBox.setText("Failed to commit to file!");
+//            msgBox.setInformativeText(container.errorString());
+//            msgBox.setStandardButtons(QMessageBox::Ok);
+//            msgBox.setDefaultButton(QMessageBox::Ok);
+//            msgBox.exec();
+//            return;
+//        }
     }
 
     Sprite &SpriteContainer::GetSprite(SpriteContainer::sprid_t idx)

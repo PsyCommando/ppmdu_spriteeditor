@@ -241,6 +241,11 @@ public:
     AnimSequences( const AnimSequences & cp );
     AnimSequences( AnimSequences && mv );
 
+    virtual ~AnimSequences()
+    {
+
+    }
+
     AnimSequences & operator=( const AnimSequences & cp );
     AnimSequences & operator=( AnimSequences && mv );
 

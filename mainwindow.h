@@ -322,13 +322,13 @@ private:
 private slots:
     void on_action_Quit_triggered();
 
-    void on_tv_sprcontent_itemSelectionChanged();
+    //void on_tv_sprcontent_itemSelectionChanged();
 
-    void on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+    //void on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 
     void on_tv_sprcontent_expanded(const QModelIndex &index);
 
-    void on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column);
+    //void on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column);
 
     void on_action_Save_triggered();
 
@@ -336,9 +336,9 @@ private slots:
 
     void on_action_Export_triggered();
 
-    void on_actionSprite_triggered();
+    //void on_actionSprite_triggered();
 
-    void on_actionSprite_Pack_File_triggered();
+    //void on_actionSprite_Pack_File_triggered();
 
     void on_actionUndo_triggered();
 
@@ -356,7 +356,7 @@ private slots:
 
     void on_tv_sprcontent_customContextMenuRequested(const QPoint &pos);
 
-    void on_tblviewImagesTest_doubleClicked(const QModelIndex &index);
+    //void on_tblviewImagesTest_doubleClicked(const QModelIndex &index);
 
     void on_action_Open_triggered();
 

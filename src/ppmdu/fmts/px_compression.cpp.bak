@@ -1294,7 +1294,7 @@ namespace compression
                        bool                                   blogenabled)
     {
         //Resize the vector properly
-        out_decompresseddata.resize( info.decompressedsz );
+        //out_decompresseddata.resize( info.decompressedsz );
         if(info.decompressedsz != out_decompresseddata.size()) //Those must be the same size !
         {
             stringstream sstr;

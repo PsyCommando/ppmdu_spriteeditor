@@ -24,6 +24,8 @@ namespace spr_manager
     class SpriteContainer : public TreeElement
     {
     public:
+        typedef QList<Sprite>::iterator         iterator;
+        typedef QList<Sprite>::const_iterator   const_iterator;
         typedef uint32_t sprid_t;
         enum struct eContainerType
         {
@@ -42,6 +44,9 @@ namespace spr_manager
 
         SpriteContainer(const QString & str)
             :TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE), m_rootelem(this)
+        {}
+
+        virtual ~SpriteContainer()
         {}
 
         //
@@ -63,6 +68,10 @@ namespace spr_manager
         Sprite & GetSprite( sprid_t idx );
         sprid_t  AddSprite();
 
+        inline iterator begin() {return m_spr.begin();}
+        inline const_iterator begin()const {return m_spr.begin();}
+        inline iterator end() {return m_spr.end();}
+        inline const_iterator end()const {return m_spr.end();}
         //
     public:
 

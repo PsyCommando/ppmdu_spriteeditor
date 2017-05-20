@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QTableWidget>
 #include <QGraphicsScene>
+#include <QPointer>
 
 #include <src/treeelem.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
@@ -202,12 +203,18 @@ class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>/*,
 public:
     class ImagesManager : public QAbstractItemModel
     {
+        //Q_OBJECT
         ImageContainer * m_parentcnt;
         // QAbstractItemModel interface
     public:
         ImagesManager(ImageContainer * parent)
             :QAbstractItemModel(), m_parentcnt(parent)
         {}
+
+        virtual ~ImagesManager()
+        {
+
+        }
 
         QModelIndex index(int row, int column, const QModelIndex &parent) const override
         {
@@ -341,17 +348,25 @@ public:
         :BaseListContainerChild(mv),m_manager(new ImagesManager(this))
     {}
 
+    ~ImageContainer()
+    {
+        if(!m_manager.isNull())
+            delete m_manager;
+    }
+
     ImageContainer & operator=( const ImageContainer & cp )
     {
         BaseListContainerChild::operator=(cp);
-        m_manager.reset(new ImagesManager(this));
+        delete m_manager;
+        m_manager = new ImagesManager(this);
         return *this;
     }
 
     ImageContainer & operator=( ImageContainer && mv )
     {
         BaseListContainerChild::operator=(mv);
-        m_manager.reset(new ImagesManager(this));
+        delete m_manager;
+        m_manager = new ImagesManager(this);
         return *this;
     }
 
@@ -445,7 +460,7 @@ public:
     inline const Image * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->child(id)); }
 
 private:
-    QScopedPointer<ImagesManager> m_manager;
+    QPointer<ImagesManager> m_manager;
 
 };
 

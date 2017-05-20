@@ -121,7 +121,7 @@ namespace spr_manager
     public:
 
         SpriteManager()
-            :QAbstractItemModel(nullptr)//, TreeElement(nullptr)
+            :QAbstractItemModel(nullptr)
         {}
 
         static SpriteManager & Instance()

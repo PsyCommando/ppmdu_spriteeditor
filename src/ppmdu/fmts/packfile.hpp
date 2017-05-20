@@ -7,6 +7,7 @@
 #include <limits>
 #include <algorithm>
 #include <cassert>
+#include <mutex>
 #include <src/ppmdu/utils/byteutils.hpp>
 
 namespace fmt
@@ -106,6 +107,7 @@ namespace fmt
         template<class init>
             void AppendSubFile( init beg, init end )
         {
+            std::lock_guard<std::mutex> lk(m_mtx);
             auto itput = std::back_inserter(m_data);
             size_t sz = std::distance(beg, end);
             if( sz > std::numeric_limits<uint32_t>::max() )
@@ -125,6 +127,7 @@ namespace fmt
         template<class outit>
             void Write( outit where )
         {
+            std::lock_guard<std::mutex> lk(m_mtx);
             //Calculate Header + toc + padding len
             size_t hdrlen = 8 + (m_hdr.tocentries.size() * packfile_hdr::SzFEntry);
             hdrlen += hdrlen % AlignHeaderOn;
@@ -153,6 +156,7 @@ namespace fmt
         }
 
     private:
+        std::mutex           m_mtx;
         packfile_hdr         m_hdr;
         std::vector<uint8_t> m_data;
     };

@@ -19,6 +19,7 @@ const QList<QCommandLineOption> PGRM_Options
     QCommandLineOption(OPT_Export, "Application will run in export mode!"),
 };
 
+
 inline bool ShouldDisplayUI(const QCommandLineParser & parser)
 {
     return !(parser.isSet(OPT_Import) || parser.isSet(OPT_Export));
@@ -29,7 +30,14 @@ int main(int argc, char *argv[])
     QApplication        a(argc, argv);
     QCommandLineParser  parser;
     parser.addOptions(PGRM_Options);
+    parser.addPositionalArgument("filepath", "File to open with the program!");
     parser.process(a);
+
+
+    QString openFilePath;
+    const QStringList positionalArguments = parser.positionalArguments();
+    if(!positionalArguments.empty())
+        openFilePath = positionalArguments.first();
 
     try
     {
@@ -40,6 +48,8 @@ int main(int argc, char *argv[])
             MainWindow w;
             w.show();
             w.setFocus();
+            if(!openFilePath.isEmpty())
+                w.LoadContainer(openFilePath);
             return a.exec();
         }
         else

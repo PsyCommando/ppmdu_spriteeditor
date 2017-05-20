@@ -57,8 +57,96 @@ namespace filetypes
         using runtime_error::runtime_error;
     };
 
+
+
+    /*
+         pkdpx_header
+             Structure of the header for an PKDPX file
+     */
+     struct pkdpx_header
+     {
+         static const unsigned int HEADER_SZ        = 20u;
+         static const unsigned int NB_FLAGS         = 9u;
+         //static const unsigned int MAGIC_NUMBER_LEN = MagicNumber_PKDPX_Len;
+
+         std::array<uint8_t,MagicNumber_PKDPX_Len>  magicn;       //"PKDPX"
+         uint16_t                              compressedsz; //The total size of the file compressed
+         std::array<uint8_t,NB_FLAGS>          flaglist;     //list of flags used in the file
+         uint32_t                              decompsz;     //The file size decompressed
+
+         constexpr unsigned int size()const {return HEADER_SZ;}
+
+         //Implementations specific to pkdpx_header
+         template<class _outit>
+             _outit WriteToContainer( _outit itwriteto )const
+         {
+             for( const uint8_t & abyte : MagicNumber_PKDPX )
+             {
+                 *itwriteto = abyte;
+                 ++itwriteto;
+             }
+
+             itwriteto = utils::writeBytesFrom( compressedsz, itwriteto );
+
+             for( const uint8_t & aflag : flaglist )
+             {
+                 *itwriteto = aflag;
+                 ++itwriteto;
+             }
+
+             itwriteto = utils::writeBytesFrom( decompsz, itwriteto );
+
+             return itwriteto;
+         }
+
+         template<class _init>
+             _init ReadFromContainer( _init itReadfrom, _init itPastEnd )
+         {
+             for( uint8_t & abyte : magicn )
+             {
+                 abyte = utils::readBytesAs<uint8_t>(itReadfrom,itPastEnd);
+                 //abyte = *itReadfrom;
+                 //++itReadfrom;
+             }
+
+             compressedsz = utils::readBytesAs<decltype(compressedsz)>(itReadfrom,itPastEnd); //iterator is incremented
+
+             for( uint8_t & aflag : flaglist )
+             {
+                 aflag = *itReadfrom;
+                 ++itReadfrom;
+             }
+
+             decompsz = utils::readBytesAs<decltype(decompsz)>(itReadfrom,itPastEnd); //iterator is incremented
+
+             return itReadfrom;
+         }
+
+         operator compression::px_info_header()const
+         {
+             compression::px_info_header pxinf;
+             pxinf.compressedsz   = compressedsz;
+             pxinf.controlflags   = flaglist;
+             pxinf.decompressedsz = decompsz;
+             return pxinf;
+         }
+
+         pkdpx_header & operator=( const compression::px_info_header & other )
+         {
+             compressedsz = other.compressedsz;
+             flaglist     = other.controlflags;
+             decompsz     = other.decompressedsz;
+             return *this;
+         }
+     };
+
+
+//
+//
+//
+
     template<class _init>
-    eCompressionFormats IndentifyCompression(_init beg, _init end)
+        eCompressionFormats IndentifyCompression(_init beg, _init end)
     {
         //#1. Fetch magic number
         std::vector<uint8_t> magic;
@@ -216,6 +304,54 @@ namespace filetypes
 
         return itout;
     }
+
+
+    /*******************************************************
+        DecompressPKDPX
+            Decompress an PKDPX file.
+            Returns the size of the decompressed data!
+
+            Params:
+                - itinputbeg : beginning of the PX compressed data, right BEFORE the PKDPX header!
+
+            NOTE:
+            This version needs to create an internal
+            buffer because of the way compression works.
+
+            Use the version taking 2 output iterators or
+            the one with the vector instead to avoid this!
+    *******************************************************/
+    uint16_t DecompressPKDPX( std::vector<uint8_t>::const_iterator             itinputbeg,
+                              std::vector<uint8_t>::const_iterator             itinputend,
+                              std::back_insert_iterator<std::vector<uint8_t> > itoutwhere );
+
+
+//    uint16_t DecompressPKDPX( std::vector<uint8_t>::const_iterator             itinputbeg,
+//                              std::vector<uint8_t>::const_iterator             itinputend,
+//                              std::back_insert_iterator<std::vector<uint8_t> > itoutwhere )
+//    {
+//        //Get header
+//        pkdpx_header myhdr;
+//        itinputbeg = myhdr.ReadFromContainer( itinputbeg, itinputend );
+//        compression::px_info_header pxinf = static_cast<compression::px_info_header>(myhdr);
+
+//        //1 - make buffer
+//        std::vector<uint8_t> buffer;
+//        buffer.reserve( pxinf.decompressedsz );
+
+//        //2 - decompress
+//        compression::DecompressPX( pxinf,
+//                                   itinputbeg,
+//                                   itinputend,
+//                                   buffer,
+//                                   false );
+
+//        //3 - copy buffer
+//        std::copy( buffer.begin(), buffer.end(), itoutwhere );
+
+//        return static_cast<uint16_t>(buffer.size());
+//    }
+
 
 };
 #endif // PXHANDLER_HPP

@@ -93,6 +93,11 @@ void MainWindow::DisplayStartScreen()
 void MainWindow::DisplayPropertiesPage(Sprite * spr)
 {
     qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
+    spr_manager::SpriteContainer * pcnt = spr_manager::SpriteManager::Instance().getContainer();
+    ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOf(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
+    if( !spr->wasParsed() )
+        spr->ParseSpriteData();
+    spr->FillSpriteProperties(ui->tblProperties);
     ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
     ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
     ShowATab(ui->tabproperties);
@@ -160,8 +165,20 @@ void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
 
 void MainWindow::LoadContainer(const QString &path)
 {
-    spr_manager::SpriteManager::Instance().OpenContainer(path);
+    //Open
+    qInfo() <<"Opening file " <<path <<"!\n";
+    spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().OpenContainer(path);
+    qInfo() <<path <<" loaded!\n";
+    m_lastSavePath = path;
+
+    //Display!
+    if(sprcnt && sprcnt->hasChildren())
+        DisplayPropertiesPage(&sprcnt->GetSprite(0));
+    setupListView();
     updateActions();
+
+//    spr_manager::SpriteManager::Instance().OpenContainer(path);
+//    updateActions();
 }
 
 void MainWindow::SaveContainer(const QString &path)
@@ -241,21 +258,8 @@ void MainWindow::on_action_Open_triggered()
                 return;
             };
         }
-
-        //Open
-        qInfo() <<"Opening file " <<fileName <<"!\n";
-        spr_manager::SpriteContainer * sprcnt = sprman.OpenContainer(fileName);
-        qInfo() <<fileName <<" loaded!\n";
-        m_lastSavePath = fileName;
-
-        //Display!
-        if(sprcnt && sprcnt->hasChildren())
-            DisplayPropertiesPage(&sprcnt->GetSprite(0));
-        setupListView();
-        updateActions();
+        LoadContainer(fileName);
     }
-    else
-        qWarning() << "Got an empty path!\n";
 }
 
 void MainWindow::on_action_Quit_triggered()
@@ -265,19 +269,19 @@ void MainWindow::on_action_Quit_triggered()
     qDebug() <<"After exit call!\n";
 }
 
-void MainWindow::on_tv_sprcontent_itemSelectionChanged()
-{
+//void MainWindow::on_tv_sprcontent_itemSelectionChanged()
+//{
 
-}
+//}
 
-void MainWindow::on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
-{
-    qDebug() << "MainWindow::on_tv_sprcontent_currentItemChanged(): ";
-    if(current)
-        qDebug() <<"Selected element #" <<current->parent()->indexOfChild(current) <<"!\n";
-    else
-        qDebug() <<"Unselected!\n";
-}
+//void MainWindow::on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+//{
+//    qDebug() << "MainWindow::on_tv_sprcontent_currentItemChanged(): ";
+//    if(current)
+//        qDebug() <<"Selected element #" <<current->parent()->indexOfChild(current) <<"!\n";
+//    else
+//        qDebug() <<"Unselected!\n";
+//}
 
 void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
 {
@@ -306,10 +310,10 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
     ui->tv_sprcontent->setUpdatesEnabled(true);
 }
 
-void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
-{
+//void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
+//{
 
-}
+//}
 
 void MainWindow::on_action_Save_triggered()
 {
@@ -361,15 +365,15 @@ void MainWindow::on_action_Export_triggered()
     //QSaveFile;
 }
 
-void MainWindow::on_actionSprite_triggered()
-{
+//void MainWindow::on_actionSprite_triggered()
+//{
 
-}
+//}
 
-void MainWindow::on_actionSprite_Pack_File_triggered()
-{
+//void MainWindow::on_actionSprite_Pack_File_triggered()
+//{
 
-}
+//}
 
 void MainWindow::on_actionUndo_triggered()
 {
@@ -389,6 +393,7 @@ void MainWindow::on_action_Settings_triggered()
 void MainWindow::on_action_About_triggered()
 {
     DialogAbout abt;
+    abt.setModal(true);
     abt.show();
 }
 
@@ -556,15 +561,15 @@ void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
     }
 }
 
-void MainWindow::on_tblviewImagesTest_doubleClicked(const QModelIndex &index)
-{
-    Image * pcur = static_cast<Image*>(index.internalPointer());
+//void MainWindow::on_tblviewImagesTest_doubleClicked(const QModelIndex &index)
+//{
+//    Image * pcur = static_cast<Image*>(index.internalPointer());
 
-    if(!pcur)
-        return;
+//    if(!pcur)
+//        return;
 
-    DisplayImagePage( pcur->parentSprite(), pcur );
-}
+//    DisplayImagePage( pcur->parentSprite(), pcur );
+//}
 
 void MainWindow::on_btnSeqPlay_clicked()
 {
