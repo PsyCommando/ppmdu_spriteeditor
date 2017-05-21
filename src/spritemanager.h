@@ -121,8 +121,15 @@ namespace spr_manager
     public:
 
         SpriteManager()
-            :QAbstractItemModel(nullptr)
-        {}
+            :QAbstractItemModel(nullptr), m_container(nullptr)
+        {
+        }
+
+        ~SpriteManager()
+        {
+            //Since the class will be deleted later by the model, release ownership here instead of deleting!
+            m_container.take();
+        }
 
         static SpriteManager & Instance()
         {
@@ -170,7 +177,7 @@ namespace spr_manager
         inline SpriteContainer * getContainer() {return m_container.data();}
 
     private:
-        QScopedPointer<SpriteContainer> m_container;
+        QScopedPointer<SpriteContainer> m_container; //<-- MAKE THIS A QPOINTER And destroy manually or via the item model!!!!!
         QStringList m_animslotnames;
 
     };

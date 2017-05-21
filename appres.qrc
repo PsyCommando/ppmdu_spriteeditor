@@ -2,6 +2,8 @@
     <qresource prefix="/imgs">
         <file alias="test.png">resources/imgs/test.png</file>
         <file>resources/imgs/kofi2.png</file>
+        <file>resources/imgs/noimg.svg</file>
+        <file>resources/imgs/noimg.png</file>
     </qresource>
     <qresource lang="en" prefix="/">
         <file alias="test.txt">resources/test.txt</file>

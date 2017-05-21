@@ -23,7 +23,7 @@ namespace utils
     QByteArray Expand4BppTo8Bpp(const QByteArray & src);
     std::vector<uint8_t> Expand4BppTo8Bpp(const std::vector<uint8_t> & src);
 
-    std::vector<uint8_t> Reduce8bppTo4bpp( std::vector<uint8_t> & src );
+    std::vector<uint8_t> Reduce8bppTo4bpp( const std::vector<uint8_t> & src );
 
     //Assumes 8bpp
     //QPixmap UntileIntoImg( unsigned int pixwidth, unsigned int pixheight, const QByteArray & src, const QVector<QRgb> & colors );

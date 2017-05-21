@@ -5,10 +5,15 @@
 #include <QGraphicsPixmapItem>
 #include <QThread>
 #include <QThreadPool>
-
+#include <QSvgRenderer>
 #include <dialogexport.hpp>
 #include <diagsingleimgcropper.hpp>
 #include <dialogabout.hpp>
+
+QPixmap ImageToPixmap( QImage && img, const QSize & sz )
+{
+    return qMove(QPixmap::fromImage(img, Qt::ImageConversionFlag::AvoidDither | Qt::ImageConversionFlag::ColorOnly).scaled( sz, Qt::KeepAspectRatio));
+}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -93,12 +98,19 @@ void MainWindow::DisplayStartScreen()
 void MainWindow::DisplayPropertiesPage(Sprite * spr)
 {
     qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
+
     spr_manager::SpriteContainer * pcnt = spr_manager::SpriteManager::Instance().getContainer();
     ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOf(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
     if( !spr->wasParsed() )
         spr->ParseSpriteData();
     spr->FillSpriteProperties(ui->tblProperties);
-    ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
+
+    //display preview only if we have image data!
+    if( spr->hasImageData() )
+        ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
+    else
+        ui->lblPropPreview->setPixmap(RenderNoImageSvg().scaled(ui->lblPropPreview->size(), Qt::KeepAspectRatio));
+
     ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
     ShowATab(ui->tabproperties);
 }
@@ -145,12 +157,12 @@ void MainWindow::DisplayAnimGroupPage(Sprite *spr)
     ShowATab(ui->tabanimgrp);
 }
 
+
+
 void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
 {
     qDebug() << "MainWindow::DisplayImagePage(): Displaying image page!\n";
-    QPixmap apixm = qMove(img->makePixmap(spr->getPalette()).scaled( ui->lbl_imgpreview->size(), Qt::KeepAspectRatio));
-    qDebug() << "MainWindow::DisplayImagePage(): Pixmap generated!\n";
-    ui->lbl_imgpreview->setPixmap(apixm);
+    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(spr->getPalette()), ui->lbl_imgpreview->size()));
     qDebug() << "MainWindow::DisplayImagePage(): Pixmap assigned!\n";
     ShowATab(ui->tabimage);
 }
@@ -232,6 +244,12 @@ void MainWindow::OnActionRemSprite()
 {
     qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+}
+
+QPixmap MainWindow::RenderNoImageSvg()
+{
+    QImage image(QString(":/imgs/resources/imgs/noimg.png"));
+    return qMove(QPixmap::fromImage(image, Qt::ImageConversionFlag::ColorOnly | Qt::ImageConversionFlag::AvoidDither));
 }
 
 void MainWindow::on_action_Open_triggered()

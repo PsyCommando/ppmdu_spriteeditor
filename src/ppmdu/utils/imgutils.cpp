@@ -50,7 +50,7 @@ namespace utils
         return std::move(out);
     }
 
-    std::vector<uint8_t> Reduce8bppTo4bpp(std::vector<uint8_t> &src )
+    std::vector<uint8_t> Reduce8bppTo4bpp(const std::vector<uint8_t> &src )
     {
         std::vector<uint8_t> out;
         out.reserve(src.size() / 2);

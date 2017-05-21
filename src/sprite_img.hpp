@@ -93,7 +93,7 @@ class Image : public BaseTreeTerminalChild<&ElemName_Image>
 {
 public:
     Image(TreeElement * parent)
-        :BaseTreeTerminalChild(parent), m_depth(0)
+        :BaseTreeTerminalChild(parent), m_depth(0), m_unk2(0), m_unk14(0)
     {
         setDataTy(eTreeElemDataType::image);
     }
@@ -105,37 +105,48 @@ public:
     {
         m_depth = 4;
         QVector<QRgb> dummy(16);
-        m_raw = std::move( utils::Untile( w, h, utils::Expand4BppTo8Bpp(img) ) );
+        m_raw = qMove( utils::Untile( w, h, utils::Expand4BppTo8Bpp(img.data) ) );
         m_img = utils::RawToImg( w, h, m_raw, dummy );
+        m_unk2 = img.unk2;
+        m_unk14 = img.unk14;
     }
 
-    fmt::ImageDB::img_t exportImage4bpp(int & w, int & h)
+    fmt::ImageDB::img_t exportImage4bpp(int & w, int & h)const
     {
         w = m_img.width();
         h = m_img.height();
-        fmt::ImageDB::img_t imgtmp(utils::TileFromImg(m_img));
-        return std::move(utils::Reduce8bppTo4bpp(imgtmp));
+        fmt::ImageDB::img_t img;
+        img.data = std::move(utils::Reduce8bppTo4bpp(utils::TileFromImg(m_img)));
+        img.unk2 = m_unk2;
+        img.unk14 = m_unk14;
+        return qMove(img);
     }
 
     void importImage8bpp(const fmt::ImageDB::img_t & img, int w, int h)
     {
         m_depth = 8;
         QVector<QRgb> dummy(256);
-        m_raw = utils::Untile(w, h, img);
+        m_raw = utils::Untile(w, h, img.data);
         m_img = utils::RawToImg( w, h, m_raw, dummy);
+        m_unk2 = img.unk2;
+        m_unk14 = img.unk14;
     }
 
-    fmt::ImageDB::img_t exportImage8bpp(int & w, int & h)
+    fmt::ImageDB::img_t exportImage8bpp(int & w, int & h)const
     {
         w = m_img.width();
         h = m_img.height();
-        return std::move(utils::TileFromImg(m_img));
+        fmt::ImageDB::img_t img;
+        img.data = qMove(utils::TileFromImg(m_img));
+        img.unk2 = m_unk2;
+        img.unk14 = m_unk14;
+        return qMove(img);
     }
 
-    QPixmap makePixmap( const QVector<QRgb> & palette )
+    QImage makeImage( const QVector<QRgb> & palette )
     {
         m_img.setColorTable(palette);
-        return QPixmap::fromImage(m_img, Qt::ColorOnly | Qt::ThresholdDither | Qt::AvoidDither);
+        return QImage(m_img);
     }
 
 //    void makeImageTableRow( QTableWidget * tbl, const QVector<QRgb> & pal, int rowid )
@@ -190,14 +201,16 @@ private:
 //    int         m_width;
 //    int         m_height;
     QImage              m_img;
-    fmt::ImageDB::img_t m_raw; //Need this because QImage doesn't own the buffer...
+    std::vector<uint8_t> m_raw; //Need this because QImage doesn't own the buffer...
     int                 m_depth;    //Original image depth in bpp
+    uint16_t            m_unk2;
+    uint16_t            m_unk14;
 };
 
 //*******************************************************************
 //
 //*******************************************************************
-class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>/*, public QAbstractItemModel*/
+class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>
 {
 
 public:
@@ -258,6 +271,7 @@ public:
         }
         QVariant data(const QModelIndex &index, int role) const override
         {
+            Q_ASSERT(hasChildren(QModelIndex()));
             if (!index.isValid())
                 return QVariant("root");
 

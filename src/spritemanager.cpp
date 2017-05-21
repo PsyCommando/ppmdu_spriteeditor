@@ -10,7 +10,7 @@ namespace spr_manager
 
     SpriteContainer * SpriteManager::OpenContainer(const QString &fname)
     {
-        m_container.reset( new SpriteContainer(fname) );
+        m_container.reset(new SpriteContainer(fname));
         m_container->LoadContainer();
         return m_container.data();
     }
@@ -22,18 +22,32 @@ namespace spr_manager
 
     void SpriteManager::SaveContainer()
     {
+        if(!m_container)
+        {
+            qWarning("No container loaded!");
+            return;
+        }
         m_container->WriteContainer();
     }
 
     void SpriteManager::SaveContainer(const QString &fname)
     {
+        if(!m_container)
+        {
+            qWarning("No container loaded!");
+            return;
+        }
         m_container->SetContainerSrcPath(fname);
         m_container->WriteContainer();
     }
 
     void SpriteManager::ExportContainer(const QString &fname)
     {
-
+        if(!m_container)
+        {
+            qWarning("No container loaded!");
+            return;
+        }
     }
 
     void SpriteManager::ImportContainer(const QString &fname)
@@ -43,7 +57,7 @@ namespace spr_manager
 
     SpriteContainer * SpriteManager::NewContainer(SpriteContainer::eContainerType type)
     {
-        m_container.reset( new SpriteContainer() );
+        m_container.reset(new SpriteContainer());
         m_container->SetContainerType(type);
 
         if(m_container->ContainerIsSingleSprite())
@@ -79,7 +93,7 @@ namespace spr_manager
 
     void SpriteManager::Reset()
     {
-        m_container.reset(nullptr);
+        m_container.reset();
     }
 
     void SpriteManager::AddSpriteToContainer(Sprite &&spr)
@@ -98,7 +112,11 @@ namespace spr_manager
 
     void SpriteManager::RemSpriteFromContainer(QModelIndex index)
     {
-
+        if(!m_container)
+        {
+            qWarning("No container loaded!");
+            return;
+        }
     }
 
     bool SpriteManager::ContainerIsPackFile()const

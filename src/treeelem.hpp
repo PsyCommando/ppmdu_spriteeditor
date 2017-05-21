@@ -76,7 +76,10 @@ public:
     }
 
     virtual TreeElement *   child(int row)=0;
-    virtual const TreeElement *   child(int row)const { return const_cast<TreeElement*>(this)->child(row); }
+    virtual const TreeElement *   child(int row)const
+    {
+        return const_cast<TreeElement*>(this)->child(row);
+    }
     virtual int             childCount() const=0;
     virtual int             childNumber() const=0;
     virtual int             columnCount() const=0;
@@ -223,7 +226,13 @@ public:
         virtual ~BaseListContainerChild() {}
 
 
-        TreeElement *child(int row) override    {return &m_container[row];}
+        TreeElement *child(int row) override
+        {
+            if(childCount() > 0)
+                return &m_container[row];
+            else
+                return nullptr;
+        }
         int childCount() const override         {return m_container.size();}
         int childNumber() const override
         {

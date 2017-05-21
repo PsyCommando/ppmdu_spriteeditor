@@ -32,7 +32,7 @@ QVariant Image::imgData(int column, int role)
     {
     case 0: //preview
         if( role == Qt::DecorationRole )
-            res.setValue(makePixmap(parentSprite()->getPalette()));
+            res.setValue(makeImage(parentSprite()->getPalette()));
         else if( role == Qt::SizeHintRole )
             res.setValue( QSize(m_img.size().width() *2, m_img.size().height() *2) );
         break;
@@ -83,15 +83,15 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect * out_area) const
     {
         auto res = part.GetResolution();
         Image* pimg = pspr->getImage(part.getFrameIndex()); // returns null if -1 frame or out of range!
-        QPixmap pix;
+        QImage pix;
         if(!pimg && plast) //check for -1 frames
         {
             Image* plastimg = pspr->getImage(plast->getFrameIndex());
-            pix = qMove(QPixmap(plastimg->makePixmap(pal)));
+            pix = qMove(plastimg->makeImage(pal));
         }
         else if(pimg)
         {
-            pix = qMove(QPixmap(pimg->makePixmap(pal)));
+            pix = qMove(pimg->makeImage(pal));
             plast = &part;
         }
 
@@ -104,7 +104,7 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect * out_area) const
 
         int finalx = (part.getXOffset());
         int finaly = (part.getYOffset());
-        painter.drawPixmap( xoffset + finalx, yoffset + finaly, res.first, res.second, pix );
+        painter.drawImage(xoffset + finalx, yoffset + finaly, pix );
     }
 
     //imgres.save("./mframeassemble.png", "png");

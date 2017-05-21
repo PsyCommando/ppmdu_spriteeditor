@@ -394,13 +394,19 @@ namespace fmt
     **********************************************************************/
     struct ImageDB
     {
-        typedef std::vector<uint8_t>    img_t;
+        struct img_t
+        {
+            std::vector<uint8_t> data;
+            uint16_t             unk2;
+            uint16_t             unk14;
+        };
         typedef std::list<step_t>       frm_t;
         typedef std::vector<img_t>      imgtbl_t;
         typedef std::vector<frm_t>      frmtbl_t;
         imgtbl_t    m_images;    //contains decoded raw linear images
         frmtbl_t    m_frames;    //References on how to assemble raw images into individual animation frames.
         palettedata m_pal;
+
 
         /*
          *  imgstriptblentry
@@ -442,71 +448,214 @@ namespace fmt
             }
         };
 
-        template<class _init, class _outit>
-            _outit ZeroStripImage( _init imgbeg, _init imgend, _outit itoutstrip, uint32_t & curoffset, std::vector<imgstriptblentry> & striptbl )const
+        /*
+            imgEncoder
+                Encode an image to the format in the WAN sprites.
+                AKA it removes tiles full of zeros.
+        */
+        class imgEncoder
         {
-            static const size_t  MIN_OPLEN = 32; //The minimum length of a strip table operation entry
-            std::vector<uint8_t> strip;
-            imgstriptblentry     lastentry;
+            std::list<imgstriptblentry> asmtbl;
+            std::vector<uint8_t>        stripsdat;
+            uint32_t                    totallen;
+            uint32_t                    baseoffset;
+            uint16_t                    unk2;
+            uint16_t                    unk14;
+            std::vector<uint32_t>       &ptrlist;
+            std::vector<uint32_t>       &imgptrs;
 
-            size_t cntentries = 0;
-            for(; imgbeg != imgend; ++imgbeg )
+        public:
+
+            imgEncoder(std::vector<uint32_t> & pointers, std::vector<uint32_t> &imgpointers)
+                :ptrlist(pointers), imgptrs(imgpointers)
+            {}
+
+            /*
+                operator()
+                    Encode the image specified!
+                    Returns the total length of the image block written!
+            */
+            template<class _init, class _outit>
+                uint32_t operator()(_init imgbeg,
+                                  _init imgend,
+                                  _outit & itout,
+                                  uint32_t curoffset,
+                                  uint16_t _unk2,
+                                  uint16_t _unk14)
             {
-                //We copy at least 32 bytes minimum
-                bool    bisallzero  = true;
-                size_t  cntby       = 0;
-                for( ; cntby < MIN_OPLEN && imgbeg != imgend; ++cntby, ++imgbeg )
+                asmtbl.resize(0);
+                stripsdat.resize(0);
+                totallen = 0;
+                baseoffset = curoffset;
+                unk2  = _unk2;
+                unk14 = _unk14;
+                BuildTable(MakeStrips(imgbeg, imgend),itout);
+                WriteEncoded(itout);
+                return totallen;
+            }
+
+        private:
+
+            struct stripkind
+            {
+                std::vector<uint8_t> stripdata;
+                bool                 iszeros;
+                uint32_t             src;
+            };
+
+            /*
+                MakeStrips
+                    Since the assembly table lengths are divisible by 32 (aka 64 pixels or 1, 8x8 tile)
+                    we cut it up into strips right away, and then we check which ones are consecutively 0 or not
+                    and merge their entries in the assembly table!.
+            */
+            template<class _init>
+                std::vector<stripkind> MakeStrips(_init imgbeg, _init imgend)
+            {
+                static const size_t STRIPLEN = 32; //0x20 bytes
+                std::vector<stripkind> outstrips;
+                size_t totalby = 0;
+                while(imgbeg != imgend)
                 {
-                    uint8_t curby = (*imgbeg);
-                    if( curby != 0 )
-                        bisallzero = false;
-                    strip.push_back(curby);
-                }
-
-                if(bisallzero)
-                {
-                    if(lastentry.src != 0)
+                    //bool stripiszeros = true;
+                    stripkind curstrip{std::vector<uint8_t>(STRIPLEN,0), true, totalby};
+                    for(size_t cntpix = 0; (cntpix < STRIPLEN) && (imgbeg != imgend); ++imgbeg, ++cntpix)
                     {
-                        //push the last non-0 entry!
-                        curoffset += strip.size();
-                        itoutstrip = std::copy( strip.begin(), strip.end(), itoutstrip );
-                        striptbl.push_back(lastentry);
+                        curstrip.stripdata[cntpix] = *imgbeg;
+                        if( curstrip.iszeros && curstrip.stripdata[cntpix] != 0)
+                        {
+                            curstrip.iszeros = false;
+                            curstrip.src     = 0;
+                        }
                     }
-
-
-                    if(lastentry.src == 0)
-                        lastentry.len   += strip.size();
-                    else
-                        lastentry.len   = strip.size();
-                    lastentry.src   = 0;
-                    lastentry.unk14 = 0;
-                    lastentry.unk2  = 0;
-                    strip.resize(0);
+                    totalby += STRIPLEN;
+                    outstrips.push_back(std::move(curstrip));
                 }
-                else
-                {
-                    if(lastentry.src == 0)
-                        striptbl.push_back(lastentry); //push the last 0 entry!
-
-                    if(lastentry.src == 0 || cntentries == 0)
-                    {
-                        lastentry.src   = curoffset;
-                        lastentry.len   = strip.size();
-                    }
-                    else
-                    {
-                        lastentry.len   += strip.size();
-                    }
-
-                    lastentry.unk14 = 0;
-                    lastentry.unk2  = 0;
-                }
-                ++cntentries;
 
             }
 
-            return itoutstrip;
-        }
+            template<class _outit>
+                 void BuildTable(const std::vector<stripkind> & strips,
+                                   _outit & itout)
+            {
+                auto beg = strips.begin();
+                auto end = strips.end();
+                while(beg != end)
+                {
+                    bool searchforzeros = beg->iszeros; //Set whether we're looking for adjacents strips of 0s or strips of non-zeros
+                    imgstriptblentry entry;
+                    entry.src = (searchforzeros)? 0 : stripsdat.size() + baseoffset;
+                    //Combine adjacent entries that are the same into one entry
+                    for(; (beg != end) && (beg->iszeros == searchforzeros); ++beg )
+                    {
+                        entry.len   += beg->stripdata.size();
+                        entry.unk2  =  unk2;
+                        entry.unk14 =  unk14;
+
+                        //if we're not looking for a strip of zeros, put the image data
+                        if( !searchforzeros )
+                        {
+                            itout = std::copy( beg->stripdata.begin(), beg->stripdata.end(), itout); //Write the image strips to the output
+                            totallen += beg->stripdata.size();
+                        }
+                    }
+
+                    asmtbl.push_back(std::move(entry)); //Add the assembled entry to the list
+                }
+                //return itout;
+            }
+
+            template<class _outit>
+                 void WriteEncoded( _outit & itout )
+             {
+                //write the table!
+                imgptrs.push_back(totallen + baseoffset); //mark the begining of the assembly table for this image!
+                for( const auto & astrip : asmtbl )
+                {
+                    //Mark the pointers for the SIR0 header!
+                    if(astrip.src != 0)
+                        ptrlist.push_back(totallen + baseoffset);
+
+                    itout = astrip.write(itout);
+                    totallen += imgstriptblentry::ENTRY_LEN;
+                }
+                //write the last null entry!
+                itout = imgstriptblentry().write(itout);
+                totallen += imgstriptblentry::ENTRY_LEN;
+                //return itout;
+             }
+        };
+
+//        template<class _init, class _outit>
+//            _outit ZeroStripImage( _init imgbeg,
+//                                   _init imgend,
+//                                   _outit itoutstrip,
+//                                   uint32_t & curoffset,
+//                                   std::vector<imgstriptblentry> & striptbl )const
+//        {
+//            static const size_t  MIN_OPLEN = 32; //The minimum length of a strip table operation entry
+//            std::vector<uint8_t> strip;
+//            imgstriptblentry     lastentry;
+
+//            size_t cntentries = 0;
+//            for(; imgbeg != imgend; ++imgbeg )
+//            {
+//                //We copy at least 32 bytes minimum
+//                bool    bisallzero  = true;
+//                size_t  cntby       = 0;
+//                for( ; cntby < MIN_OPLEN && imgbeg != imgend; ++cntby, ++imgbeg )
+//                {
+//                    uint8_t curby = (*imgbeg);
+//                    if( curby != 0 )
+//                        bisallzero = false;
+//                    strip.push_back(curby);
+//                }
+
+//                if(bisallzero)
+//                {
+//                    if(lastentry.src != 0)
+//                    {
+//                        //push the last non-0 entry!
+//                        curoffset += strip.size();
+//                        itoutstrip = std::copy( strip.begin(), strip.end(), itoutstrip );
+//                        striptbl.push_back(lastentry);
+//                    }
+
+
+//                    if(lastentry.src == 0)
+//                        lastentry.len   += strip.size();
+//                    else
+//                        lastentry.len   = strip.size();
+//                    lastentry.src   = 0;
+//                    lastentry.unk14 = 0;
+//                    lastentry.unk2  = 0;
+//                    strip.resize(0);
+//                }
+//                else
+//                {
+//                    if(lastentry.src == 0)
+//                        striptbl.push_back(lastentry); //push the last 0 entry!
+
+//                    if(lastentry.src == 0 || cntentries == 0)
+//                    {
+//                        lastentry.src   = curoffset;
+//                        lastentry.len   = strip.size();
+//                    }
+//                    else
+//                    {
+//                        lastentry.len   += strip.size();
+//                    }
+
+//                    lastentry.unk14 = 0;
+//                    lastentry.unk2  = 0;
+//                }
+//                ++cntentries;
+
+//            }
+
+//            imgEncoder()()
+//            return itoutstrip;
+//        }
 
 
         template<class _outit>
@@ -527,27 +676,9 @@ namespace fmt
         template<class _outit>
             _outit WriteImages( _outit itout, uint32_t & curoffset, std::vector<uint32_t> & pointers, std::vector<uint32_t> & imgptrs )const
         {
+            imgEncoder encoder(pointers, imgptrs);
             for(const img_t & img : m_images)
-            {
-                pointers.push_back(curoffset);
-
-                std::vector<imgstriptblentry> strips;
-                //Compress image
-                itout = ZeroStripImage(img.begin(), img.end(), itout, curoffset, strips);
-                imgptrs.push_back(curoffset); //The img table entry points to the zero strip table!!
-
-                //Write table
-                for( const auto & strip : strips )
-                {
-                    if(strip.src != 0)//Mark all pointers!
-                        pointers.push_back(curoffset);
-                    itout = strip.write(itout);
-                    curoffset+= imgstriptblentry::ENTRY_LEN;
-                }
-                //write 12 bytes of 0
-                itout = imgstriptblentry().write(itout); //write empty entry to mark end!
-                curoffset+= imgstriptblentry::ENTRY_LEN;
-            }
+                curoffset += encoder(img.data.begin(), img.data.end(), itout, curoffset, img.unk2, img.unk14 );
             return itout;
         }
 
@@ -636,15 +767,15 @@ namespace fmt
             {
                 uint32_t pixsrc = utils::readBytesAs<uint32_t>(itcmptable, itsrcend);
                 len             = utils::readBytesAs<uint16_t>(itcmptable, itsrcend);
-                uint16_t unk14  = utils::readBytesAs<uint16_t>(itcmptable, itsrcend);
-                uint32_t unk2   = utils::readBytesAs<uint32_t>(itcmptable, itsrcend);
+                curimg.unk14    = utils::readBytesAs<uint16_t>(itcmptable, itsrcend);
+                curimg.unk2     = utils::readBytesAs<uint32_t>(itcmptable, itsrcend);
 
                 if( pixsrc == 0 )
-                    fill_n( back_inserter(curimg), len, 0 );
+                    fill_n( back_inserter(curimg.data), len, 0 );
                 else
                 {
                     auto itimg = next(itsrcbeg, pixsrc);
-                    copy( itimg, next(itimg,len), back_inserter(curimg) );
+                    copy( itimg, next(itimg,len), back_inserter(curimg.data) );
                 }
 
             }while( len != 0 ); //null entry is last

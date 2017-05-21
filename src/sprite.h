@@ -72,6 +72,7 @@ public:
           m_seqcnt(this),
           m_anmtbl(this),
           m_bparsed(false),
+          m_bhasimagedata(false),
           m_targetgompression(filetypes::eCompressionFormats::INVALID)
     {
         //AddSprite(this);
@@ -96,6 +97,7 @@ public:
           m_seqcnt(this),
           m_anmtbl(this),
           m_bparsed(false),
+          m_bhasimagedata(false),
           m_targetgompression(filetypes::eCompressionFormats::INVALID)
     {
         //AddSprite(this);
@@ -118,6 +120,7 @@ public:
           m_seqcnt(this),
           m_anmtbl(this),
           m_bparsed(false),
+          m_bhasimagedata(false),
           m_targetgompression(filetypes::eCompressionFormats::INVALID)
     {
         operator=(cp);
@@ -135,6 +138,7 @@ public:
         m_seqcnt = cp.m_seqcnt;
         m_anmtbl = cp.m_anmtbl;
         m_bparsed = cp.m_bparsed;
+        m_bhasimagedata = cp.m_bhasimagedata;
         //Update the pointer to our instance
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
@@ -157,7 +161,8 @@ public:
           m_frmcnt(this),
           m_seqcnt(this),
           m_anmtbl(this),
-          m_bparsed(false)
+          m_bparsed(false),
+          m_bhasimagedata(false)
     {
         operator=(mv);
     }
@@ -173,6 +178,7 @@ public:
         m_seqcnt = std::move(mv.m_seqcnt);
         m_anmtbl = std::move(mv.m_anmtbl);
         m_bparsed = mv.m_bparsed;
+        m_bhasimagedata = mv.m_bhasimagedata;
         //Update the pointer to our instance
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
@@ -306,7 +312,7 @@ public:
         else
             m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
 
-
+        m_bhasimagedata = m_imgcnt.childCount() != 0;
         m_bparsed = true;
     }
 
@@ -355,7 +361,7 @@ public:
 
     QPixmap & MakePreviewFrame()
     {
-        if(m_bparsed)
+        if(wasParsed() && hasImageData())
         {
             return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0)) );
         }
@@ -467,17 +473,16 @@ private:
     AnimSequences           m_seqcnt;
     AnimTable               m_anmtbl;
 
-    bool                    m_bparsed;
+    bool                    m_bparsed;          //Whether the sprite's raw has been parsed to be displayed yet or not!
+    bool                    m_bhasimagedata;    //Whether the sprite can be displayed or not!
     filetypes::eCompressionFormats m_targetgompression;
 
 
     //SpritePropertiesHandler m_prophndlr;
 
 public:
-    bool wasParsed()const
-    {
-        return m_bparsed;
-    }
+    inline bool wasParsed()const    {return m_bparsed;}
+    inline bool hasImageData()const {return m_bhasimagedata;}
 
     //Raw data buffer
     std::vector<uint8_t>    m_raw;

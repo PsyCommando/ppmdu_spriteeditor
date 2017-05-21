@@ -288,6 +288,8 @@ public:
     void OnActionRemSprite();
 
 private:
+    QPixmap RenderNoImageSvg();
+
     void updateActions();
 
     //Tweak the list view to better display either single sprites or pack files!!
