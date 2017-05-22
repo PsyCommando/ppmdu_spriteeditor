@@ -20,17 +20,20 @@ const QList<QVariant> AnimSequence::HEADER_COLUMNS
 };
 
 AnimSequences::AnimSequences(TreeElement *parent)
-    :BaseListContainerChild(parent), m_model(this)
-{}
+    :BaseListContainerChild(parent), m_pmodel(new model_t(this))
+{
+    setElemTy(eTreeElemType::Fixed);
+    setDataTy(eTreeElemDataType::animSequences);
+}
 
 AnimSequences::AnimSequences(const AnimSequences &cp)
-    :BaseListContainerChild(cp), m_model(this)
+    :BaseListContainerChild(cp), m_pmodel(new model_t(this))
 {
 
 }
 
 AnimSequences::AnimSequences(AnimSequences &&mv)
-    :BaseListContainerChild(mv), m_model(this)
+    :BaseListContainerChild(mv), m_pmodel(new model_t(this))
 {
 
 }
@@ -116,7 +119,7 @@ fmt::AnimDB::animseqtbl_t AnimSequences::exportSequences()
     return qMove(seqs);
 }
 
-AnimSequences::model_t &AnimSequences::getModel() {return m_model;}
+AnimSequences::model_t *AnimSequences::getModel() {return m_pmodel.data();}
 
 Sprite *AnimFrame::parentSprite()
 {

@@ -31,7 +31,15 @@ public:
 
     EffectOffsetContainer( TreeElement * parent )
         :BaseTreeTerminalChild(parent)
-    {}
+    {
+        setElemTy(eTreeElemType::Fixed);
+        setDataTy(eTreeElemDataType::effectOffsets);
+    }
+
+    ~EffectOffsetContainer()
+    {
+        qDebug("EffectOffsetContainer::~EffectOffsetContainer()\n");
+    }
 
     QVariant data(int column, int role) const override
     {
@@ -71,7 +79,15 @@ public:
 
     PaletteContainer( TreeElement * parent )
         :BaseTreeTerminalChild(parent)
-    {}
+    {
+        setElemTy(eTreeElemType::Fixed);
+        setDataTy(eTreeElemDataType::palette);
+    }
+
+    ~PaletteContainer()
+    {
+        qDebug("PaletteContainer::~PaletteContainer()\n");
+    }
 
     QVariant data(int column, int role) const override
     {
@@ -143,10 +159,11 @@ public:
         return qMove(img);
     }
 
-    QImage makeImage( const QVector<QRgb> & palette )
+    QImage makeImage( const QVector<QRgb> & palette )const
     {
-        m_img.setColorTable(palette);
-        return QImage(m_img);
+        QImage img(m_img);
+        img.setColorTable(palette);
+        return qMove(img);
     }
 
 //    void makeImageTableRow( QTableWidget * tbl, const QVector<QRgb> & pal, int rowid )
@@ -195,7 +212,7 @@ public:
     }
 
     //Those can be re-implemented!
-    QVariant imgData(int column, int role);
+    QVariant imgData(int column, int role) const;
 
 private:
 //    int         m_width;
@@ -207,180 +224,71 @@ private:
     uint16_t            m_unk14;
 };
 
+
+/*
+*/
+class ImageContainer;
+class ImagesManager : public QAbstractItemModel
+{
+    Q_OBJECT
+    ImageContainer * m_parentcnt;
+    // QAbstractItemModel interface
+public:
+    ImagesManager(ImageContainer * parent);
+
+    virtual ~ImagesManager();
+
+    QModelIndex index(int row, int column, const QModelIndex &parent) const override;
+    QModelIndex parent(const QModelIndex &child) const override;
+    int rowCount(const QModelIndex &parent) const override;
+    int columnCount(const QModelIndex &parent) const override;
+    bool hasChildren(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+    bool insertRows(int row, int count, const QModelIndex &parent) override;
+    bool removeRows(int row, int count, const QModelIndex &parent) override;
+    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
+
+    TreeElement *getItem(const QModelIndex &index);
+};
+
 //*******************************************************************
 //
 //*******************************************************************
 class ImageContainer : public BaseListContainerChild<&ElemName_Images, Image>
 {
-
-public:
-    class ImagesManager : public QAbstractItemModel
-    {
-        //Q_OBJECT
-        ImageContainer * m_parentcnt;
-        // QAbstractItemModel interface
-    public:
-        ImagesManager(ImageContainer * parent)
-            :QAbstractItemModel(), m_parentcnt(parent)
-        {}
-
-        virtual ~ImagesManager()
-        {
-
-        }
-
-        QModelIndex index(int row, int column, const QModelIndex &parent) const override
-        {
-            TreeElement *parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
-            TreeElement *childItem  = parentItem->child(row);
-            if (childItem)
-                return createIndex(row, column, childItem);
-            else
-                return QModelIndex();
-        }
-        QModelIndex parent(const QModelIndex &child) const override
-        {
-            TreeElement *childItem = const_cast<ImagesManager*>(this)->getItem(child);
-            TreeElement *parentItem = childItem->parent();
-            Q_ASSERT(parentItem != nullptr);
-
-            if (parentItem == m_parentcnt)
-                return QModelIndex();
-
-            return createIndex(parentItem->childNumber(), 0, parentItem);
-        }
-        int rowCount(const QModelIndex &parent) const override
-        {
-            TreeElement *parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
-            return parentItem->childCount();
-        }
-        int columnCount(const QModelIndex &parent) const override
-        {
-            if (parent.isValid())
-                return static_cast<Image*>(parent.internalPointer())->nbimgcolumns();
-            else
-                return 3;
-        }
-        bool hasChildren(const QModelIndex &parent) const override
-        {
-            TreeElement * parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
-            if(parentItem)
-                return parentItem->childCount() > 0;
-            else
-                return false;
-        }
-        QVariant data(const QModelIndex &index, int role) const override
-        {
-            Q_ASSERT(hasChildren(QModelIndex()));
-            if (!index.isValid())
-                return QVariant("root");
-
-            if (role != Qt::DisplayRole &&
-                role != Qt::DecorationRole &&
-                role != Qt::SizeHintRole &&
-                role != Qt::EditRole)
-                return QVariant();
-
-            Image *img = static_cast<Image*>( const_cast<ImagesManager*>(this)->getItem(index));
-            return img->imgData(index.column(), role);
-        }
-
-        QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-        {
-            if( role != Qt::DisplayRole )
-                return QVariant();
-
-            if( orientation == Qt::Orientation::Vertical )
-            {
-                return std::move(QVariant( QString("%1").arg(section) ));
-            }
-            else if( orientation == Qt::Orientation::Horizontal )
-            {
-                switch(section)
-                {
-                case 0:
-                    return std::move(QVariant( QString("Preview") ));
-                case 1:
-                    return std::move(QVariant( QString("Bit Depth") ));
-                case 2:
-                    return std::move(QVariant( QString("Resolution") ));
-                };
-            }
-            return QVariant();
-        }
-
-        bool insertRows(int row, int count, const QModelIndex &parent) override
-        {
-            TreeElement *parentItem = getItem(parent);
-            bool success;
-
-            beginInsertRows(parent, row, row + count - 1);
-            success = parentItem->insertChildren(row, count);
-            endInsertRows();
-
-            return success;
-        }
-        bool removeRows(int row, int count, const QModelIndex &parent) override
-        {
-            TreeElement *parentItem = getItem(parent);
-            bool success = true;
-
-            beginRemoveRows(parent, row, row + count - 1);
-            success = parentItem->removeChildren(row, count);
-            endRemoveRows();
-
-            return success;
-        }
-        bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override
-        {
-            Q_ASSERT(false);
-            return false;
-        }
-
-        TreeElement *getItem(const QModelIndex &index)
-        {
-            if (index.isValid())
-            {
-                TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
-                if (item)
-                    return item;
-            }
-            return m_parentcnt;
-        }
-    };
-
 public:
     ImageContainer( TreeElement * parent)
-        :BaseListContainerChild(parent),m_manager(new ImagesManager(this))
-    {setDataTy(eTreeElemDataType::images);}
+        :BaseListContainerChild(parent)
+    {
+        setElemTy(eTreeElemType::Fixed);
+        setDataTy(eTreeElemDataType::images);
+    }
 
     ImageContainer( const ImageContainer & cp)
-        :BaseListContainerChild(cp),m_manager(new ImagesManager(this))
+        :BaseListContainerChild(cp)
     {}
 
     ImageContainer( ImageContainer && mv)
-        :BaseListContainerChild(mv),m_manager(new ImagesManager(this))
+        :BaseListContainerChild(mv)
     {}
 
     ~ImageContainer()
     {
-        if(!m_manager.isNull())
-            delete m_manager;
+        qDebug("ImageContainer::~ImageContainer()\n");
     }
 
     ImageContainer & operator=( const ImageContainer & cp )
     {
         BaseListContainerChild::operator=(cp);
-        delete m_manager;
-        m_manager = new ImagesManager(this);
         return *this;
     }
 
     ImageContainer & operator=( ImageContainer && mv )
     {
         BaseListContainerChild::operator=(mv);
-        delete m_manager;
-        m_manager = new ImagesManager(this);
         return *this;
     }
 
@@ -468,13 +376,51 @@ public:
     Sprite * parentSprite();
 
 
-    ImagesManager * getModel(){return m_manager.data();}
+    //ImagesManager * getModel(){return m_manager.data();}
+
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        if (!index.isValid())
+            return QVariant("root");
+
+        if (role != Qt::DisplayRole &&
+                role != Qt::DecorationRole &&
+                role != Qt::SizeHintRole &&
+                role != Qt::EditRole)
+            return QVariant();
+
+        const Image *img = static_cast<const Image*>(getItem(index));
+        return img->imgData(index.column(), role);
+    }
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+    {
+        if( role != Qt::DisplayRole )
+            return QVariant();
+
+        if( orientation == Qt::Orientation::Vertical )
+        {
+            return std::move(QVariant( QString("%1").arg(section) ));
+        }
+        else if( orientation == Qt::Orientation::Horizontal )
+        {
+            switch(section)
+            {
+            case 0:
+                return std::move(QVariant( QString("Preview") ));
+            case 1:
+                return std::move(QVariant( QString("Bit Depth") ));
+            case 2:
+                return std::move(QVariant( QString("Resolution") ));
+            };
+        }
+        return QVariant();
+    }
 
     inline Image * getImage(fmt::frmid_t id) { return static_cast<Image*>(child(id)); }
     inline const Image * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->child(id)); }
 
 private:
-    QPointer<ImagesManager> m_manager;
+    //QScopedPointer<ImagesManager> m_manager;
 
 };
 
@@ -537,7 +483,15 @@ public:
 
     FramesContainer( TreeElement * parent )
         :BaseListContainerChild(parent)
-    {}
+    {
+        setElemTy(eTreeElemType::Fixed);
+        setDataTy(eTreeElemDataType::frames);
+    }
+
+    ~FramesContainer()
+    {
+        qDebug("FrameContainer::~FrameContainer()\n");
+    }
 
     QVariant data(int column, int role) const override
     {
@@ -576,6 +530,45 @@ public:
     const MFrame * getFrame(fmt::frmid_t id)const
     {
         return const_cast<FramesContainer*>(this)->getFrame(id);
+    }
+
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        if (!index.isValid())
+            return QVariant("root");
+
+        if (role != Qt::DisplayRole &&
+                role != Qt::DecorationRole &&
+                role != Qt::SizeHintRole &&
+                role != Qt::EditRole)
+            return QVariant();
+
+        const MFrame *frm = static_cast<const MFrame*>(getItem(index));
+        return frm->data(index.column(), role);
+    }
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+    {
+//        if( role != Qt::DisplayRole )
+//            return QVariant();
+
+//        if( orientation == Qt::Orientation::Vertical )
+//        {
+//            return std::move(QVariant( QString("%1").arg(section) ));
+//        }
+//        else if( orientation == Qt::Orientation::Horizontal )
+//        {
+//            switch(section)
+//            {
+//            case 0:
+//                return std::move(QVariant( QString("Preview") ));
+//            case 1:
+//                return std::move(QVariant( QString("Bit Depth") ));
+//            case 2:
+//                return std::move(QVariant( QString("Resolution") ));
+//            };
+//        }
+        Q_ASSERT(false);
+        return QVariant();
     }
 
 private:

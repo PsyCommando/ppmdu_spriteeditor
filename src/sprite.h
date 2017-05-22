@@ -54,91 +54,79 @@ signals:
 //*******************************************************************
 class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
 {
-public:
-    friend class SpritePropertiesHandler;
 
-
-public:
-    typedef std::vector<uint8_t> rawdat_t;
-
-    Sprite( TreeElement * parent )
-        :TreeElement(parent),
-          BaseSequentialIDGen(),
-          //m_prophndlr(this),
-          m_efxcnt(this),
-          m_palcnt(this),
-          m_imgcnt(this),
-          m_frmcnt(this),
-          m_seqcnt(this),
-          m_anmtbl(this),
-          m_bparsed(false),
-          m_bhasimagedata(false),
-          m_targetgompression(filetypes::eCompressionFormats::INVALID)
+    void _ctor()
     {
-        //AddSprite(this);
-        InitElemTypes();
+        m_bparsed = false;
+        m_bhasimagedata = false;
+        m_targetgompression = filetypes::eCompressionFormats::INVALID;
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
         m_imgcnt.m_parentItem = this;
         m_frmcnt.m_parentItem = this;
         m_seqcnt.m_parentItem = this;
         m_anmtbl.m_parentItem = this;
+        setDataTy(eTreeElemDataType::sprite);
+    }
+
+public:
+    friend class SpritePropertiesHandler;
+
+    typedef std::vector<uint8_t> rawdat_t;
+
+    Sprite( TreeElement * parent )
+        :TreeElement(parent),
+          m_efxcnt(this),
+          m_palcnt(this),
+          m_imgcnt(this),
+          m_frmcnt(this),
+          m_seqcnt(this),
+          m_anmtbl(this)
+
+    {
+        _ctor();
     }
 
     Sprite( TreeElement * parent, rawdat_t && raw )
         :TreeElement(parent),
-          BaseSequentialIDGen(),
-          //m_prophndlr(this),
           m_raw(raw),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this),
-          m_bparsed(false),
-          m_bhasimagedata(false),
-          m_targetgompression(filetypes::eCompressionFormats::INVALID)
+          m_anmtbl(this)
     {
-        //AddSprite(this);
-        InitElemTypes();
-        m_efxcnt.m_parentItem = this;
-        m_palcnt.m_parentItem = this;
-        m_imgcnt.m_parentItem = this;
-        m_frmcnt.m_parentItem = this;
-        m_seqcnt.m_parentItem = this;
-        m_anmtbl.m_parentItem = this;
+        _ctor();
     }
 
     Sprite( const Sprite & cp )
         :TreeElement(cp),
-          //m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this),
-          m_bparsed(false),
-          m_bhasimagedata(false),
-          m_targetgompression(filetypes::eCompressionFormats::INVALID)
+          m_anmtbl(this)
     {
+        _ctor();
         operator=(cp);
     }
 
     Sprite & operator=(const Sprite & cp)
     {
-        //m_prophndlr.setOwner(this);
-        //
-        m_sprhndl= cp.m_sprhndl;
-        m_efxcnt = cp.m_efxcnt;
-        m_palcnt = cp.m_palcnt;
-        m_imgcnt = cp.m_imgcnt;
-        m_frmcnt = cp.m_frmcnt;
-        m_seqcnt = cp.m_seqcnt;
-        m_anmtbl = cp.m_anmtbl;
-        m_bparsed = cp.m_bparsed;
-        m_bhasimagedata = cp.m_bhasimagedata;
+        m_sprhndl               = cp.m_sprhndl;
+        m_efxcnt                = cp.m_efxcnt;
+        m_palcnt                = cp.m_palcnt;
+        m_imgcnt                = cp.m_imgcnt;
+        m_frmcnt                = cp.m_frmcnt;
+        m_seqcnt                = cp.m_seqcnt;
+        m_anmtbl                = cp.m_anmtbl;
+        m_bparsed               = cp.m_bparsed;
+        m_bhasimagedata         = cp.m_bhasimagedata;
+        m_targetgompression     = cp.m_targetgompression;
+        m_raw                   = cp.m_raw;
+
         //Update the pointer to our instance
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
@@ -146,39 +134,36 @@ public:
         m_frmcnt.m_parentItem = this;
         m_seqcnt.m_parentItem = this;
         m_anmtbl.m_parentItem = this;
-        //
-        m_raw = cp.m_raw;
-        InitElemTypes();
         return *this;
     }
 
     Sprite( Sprite && mv )
         :TreeElement(mv),
-          //m_prophndlr(this),
           m_efxcnt(this),
           m_palcnt(this),
           m_imgcnt(this),
           m_frmcnt(this),
           m_seqcnt(this),
-          m_anmtbl(this),
-          m_bparsed(false),
-          m_bhasimagedata(false)
+          m_anmtbl(this)
     {
+        _ctor();
         operator=(mv);
     }
 
     Sprite & operator=(Sprite && mv)
     {
-        //m_prophndlr.setOwner(this);
-        //
-        m_efxcnt = std::move(mv.m_efxcnt);
-        m_palcnt = std::move(mv.m_palcnt);
-        m_imgcnt = std::move(mv.m_imgcnt);
-        m_frmcnt = std::move(mv.m_frmcnt);
-        m_seqcnt = std::move(mv.m_seqcnt);
-        m_anmtbl = std::move(mv.m_anmtbl);
-        m_bparsed = mv.m_bparsed;
-        m_bhasimagedata = mv.m_bhasimagedata;
+        m_sprhndl               = std::move(mv.m_sprhndl);
+        m_efxcnt                = std::move(mv.m_efxcnt);
+        m_palcnt                = std::move(mv.m_palcnt);
+        m_imgcnt                = std::move(mv.m_imgcnt);
+        m_frmcnt                = std::move(mv.m_frmcnt);
+        m_seqcnt                = std::move(mv.m_seqcnt);
+        m_anmtbl                = std::move(mv.m_anmtbl);
+        m_bparsed               = mv.m_bparsed;
+        m_bhasimagedata         = mv.m_bhasimagedata;
+        m_targetgompression     = mv.m_targetgompression;
+        m_raw                   = std::move(mv.m_raw);
+
         //Update the pointer to our instance
         m_efxcnt.m_parentItem = this;
         m_palcnt.m_parentItem = this;
@@ -186,37 +171,12 @@ public:
         m_frmcnt.m_parentItem = this;
         m_seqcnt.m_parentItem = this;
         m_anmtbl.m_parentItem = this;
-        //
-        m_raw = std::move(mv.m_raw);
-        InitElemTypes();
         return *this;
     }
 
-    virtual ~Sprite()
+    ~Sprite()
     {
-    }
-
-    void InitElemTypes()
-    {
-        setDataTy(eTreeElemDataType::sprite);
-
-        m_efxcnt.setElemTy(eTreeElemType::Fixed);
-        m_efxcnt.setDataTy(eTreeElemDataType::effectOffsets);
-
-        m_palcnt.setElemTy(eTreeElemType::Fixed);
-        m_palcnt.setDataTy(eTreeElemDataType::palette);
-
-        m_imgcnt.setElemTy(eTreeElemType::Fixed);
-        m_imgcnt.setDataTy(eTreeElemDataType::images);
-
-        m_frmcnt.setElemTy(eTreeElemType::Fixed);
-        m_frmcnt.setDataTy(eTreeElemDataType::frames);
-
-        m_seqcnt.setElemTy(eTreeElemType::Fixed);
-        m_seqcnt.setDataTy(eTreeElemDataType::animSequences);
-
-        m_anmtbl.setElemTy(eTreeElemType::Fixed);
-        m_anmtbl.setDataTy(eTreeElemDataType::animTable);
+        qDebug("Sprite::~Sprite(): Sprite ID: %d\n", m_id);
     }
 
 
@@ -226,12 +186,6 @@ public:
         tbl->setCellWidget(0,0, new QLabel(QString( "Raw Size" )));
         tbl->setCellWidget(0,1, new QLabel( QString( "%1b" ).arg(m_raw.size()) ));
     }
-
-//    SpritePropertiesHandler & getEventHandler()
-//    {
-//        return m_prophndlr;
-//    }
-
 
 public:
 

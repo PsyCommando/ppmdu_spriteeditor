@@ -489,7 +489,8 @@ namespace fmt
                 baseoffset = curoffset;
                 unk2  = _unk2;
                 unk14 = _unk14;
-                BuildTable(MakeStrips(imgbeg, imgend),itout);
+                auto strips = MakeStrips(imgbeg, imgend);
+                BuildTable(strips,itout);
                 WriteEncoded(itout);
                 return totallen;
             }
@@ -531,7 +532,7 @@ namespace fmt
                     totalby += STRIPLEN;
                     outstrips.push_back(std::move(curstrip));
                 }
-
+                return std::move(outstrips);
             }
 
             template<class _outit>
@@ -701,6 +702,7 @@ namespace fmt
             itout = utils::writeBytesFrom( m_pal.unk5, itout);
             itout = utils::writeBytesFrom( static_cast<uint32_t>(0), itout);
             curoffset += palettedata::LEN;
+            return itout;
         }
 
 
@@ -867,6 +869,7 @@ namespace fmt
                 itout = utils::writeBytesFrom( ofs.yoff,  itout);
                 curoffset += sizeof(uint16_t) * 2;
             }
+            return itout;
         }
 
         template<class _outit> _outit WriteSequences( _outit itout, uint32_t & curoffset, std::vector<uint32_t> & ptrseqs )const

@@ -110,11 +110,14 @@ class AnimSequence : public BaseListContainerChild<&ElemName_AnimSequence, AnimF
 public:
     typedef container_t::iterator                       iterator;
     typedef container_t::const_iterator                 const_iterator;
-    typedef BaseTreeNodeModel<AnimSequence,AnimFrame>   model_t;
+    typedef BaseTreeNodeModel                           model_t;
 
     AnimSequence( TreeElement * parent )
         :BaseListContainerChild(parent), m_model(this)
-    {setDataTy(eTreeElemDataType::animSequence);}
+    {
+        setElemTy(eTreeElemType::Fixed);
+        setDataTy(eTreeElemDataType::animSequence);
+    }
 
     AnimSequence( const AnimSequence & cp )
         :BaseListContainerChild(cp), m_model(this)
@@ -233,7 +236,7 @@ private:
 class AnimSequences : public BaseListContainerChild<&ElemName_AnimSequences, AnimSequence>
 {
 public:
-    typedef BaseTreeNodeModel<AnimSequences, AnimSequence> model_t;
+    typedef BaseTreeNodeModel model_t;
 
     static const QList<QVariant> HEADER_COLUMNS;
 
@@ -241,9 +244,9 @@ public:
     AnimSequences( const AnimSequences & cp );
     AnimSequences( AnimSequences && mv );
 
-    virtual ~AnimSequences()
+    ~AnimSequences()
     {
-
+        qDebug("AnimSequences::~AnimSequences()\n");
     }
 
     AnimSequences & operator=( const AnimSequences & cp );
@@ -262,11 +265,11 @@ public:
 
     //Accessors
     Sprite * parentSprite();
-    inline model_t & getModel();
+    model_t * getModel();
     AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id );
 
 private:
-    model_t m_model;
+    QScopedPointer<model_t> m_pmodel;
 };
 
 //*******************************************************************
@@ -365,7 +368,10 @@ public:
 
     AnimTable( TreeElement * parent )
         :BaseListContainerChild(parent)
-    {}
+    {
+        setElemTy(eTreeElemType::Fixed);
+        setDataTy(eTreeElemDataType::animTable);
+    }
 
     QVariant data(int column, int role) const override
     {
@@ -437,6 +443,45 @@ public:
     inline fmt::AnimDB::animgrpid_t & getAnimTableEntry(int entry) {return m_animtbl[entry];}
 
     Sprite * parentSprite();
+
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        if (!index.isValid())
+            return QVariant("root");
+
+        if (role != Qt::DisplayRole &&
+                role != Qt::DecorationRole &&
+                role != Qt::SizeHintRole &&
+                role != Qt::EditRole)
+            return QVariant();
+
+        const AnimGroup *grp = static_cast<const AnimGroup*>(getItem(index));
+        return grp->data(index.column(), role);
+    }
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+    {
+//        if( role != Qt::DisplayRole )
+//            return QVariant();
+
+//        if( orientation == Qt::Orientation::Vertical )
+//        {
+//            return std::move(QVariant( QString("%1").arg(section) ));
+//        }
+//        else if( orientation == Qt::Orientation::Horizontal )
+//        {
+//            switch(section)
+//            {
+//            case 0:
+//                return std::move(QVariant( QString("Preview") ));
+//            case 1:
+//                return std::move(QVariant( QString("Bit Depth") ));
+//            case 2:
+//                return std::move(QVariant( QString("Resolution") ));
+//            };
+//        }
+        Q_ASSERT(false);
+        return QVariant();
+    }
 
 private:
     QList<fmt::AnimDB::animgrpid_t> m_animtbl;

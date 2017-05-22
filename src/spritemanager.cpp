@@ -48,11 +48,13 @@ namespace spr_manager
             qWarning("No container loaded!");
             return;
         }
+        fname;
     }
 
     void SpriteManager::ImportContainer(const QString &fname)
     {
         Reset();
+        fname;
     }
 
     SpriteContainer * SpriteManager::NewContainer(SpriteContainer::eContainerType type)
@@ -76,7 +78,7 @@ namespace spr_manager
             return 0;
     }
 
-    const QString &SpriteManager::GetContainerSrcFile() const
+    QString SpriteManager::GetContainerSrcFile() const
     {
         if(m_container)
             return m_container->GetContainerSrcPath();
@@ -117,6 +119,7 @@ namespace spr_manager
             qWarning("No container loaded!");
             return;
         }
+        index;
     }
 
     bool SpriteManager::ContainerIsPackFile()const
@@ -145,6 +148,8 @@ namespace spr_manager
                 return ShortNameWAN;
             case SpriteContainer::eContainerType::WAT:
                 return ShortNameWAT;
+            default:
+                return QString("NULL");
             };
         }
         return ShortNameNone;

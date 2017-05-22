@@ -21,8 +21,9 @@ namespace spr_manager
     /*
      *  SpriteContainer
     */
-    class SpriteContainer : public TreeElement
+    class SpriteContainer : public QObject, public TreeElement
     {
+        Q_OBJECT
     public:
         typedef QList<Sprite>::iterator         iterator;
         typedef QList<Sprite>::const_iterator   const_iterator;
@@ -38,16 +39,20 @@ namespace spr_manager
         static const QList<QString> SpriteContentCategories;
 
         //
-        SpriteContainer()
-            :TreeElement(nullptr), m_cntTy(eContainerType::NONE), m_rootelem(this)
-        {}
+        SpriteContainer(QObject * parent = nullptr)
+            :QObject(parent), TreeElement(nullptr), m_cntTy(eContainerType::NONE), m_rootelem(this)
+        {
 
-        SpriteContainer(const QString & str)
-            :TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE), m_rootelem(this)
+        }
+
+        SpriteContainer(const QString & str, QObject * parent = nullptr)
+            :QObject(nullptr), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE), m_rootelem(this)
         {}
 
         virtual ~SpriteContainer()
-        {}
+        {
+            qDebug("SpriteContainer::~SpriteContainer(): Deleting sprite container!\n");
+        }
 
         //
         bool ContainerLoaded()const;

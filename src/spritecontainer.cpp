@@ -117,14 +117,21 @@ namespace spr_manager
                                                      cnt->end(),
                                                      [&writer,&mtxdata,&tmpdata](Sprite & curspr)
         {
-            if(curspr.wasParsed())
-                curspr.CommitSpriteData();
+            try
+            {
+                if(curspr.wasParsed())
+                    curspr.CommitSpriteData();
 
-            QMutexLocker lk(&mtxdata);
-            QVector<uint8_t> curdata;
-            std::copy( curspr.getRawData().begin(), curspr.getRawData().end(), std::back_inserter(curdata) );
-            tmpdata.push_back(curdata);
-            //writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
+                QMutexLocker lk(&mtxdata);
+                QVector<uint8_t> curdata;
+                std::copy( curspr.getRawData().begin(), curspr.getRawData().end(), std::back_inserter(curdata) );
+                tmpdata.push_back(curdata);
+                //writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
+            }
+            catch(const std::exception & e)
+            {
+                qWarning(e.what());
+            }
         });
 
 

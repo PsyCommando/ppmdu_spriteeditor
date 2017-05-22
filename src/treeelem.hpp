@@ -109,6 +109,21 @@ public:
     QMutex               m_mtxhierarchy;
 };
 
+/*******************************************************************
+    BaseTreeNodeModelParent
+        Base class used for parent of the BaseTreeNodeModel class!
+*******************************************************************/
+class BaseTreeNodeModelParent : public TreeElement
+{
+public:
+    using TreeElement::TreeElement;
+    //BaseTreeNodeModelParent(){}
+    virtual ~BaseTreeNodeModelParent(){}
+
+    virtual int columnCount(const QModelIndex &parent)=0;
+    virtual QVariant data(const QModelIndex &index, int role)const = 0;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const = 0;
+};
 
 /*******************************************************************
  * BaseTreeTerminalChild
@@ -182,147 +197,21 @@ public:
 
 
 /*******************************************************************
- * BaseListContainerChild
- *      Base class for implementing tree nodes with childrens!
-*******************************************************************/
-    template<const char** _STRELEMNAME, class _CHILD_TY>
-        class BaseListContainerChild : public TreeElement
-    {
-    protected:
-        constexpr QString ElemName()const
-        {
-            return QString(*_STRELEMNAME);
-        }
-        typedef _CHILD_TY               child_t;
-        typedef QList<child_t> container_t;
-
-        typedef BaseListContainerChild<_STRELEMNAME, _CHILD_TY> my_t;
-
-    public:
-        BaseListContainerChild(TreeElement * parent)
-            :TreeElement(parent)
-        {}
-
-        BaseListContainerChild(const my_t & cp)
-            :TreeElement(cp),m_container(cp.m_container)
-        {}
-
-        BaseListContainerChild(my_t && mv)
-            :m_container(qMove(mv.m_container)), TreeElement(mv)
-        {}
-
-        my_t & operator=(const my_t & cp)
-        {
-            m_container = cp.m_container;
-            return *this;
-        }
-
-        my_t & operator=(my_t && mv)
-        {
-            m_container = qMove(mv.m_container);
-            return *this;
-        }
-
-        virtual ~BaseListContainerChild() {}
-
-
-        TreeElement *child(int row) override
-        {
-            if(childCount() > 0)
-                return &m_container[row];
-            else
-                return nullptr;
-        }
-        int childCount() const override         {return m_container.size();}
-        int childNumber() const override
-        {
-            QMutexLocker lk(&const_cast<typename std::add_pointer<my_t>::type>(this)->getMutex());
-            if (m_parentItem)
-                return m_parentItem->indexOf(const_cast<BaseListContainerChild*>(this));
-
-            return 0;
-        }
-
-        int indexOf( TreeElement * ptr )const override
-        {
-            QMutexLocker lk(&const_cast<typename std::add_pointer<my_t>::type>(this)->getMutex());
-            child_t * ptras = static_cast<child_t *>(ptr);
-            //Search a matching child in the list!
-            if( ptras )
-                return m_container.indexOf(*ptras);
-            return 0;
-        }
-
-        //Thos can be re-implemented!
-        virtual int columnCount() const                 {return 1;}
-
-        virtual QVariant data(int column, int role) const override
-        {
-            if( role != Qt::DisplayRole &&
-                role != Qt::DecorationRole &&
-                role != Qt::SizeHintRole &&
-                role != Qt::EditRole )
-                return QVariant();
-
-            if( column != 0 )
-                return QVariant();
-            QString sprname = QString("%1#%2").arg(ElemName()).arg(childNumber());
-            return QVariant(sprname);
-        }
-
-//        virtual QVariant headerData(int section, bool bhorizontal, int role) const override
-//        {
-////            if( role != Qt::DisplayRole &&
-////                role != Qt::DecorationRole &&
-////                role != Qt::SizeHintRole &&
-////                role != Qt::EditRole )
-////                return QVariant();
-
-////            if( column != 0 )
-////                return QVariant();
-
-//            return QVariant();
-//        }
-
-
-        bool insertChildren(int position, int count) override
-        {
-            QMutexLocker lk(&getMutex());
-            int i = 0;
-            for( ; i < count; ++i )
-                m_container.insert(position, child_t(this) );
-            return true;
-        }
-
-        bool removeChildren(int position, int count) override
-        {
-            QMutexLocker lk(&getMutex());
-            if( (position + count) >= m_container.size() )
-                return false;
-
-            int i = 0;
-            for( ; i < count; ++i )
-                m_container.removeAt(position);
-            return true;
-        }
-
-    protected:
-        container_t m_container;
-
-    };
-
-/*******************************************************************
  * BaseTreeNodeModel
  *      Base class for adding a model to a child treenode so the
  *      child of that tree node can be used as a separate model!
 *******************************************************************/
-template<class _TREE_NODE_TY, class _CHILD_NODE_TY>
+//template<class _TREE_NODE_TY, class _CHILD_NODE_TY>
     class BaseTreeNodeModel : public QAbstractItemModel
 {
+    Q_OBJECT
 public:
-    typedef _TREE_NODE_TY                                   modelparent_t;
-    typedef _CHILD_NODE_TY                                  mpchild_t;
-    typedef BaseTreeNodeModel<_TREE_NODE_TY,_CHILD_NODE_TY> my_t;
+//    typedef _TREE_NODE_TY                                   modelparent_t;
+//    typedef _CHILD_NODE_TY                                  mpchild_t;
+//    typedef BaseTreeNodeModel<_TREE_NODE_TY,_CHILD_NODE_TY> my_t;
+    typedef BaseTreeNodeModelParent       modelparent_t;
+    typedef TreeElement       mpchild_t;
+    typedef BaseTreeNodeModel my_t;
 
     BaseTreeNodeModel(modelparent_t * par)
         :QAbstractItemModel(), m_modelparent(par)
@@ -485,6 +374,183 @@ public:
 protected:
     modelparent_t * m_modelparent;
 };
+
+/*******************************************************************
+ * BaseListContainerChild
+ *      Base class for implementing tree nodes with childrens!
+*******************************************************************/
+    template<const char** _STRELEMNAME, class _CHILD_TY>
+        class BaseListContainerChild : public BaseTreeNodeModelParent
+    {
+    protected:
+        constexpr QString ElemName()const
+        {
+            return QString(*_STRELEMNAME);
+        }
+        typedef _CHILD_TY               child_t;
+        typedef QList<child_t>          container_t;
+        typedef BaseTreeNodeModel       model_t;
+
+        typedef BaseListContainerChild<_STRELEMNAME, _CHILD_TY> my_t;
+
+    public:
+        BaseListContainerChild(TreeElement * parent)
+            :BaseTreeNodeModelParent(parent), m_pmodel(new model_t(this))
+        {}
+
+        BaseListContainerChild(const my_t & cp)
+            :BaseTreeNodeModelParent(cp),m_container(cp.m_container), m_pmodel(new model_t(this))
+        {}
+
+        BaseListContainerChild(my_t && mv)
+            : BaseTreeNodeModelParent(mv), m_container(qMove(mv.m_container)), m_pmodel(new model_t(this))
+        {}
+
+        my_t & operator=(const my_t & cp)
+        {
+            m_pmodel.reset(new model_t(this));
+            m_container = cp.m_container;
+            return *this;
+        }
+
+        my_t & operator=(my_t && mv)
+        {
+            m_pmodel.reset(new model_t(this));
+            m_container = qMove(mv.m_container);
+            return *this;
+        }
+
+        virtual ~BaseListContainerChild() {}
+
+
+        TreeElement *child(int row) override
+        {
+            if(childCount() > 0)
+                return &m_container[row];
+            else
+                return nullptr;
+        }
+        int childCount() const override         {return m_container.size();}
+
+        inline bool hasChildren()const {return childCount() > 0;}
+
+        int childNumber() const override
+        {
+            QMutexLocker lk(&const_cast<typename std::add_pointer<my_t>::type>(this)->getMutex());
+            if (m_parentItem)
+                return m_parentItem->indexOf(const_cast<BaseListContainerChild*>(this));
+
+            return 0;
+        }
+
+        int indexOf( TreeElement * ptr )const override
+        {
+            QMutexLocker lk(&const_cast<typename std::add_pointer<my_t>::type>(this)->getMutex());
+            child_t * ptras = static_cast<child_t *>(ptr);
+            //Search a matching child in the list!
+            if( ptras )
+                return m_container.indexOf(*ptras);
+            return 0;
+        }
+
+        //Thos can be re-implemented!
+        virtual int columnCount() const                 {return 1;}
+
+        virtual QVariant data(int column, int role) const override
+        {
+            if( role != Qt::DisplayRole &&
+                role != Qt::DecorationRole &&
+                role != Qt::SizeHintRole &&
+                role != Qt::EditRole )
+                return QVariant();
+
+            if( column != 0 )
+                return QVariant();
+            QString sprname = QString("%1#%2").arg(ElemName()).arg(childNumber());
+            return QVariant(sprname);
+        }
+
+//        virtual QVariant headerData(int section, bool bhorizontal, int role) const override
+//        {
+////            if( role != Qt::DisplayRole &&
+////                role != Qt::DecorationRole &&
+////                role != Qt::SizeHintRole &&
+////                role != Qt::EditRole )
+////                return QVariant();
+
+////            if( column != 0 )
+////                return QVariant();
+
+//            return QVariant();
+//        }
+
+
+        bool insertChildren(int position, int count) override
+        {
+            QMutexLocker lk(&getMutex());
+            int i = 0;
+            for( ; i < count; ++i )
+                m_container.insert(position, child_t(this) );
+            return true;
+        }
+
+        bool removeChildren(int position, int count) override
+        {
+            QMutexLocker lk(&getMutex());
+            if( (position + count) >= m_container.size() )
+                return false;
+
+            int i = 0;
+            for( ; i < count; ++i )
+                m_container.removeAt(position);
+            return true;
+        }
+
+        virtual int columnCount(const QModelIndex &parent) override
+        {
+            if (parent.isValid())
+                return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
+            else
+                return columnCount();
+        }
+
+        //Implement those!!
+//        virtual QVariant data(const QModelIndex &index, int role)const override
+//        {
+
+//        }
+
+//        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+//        {
+
+//        }
+
+        inline model_t * getModel() {return m_pmodel.data();}
+        inline const model_t * getModel()const {return m_pmodel.data();}
+
+        virtual TreeElement *getItem(const QModelIndex &index)
+        {
+            if (index.isValid())
+            {
+                TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
+                if (item)
+                    return item;
+            }
+            return this;
+        }
+
+        virtual const TreeElement *getItem(const QModelIndex &index)const
+        {
+            return const_cast<my_t*>(this)->getItem(index);
+        }
+
+    protected:
+        container_t                 m_container;
+        QScopedPointer<model_t>     m_pmodel;
+    };
+
+
+
 
 
 #endif // TREEELEM_HPP

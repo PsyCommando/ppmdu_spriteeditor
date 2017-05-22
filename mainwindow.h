@@ -46,7 +46,7 @@ public:
 private:
 
 public slots:
-    volatile void doWork()
+    void doWork()
     {
         if(m_curfrm >= m_frms.size())
             m_curfrm = 0;

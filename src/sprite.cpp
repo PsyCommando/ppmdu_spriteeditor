@@ -36,7 +36,7 @@ SpritePropertiesHandler::SpritePropertiesHandler(Sprite *owner, QObject *parent)
 
 SpritePropertiesHandler::~SpritePropertiesHandler()
 {
-
+    qDebug("SpritePropertiesHandler::~SpritePropertiesHandler()\n");
 }
 
 void SpritePropertiesHandler::sendSpriteLoaded()

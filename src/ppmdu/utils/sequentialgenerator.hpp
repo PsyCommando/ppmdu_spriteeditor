@@ -37,23 +37,25 @@ namespace utils
             return s_IDRecycler;
         }
 
-        static void AssignID( BaseSequentialIDGen<parent_t, id_t> * obj )
+        static id_t AssignID()
         {
+            id_t outid = 0;
             if(GetRecycler().empty())
             {
-                obj->m_id = GetCounter();
+                outid= GetCounter();
                 ++GetCounter();
             }
             else
             {
-                obj->m_id = GetRecycler().front();
+                outid = GetRecycler().front();
                 GetRecycler().pop();
             }
+            return outid;
         }
 
-        static void ResignID( BaseSequentialIDGen<parent_t, id_t> * obj )
+        static void ResignID(id_t id)
         {
-            GetRecycler().push(obj->m_id);
+            GetRecycler().push(id);
         }
 
 
@@ -63,12 +65,12 @@ namespace utils
     public:
         BaseSequentialIDGen()
         {
-            AssignID(this);
+            m_id = AssignID();
         }
 
         virtual ~BaseSequentialIDGen()
         {
-            ResignID(this);
+            ResignID(m_id);
         }
 
         inline id_t getID()const {return m_id;}

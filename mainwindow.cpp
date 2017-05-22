@@ -42,7 +42,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    qDebug("MainWindow::~MainWindow()\n");
     delete ui;
+
+    //Delete the sprite container before the Qt framework is unloaded!
+    spr_manager::SpriteManager::Instance().CloseContainer();
 }
 
 void MainWindow::HideAllTabs()
@@ -117,6 +121,7 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
 
 void MainWindow::DisplayAnimFramePage(Sprite *spr)
 {
+    spr;
     ShowATab(ui->tabframeseditor);
 }
 
@@ -286,20 +291,6 @@ void MainWindow::on_action_Quit_triggered()
     QApplication::instance()->exit();
     qDebug() <<"After exit call!\n";
 }
-
-//void MainWindow::on_tv_sprcontent_itemSelectionChanged()
-//{
-
-//}
-
-//void MainWindow::on_tv_sprcontent_currentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
-//{
-//    qDebug() << "MainWindow::on_tv_sprcontent_currentItemChanged(): ";
-//    if(current)
-//        qDebug() <<"Selected element #" <<current->parent()->indexOfChild(current) <<"!\n";
-//    else
-//        qDebug() <<"Unselected!\n";
-//}
 
 void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
 {
@@ -471,18 +462,6 @@ void MainWindow::SaveAs(const QString &path)
 
 void MainWindow::InitAnimScene()
 {
-//    if( m_curanim )
-//    {
-//        m_curanim->Stop();
-//        m_animscene.removeItem( m_curanim->getPixPtr() );
-//        m_curanim.reset();
-//    }
-
-//    m_animscene.clear();
-//    m_animscene.setSceneRect(-256, -256, 512, 512 );
-//    m_animscene.setBackgroundBrush(QBrush(Qt::darkGray));
-//    m_animscene.addLine(0, -256, 0, 256);
-//    m_animscene.addLine(-256, 0, 256, 0);
     m_previewrender.Reset();
 }
 
@@ -578,16 +557,6 @@ void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
         //Add sprite/frame/sequence/image/etc
     }
 }
-
-//void MainWindow::on_tblviewImagesTest_doubleClicked(const QModelIndex &index)
-//{
-//    Image * pcur = static_cast<Image*>(index.internalPointer());
-
-//    if(!pcur)
-//        return;
-
-//    DisplayImagePage( pcur->parentSprite(), pcur );
-//}
 
 void MainWindow::on_btnSeqPlay_clicked()
 {

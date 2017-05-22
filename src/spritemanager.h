@@ -127,8 +127,9 @@ namespace spr_manager
 
         ~SpriteManager()
         {
+            qDebug("SpriteManager::~SpriteManager(): Deleting sprite manager!\n");
             //Since the class will be deleted later by the model, release ownership here instead of deleting!
-            m_container.take();
+            delete m_container.take();
         }
 
         static SpriteManager & Instance()
@@ -163,7 +164,7 @@ namespace spr_manager
 
         //Access
         int             GetNbSpritesInContainer()const;
-        const QString & GetContainerSrcFile()const;
+        QString GetContainerSrcFile()const;
 
         SpriteContainer::eContainerType GetType()const;
 
