@@ -141,6 +141,46 @@ namespace utils
         return ( ( src & (mask << bitoffset) ) >> bitoffset );
     }
 
+
+
+    /*********************************************************************************************
+        CalculateLengthPadding
+            Calculates the length of padding required to align an address/length
+            on the given value!
+
+            Parameters:
+                - length : The length to align.
+                - alignon: The number by which the length should be divisible by.
+
+            Return:
+                The number of padding bytes necessary to align the given length on
+                "alignon".
+    *********************************************************************************************/
+    template<typename _SizeTy>
+        inline _SizeTy CalculateLengthPadding( _SizeTy length, _SizeTy alignon )
+    {
+        return ( (length % alignon) != 0 )? (alignon - (length % alignon)) : 0;
+    }
+
+    /*********************************************************************************************
+        CalculatePaddedLengthTotal
+            Calculate the nb of padding bytes needed to align a given length on
+            the divisor specified, and add those to the length specified. Returning
+            the total amount of bytes after adding the padding bytes.
+
+            Parameters:
+                - length : The length to align.
+                - alignon: The number by which the length should be divisible by.
+
+            Return:
+                The total amount of bytes after adding the padding bytes.
+    *********************************************************************************************/
+    template<typename _SizeTy>
+        inline _SizeTy CalculatePaddedLengthTotal( _SizeTy length, _SizeTy alignon )
+    {
+        return CalculateLengthPadding(length, alignon) + length;
+    }
+
     /*********************************************************************************************
         AppendPaddingBytes
             This function takes a back insert iterator and the length of the container to append padding
@@ -151,7 +191,7 @@ namespace utils
     template<class _backinit>
         size_t AppendPaddingBytes( _backinit itinsertat, size_t lentoalign, size_t alignon, const uint8_t PadByte = 0 )
     {
-        size_t lenpadding = lentoalign % alignon;
+        size_t lenpadding = CalculateLengthPadding(lentoalign, alignon);
         for( size_t ctpad = 0; ctpad < lenpadding; ++ctpad, ++itinsertat )
             itinsertat = PadByte;
         return lenpadding;

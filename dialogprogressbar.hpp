@@ -14,12 +14,12 @@ class DialogProgressBar : public QDialog
     Q_OBJECT
 
 public:
-    explicit DialogProgressBar( const QFuture<void> & fut, QWidget *parent = 0);
-    explicit DialogProgressBar( const QFuture<int>  & fut, QWidget *parent = 0);
+    explicit DialogProgressBar(QWidget *parent = 0);
     ~DialogProgressBar();
 
 public slots:
     void finished();
+    void setFuture(QFuture<void> &fut);
 
 private slots:
     void on_btncancel_clicked();
@@ -28,6 +28,7 @@ private slots:
 private:
     Ui::DialogProgressBar *ui;
     QFutureWatcher<void>   m_watcher;
+    QFuture<void>          m_curfut;
 };
 
 #endif // DIALOGPROGRESSBAR_HPP

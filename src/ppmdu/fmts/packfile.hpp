@@ -121,16 +121,16 @@ namespace fmt
             m_hdr.tocentries.push_back(std::move(curentry));
 
             //Add padding
-            std::generate_n(itput, (m_data.size() % AlignFilesOn), GenPadding);
+            utils::AppendPaddingBytes( itput, m_data.size(), AlignFilesOn, GenPadding());
         }
 
         template<class outit>
-            void Write( outit where )
+            size_t Write( outit where )
         {
             std::lock_guard<std::mutex> lk(m_mtx);
             //Calculate Header + toc + padding len
-            size_t hdrlen = 8 + (m_hdr.tocentries.size() * packfile_hdr::SzFEntry);
-            hdrlen += hdrlen % AlignHeaderOn;
+            size_t hdrlen       = 8 + ((m_hdr.tocentries.size() + 1) * packfile_hdr::SzFEntry);
+            size_t hdrandpadlen = utils::CalculatePaddedLengthTotal(hdrlen, AlignHeaderOn);
 
             //Write Leading 0
             where = utils::writeBytesFrom( static_cast<uint32_t>(0), where );
@@ -141,7 +141,7 @@ namespace fmt
             //Write ToC entries
             for( const packfile_hdr::fentry & entry : m_hdr.tocentries )
             {
-                where = utils::writeBytesFrom( entry.offset + hdrlen, where ); //Add the estimated header len to the offset
+                where = utils::writeBytesFrom( entry.offset + hdrandpadlen, where ); //Add the estimated header len to the offset
                 where = utils::writeBytesFrom( entry.length, where );
             }
 
@@ -149,10 +149,13 @@ namespace fmt
             where = std::fill_n( where, packfile_hdr::SzFEntry, static_cast<uint8_t>(0) );
 
             //Add padding
-            where = std::generate_n(where, (m_data.size() % AlignHeaderOn), GenPadding);
+            utils::AppendPaddingBytes( where, hdrlen, AlignHeaderOn, GenPadding());
+//            where = std::generate_n(where, utils::CalculateLengthPadding(hdrlen, AlignHeaderOn), GenPadding);
 
             //Write the data blob!
             where = std::copy( m_data.begin(), m_data.end(), where );
+
+            return hdrandpadlen + m_data.size();
         }
 
     private:

@@ -40,18 +40,27 @@ namespace spr_manager
 
         //
         SpriteContainer(QObject * parent = nullptr)
-            :QObject(parent), TreeElement(nullptr), m_cntTy(eContainerType::NONE), m_rootelem(this)
+            :QObject(parent), TreeElement(nullptr), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
         {
-
         }
 
         SpriteContainer(const QString & str, QObject * parent = nullptr)
-            :QObject(nullptr), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE), m_rootelem(this)
+            :QObject(nullptr), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
         {}
+
+        SpriteContainer(const SpriteContainer&) = delete;
+        SpriteContainer(SpriteContainer&&) = delete;
+        SpriteContainer & operator=(const SpriteContainer&) = delete;
+        SpriteContainer & operator=(SpriteContainer&&) = delete;
 
         virtual ~SpriteContainer()
         {
+            //m_rootelem = nullptr;
             qDebug("SpriteContainer::~SpriteContainer(): Deleting sprite container!\n");
+            m_workthread.terminate();
+            qDebug("SpriteContainer::~SpriteContainer(): Waiting on thread..\n");
+            m_workthread.wait();
+            qDebug("SpriteContainer::~SpriteContainer(): Done!\n");
         }
 
         //
@@ -67,7 +76,11 @@ namespace spr_manager
 
         //
         void LoadContainer();
-        void WriteContainer();
+        int WriteContainer();
+
+        //
+        void ImportContainer(const QString & path);
+        void ExportContainer(const QString & path)const;
 
         //
         Sprite & GetSprite( sprid_t idx );
@@ -82,7 +95,7 @@ namespace spr_manager
 
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
         {
-            if(!ContainerLoaded())
+            if(!ContainerLoaded() || m_spr.empty())
                 return QVariant();
 
             if (!index.isValid())
@@ -103,7 +116,7 @@ namespace spr_manager
 
         int rowCount(const QModelIndex &parent = QModelIndex()) const
         {
-            if (!ContainerLoaded())
+            if (!ContainerLoaded() || m_spr.empty())
                 return 0;
 
             TreeElement *parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
@@ -112,7 +125,7 @@ namespace spr_manager
 
         bool hasChildren(const QModelIndex &parent = QModelIndex()) const
         {
-            if(!ContainerLoaded())
+            if(!ContainerLoaded() || m_spr.empty())
                 return false;
             TreeElement * parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
 
@@ -130,7 +143,7 @@ namespace spr_manager
                 if (item)
                     return item;
             }
-            return m_rootelem;
+            return this;
         }
 
 
@@ -154,11 +167,14 @@ namespace spr_manager
             if (!index.isValid() )
                 return QModelIndex();
 
+            if(m_spr.empty())
+                return QModelIndex();
+
             TreeElement *childItem = getItem(index);
             TreeElement *parentItem = childItem->parent();
             Q_ASSERT(parentItem != nullptr);
 
-            if (parentItem == m_rootelem)
+            if (parentItem == this)
                 return QModelIndex();
 
             return manager->createIndex(parentItem->childNumber(), 0, parentItem);
@@ -286,7 +302,39 @@ namespace spr_manager
         QString                 m_srcpath;      //Original path of the container if applicable!
         QList<Sprite>           m_spr;          //
         eContainerType          m_cntTy;
-        TreeElement           * m_rootelem;     //alias on this!
+        //TreeElement           * m_rootelem;     //alias on this!
+        QThread                 m_workthread;
+
+    signals:
+        void startThread();
+        void showProgress(QFuture<void>&);
+    };
+
+    /*
+        ThreadedWriter
+            Used so the event loop of the mainwindow can continue looping while we do long operations!
+    */
+    class ThreadedWriter : public QObject
+    {
+        Q_OBJECT
+    public:
+        QScopedPointer<QSaveFile>         savefile;
+        SpriteContainer                 * sprdata;
+        QMutex                            mtxdata;
+        int                               bywritten;
+        QFuture<void>                     curop;
+
+        explicit ThreadedWriter(QSaveFile * sfile, SpriteContainer * cnt);
+        virtual ~ThreadedWriter();
+
+    public slots:
+        void WritePack();
+        void WriteSprite();
+        void OnFinished();
+
+    signals:
+        void finished();
+        void finished(int); //int is the nb of bytes written!
     };
 
 };

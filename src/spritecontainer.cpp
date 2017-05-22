@@ -106,66 +106,8 @@ namespace spr_manager
 
     }
 
-    void WritePack(QSaveFile * pcontainer, spr_manager::SpriteContainer * cnt)
+    int SpriteContainer::WriteContainer()
     {
-        fmt::PackFileWriter writer;
-        QMutex              mtxdata;
-        QVector<QVector<uint8_t>> tmpdata;
-        QScopedPointer<QSaveFile> container(pcontainer);
-
-        QFuture<void> savequeue = QtConcurrent::map( cnt->begin(),
-                                                     cnt->end(),
-                                                     [&writer,&mtxdata,&tmpdata](Sprite & curspr)
-        {
-            try
-            {
-                if(curspr.wasParsed())
-                    curspr.CommitSpriteData();
-
-                QMutexLocker lk(&mtxdata);
-                QVector<uint8_t> curdata;
-                std::copy( curspr.getRawData().begin(), curspr.getRawData().end(), std::back_inserter(curdata) );
-                tmpdata.push_back(curdata);
-                //writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
-            }
-            catch(const std::exception & e)
-            {
-                qWarning(e.what());
-            }
-        });
-
-
-        DialogProgressBar prgbar(savequeue);
-        prgbar.setModal(true);
-        prgbar.show();
-
-        QFutureSynchronizer<void> futsync;
-        futsync.addFuture(savequeue);
-        futsync.waitForFinished();
-
-        QDataStream outstr(container.data());
-        QByteArray  out;
-        writer.Write(std::back_inserter(out));
-        outstr.writeRawData( out.data(), out.size() );
-        container->commit();
-    }
-
-
-    void SpriteContainer::WriteContainer()
-    {
-        if( QFile(m_srcpath).exists() )
-        {
-            //Warn overwrite
-            QMessageBox msgBox;
-            msgBox.setText("Overwrite?");
-            msgBox.setInformativeText( "The file already exists.\nOverwrite?");
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-            if(msgBox.exec() != QMessageBox::Yes)
-                return;
-        }
-
-        //
         QScopedPointer<QSaveFile> pcontainer( new  QSaveFile(m_srcpath));
 
         if( !pcontainer->open(QIODevice::WriteOnly) || pcontainer->error() != QFileDevice::NoError )
@@ -178,43 +120,51 @@ namespace spr_manager
             msgBox.setStandardButtons(QMessageBox::Ok);
             msgBox.setDefaultButton(QMessageBox::Ok);
             msgBox.exec();
-            return;
+            return 0;
         }
+
+        ThreadedWriter * pmthw = new ThreadedWriter(pcontainer.take(), spr_manager::SpriteManager::Instance().getContainer());
+        connect( &m_workthread, SIGNAL(finished()), pmthw, SLOT(deleteLater()) );
+        connect(pmthw, SIGNAL(finished()), &m_workthread, SLOT(quit()));
+        connect(pmthw, SIGNAL(finished()), pmthw, SLOT(deleteLater()));
 
         //
         switch(m_cntTy)
         {
         case eContainerType::PACK:
             {
-                WritePack(pcontainer.take(), spr_manager::SpriteManager::Instance().getContainer());
-                return;
+                connect(&m_workthread, SIGNAL(started()), pmthw, SLOT(WritePack()));
+                pmthw->moveToThread(&m_workthread);
+                break;
             }
         case eContainerType::WAN:
         case eContainerType::WAT:
             {
+                connect(&m_workthread, SIGNAL(started()), pmthw, SLOT(WriteSprite()));
+                pmthw->moveToThread(&m_workthread);
                 break;
             }
         default:
             {
                 Q_ASSERT(false);
                 qFatal("SpriteContainer::WriteContainer(): Tried to write unknown filetype!!");
+                break;
             }
         };
-        //If is a pack file, we gotta load everything first then rebuild the file
+        m_workthread.start();
+        emit showProgress(pmthw->curop);
+        qDebug("SpriteContainer::WriteContainer(): progress dialog displayed!\n");
+        return 0;
+    }
 
-        //Write stuff
-//        if(!container.commit())
-//        {
-//            //Error during commit!
-//            qWarning( container.errorString().toLocal8Bit() );
-//            QMessageBox msgBox;
-//            msgBox.setText("Failed to commit to file!");
-//            msgBox.setInformativeText(container.errorString());
-//            msgBox.setStandardButtons(QMessageBox::Ok);
-//            msgBox.setDefaultButton(QMessageBox::Ok);
-//            msgBox.exec();
-//            return;
-//        }
+    void SpriteContainer::ImportContainer(const QString &path)
+    {
+        Q_ASSERT(false); //Need to be done!
+    }
+
+    void SpriteContainer::ExportContainer(const QString &path) const
+    {
+        Q_ASSERT(false); //Need to be done!
     }
 
     Sprite &SpriteContainer::GetSprite(SpriteContainer::sprid_t idx)
@@ -242,6 +192,77 @@ namespace spr_manager
     void SpriteContainer::LoadEntry(SpriteContainer::sprid_t idx)
     {
 
+    }
+
+    ThreadedWriter::ThreadedWriter(QSaveFile *sfile, SpriteContainer *cnt)
+        :QObject(nullptr),savefile(sfile), sprdata(cnt), bywritten(0)
+    {
+        connect(this, SIGNAL(finished()), this, SLOT(OnFinished()));
+    }
+
+    ThreadedWriter::~ThreadedWriter()
+    {qDebug("ThreadedWriter::~ThreadedWriter()\n");}
+
+    void ThreadedWriter::WritePack()
+    {
+        Q_ASSERT(sprdata->hasChildren());
+        fmt::PackFileWriter writer;
+        bywritten = 0;
+
+        curop = QtConcurrent::map( sprdata->begin(),
+                                   sprdata->end(),
+                                   [&](Sprite & curspr)
+        {
+            try
+            {
+                if(curspr.wasParsed())
+                    curspr.CommitSpriteData();
+                QMutexLocker lk(&mtxdata);
+                writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
+            }
+            catch(const std::exception & e)
+            {
+                qWarning(e.what());
+            }
+        });
+
+        QFutureSynchronizer<void> futsync;
+        futsync.addFuture(curop);
+        futsync.waitForFinished();
+
+        QDataStream outstr(savefile.data());
+        QByteArray  out;
+        writer.Write(std::back_inserter(out));
+        bywritten = outstr.writeRawData( out.data(), out.size() );
+        savefile->commit();
+        emit finished(bywritten);
+        emit finished();
+        qDebug("ThreadedWriter::WritePack(): Finished!\n");
+    }
+
+    void ThreadedWriter::WriteSprite()
+    {
+        Q_ASSERT(sprdata->hasChildren());
+        QDataStream     outstr(savefile.data());
+        Sprite          &curspr = sprdata->GetSprite(0);
+        bywritten   = 0;
+
+        curop = QtConcurrent::run( [&]()
+        {
+            curspr.CommitSpriteData();
+            bywritten = outstr.writeRawData( (const char *)(curspr.getRawData().data()), curspr.getRawData().size() );
+            savefile->commit();
+        });
+        QFutureSynchronizer<void> futsync;
+        futsync.addFuture(curop);
+        futsync.waitForFinished();
+        emit finished(bywritten);
+        emit finished();
+        qDebug("ThreadedWriter::WritePack(): WriteSprite!\n");
+    }
+
+    void ThreadedWriter::OnFinished()
+    {
     }
 
 

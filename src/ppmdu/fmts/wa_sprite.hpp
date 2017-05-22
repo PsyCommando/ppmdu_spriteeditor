@@ -919,8 +919,8 @@ namespace fmt
 
                 for( const auto & seq : grp.second.seqs )
                 {
-                    if(ptrseqs.size() >= seq)
-                        throw std::out_of_range("WriteAnimGroups(): Sequence ID is out of bound!!");
+                    if(seq >= ptrseqs.size())
+                        throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
                     itout = utils::writeBytesFrom( ptrseqs.at(seq), itout);
                     ptroffslist.push_back(curoffset); //mark the pointer position for the SIR0 later!
                     curoffset += sizeof(uint32_t);
@@ -937,15 +937,29 @@ namespace fmt
             static const uint32_t SIZEANIMGRPENTRY = 8;
             for( const auto & anim : m_animtbl )
             {
-                if(ptrgrps.size() <= anim || m_animgrps.size() <= anim )
-                    throw std::out_of_range("WriteAnimTbl(): Group ID is out of bound!!");
-
-                ptroffslist.push_back(curoffset); //mark pointer offset for SIR0!
-                const auto & refgrp = ptrgrps.at(anim);
-
-                itout = utils::writeBytesFrom( refgrp.first,                        itout); //write ptr to group's sequence array in the group table!
-                itout = utils::writeBytesFrom(static_cast<uint16_t>(refgrp.second), itout); //write the size of the group's sequence array in the group table!
-                itout = utils::writeBytesFrom(m_animgrps.at(anim).unk16,            itout); //write the unk16 value for the current group!
+                uint32_t ptr    = 0;
+                uint16_t len    = 0;
+                uint16_t unk16  = 0;
+                if(anim != -1)
+                {
+                    if( (ptrgrps.size() <= anim || m_animgrps.size() <= anim) )
+                    {
+                        std::stringstream sstr;
+                        sstr << "AnimDB::WriteAnimTbl(): Group ID " <<anim <<" is out of bound!!";
+                        throw std::out_of_range(sstr.str());
+                    }
+                    else
+                    {
+                        ptroffslist.push_back(curoffset); //mark pointer offset for SIR0!
+                        const auto & refgrp = ptrgrps.at(anim);
+                        ptr = refgrp.first;
+                        len = static_cast<uint16_t>(refgrp.second);
+                        unk16 = m_animgrps.at(anim).unk16;
+                    }
+                }
+                itout = utils::writeBytesFrom(ptr,  itout); //write ptr to group's sequence array in the group table!
+                itout = utils::writeBytesFrom(len,  itout); //write the size of the group's sequence array in the group table!
+                itout = utils::writeBytesFrom(unk16,itout); //write the unk16 value for the current group!
 
                 curoffset += SIZEANIMGRPENTRY;
             }
@@ -1125,20 +1139,20 @@ namespace fmt
             uint32_t                ptrimginf = 0;
 
             //#1. Write frame assembly
-            itbackins = m_images.WriteFrames(itbackins, curoffs, frameptrs);
+            m_images.WriteFrames(itbackins, curoffs, frameptrs);
 
             //#2. Write animation sequences
-            itbackins = m_animtions.WriteSequences(itbackins, curoffs, ptrseqs);
+            m_animtions.WriteSequences(itbackins, curoffs, ptrseqs);
 
             //padding
-            itbackins = std::fill_n(itbackins, (curoffs % 4), 0xAA );
+            std::fill_n(itbackins, (curoffs % 4), 0xAA );
             curoffs += (curoffs % 4);
 
             //#3. Write compressed images
-            itbackins = m_images.WriteImages(itbackins, curoffs, hdr.ptroffsetslist, imgptrs);
+            m_images.WriteImages(itbackins, curoffs, hdr.ptroffsetslist, imgptrs);
 
             //#4. Write palette
-            itbackins = m_images.WritePalette(itbackins, curoffs, hdr.ptroffsetslist, offspal);
+            m_images.WritePalette(itbackins, curoffs, hdr.ptroffsetslist, offspal);
             imginf.ptrpal = offspal;                        //mark offset of palette data for imgfmt chunk
 
             //#5. Write frame pointer table
@@ -1155,12 +1169,12 @@ namespace fmt
             m_animtions.WriteEffectsTbl(itbackins, curoffs);
 
             //#7. Write animation groups sequences array table
-            itbackins = m_animtions.WriteAnimGroups( itbackins, curoffs, hdr.ptroffsetslist, ptrseqs, ptrgrps );
+            m_animtions.WriteAnimGroups( itbackins, curoffs, hdr.ptroffsetslist, ptrseqs, ptrgrps );
 
             //#8. Write anim group table
             amiminf.ptranimtbl  = curoffs;                      //mark offset of anim table for animfmt chunk
             amiminf.nbanims     = m_animtions.m_animtbl.size(); //mark nb animations for animfmt chunk
-            itbackins = m_animtions.WriteAnimTbl( itbackins, curoffs, hdr.ptroffsetslist, ptrgrps );
+            m_animtions.WriteAnimTbl( itbackins, curoffs, hdr.ptroffsetslist, ptrgrps );
 
             //#8. Write image pointer table
             imginf.ptrimgtable = curoffs;                   //mark chunk position for imgfmt chunk
@@ -1174,31 +1188,31 @@ namespace fmt
 
             //#9. Write anim info chunk
             ptraniminf = curoffs;   //mark chunk position for wan header
-            itbackins = WriteAnimInfo(itbackins, curoffs, hdr.ptroffsetslist, amiminf);
+            WriteAnimInfo(itbackins, curoffs, hdr.ptroffsetslist, amiminf);
 
             //#10.Write image info chunk
             ptrimginf = curoffs;    //mark chunk position for wan header
-            itbackins = WriteImageInfo(itbackins, curoffs, hdr.ptroffsetslist, imginf);
+            WriteImageInfo(itbackins, curoffs, hdr.ptroffsetslist, imginf);
 
             //#11.Write wan header
             hdr.ptrsub = curoffs; //mark header pos in sir0 header
 
             hdr.ptroffsetslist.push_back(curoffs);
-            itbackins = utils::writeBytesFrom(ptraniminf, itbackins);
+            utils::writeBytesFrom(ptraniminf, itbackins);
             curoffs += sizeof(uint32_t);
 
             hdr.ptroffsetslist.push_back(curoffs);
-            itbackins = utils::writeBytesFrom(ptrimginf, itbackins);
+            utils::writeBytesFrom(ptrimginf, itbackins);
             curoffs += sizeof(uint32_t);
 
-            itbackins = utils::writeBytesFrom(static_cast<uint16_t>(m_sprty), itbackins);
+            utils::writeBytesFrom(static_cast<uint16_t>(m_sprty), itbackins);
             curoffs += sizeof(uint16_t);
 
-            itbackins = utils::writeBytesFrom(static_cast<uint16_t>(0), itbackins);
+            utils::writeBytesFrom(static_cast<uint16_t>(0), itbackins);
             curoffs += sizeof(uint16_t);
 
             //padding
-            itbackins = std::fill_n(itbackins, (curoffs % 16), 0xAA );
+            std::fill_n(itbackins, (curoffs % 16), 0xAA );
             curoffs += (curoffs % 16);
 
             hdr.ptrtranslatetbl = curoffs; //mark ptr offset list pos in sir0 header

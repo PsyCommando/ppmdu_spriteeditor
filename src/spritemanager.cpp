@@ -20,25 +20,25 @@ namespace spr_manager
         Reset();
     }
 
-    void SpriteManager::SaveContainer()
+    int SpriteManager::SaveContainer()
     {
         if(!m_container)
         {
             qWarning("No container loaded!");
-            return;
+            return 0;
         }
-        m_container->WriteContainer();
+        return m_container->WriteContainer();
     }
 
-    void SpriteManager::SaveContainer(const QString &fname)
+    int SpriteManager::SaveContainer(const QString &fname)
     {
         if(!m_container)
         {
             qWarning("No container loaded!");
-            return;
+            return 0;
         }
         m_container->SetContainerSrcPath(fname);
-        m_container->WriteContainer();
+        return m_container->WriteContainer();
     }
 
     void SpriteManager::ExportContainer(const QString &fname)
@@ -51,10 +51,11 @@ namespace spr_manager
         fname;
     }
 
-    void SpriteManager::ImportContainer(const QString &fname)
+    SpriteContainer * SpriteManager::ImportContainer(const QString &fname)
     {
-        Reset();
-        fname;
+        m_container.reset(new SpriteContainer(fname));
+        m_container->ImportContainer(fname);
+        return m_container.data();
     }
 
     SpriteContainer * SpriteManager::NewContainer(SpriteContainer::eContainerType type)

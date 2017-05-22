@@ -18,9 +18,14 @@ QPixmap ImageToPixmap( QImage && img, const QSize & sz )
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    m_previewrender(true)
+    m_previewrender(true),
+    m_aboutdiag(this),
+    m_imgNoImg(":/imgs/resources/imgs/noimg.png"),
+    m_progress(this)
 {
+    //Resources alloc
     m_pStatusFileType.reset(new QLabel("     "));
+    //UI init
     ui->setupUi(this);
     connect( ui->chkAnimSeqLoop, &QCheckBox::toggled, &m_previewrender, &SceneRenderer::loopChanged );
     connect( ui->btnSeqPlay, &QPushButton::clicked, &m_previewrender, &SceneRenderer::startAnimUpdates );
@@ -36,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
+
     DisplayStartScreen();
     InitAnimScene();
 }
@@ -84,6 +90,7 @@ void MainWindow::HideAllTabs()
 
 void MainWindow::ShowATab(QWidget *ptab)
 {
+    Q_ASSERT(ptab);
     HideAllTabs();
     qDebug() << "MainWindow::ShowATab(): Hiding tabs!\n";
     ui->tabMain->insertTab(0, ptab, ptab->windowTitle() );
@@ -97,23 +104,25 @@ void MainWindow::DisplayStartScreen()
 {
     qDebug() << "MainWindow::DisplayStartScreen(): Showing start screen!\n";
     ShowATab(ui->tabWelcome);
+    ShowStatusMessage(tr("Welcome! May you encounter no bugs today!"));
 }
 
 void MainWindow::DisplayPropertiesPage(Sprite * spr)
 {
+    Q_ASSERT(spr);
     qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
 
     spr_manager::SpriteContainer * pcnt = spr_manager::SpriteManager::Instance().getContainer();
     ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOf(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
     if( !spr->wasParsed() )
         spr->ParseSpriteData();
-    spr->FillSpriteProperties(ui->tblProperties);
+   // spr->FillSpriteProperties(ui->tblProperties);
 
     //display preview only if we have image data!
     if( spr->hasImageData() )
         ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
     else
-        ui->lblPropPreview->setPixmap(RenderNoImageSvg().scaled(ui->lblPropPreview->size(), Qt::KeepAspectRatio));
+        ui->lblPropPreview->setPixmap(m_imgNoImg);
 
     ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
     ShowATab(ui->tabproperties);
@@ -121,16 +130,15 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
 
 void MainWindow::DisplayAnimFramePage(Sprite *spr)
 {
-    spr;
+    Q_ASSERT(spr);
     ShowATab(ui->tabframeseditor);
 }
 
 void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
 {
+    Q_ASSERT(spr && aniseq);
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
     ShowATab(ui->tabseq);
-    //m_curanim.reset(new AnimViewerManager(&m_animscene, ui->chkAnimSeqLoop->isChecked()));
-    //m_curanim->setSequence(aniseq, spr);
     m_previewrender.setScene(spr, aniseq->childNumber());
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anime viewer!\n";
     ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
@@ -143,29 +151,31 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
 
 void MainWindow::DisplayAnimTablePage(Sprite * spr)
 {
+    Q_ASSERT(spr);
     ShowATab(ui->tabanims);
 }
 
 void MainWindow::DisplayPalettePage(Sprite *spr)
 {
+    Q_ASSERT(spr);
     ShowATab(ui->tabpal);
 }
 
 void MainWindow::DisplayEffectsPage(Sprite *spr)
 {
+    Q_ASSERT(spr);
     ShowATab(ui->tabeffects);
 }
 
 void MainWindow::DisplayAnimGroupPage(Sprite *spr)
 {
-
+    Q_ASSERT(spr);
     ShowATab(ui->tabanimgrp);
 }
 
-
-
 void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
 {
+    Q_ASSERT(spr && img);
     qDebug() << "MainWindow::DisplayImagePage(): Displaying image page!\n";
     ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(spr->getPalette()), ui->lbl_imgpreview->size()));
     qDebug() << "MainWindow::DisplayImagePage(): Pixmap assigned!\n";
@@ -174,28 +184,38 @@ void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
 
 void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
 {
+    Q_ASSERT(spr && pimgs);
     qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
     ui->tblviewImages->setModel(pimgs->getModel());
     qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
     ShowATab(ui->tabImages);
 }
 
-void MainWindow::LoadContainer(const QString &path)
+void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
 {
-    //Open
-    qInfo() <<"Opening file " <<path <<"!\n";
-    spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().OpenContainer(path);
-    qInfo() <<path <<" loaded!\n";
-    m_lastSavePath = path;
+    ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
+    connect(sprcnt, SIGNAL(showProgress(QFuture<void>&)), this, SLOT(ShowProgressDiag(QFuture<void>&)) );
+    setupListView();
+    updateActions();
 
     //Display!
     if(sprcnt && sprcnt->hasChildren())
         DisplayPropertiesPage(&sprcnt->GetSprite(0));
-    setupListView();
-    updateActions();
+}
 
-//    spr_manager::SpriteManager::Instance().OpenContainer(path);
-//    updateActions();
+void MainWindow::LoadContainer(const QString &path)
+{
+    HideAllTabs();
+    ui->tv_sprcontent->clearSelection();
+    ui->tv_sprcontent->setModel(nullptr);
+    ui->tv_sprcontent->reset();
+    //Open
+    qInfo() <<"MainWindow::LoadContainer() : " <<path <<"!\n";
+    spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().OpenContainer(path);
+    qInfo() <<"\nLoaded!\n";
+    m_lastSavePath = path;
+
+    SetupUIForNewContainer(sprcnt);
 }
 
 void MainWindow::SaveContainer(const QString &path)
@@ -212,8 +232,16 @@ void MainWindow::ExportContainer(const QString &path)
 
 void MainWindow::ImportContainer(const QString &path)
 {
-    spr_manager::SpriteManager::Instance().ImportContainer(path);
-    updateActions();
+    spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().ImportContainer(path);
+
+    SetupUIForNewContainer(sprcnt);
+}
+
+void MainWindow::CloseContainer()
+{
+    HideAllTabs();
+    spr_manager::SpriteManager::Instance().CloseContainer();
+    DisplayStartScreen();
 }
 
 void MainWindow::updateActions()
@@ -401,9 +429,8 @@ void MainWindow::on_action_Settings_triggered()
 
 void MainWindow::on_action_About_triggered()
 {
-    DialogAbout abt;
-    abt.setModal(true);
-    abt.show();
+    m_aboutdiag.setModal(true);
+    m_aboutdiag.show();
 }
 
 
@@ -419,6 +446,7 @@ void MainWindow::on_actionNewSprite_triggered()
     //Display!
     updateActions();
     setupListView();
+    ShowStatusMessage(tr("New sprite!"));
 }
 
 void MainWindow::on_actionNewSprite_Pack_File_triggered()
@@ -429,6 +457,7 @@ void MainWindow::on_actionNewSprite_Pack_File_triggered()
     //Display!
     updateActions();
     setupListView();
+    ShowStatusMessage(tr("New pack file!"));
 }
 
 void MainWindow::setupListView()
@@ -452,7 +481,8 @@ void MainWindow::SaveAs(const QString &path)
     if (!path.isEmpty())
     {
         qInfo() <<"Saving file " <<path <<"!\n";
-        sprman.SaveContainer(path);
+        int wrotelen = sprman.SaveContainer(path);
+        ShowStatusMessage( QString(tr("Wrote %1 bytes!")).arg(wrotelen) );
         qInfo() <<path <<" saved!\n";
         m_lastSavePath = path;
     }
@@ -463,6 +493,11 @@ void MainWindow::SaveAs(const QString &path)
 void MainWindow::InitAnimScene()
 {
     m_previewrender.Reset();
+}
+
+void MainWindow::ShowStatusMessage(const QString &msg)
+{
+    ui->statusBar->showMessage( msg, 4000);
 }
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)

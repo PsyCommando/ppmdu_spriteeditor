@@ -229,7 +229,7 @@
            <item row="1" column="0">
             <widget class="QLabel" name="lblPropPreview">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -331,8 +331,11 @@
              <property name="text">
               <string notr="true"/>
              </property>
+             <property name="pixmap">
+              <pixmap resource="appres.qrc">:/imgs/resources/imgs/noimg.png</pixmap>
+             </property>
              <property name="scaledContents">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -471,35 +474,25 @@
             </widget>
            </item>
            <item>
-            <widget class="QTableWidget" name="tblProperties">
-             <property name="verticalScrollBarPolicy">
-              <enum>Qt::ScrollBarAlwaysOn</enum>
+            <widget class="QTableView" name="tblProperties">
+             <property name="showDropIndicator" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="dragDropOverwriteMode">
+              <bool>false</bool>
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
              </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::NoSelection</enum>
+             </property>
              <property name="selectionBehavior">
               <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-             <property name="columnCount">
-              <number>2</number>
              </property>
              <attribute name="horizontalHeaderStretchLastSection">
               <bool>true</bool>
              </attribute>
-             <attribute name="verticalHeaderStretchLastSection">
-              <bool>true</bool>
-             </attribute>
-             <column>
-              <property name="text">
-               <string>Name</string>
-              </property>
-             </column>
-             <column>
-              <property name="text">
-               <string>Value</string>
-              </property>
-             </column>
             </widget>
            </item>
           </layout>
@@ -1885,6 +1878,8 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="appres.qrc"/>
+ </resources>
  <connections/>
 </ui>
