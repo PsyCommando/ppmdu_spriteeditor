@@ -20,6 +20,7 @@ public:
 public slots:
     void finished();
     void setFuture(QFuture<void> &fut);
+    void setFuture(QFuture<void> &fut, QFuture<void> &fut2);
 
 private slots:
     void on_btncancel_clicked();

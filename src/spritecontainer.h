@@ -308,6 +308,7 @@ namespace spr_manager
     signals:
         void startThread();
         void showProgress(QFuture<void>&);
+        void showProgress(QFuture<void>&,QFuture<void>&);
     };
 
     /*
@@ -322,7 +323,8 @@ namespace spr_manager
         SpriteContainer                 * sprdata;
         QMutex                            mtxdata;
         int                               bywritten;
-        QFuture<void>                     curop;
+        QFuture<void>                     op1;
+        QFuture<void>                     op2;
 
         explicit ThreadedWriter(QSaveFile * sfile, SpriteContainer * cnt);
         virtual ~ThreadedWriter();
@@ -330,11 +332,15 @@ namespace spr_manager
     public slots:
         void WritePack();
         void WriteSprite();
-        void OnFinished();
+        //void OnFinished();
 
     signals:
         void finished();
         void finished(int); //int is the nb of bytes written!
+
+    private:
+        void _WriteSprite();
+        void _WritePack();
     };
 
 };

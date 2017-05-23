@@ -749,7 +749,7 @@ namespace fmt
             {
                 itstep = curstep.read( itstep, itsrcend);
                 curfrm.push_back(move(curstep));
-            }while( !curstep.islast() );
+            }while( !curstep.islast() && itsrcbeg != itsrcend );
             m_frames.push_back(std::move(curfrm));
         }
 
@@ -1114,7 +1114,7 @@ namespace fmt
         template<class _init>
             void Parse( _init itbeg, _init itend )
         {
-            auto itsrcbeg = itbeg;
+
 
             ParseHeaders(itbeg, itend);
             ParseImageInfo(itbeg, itend);

@@ -152,7 +152,7 @@ namespace spr_manager
             }
         };
         m_workthread.start();
-        emit showProgress(pmthw->curop);
+        emit showProgress(pmthw->op1, pmthw->op2);
         qDebug("SpriteContainer::WriteContainer(): progress dialog displayed!\n");
         return 0;
     }
@@ -197,7 +197,7 @@ namespace spr_manager
     ThreadedWriter::ThreadedWriter(QSaveFile *sfile, SpriteContainer *cnt)
         :QObject(nullptr),savefile(sfile), sprdata(cnt), bywritten(0)
     {
-        connect(this, SIGNAL(finished()), this, SLOT(OnFinished()));
+        //connect(this, SIGNAL(finished()), this, SLOT(OnFinished()));
     }
 
     ThreadedWriter::~ThreadedWriter()
@@ -205,11 +205,69 @@ namespace spr_manager
 
     void ThreadedWriter::WritePack()
     {
-        Q_ASSERT(sprdata->hasChildren());
-        fmt::PackFileWriter writer;
+        try
+        {
+            _WritePack();
+        }
+        catch(const std::exception & e)
+        {
+            qCritical(e.what());
+        }
+    }
+
+    void ThreadedWriter::WriteSprite()
+    {
+        try
+        {
+            _WriteSprite();
+        }
+        catch(const std::exception & e)
+        {
+            qCritical(e.what());
+        }
+    }
+
+    void ThreadedWriter::_WriteSprite()
+    {
+        Q_ASSERT(sprdata && sprdata->hasChildren());
+        QDataStream     outstr(savefile.data());
+        Sprite          &curspr = sprdata->GetSprite(0);
+        bywritten   = 0;
+
+        //Setup the functions
+        op1 = QtConcurrent::run( [&]()
+        {
+            try
+            {
+                curspr.CommitSpriteData();
+                bywritten = outstr.writeRawData( (const char *)(curspr.getRawData().data()), curspr.getRawData().size() );
+                savefile->commit();
+            }
+            catch(const std::exception & e )
+            {
+                qCritical(e.what());
+            }
+        });
+        op2 = QtConcurrent::run( [](){} ); //dummy op
+
+        QFutureSynchronizer<void> futsync;
+        futsync.addFuture(op1);
+        futsync.waitForFinished();
+
+
+        op2.waitForFinished();
+        emit finished(bywritten);
+        emit finished();
+        qDebug("ThreadedWriter::WritePack(): WriteSprite!\n");
+    }
+
+    void ThreadedWriter::_WritePack()
+    {
+        Q_ASSERT(sprdata && sprdata->hasChildren());
         bywritten = 0;
 
-        curop = QtConcurrent::map( sprdata->begin(),
+        //Commit all sprites that need it!
+        op1 = QtConcurrent::map( sprdata->begin(),
                                    sprdata->end(),
                                    [&](Sprite & curspr)
         {
@@ -217,53 +275,39 @@ namespace spr_manager
             {
                 if(curspr.wasParsed())
                     curspr.CommitSpriteData();
-                QMutexLocker lk(&mtxdata);
-                writer.AppendSubFile(curspr.getRawData().begin(), curspr.getRawData().end());
             }
             catch(const std::exception & e)
             {
-                qWarning(e.what());
+                qCritical(e.what());
             }
         });
+        op2 = QtConcurrent::run([&]()
+        {
+            op1.waitForFinished();
+            //Fill up the packfilewriter
+            fmt::PackFileWriter writer;
+            for( Sprite & spr : *sprdata )
+                writer.AppendSubFile( spr.getRawData().begin(), spr.getRawData().end() );
 
+            //Build the packfile
+            QDataStream outstr(savefile.data());
+            QByteArray  out;
+            writer.Write(std::back_inserter(out));
+
+            //Write it to file!
+            bywritten = outstr.writeRawData( out.data(), out.size() );
+            savefile->commit();
+        });
+
+        //Wait for it to finish
         QFutureSynchronizer<void> futsync;
-        futsync.addFuture(curop);
+        futsync.addFuture(op1);
+        futsync.addFuture(op2);
         futsync.waitForFinished();
 
-        QDataStream outstr(savefile.data());
-        QByteArray  out;
-        writer.Write(std::back_inserter(out));
-        bywritten = outstr.writeRawData( out.data(), out.size() );
-        savefile->commit();
         emit finished(bywritten);
         emit finished();
         qDebug("ThreadedWriter::WritePack(): Finished!\n");
     }
-
-    void ThreadedWriter::WriteSprite()
-    {
-        Q_ASSERT(sprdata->hasChildren());
-        QDataStream     outstr(savefile.data());
-        Sprite          &curspr = sprdata->GetSprite(0);
-        bywritten   = 0;
-
-        curop = QtConcurrent::run( [&]()
-        {
-            curspr.CommitSpriteData();
-            bywritten = outstr.writeRawData( (const char *)(curspr.getRawData().data()), curspr.getRawData().size() );
-            savefile->commit();
-        });
-        QFutureSynchronizer<void> futsync;
-        futsync.addFuture(curop);
-        futsync.waitForFinished();
-        emit finished(bywritten);
-        emit finished();
-        qDebug("ThreadedWriter::WritePack(): WriteSprite!\n");
-    }
-
-    void ThreadedWriter::OnFinished()
-    {
-    }
-
 
 };

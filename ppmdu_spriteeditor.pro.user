@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.2.1, 2017-05-22T18:31:02. -->
+<!-- Written by QtCreator 4.2.1, 2017-05-22T21:35:43. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -288,7 +288,7 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:C:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/ppmdu_spriteeditor.pro</value>
     <value type="bool" key="QmakeProjectManager.QmakeRunConfiguration.UseLibrarySearchPath">true</value>
-    <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.CommandLineArguments">&quot;C:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/EoSRomRoot/data/MONSTER/m_attack.bin&quot;</value>
+    <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.CommandLineArguments">&quot;C:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/bulba_ground.wan&quot;</value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.ProFile">ppmdu_spriteeditor.pro</value>
     <value type="bool" key="Qt4ProjectManager.Qt4RunConfiguration.UseDyldImageSuffix">false</value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.UserWorkingDirectory">C:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir</value>

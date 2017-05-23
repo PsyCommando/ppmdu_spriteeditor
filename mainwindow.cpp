@@ -201,6 +201,7 @@ void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
     //Display!
     if(sprcnt && sprcnt->hasChildren())
         DisplayPropertiesPage(&sprcnt->GetSprite(0));
+    ui->tv_sprcontent->repaint();
 }
 
 void MainWindow::LoadContainer(const QString &path)
