@@ -88,27 +88,39 @@ namespace fmt
             return beg;
         }
 
-        template<class _outit>
-        _outit write( _outit where )const
+//        template<class _outit>
+//        _outit write( _outit where )const
+//        {
+//            where = utils::writeBytesFrom( ptrimgtable,    where);
+//            where = utils::writeBytesFrom( ptrpal,         where);
+//            where = utils::writeBytesFrom( unk13,          where);
+//            where = utils::writeBytesFrom( colordepth,     where);
+//            where = utils::writeBytesFrom( unk11,          where);
+//            where = utils::writeBytesFrom( nbimgs,         where);
+//            return where;
+//        }
+
+        template<class _writerhelper_t>
+            _writerhelper_t & write( _writerhelper_t & sir0hlpr)const
         {
-            where = utils::writeBytesFrom( ptrimgtable,    where);
-            where = utils::writeBytesFrom( ptrpal,         where);
-            where = utils::writeBytesFrom( unk13,          where);
-            where = utils::writeBytesFrom( colordepth,     where);
-            where = utils::writeBytesFrom( unk11,          where);
-            where = utils::writeBytesFrom( nbimgs,         where);
-            return where;
+            sir0hlpr.writePtr(ptrimgtable);
+            sir0hlpr.writePtr(ptrpal);
+            sir0hlpr.writeVal(unk13);
+            sir0hlpr.writeVal(colordepth);
+            sir0hlpr.writeVal(unk11);
+            sir0hlpr.writeVal(nbimgs);
+            return sir0hlpr;
         }
 
         //Utility function for pushing the pointer offsets of the pointers in this struct into the specified container
         //Used for building the SIR0 wrapper
-        template<class _STDCNT>
-            uint32_t MarkPointers( uint32_t imgfmtbegoffset, _STDCNT ptrcnt )const
-        {
-            ptrcnt.push_back(imgfmtbegoffset); //ptrimgtable
-            ptrcnt.push_back(imgfmtbegoffset += sizeof(uint32_t)); //ptrpal
-            return imgfmtbegoffset;
-        }
+//        template<class _STDCNT>
+//            uint32_t MarkPointers( uint32_t imgfmtbegoffset, _STDCNT ptrcnt )const
+//        {
+//            ptrcnt.push_back(imgfmtbegoffset); //ptrimgtable
+//            ptrcnt.push_back(imgfmtbegoffset += sizeof(uint32_t)); //ptrpal
+//            return imgfmtbegoffset;
+//        }
 
         inline bool is256Colors()const {return colordepth != 0;}
     };
@@ -148,32 +160,46 @@ namespace fmt
             return beg;
         }
 
-        template<class _outit>
-        _outit write( _outit where )const
-        {
-            where = utils::writeBytesFrom(ptroamtbl,  where);
-            where = utils::writeBytesFrom(ptrefxtbl,  where);
-            where = utils::writeBytesFrom(ptranimtbl, where);
-            where = utils::writeBytesFrom(nbanims,    where);
-            where = utils::writeBytesFrom(unk6,       where);
-            where = utils::writeBytesFrom(unk7,       where);
-            where = utils::writeBytesFrom(unk8,       where);
-            where = utils::writeBytesFrom(unk9,       where);
-            where = utils::writeBytesFrom(unk10,      where);
-            return where;
-        }
+//        template<class _outit>
+//        _outit write( _outit where )const
+//        {
+//            where = utils::writeBytesFrom(ptroamtbl,  where);
+//            where = utils::writeBytesFrom(ptrefxtbl,  where);
+//            where = utils::writeBytesFrom(ptranimtbl, where);
+//            where = utils::writeBytesFrom(nbanims,    where);
+//            where = utils::writeBytesFrom(unk6,       where);
+//            where = utils::writeBytesFrom(unk7,       where);
+//            where = utils::writeBytesFrom(unk8,       where);
+//            where = utils::writeBytesFrom(unk9,       where);
+//            where = utils::writeBytesFrom(unk10,      where);
+//            return where;
+//        }
 
+        template<class _writerhelper_t>
+            _writerhelper_t & write( _writerhelper_t & sir0hlpr )const
+        {
+            sir0hlpr.writePtr(ptroamtbl);
+            sir0hlpr.writePtr(ptrefxtbl);
+            sir0hlpr.writePtr(ptranimtbl);
+            sir0hlpr.writeVal(nbanims);
+            sir0hlpr.writeVal(unk6);
+            sir0hlpr.writeVal(unk7);
+            sir0hlpr.writeVal(unk8);
+            sir0hlpr.writeVal(unk9);
+            sir0hlpr.writeVal(unk10);
+            return sir0hlpr;
+        }
 
         //Utility function for pushing the pointer offsets of the pointers in this struct into the specified container
         //Used for building the SIR0 wrapper
-        template<class _STDCNT>
-            uint32_t MarkPointers( uint32_t animfmtinfobegoffset, _STDCNT ptrcnt )const
-        {
-            ptrcnt.push_back(animfmtinfobegoffset); //ptroamtbl
-            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptrefxtbl
-            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptranimtbl
-            return animfmtinfobegoffset;
-        }
+//        template<class _STDCNT>
+//            uint32_t MarkPointers( uint32_t animfmtinfobegoffset, _STDCNT ptrcnt )const
+//        {
+//            ptrcnt.push_back(animfmtinfobegoffset); //ptroamtbl
+//            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptrefxtbl
+//            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptranimtbl
+//            return animfmtinfobegoffset;
+//        }
     };
 
 
@@ -278,6 +304,20 @@ namespace fmt
             return where;
         }
 
+        /*
+            helpr_t is a variant of SIR0_WriterHelper
+        */
+        template<class helpr_t>
+            helpr_t & writeWHelpr(helpr_t & helpr)const
+        {
+            helpr.writeVal(frmidx);
+            helpr.writeVal(unk0);
+            helpr.writeVal(attr0);
+            helpr.writeVal(attr1);
+            helpr.writeVal(attr2);
+            return helpr;
+        }
+
 
         inline bool isColorPal256()const            {return (ATTR0_ColPalMask & attr0) != 0;}
         inline bool isMosaicOn()const               {return (ATTR0_MosaicMask & attr0) != 0;}
@@ -353,6 +393,11 @@ namespace fmt
         int16_t shadowxoffs;
         int16_t shadowyoffs;
 
+        animfrm_t()
+            :duration(0), flag(0), frmidx(0), xoffs(0), yoffs(0), shadowxoffs(0), shadowyoffs(0)
+        {
+        }
+
         bool isnull()const
         {
             return !duration && !flag && !frmidx && !xoffs && !yoffs && !shadowxoffs && !shadowyoffs;
@@ -371,17 +416,30 @@ namespace fmt
             return beg;
         }
 
-        template<class _outit>
-            _outit write(_outit where)const
+//        template<class _outit>
+//            _outit write(_outit where)const
+//        {
+//            where = utils::writeBytesFrom(duration,    where);
+//            where = utils::writeBytesFrom(flag,        where);
+//            where = utils::writeBytesFrom(frmidx,      where);
+//            where = utils::writeBytesFrom(xoffs,       where);
+//            where = utils::writeBytesFrom(yoffs,       where);
+//            where = utils::writeBytesFrom(shadowxoffs, where);
+//            where = utils::writeBytesFrom(shadowyoffs, where);
+//            return where;
+//        }
+
+        template<class HELPR_T>
+            HELPR_T & write(HELPR_T & sir0hlpr)const
         {
-            where = utils::writeBytesFrom(duration,    where);
-            where = utils::writeBytesFrom(flag,        where);
-            where = utils::writeBytesFrom(frmidx,      where);
-            where = utils::writeBytesFrom(xoffs,       where);
-            where = utils::writeBytesFrom(yoffs,       where);
-            where = utils::writeBytesFrom(shadowxoffs, where);
-            where = utils::writeBytesFrom(shadowyoffs, where);
-            return where;
+            sir0hlpr.writeVal(duration);
+            sir0hlpr.writeVal(flag);
+            sir0hlpr.writeVal(frmidx);
+            sir0hlpr.writeVal(xoffs);
+            sir0hlpr.writeVal(yoffs);
+            sir0hlpr.writeVal(shadowxoffs);
+            sir0hlpr.writeVal(shadowyoffs);
+            return sir0hlpr;
         }
     };
 
@@ -433,6 +491,16 @@ namespace fmt
                 return where;
             }
 
+            template<class HELPR_T> HELPR_T & writeWHlpr( HELPR_T & sir0hlpr )const
+            {
+                sir0hlpr.writePtr(src); //If its 0 it won't mark the offset, so no need to put a conditional here!
+                sir0hlpr.writeVal(len);
+                sir0hlpr.writeVal(unk14);
+                sir0hlpr.writeVal(unk2);
+                return sir0hlpr;
+            }
+
+
             template<class init> init read(init beg, init end)
             {
                 beg = utils::readBytesAs( beg, end, src  );
@@ -453,21 +521,24 @@ namespace fmt
                 Encode an image to the format in the WAN sprites.
                 AKA it removes tiles full of zeros.
         */
-        class imgEncoder
+        template<class HELPR_T>
+            class imgEncoder
         {
+            typedef HELPR_T             helpr_t;
+            helpr_t                    *sir0hlpr;
             std::list<imgstriptblentry> asmtbl;
             std::vector<uint8_t>        stripsdat;
             uint32_t                    totallen;
             uint32_t                    baseoffset;
             uint16_t                    unk2;
             uint16_t                    unk14;
-            std::vector<uint32_t>       &ptrlist;
+            //std::vector<uint32_t>       &ptrlist;
             std::vector<uint32_t>       &imgptrs;
 
         public:
 
-            imgEncoder(std::vector<uint32_t> & pointers, std::vector<uint32_t> &imgpointers)
-                :ptrlist(pointers), imgptrs(imgpointers)
+            imgEncoder(HELPR_T & helpr, std::vector<uint32_t> &imgpointers)
+                :sir0hlpr(&helpr), imgptrs(imgpointers)
             {}
 
             /*
@@ -475,23 +546,21 @@ namespace fmt
                     Encode the image specified!
                     Returns the total length of the image block written!
             */
-            template<class _init, class _outit>
+            template<class _init>
                 uint32_t operator()(_init imgbeg,
-                                  _init imgend,
-                                  _outit & itout,
-                                  uint32_t curoffset,
-                                  uint16_t _unk2,
-                                  uint16_t _unk14)
+                                    _init imgend,
+                                    uint16_t _unk2,
+                                    uint16_t _unk14)
             {
                 asmtbl.resize(0);
                 stripsdat.resize(0);
                 totallen = 0;
-                baseoffset = curoffset;
+                baseoffset = sir0hlpr->getCurOffset();
                 unk2  = _unk2;
                 unk14 = _unk14;
                 auto strips = MakeStrips(imgbeg, imgend);
-                BuildTable(strips,itout);
-                WriteEncoded(itout);
+                BuildTable(strips);
+                WriteEncoded();
                 return totallen;
             }
 
@@ -502,6 +571,12 @@ namespace fmt
                 std::vector<uint8_t> stripdata;
                 bool                 iszeros;
                 uint32_t             src;
+
+                template<class _HelprT> void writedata(_HelprT & helper)const
+                {
+                    for(uint8_t by : stripdata)
+                        helper.writeVal(by);
+                }
             };
 
             /*
@@ -518,26 +593,32 @@ namespace fmt
                 size_t totalby = 0;
                 while(imgbeg != imgend)
                 {
-                    //bool stripiszeros = true;
-                    stripkind curstrip{std::vector<uint8_t>(STRIPLEN,0), true, totalby};
+                    stripkind curstrip;
+                    curstrip.stripdata.resize(STRIPLEN,0);
+                    curstrip.iszeros = true;
                     for(size_t cntpix = 0; (cntpix < STRIPLEN) && (imgbeg != imgend); ++imgbeg, ++cntpix)
                     {
                         curstrip.stripdata[cntpix] = *imgbeg;
                         if( curstrip.iszeros && curstrip.stripdata[cntpix] != 0)
                         {
+                            //If we had all zeros so far and we found a non-zero byte, make this a non-zero stripe!
                             curstrip.iszeros = false;
-                            curstrip.src     = 0;
                         }
                     }
+
+                    if( curstrip.iszeros )
+                        curstrip.src = 0;
+                    else
+                        curstrip.src = totalby;
+
                     totalby += STRIPLEN;
                     outstrips.push_back(std::move(curstrip));
                 }
                 return std::move(outstrips);
             }
 
-            template<class _outit>
-                 void BuildTable(const std::vector<stripkind> & strips,
-                                   _outit & itout)
+//            template<class _outit>
+                 void BuildTable(const std::vector<stripkind> & strips/*, _outit & itout*/)
             {
                 auto beg = strips.begin();
                 auto end = strips.end();
@@ -545,164 +626,95 @@ namespace fmt
                 {
                     bool searchforzeros = beg->iszeros; //Set whether we're looking for adjacents strips of 0s or strips of non-zeros
                     imgstriptblentry entry;
-                    entry.src = (searchforzeros)? 0 : stripsdat.size() + baseoffset;
+                    entry.src = (searchforzeros)? 0 : (totallen + baseoffset);
+
                     //Combine adjacent entries that are the same into one entry
                     for(; (beg != end) && (beg->iszeros == searchforzeros); ++beg )
                     {
                         entry.len   += beg->stripdata.size();
                         entry.unk2  =  unk2;
                         entry.unk14 =  unk14;
-
-                        //if we're not looking for a strip of zeros, put the image data
+                        //if we're not looking for a strip of zeros, also put the image strips into the output
                         if( !searchforzeros )
                         {
-                            itout = std::copy( beg->stripdata.begin(), beg->stripdata.end(), itout); //Write the image strips to the output
+                            beg->writedata(*sir0hlpr);
                             totallen += beg->stripdata.size();
                         }
                     }
 
+
                     asmtbl.push_back(std::move(entry)); //Add the assembled entry to the list
                 }
-                //return itout;
             }
 
-            template<class _outit>
-                 void WriteEncoded( _outit & itout )
+//            template<class _outit>
+                 void WriteEncoded( /*_outit & itout*/ )
              {
                 //write the table!
                 imgptrs.push_back(totallen + baseoffset); //mark the begining of the assembly table for this image!
                 for( const auto & astrip : asmtbl )
                 {
-                    //Mark the pointers for the SIR0 header!
-                    if(astrip.src != 0)
-                        ptrlist.push_back(totallen + baseoffset);
-
-                    itout = astrip.write(itout);
+                    astrip.writeWHlpr(*sir0hlpr);
                     totallen += imgstriptblentry::ENTRY_LEN;
                 }
                 //write the last null entry!
-                itout = imgstriptblentry().write(itout);
+                imgstriptblentry().writeWHlpr(*sir0hlpr);
                 totallen += imgstriptblentry::ENTRY_LEN;
                 //return itout;
              }
         };
 
-//        template<class _init, class _outit>
-//            _outit ZeroStripImage( _init imgbeg,
-//                                   _init imgend,
-//                                   _outit itoutstrip,
-//                                   uint32_t & curoffset,
-//                                   std::vector<imgstriptblentry> & striptbl )const
-//        {
-//            static const size_t  MIN_OPLEN = 32; //The minimum length of a strip table operation entry
-//            std::vector<uint8_t> strip;
-//            imgstriptblentry     lastentry;
-
-//            size_t cntentries = 0;
-//            for(; imgbeg != imgend; ++imgbeg )
-//            {
-//                //We copy at least 32 bytes minimum
-//                bool    bisallzero  = true;
-//                size_t  cntby       = 0;
-//                for( ; cntby < MIN_OPLEN && imgbeg != imgend; ++cntby, ++imgbeg )
-//                {
-//                    uint8_t curby = (*imgbeg);
-//                    if( curby != 0 )
-//                        bisallzero = false;
-//                    strip.push_back(curby);
-//                }
-
-//                if(bisallzero)
-//                {
-//                    if(lastentry.src != 0)
-//                    {
-//                        //push the last non-0 entry!
-//                        curoffset += strip.size();
-//                        itoutstrip = std::copy( strip.begin(), strip.end(), itoutstrip );
-//                        striptbl.push_back(lastentry);
-//                    }
-
-
-//                    if(lastentry.src == 0)
-//                        lastentry.len   += strip.size();
-//                    else
-//                        lastentry.len   = strip.size();
-//                    lastentry.src   = 0;
-//                    lastentry.unk14 = 0;
-//                    lastentry.unk2  = 0;
-//                    strip.resize(0);
-//                }
-//                else
-//                {
-//                    if(lastentry.src == 0)
-//                        striptbl.push_back(lastentry); //push the last 0 entry!
-
-//                    if(lastentry.src == 0 || cntentries == 0)
-//                    {
-//                        lastentry.src   = curoffset;
-//                        lastentry.len   = strip.size();
-//                    }
-//                    else
-//                    {
-//                        lastentry.len   += strip.size();
-//                    }
-
-//                    lastentry.unk14 = 0;
-//                    lastentry.unk2  = 0;
-//                }
-//                ++cntentries;
-
-//            }
-
-//            imgEncoder()()
-//            return itoutstrip;
-//        }
-
-
-        template<class _outit>
-            _outit WriteFrames( _outit itout, uint32_t & curoffset, std::vector<uint32_t> & pointers )const
+        //_writerhelper_t should be a SIR0_WriterHelper
+        template<class _writerhelper_t>
+            void WriteFrames( _writerhelper_t & hlpr, std::vector<uint32_t> & pointers )const
         {
             for(const frm_t & frm : m_frames)
             {
                 for(const step_t & step : frm)
                 {
-                    pointers.push_back(curoffset);
-                    itout = step.write(itout);
-                    curoffset += step_t::FRAME_LEN;
+                    pointers.push_back(hlpr.getCurOffset());
+                    step.writeWHelpr(hlpr);
                 }
             }
-            return itout;
         }
 
-        template<class _outit>
-            _outit WriteImages( _outit itout, uint32_t & curoffset, std::vector<uint32_t> & pointers, std::vector<uint32_t> & imgptrs )const
+        //_writerhelper_t should be a SIR0_WriterHelper
+        template<class _writerhelper_t>
+            void WriteImages( _writerhelper_t & hlpr, std::vector<uint32_t> & imgptrs )const
         {
-            imgEncoder encoder(pointers, imgptrs);
+            imgEncoder<_writerhelper_t> encoder(hlpr, imgptrs);
             for(const img_t & img : m_images)
-                curoffset += encoder(img.data.begin(), img.data.end(), itout, curoffset, img.unk2, img.unk14 );
-            return itout;
+                encoder(img.data.begin(), img.data.end(), img.unk2, img.unk14 );
+            //return itout;
         }
 
-        template<class _outit>
-            _outit WritePalette( _outit itout, uint32_t & curoffset, std::vector<uint32_t> & pointers, uint32_t & offsetpalette )const
+        template<class _writerhelper_t>
+            void WritePalette( _writerhelper_t & hlpr, uint32_t & offsetpalette )const
         {
-            uint32_t palbeg = curoffset;
+            uint32_t palbeg = hlpr.getCurOffset();
 
             //write colors!
             for( const rgbx_t & color : m_pal.colors )
-                itout = utils::writeBytesFrom(color, itout, false);
+                hlpr.writeVal(color,false);
 
             //write palette data!
-            pointers.push_back(curoffset);
-            offsetpalette = curoffset;
-            itout = utils::writeBytesFrom( palbeg, itout);
-            itout = utils::writeBytesFrom( m_pal.unk3, itout);
-            itout = utils::writeBytesFrom( static_cast<uint16_t>(m_pal.colors.size()), itout);
-            itout = utils::writeBytesFrom( m_pal.unk4, itout);
-            itout = utils::writeBytesFrom( m_pal.unk5, itout);
-            itout = utils::writeBytesFrom( static_cast<uint32_t>(0), itout);
-            curoffset += palettedata::LEN;
-            return itout;
+//            pointers.push_back(curoffset);
+            offsetpalette = hlpr.getCurOffset();
+
+//            itout = utils::writeBytesFrom( palbeg, itout);
+//            itout = utils::writeBytesFrom( m_pal.unk3, itout);
+//            itout = utils::writeBytesFrom( static_cast<uint16_t>(m_pal.colors.size()), itout);
+//            itout = utils::writeBytesFrom( m_pal.unk4, itout);
+//            itout = utils::writeBytesFrom( m_pal.unk5, itout);
+//            itout = utils::writeBytesFrom( static_cast<uint32_t>(0), itout);
+//            curoffset += palettedata::LEN;
+//            return itout;
+            hlpr.writePtr(palbeg);
+            hlpr.writeVal(m_pal.unk3);
+            hlpr.writeVal(static_cast<uint16_t>(m_pal.colors.size()));
+            hlpr.writeVal(m_pal.unk4);
+            hlpr.writeVal(m_pal.unk5);
+            hlpr.writeVal(static_cast<uint32_t>(0));
         }
 
 
@@ -861,38 +873,29 @@ namespace fmt
         efxoffsets_t  m_efxoffsets;         //A table of 16bits X,Y coordinates indicating where on the sprite some effects are drawn!
 
 
-        template<class _outit> _outit WriteEffectsTbl( _outit itout, uint32_t & curoffset )const
+        template<class _writerhelper_t> void WriteEffectsTbl( _writerhelper_t & sir0hlpr )const
         {
             for( const effectoffset & ofs : m_efxoffsets )
             {
-                itout = utils::writeBytesFrom( ofs.xoff,   itout);
-                itout = utils::writeBytesFrom( ofs.yoff,  itout);
-                curoffset += sizeof(uint16_t) * 2;
+                sir0hlpr.writeVal(ofs.xoff);
+                sir0hlpr.writeVal(ofs.yoff);
             }
-            return itout;
         }
 
-        template<class _outit> _outit WriteSequences( _outit itout, uint32_t & curoffset, std::vector<uint32_t> & ptrseqs )const
+        template<class _writerhelper_t> void WriteSequences( _writerhelper_t & sir0hlpr, std::vector<uint32_t> & ptrseqs )const
         {
             for( const auto & seq : m_animsequences )
             {
-                ptrseqs.push_back(curoffset);
+                ptrseqs.push_back(sir0hlpr.getCurOffset());
                 for(const animfrm_t & frm : seq.second)
-                {
-                    itout = frm.write(itout);
-                    curoffset += animfrm_t::LEN;
-                }
-                itout = std::fill_n(itout, animfrm_t::LEN, 0);
-                curoffset += animfrm_t::LEN;
+                    frm.write(sir0hlpr);
+                animfrm_t().write(sir0hlpr); //null frame at the end
             }
-            return itout;
         }
 
-        template<class _outit> _outit WriteAnimGroups( _outit                         itout,
-                                                       uint32_t                     & curoffset,
-                                                       std::vector<uint32_t>        & ptroffslist,
-                                                       const std::vector<uint32_t>  & ptrseqs,
-                                                       std::vector<std::pair<uint32_t, size_t>>        & ptrgrpslst)const
+        template<class _writerhelper_t> void WriteAnimGroups( _writerhelper_t                           & sir0hlpr,
+                                                              const std::vector<uint32_t>               & ptrseqs,
+                                                              std::vector<std::pair<uint32_t, size_t>>  & ptrgrpslst)const
         {
             /*We have 2 tables to write here!
              * First we have
@@ -915,26 +918,21 @@ namespace fmt
             //Writing the first table!
             for( const auto & grp : m_animgrps )
             {
-                ptrgrpslst.push_back(std::make_pair( curoffset, grp.second.seqs.size())); //add to the list of group array pointers + sizes
+                ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(), grp.second.seqs.size())); //add to the list of group array pointers + sizes
 
                 for( const auto & seq : grp.second.seqs )
                 {
                     if(seq >= ptrseqs.size())
                         throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
-                    itout = utils::writeBytesFrom( ptrseqs.at(seq), itout);
-                    ptroffslist.push_back(curoffset); //mark the pointer position for the SIR0 later!
-                    curoffset += sizeof(uint32_t);
+                    sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
                 }
             }
-            return itout;
         }
 
-        template<class _outit> _outit WriteAnimTbl( _outit                         itout,
-                                                    uint32_t                     & curoffset,
-                                                    std::vector<uint32_t>        & ptroffslist,
-                                                    const std::vector<std::pair<uint32_t, size_t>>  & ptrgrps)const
+        template<class _writerhelper_t> void WriteAnimTbl( _writerhelper_t                                 & sir0hlpr,
+                                                           const std::vector<std::pair<uint32_t, size_t>>  & ptrgrps)const
         {
-            static const uint32_t SIZEANIMGRPENTRY = 8;
+            //static const uint32_t SIZEANIMGRPENTRY = 8;
             for( const auto & anim : m_animtbl )
             {
                 uint32_t ptr    = 0;
@@ -950,18 +948,17 @@ namespace fmt
                     }
                     else
                     {
-                        ptroffslist.push_back(curoffset); //mark pointer offset for SIR0!
+                        //ptroffslist.push_back(curoffset); //mark pointer offset for SIR0!
+
                         const auto & refgrp = ptrgrps.at(anim);
                         ptr = refgrp.first;
                         len = static_cast<uint16_t>(refgrp.second);
                         unk16 = m_animgrps.at(anim).unk16;
                     }
                 }
-                itout = utils::writeBytesFrom(ptr,  itout); //write ptr to group's sequence array in the group table!
-                itout = utils::writeBytesFrom(len,  itout); //write the size of the group's sequence array in the group table!
-                itout = utils::writeBytesFrom(unk16,itout); //write the unk16 value for the current group!
-
-                curoffset += SIZEANIMGRPENTRY;
+                sir0hlpr.writePtr(ptr);     //write ptr to group's sequence array in the group table!
+                sir0hlpr.writeVal(len);     //write the size of the group's sequence array in the group table!
+                sir0hlpr.writeVal(unk16);   //write the unk16 value for the current group!
             }
         }
 
@@ -1111,11 +1108,11 @@ namespace fmt
     public:
         typedef std::vector<effectoffset> OffsetsDB;
 
+
+
         template<class _init>
             void Parse( _init itbeg, _init itend )
         {
-
-
             ParseHeaders(itbeg, itend);
             ParseImageInfo(itbeg, itend);
             ParseAnimInfoAndData(itbeg, itend);
@@ -1124,10 +1121,12 @@ namespace fmt
         template<class _outit>
             _outit Write( _outit itout )
         {
-            SIR0hdr                 hdr;
-            std::vector<uint8_t>    buffer;
-            auto                    itbackins = std::back_inserter(buffer);
-            uint32_t                curoffs = SIR0hdr::HDRLEN;
+            SIR0hdr                                 hdr;
+            std::vector<uint8_t>                    buffer;
+            auto                                    itbackins = std::back_inserter(buffer);
+            SIR0_WriterHelper<decltype(itbackins)>  sw(itbackins, hdr);
+
+            //uint32_t                curoffs = SIR0hdr::HDRLEN;
             std::vector<uint32_t>   imgptrs;
             std::vector<uint32_t>   frameptrs;
             std::vector<uint32_t>   ptrseqs;
@@ -1139,83 +1138,64 @@ namespace fmt
             uint32_t                ptrimginf = 0;
 
             //#1. Write frame assembly
-            m_images.WriteFrames(itbackins, curoffs, frameptrs);
+            m_images.WriteFrames(sw, frameptrs);
 
             //#2. Write animation sequences
-            m_animtions.WriteSequences(itbackins, curoffs, ptrseqs);
+            m_animtions.WriteSequences(sw, ptrseqs);
 
             //padding
-            std::fill_n(itbackins, (curoffs % 4), 0xAA );
-            curoffs += (curoffs % 4);
+            sw.putPadding(4, 0xAA);
 
             //#3. Write compressed images
-            m_images.WriteImages(itbackins, curoffs, hdr.ptroffsetslist, imgptrs);
+            m_images.WriteImages(sw, imgptrs);
 
             //#4. Write palette
-            m_images.WritePalette(itbackins, curoffs, hdr.ptroffsetslist, offspal);
+            m_images.WritePalette(sw, offspal);
             imginf.ptrpal = offspal;                        //mark offset of palette data for imgfmt chunk
 
             //#5. Write frame pointer table
-            amiminf.ptroamtbl = curoffs;                    //mark offset of effect offset table for animfmt chunk
+            amiminf.ptroamtbl = sw.getCurOffset();                    //mark offset of effect offset table for animfmt chunk
             for(const auto & ptr : frameptrs)
-            {
-                hdr.ptroffsetslist.push_back(curoffs);
-                utils::writeBytesFrom(ptr, itbackins);
-                curoffs += sizeof(uint32_t);
-            }
+                sw.writePtr(ptr);
 
             //#6. Write effect offset table
-            amiminf.ptrefxtbl = curoffs;                    //mark offset of frame table for animfmt chunk
-            m_animtions.WriteEffectsTbl(itbackins, curoffs);
+            amiminf.ptrefxtbl = sw.getCurOffset();                    //mark offset of frame table for animfmt chunk
+            m_animtions.WriteEffectsTbl(sw);
 
             //#7. Write animation groups sequences array table
-            m_animtions.WriteAnimGroups( itbackins, curoffs, hdr.ptroffsetslist, ptrseqs, ptrgrps );
+            m_animtions.WriteAnimGroups(sw, ptrseqs, ptrgrps);
 
             //#8. Write anim group table
-            amiminf.ptranimtbl  = curoffs;                      //mark offset of anim table for animfmt chunk
+            amiminf.ptranimtbl  = sw.getCurOffset();                      //mark offset of anim table for animfmt chunk
             amiminf.nbanims     = m_animtions.m_animtbl.size(); //mark nb animations for animfmt chunk
-            m_animtions.WriteAnimTbl( itbackins, curoffs, hdr.ptroffsetslist, ptrgrps );
+            m_animtions.WriteAnimTbl(sw, ptrgrps);
 
             //#8. Write image pointer table
-            imginf.ptrimgtable = curoffs;                   //mark chunk position for imgfmt chunk
+            imginf.ptrimgtable = sw.getCurOffset();                   //mark chunk position for imgfmt chunk
             imginf.nbimgs      = m_images.m_images.size();  //mark nb images for imgfmt chunk
             for(const auto & ptr : imgptrs)
-            {
-                hdr.ptroffsetslist.push_back(curoffs);
-                utils::writeBytesFrom(ptr, itbackins);
-                curoffs += sizeof(uint32_t);
-            }
+                sw.writePtr(ptr);
 
             //#9. Write anim info chunk
-            ptraniminf = curoffs;   //mark chunk position for wan header
-            WriteAnimInfo(itbackins, curoffs, hdr.ptroffsetslist, amiminf);
+            ptraniminf = sw.getCurOffset();   //mark chunk position for wan header
+            WriteAnimInfo(sw, amiminf);
 
             //#10.Write image info chunk
-            ptrimginf = curoffs;    //mark chunk position for wan header
-            WriteImageInfo(itbackins, curoffs, hdr.ptroffsetslist, imginf);
+            ptrimginf = sw.getCurOffset();    //mark chunk position for wan header
+            WriteImageInfo(sw, imginf);
 
             //#11.Write wan header
-            hdr.ptrsub = curoffs; //mark header pos in sir0 header
+            hdr.ptrsub = sw.getCurOffset(); //mark header pos in sir0 header
 
-            hdr.ptroffsetslist.push_back(curoffs);
-            utils::writeBytesFrom(ptraniminf, itbackins);
-            curoffs += sizeof(uint32_t);
-
-            hdr.ptroffsetslist.push_back(curoffs);
-            utils::writeBytesFrom(ptrimginf, itbackins);
-            curoffs += sizeof(uint32_t);
-
-            utils::writeBytesFrom(static_cast<uint16_t>(m_sprty), itbackins);
-            curoffs += sizeof(uint16_t);
-
-            utils::writeBytesFrom(static_cast<uint16_t>(0), itbackins);
-            curoffs += sizeof(uint16_t);
+            sw.writePtr(ptraniminf);
+            sw.writePtr(ptrimginf);
+            sw.writeVal(static_cast<uint16_t>(m_sprty));
+            sw.writeVal(static_cast<uint16_t>(0));
 
             //padding
-            std::fill_n(itbackins, (curoffs % 16), 0xAA );
-            curoffs += (curoffs % 16);
+            sw.putPadding(16, 0xAA);
 
-            hdr.ptrtranslatetbl = curoffs; //mark ptr offset list pos in sir0 header
+            hdr.ptrtranslatetbl = sw.getCurOffset(); //mark ptr offset list pos in sir0 header
 
             //#12.Write out buffer with SIR0 header and pointerlist!
             //Generate and track SIR0 pointer list!!!
@@ -1319,39 +1299,25 @@ namespace fmt
             }
         }
 
-        template<class _outit> _outit WriteAnimInfo( _outit where, uint32_t & curoffs, std::vector<uint32_t> & ptroffsets, const animfmtinfo & amiminf)
+        template<class _writerhelper_t> void WriteAnimInfo(_writerhelper_t & sir0hlpr, const animfmtinfo & amiminf)
         {
             //#TODO: Ideally make a last check here and make sure everything is consistant!
 
-            curoffs = amiminf.MarkPointers(uint32_t(curoffs), ptroffsets);
-            where   = amiminf.write(where);
-            return where;
+            //curoffs = amiminf.MarkPointers(uint32_t(curoffs), ptroffsets);
+            amiminf.write(sir0hlpr);
+            //return where;
         }
 
-        template<class _outit> _outit WriteImageInfo( _outit where, uint32_t & curoffs, std::vector<uint32_t> & ptroffsets, const imgfmtinfo & imginf)
+        template<class _writerhelper_t> void WriteImageInfo(_writerhelper_t & sir0hlpr, const imgfmtinfo & imginf)
         {
             //#TODO: Ideally make a last check here and make sure everything is consistant!
 
-            curoffs = imginf.MarkPointers(uint32_t(curoffs), ptroffsets);
-            where   = imginf.write(where);
-            return where;
+            //curoffs = imginf.MarkPointers(uint32_t(curoffs), ptroffsets);
+            imginf.write(sir0hlpr);
+            //return where;
         }
 
 
-//        template<class _outit>
-//            std::vector<uint32_t> WriteFrameAssemblyData(_outit & itout, fmt::SIR0hdr & outhdr, uint32_t & curoffset )
-//        {
-//            std::vector<uint32_t> frmbegoffsets;
-//            frmbegoffsets.reserve(m_images.m_frames.size());
-
-//            for(const auto & frame : m_images.m_frames)
-//            {
-//                frame.wr
-//            }
-
-
-//            return std::move(frmbegoffsets);
-//        }
 
     };
 };

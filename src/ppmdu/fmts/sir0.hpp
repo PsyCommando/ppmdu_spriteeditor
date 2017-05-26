@@ -45,15 +45,23 @@ namespace fmt
         EncodeSIR0PtrOffsetList
     */
     template<class _backinsoutit, class _fwdinit>
-        _backinsoutit EncodeSIR0PtrOffsetList( _fwdinit itbeg, _fwdinit itend, _backinsoutit itw )
+        _backinsoutit EncodeSIR0PtrOffsetList( _fwdinit itbeg, _fwdinit itend, _backinsoutit itw, bool prefixheaderoffsets = true )
     {
+        uint32_t lastoffset = 0; //used to add up the sum of all the offsets up to the current one
 
-        uint32_t offsetSoFar = 0; //used to add up the sum of all the offsets up to the current one
+        //If asked put the offsets of the 2 pointers in the SIR0 header!
+        if(prefixheaderoffsets)
+        {
+            *(itw++)    = 4;    //encoded offset of the ptr sub-header/content
+            *(itw++)    = 4;    //encoded offset of the ptr encoded offset table
+            lastoffset  = 8;
+        }
+
         for( ; itbeg != itend; ++itbeg )
         {
             const auto & anoffset = *itbeg;
-            itw                   = EncodeASIR0Offset( itw, (anoffset - offsetSoFar) );
-            offsetSoFar           = anoffset; //set the value to the latest offset, so we can properly subtract it from the next offset.
+            itw                   = EncodeASIR0Offset( itw, (anoffset - lastoffset) );
+            lastoffset            = anoffset; //set the value to the latest offset, so we can properly subtract it from the next offset.
         }
         //Append the closing 0
         *(itw++) = 0;
@@ -105,6 +113,7 @@ namespace fmt
     /*
      * SIR0hdr
     */
+    template<class _outit> class SIR0_WriterHelper;
     struct SIR0hdr
     {
     public:
@@ -115,11 +124,8 @@ namespace fmt
         std::vector<uint32_t>   ptroffsetslist;
 
         SIR0hdr()
+            :ptrtranslatetbl(0),ptrsub(0)
         {
-            ptrtranslatetbl = 0;
-            //Add the value of the 2 pointers in the header.
-            ptroffsetslist.push_back(4);
-            ptroffsetslist.push_back(8);
         }
 
 
@@ -166,8 +172,7 @@ namespace fmt
                 (*where) = (*itdatabeg);
 
             //Add padding before the ptr offset list
-            utils::AppendPaddingBytes( where, bytecnt, 16, padchar );
-            bytecnt += 16;
+            bytecnt += utils::AppendPaddingBytes( where, bytecnt, 16, padchar );
 
             //Write list
             return EncodeSIR0PtrOffsetList( ptroffsetslist.begin(), ptroffsetslist.end(), where );
@@ -175,6 +180,53 @@ namespace fmt
 
     private:
 
+    };
+
+
+
+    /*
+        Helper class meant to handle the SIR0 pointer marking as seamlessly as possible.
+        Just instantiate and use its functions to write to the target!
+    */
+    template<class _outit> class SIR0_WriterHelper
+    {
+    public:
+        typedef _outit iterout_t;
+
+        SIR0_WriterHelper(_outit itout, SIR0hdr  &hdr)
+            :m_curoffset(SIR0hdr::HDRLEN), m_out(itout), m_sir0(hdr)
+        {
+        }
+
+        template<class T>
+            inline uint32_t writeVal(T val, bool blittleendian = true)
+        {
+            m_curoffset += sizeof(T);
+            m_out = utils::writeBytesFrom(val, m_out, blittleendian);
+            return getCurOffset();
+        }
+
+        inline uint32_t writePtr(uint32_t val)
+        {
+            //Skip null pointers
+            if(val != 0)
+                m_sir0.ptroffsetslist.push_back(m_curoffset);
+            writeVal(val);
+            return getCurOffset();
+        }
+
+        inline void putPadding(uint32_t alignon, const uint8_t padbyte = 0)
+        {
+            m_curoffset += utils::AppendPaddingBytes(m_out, m_curoffset, alignon, padbyte);
+        }
+
+        inline uint32_t getCurOffset()const {return m_curoffset;}
+        inline SIR0hdr & getSIR0Cnt() {return m_sir0;}
+
+    private:
+        iterout_t m_out;
+        SIR0hdr  &m_sir0;
+        uint32_t  m_curoffset;
     };
 
 }
