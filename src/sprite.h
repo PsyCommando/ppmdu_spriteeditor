@@ -362,6 +362,16 @@ public:
         return m_raw;
     }
 
+    inline ImageContainer & getImages()
+    {
+        return m_imgcnt;
+    }
+
+    inline const ImageContainer & getImages()const
+    {
+        return m_imgcnt;
+    }
+
 private:
 
     inline bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const

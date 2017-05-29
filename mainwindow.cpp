@@ -85,6 +85,8 @@ void MainWindow::HideAllTabs()
     ui->tabimage->hide();
     ui->tabImages->hide();
 
+    //ui->tblframeparts->setModel(nullptr);
+
     ui->tabMain->setUpdatesEnabled(true);
 }
 
@@ -128,9 +130,12 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     ShowATab(ui->tabproperties);
 }
 
-void MainWindow::DisplayAnimFramePage(Sprite *spr)
+void MainWindow::DisplayAnimFramePage(Sprite *spr, MFrame * frm)
 {
-    Q_ASSERT(spr);
+    Q_ASSERT(spr && frm);
+    qDebug() << "MainWindow::DisplayAnimFramePage(): Showing frame page!\n";
+    ui->tblframeparts->setModel(frm->getModel());
+    ui->tblframeparts->setItemDelegate(&(frm->itemDelegate()));
     ShowATab(ui->tabframeseditor);
 }
 
@@ -312,6 +317,8 @@ void MainWindow::on_action_Open_triggered()
         }
         LoadContainer(fileName);
     }
+    setupListView();
+    updateActions();
 }
 
 void MainWindow::on_action_Quit_triggered()
@@ -346,6 +353,7 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
     };
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Enabling updates!\n";
     ui->tv_sprcontent->setUpdatesEnabled(true);
+    ui->tv_sprcontent->viewport()->update();
 }
 
 //void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
@@ -468,6 +476,10 @@ void MainWindow::setupListView()
     {
         ui->tv_sprcontent->setRootIsDecorated(false);
         ui->tv_sprcontent->expandToDepth(1);
+        ui->tv_sprcontent->viewport()->update();
+        ui->tv_sprcontent->collapseAll();
+        ui->tv_sprcontent->viewport()->update();
+        ui->tv_sprcontent->expandToDepth(1);
     }
     else
     {
@@ -498,7 +510,7 @@ void MainWindow::InitAnimScene()
 
 void MainWindow::ShowStatusMessage(const QString &msg)
 {
-    ui->statusBar->showMessage( msg, 4000);
+    ui->statusBar->showMessage( msg, 8000);
 }
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
@@ -543,7 +555,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             MFrame * frm = static_cast<MFrame*>(pcur);
             Sprite * spr = frm->parentSprite();
-            DisplayAnimFramePage(spr);
+            DisplayAnimFramePage(spr, frm);
             break;
         }
     case eTreeElemDataType::image:
@@ -577,6 +589,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
     default:
         HideAllTabs();
     };
+    ui->tv_sprcontent->viewport()->update();
 }
 
 void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)

@@ -264,6 +264,11 @@ namespace fmt
 
         static const uint16_t  ATTR01_ResMask    = 0xC000;   //1100 0000 0000 0000
 
+        static const uint16_t  YOFFSET_MAX       = 255;     //256 possible values
+        static const uint16_t  XOFFSET_MAX       = 511;     //512 possible values
+        static const uint16_t  TILENUM_MAX       = 1023;    //1024 possible values
+        static const uint8_t   PALID_MAX         = 15;      //16 palettes
+
         /*
          * eObjMode
          *
@@ -275,6 +280,16 @@ namespace fmt
             Window      = 0x800,
             Invalid,
         };
+
+        enum struct ePriority: uint8_t
+        {
+            Highest = 0,
+            High    = 1,
+            Low     = 2,
+            Lowest  = 3,
+            NbLevels,
+        };
+
 
         frmid_t  frmidx;
         uint16_t unk0;
@@ -532,7 +547,6 @@ namespace fmt
             uint32_t                    baseoffset;
             uint16_t                    unk2;
             uint16_t                    unk14;
-            //std::vector<uint32_t>       &ptrlist;
             std::vector<uint32_t>       &imgptrs;
 
         public:
@@ -617,8 +631,7 @@ namespace fmt
                 return std::move(outstrips);
             }
 
-//            template<class _outit>
-                 void BuildTable(const std::vector<stripkind> & strips/*, _outit & itout*/)
+            void BuildTable(const std::vector<stripkind> & strips)
             {
                 auto beg = strips.begin();
                 auto end = strips.end();
@@ -647,8 +660,7 @@ namespace fmt
                 }
             }
 
-//            template<class _outit>
-                 void WriteEncoded( /*_outit & itout*/ )
+             void WriteEncoded()
              {
                 //write the table!
                 imgptrs.push_back(totallen + baseoffset); //mark the begining of the assembly table for this image!
@@ -660,7 +672,6 @@ namespace fmt
                 //write the last null entry!
                 imgstriptblentry().writeWHlpr(*sir0hlpr);
                 totallen += imgstriptblentry::ENTRY_LEN;
-                //return itout;
              }
         };
 
@@ -685,7 +696,6 @@ namespace fmt
             imgEncoder<_writerhelper_t> encoder(hlpr, imgptrs);
             for(const img_t & img : m_images)
                 encoder(img.data.begin(), img.data.end(), img.unk2, img.unk14 );
-            //return itout;
         }
 
         template<class _writerhelper_t>
@@ -697,18 +707,7 @@ namespace fmt
             for( const rgbx_t & color : m_pal.colors )
                 hlpr.writeVal(color,false);
 
-            //write palette data!
-//            pointers.push_back(curoffset);
             offsetpalette = hlpr.getCurOffset();
-
-//            itout = utils::writeBytesFrom( palbeg, itout);
-//            itout = utils::writeBytesFrom( m_pal.unk3, itout);
-//            itout = utils::writeBytesFrom( static_cast<uint16_t>(m_pal.colors.size()), itout);
-//            itout = utils::writeBytesFrom( m_pal.unk4, itout);
-//            itout = utils::writeBytesFrom( m_pal.unk5, itout);
-//            itout = utils::writeBytesFrom( static_cast<uint32_t>(0), itout);
-//            curoffset += palettedata::LEN;
-//            return itout;
             hlpr.writePtr(palbeg);
             hlpr.writeVal(m_pal.unk3);
             hlpr.writeVal(static_cast<uint16_t>(m_pal.colors.size()));
@@ -932,7 +931,6 @@ namespace fmt
         template<class _writerhelper_t> void WriteAnimTbl( _writerhelper_t                                 & sir0hlpr,
                                                            const std::vector<std::pair<uint32_t, size_t>>  & ptrgrps)const
         {
-            //static const uint32_t SIZEANIMGRPENTRY = 8;
             for( const auto & anim : m_animtbl )
             {
                 uint32_t ptr    = 0;
@@ -948,8 +946,6 @@ namespace fmt
                     }
                     else
                     {
-                        //ptroffslist.push_back(curoffset); //mark pointer offset for SIR0!
-
                         const auto & refgrp = ptrgrps.at(anim);
                         ptr = refgrp.first;
                         len = static_cast<uint16_t>(refgrp.second);
@@ -1125,8 +1121,6 @@ namespace fmt
             std::vector<uint8_t>                    buffer;
             auto                                    itbackins = std::back_inserter(buffer);
             SIR0_WriterHelper<decltype(itbackins)>  sw(itbackins, hdr);
-
-            //uint32_t                curoffs = SIR0hdr::HDRLEN;
             std::vector<uint32_t>   imgptrs;
             std::vector<uint32_t>   frameptrs;
             std::vector<uint32_t>   ptrseqs;

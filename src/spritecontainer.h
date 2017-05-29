@@ -183,9 +183,9 @@ namespace spr_manager
 
         int columnCount(const QModelIndex &parent = QModelIndex()) const
         {
-            if (parent.isValid())
-                return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
-            else
+//            if (parent.isValid())
+//                return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
+//            else
                 return 1;
         }
 

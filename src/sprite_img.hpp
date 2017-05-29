@@ -8,6 +8,16 @@
 #include <QTableWidget>
 #include <QGraphicsScene>
 #include <QPointer>
+#include <QLayout>
+#include <QLabel>
+#include <QComboBox>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QAbstractItemDelegate>
+#include <QStyledItemDelegate>
+#include <QCheckBox>
+#include <QSpinBox>
+#include <QMessageBox>
 
 #include <src/treeelem.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
@@ -21,6 +31,26 @@ extern const char * ElemName_Images       ;
 extern const char * ElemName_Image        ;
 extern const char * ElemName_FrameCnt     ;
 extern const char * ElemName_Frame        ;
+extern const char * ElemName_FramePart    ;
+
+enum struct eFramesColumnsType : int
+{
+    Preview     = 0,
+    TotalSize   = 1,
+    ImgID       = 2,
+    Unk0        = 3,
+    Offset      = 4,
+    Flip        = 5,
+    RotNScaling = 6,
+    PaletteID   = 7,
+    Priority    = 8,
+    CharName    = 9,
+    NBColumns,
+    INVALID,
+};
+
+extern const size_t               FramesHeaderNBColumns;
+extern const std::vector<QString> FramesHeaderColumnNames;
 
 //*******************************************************************
 //
@@ -166,43 +196,6 @@ public:
         return qMove(img);
     }
 
-//    void makeImageTableRow( QTableWidget * tbl, const QVector<QRgb> & pal, int rowid )
-//    {
-//        //0. Image Preview
-//        QLabel * preview = new QLabel("");
-
-//        tbl->setCellWidget(rowid, 0, preview);
-
-//        preview->setScaledContents(true);
-//        preview->setAlignment(Qt::AlignCenter);
-//        preview->setMinimumWidth(m_img.width());
-//        preview->setMinimumHeight(m_img.height());
-//        preview->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-
-//        if( tbl->horizontalHeader()->sectionSize(0 < m_img.width() ) )
-//        {
-//            tbl->setColumnWidth(0, m_img.width());
-//            tbl->horizontalHeader()->resizeSection(0, m_img.width());
-//        }
-//        if( tbl->verticalHeader()->sectionSize(rowid) < m_img.height() )
-//        {
-//            tbl->setRowHeight(rowid, m_img.height());
-//            tbl->verticalHeader()->resizeSection(rowid, m_img.height());
-//        }
-
-//        preview->setPixmap(makePixmap(pal).scaled(preview->width(), preview->height(), Qt::AspectRatioMode::KeepAspectRatio));
-
-//        //1. BPP
-//        QTableWidgetItem * bpp = new QTableWidgetItem( QString("%1").arg(m_depth) );
-//        bpp->setFlags( bpp->flags() & (~Qt::ItemFlag::ItemIsEditable) );
-//        tbl->setItem(rowid, 1, bpp);
-
-//        //2. Resolution
-//        QTableWidgetItem * resolution = new QTableWidgetItem( QString("%1x%2").arg(m_img.width()).arg(m_img.height()) );
-//        resolution->setFlags( resolution->flags() & (~Qt::ItemFlag::ItemIsEditable) );
-//        tbl->setItem(rowid, 2, resolution);
-//    }
-
     Sprite       * parentSprite();
     const Sprite * parentSprite()const {return const_cast<Image*>(this)->parentSprite();}
 
@@ -215,8 +208,6 @@ public:
     QVariant imgData(int column, int role) const;
 
 private:
-//    int         m_width;
-//    int         m_height;
     QImage              m_img;
     std::vector<uint8_t> m_raw; //Need this because QImage doesn't own the buffer...
     int                 m_depth;    //Original image depth in bpp
@@ -224,9 +215,9 @@ private:
     uint16_t            m_unk14;
 };
 
-
-/*
-*/
+//*******************************************************************
+//
+//*******************************************************************
 class ImageContainer;
 class ImagesManager : public QAbstractItemModel
 {
@@ -355,28 +346,8 @@ public:
         return std::move(images);
     }
 
-//    void fillImgListTable(QTableWidget * tbl, const QVector<QRgb> & pal)
-//    {
-//        tbl->setUpdatesEnabled(false);
-//        tbl->clearContents();
-//        tbl->setRowCount(childCount());
-//        //tbl->setColumnCount(3);
-
-//        for( size_t cnti = 0; cnti < childCount(); ++cnti )
-//        {
-//            Image * pimg = static_cast<Image*>(child(cnti));
-//            if(pimg)
-//                pimg->makeImageTableRow(tbl, pal, cnti);
-//            else
-//                Q_ASSERT(false);
-//        }
-//        tbl->setUpdatesEnabled(true);
-//    }
 
     Sprite * parentSprite();
-
-
-    //ImagesManager * getModel(){return m_manager.data();}
 
     QVariant data(const QModelIndex &index, int role) const override
     {
@@ -416,61 +387,413 @@ public:
         return QVariant();
     }
 
-    inline Image * getImage(fmt::frmid_t id) { return static_cast<Image*>(child(id)); }
-    inline const Image * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->child(id)); }
+    virtual int columnCount() const                 {return 3;}
+
+    inline Image        * getImage(fmt::frmid_t id)     { return static_cast<Image*>(child(id)); }
+    inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->child(id)); }
 
 private:
-    //QScopedPointer<ImagesManager> m_manager;
-
 };
 
 //*******************************************************************
 //
 //*******************************************************************
-class MFrame : public BaseTreeTerminalChild<&ElemName_Frame>
+class MFrame;
+class MFrameDelegate : public QStyledItemDelegate
 {
+    Q_OBJECT
 public:
-    MFrame( TreeElement * parent )
-        :BaseTreeTerminalChild(parent)
+
+    MFrameDelegate(MFrame * frm, QObject *parent = nullptr);
+    MFrameDelegate(const MFrameDelegate & cp)
+        :QStyledItemDelegate()
     {
-        setDataTy(eTreeElemDataType::frame);
+        operator=(cp);
     }
 
-    inline bool operator==( const MFrame & other)const  {return this == &other;}
-    inline bool operator!=( const MFrame & other)const  {return !operator==(other);}
-
-//    inline fmt::frmid_t getID()const {return m_id;}
-//    inline void setID(fmt::frmid_t id) {m_id = id;}
-
-    void importFrame(const fmt::ImageDB::frm_t & frm/*, fmt::frmid_t id*/)
+    MFrameDelegate(MFrameDelegate && mv)
+        :QStyledItemDelegate()
     {
-//        m_id    = id;
-        m_parts = frm;
+        operator=(mv);
     }
 
-    fmt::ImageDB::frm_t exportFrame()
+    MFrameDelegate & operator=(const MFrameDelegate & cp)
     {
-        return m_parts;
+        m_pfrm    = cp.m_pfrm;
+        return *this;
+    }
+
+    MFrameDelegate & operator=(MFrameDelegate && mv)
+    {
+        m_pfrm    = mv.m_pfrm;
+        mv.m_pfrm = nullptr;
+        return *this;
+    }
+
+    virtual ~MFrameDelegate();
+
+    /*
+        createEditor
+            Makes the control for editing the data in a cell.
+    */
+    QWidget *createEditor(QWidget *parent,
+                          const QStyleOptionViewItem &/*option*/,
+                          const QModelIndex &index) const override;
+
+    /*
+        setEditorData
+            Initialize the editor with the data.
+    */
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+
+    void setModelData(QWidget *editor,
+                      QAbstractItemModel *model,
+                      const QModelIndex &index) const override;
+
+    void updateEditorGeometry(QWidget *editor,
+                              const QStyleOptionViewItem &option,
+                              const QModelIndex &index) const override;
+
+private:
+
+    static constexpr const char * ImgSelCmbBoxName(){return "cmbImgSelect";}
+    static constexpr const char * ImgSelBtnName()      {return "btnImgSelect";}
+    //Make the selector for picking the image id for a given row!
+    QWidget * makeImgSelect(QWidget *parent, int row)const;
+
+    static constexpr const char * VFlipChkBoxName() {return "chkVflip";}
+    static constexpr const char * HFlipChkBoxName() {return "chkHflip";}
+    QWidget * makeFlipSelect(QWidget *parent, int row)const;
+
+    static constexpr const char * OffsetXSpinBoxName() {return "spbXOff";}
+    static constexpr const char * OffsetYSpinBoxName() {return "spbYOff";}
+    QWidget * makeOffsetSelect(QWidget *parent, int row)const;
+
+    static constexpr const char * RotNScaleChkBoxName() {return "chkRnS";}
+    static constexpr const char * RotNScaleBtnName()   {return "btnRnS";}
+    QWidget * makeRotNScalingSelect(QWidget *parent, int row)const;
+
+
+    QWidget * makePaletteIDSelect(QWidget * parent, int row)const;
+
+    QWidget * makePrioritySelect(QWidget * parent, int row)const;
+
+    QWidget * makeTileIdSelect(QWidget * parent, int row)const;
+
+private:
+    MFrame      *m_pfrm;
+};
+
+//*******************************************************************
+//
+//*******************************************************************
+class MFramePart : public BaseTreeTerminalChild<&ElemName_FramePart>
+{
+    typedef BaseTreeTerminalChild<&ElemName_FramePart> partparent_t;
+public:
+    MFramePart(TreeElement * parent)
+        :partparent_t(parent)
+    {
+        setDataTy(eTreeElemDataType::framepart);
+        setElemTy(eTreeElemType::Editable);
+    }
+
+    MFramePart(TreeElement * parent, const fmt::step_t & part)
+        :partparent_t(parent), m_data(part)
+    {
+        setDataTy(eTreeElemDataType::framepart);
+        setElemTy(eTreeElemType::Editable);
+    }
+
+    virtual ~MFramePart()
+    {
+    }
+
+    bool operator==( const MFramePart & other)const
+    {
+        return m_data.attr0 == other.m_data.attr0 &&
+               m_data.attr1 == other.m_data.attr1 &&
+               m_data.attr2 == other.m_data.attr2;
+    }
+    bool operator!=( const MFramePart & other)const
+    {
+        return !operator==(other);
     }
 
     Sprite * parentSprite();
 
-    QPixmap AssembleFrameToPixmap(int xoffset, int yoffset, QRect * out_area = nullptr) const
+public:
+    virtual int columnCount() const                 {return FramesHeaderNBColumns;}
+
+    virtual QVariant data(int column, int role) const override
     {
-        return qMove( QPixmap::fromImage(AssembleFrame(xoffset, yoffset, out_area)) );
+        if( role != Qt::DisplayRole &&
+            role != Qt::DecorationRole &&
+            role != Qt::SizeHintRole &&
+            role != Qt::EditRole )
+                return QVariant();
+
+        switch(static_cast<eFramesColumnsType>(column))
+        {
+        case eFramesColumnsType::Preview:       return dataImgPreview(role);
+        case eFramesColumnsType::ImgID:         return dataImgId(role);
+        case eFramesColumnsType::Unk0:          return dataUnk0(role);
+        case eFramesColumnsType::Offset:        return dataOffset(role);
+        case eFramesColumnsType::Flip:          return dataFlip(role);
+        case eFramesColumnsType::RotNScaling:   return dataRotNScaling(role);
+        case eFramesColumnsType::PaletteID:     return dataPaletteID(role);
+        case eFramesColumnsType::Priority:      return dataPriority(role);
+        case eFramesColumnsType::CharName:      return dataCharName(role);
+
+            //Undefined cases
+        case eFramesColumnsType::TotalSize:
+        default:
+            break;
+        };
+
+        return QVariant();
     }
+
+
+
+public:
+    void importPart(const fmt::step_t & part)
+    {
+        m_data = part;
+    }
+
+    fmt::step_t exportPart()const
+    {
+        return m_data;
+    }
+
+    fmt::step_t & getPartData()
+    {
+        return m_data;
+    }
+
+    const fmt::step_t & getPartData()const
+    {
+        return m_data;
+    }
+
+private:
+    QVariant dataImgPreview(int role) const;
+
+    QVariant dataImgId(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return QString("Img#%1").arg(static_cast<int>(m_data.getFrameIndex()));
+        }
+        else if(role == Qt::EditRole)
+        {
+            //Just output image id
+            return static_cast<int>(m_data.getFrameIndex());
+        }
+        return QVariant();
+    }
+
+    QVariant dataUnk0(int role)const
+    {
+        if(role == Qt::DisplayRole || role == Qt::EditRole)
+        {
+            return static_cast<int>(m_data.unk0);
+        }
+        return QVariant();
+    }
+
+    QVariant dataOffset(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return QString("(%1, %2)").arg(m_data.getXOffset()).arg(m_data.getYOffset());
+        }
+        else if(role == Qt::EditRole)
+        {
+            QVariant res;
+            res.setValue(QPair<int,int>(m_data.getXOffset(), m_data.getYOffset()));
+            return res;
+        }
+        return QVariant();
+    }
+
+    QVariant dataFlip(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            QString flipval;
+            if(m_data.isVFlip())
+                flipval += "V ";
+            if(m_data.isHFlip())
+                flipval += "H ";
+            return flipval;
+        }
+        else if(role == Qt::EditRole)
+        {
+            QVariant res;
+            res.setValue(QPair<bool,bool>(m_data.isVFlip(), m_data.isHFlip()));
+            return res;
+        }
+        return QVariant();
+    }
+
+    QVariant dataRotNScaling(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return m_data.isRotAndScalingOn();
+        }
+        else if(role == Qt::EditRole)
+        {
+            //#TODO: will need a custom struct here to properly send over RnS data!
+            return m_data.isRotAndScalingOn();
+        }
+        return QVariant();
+    }
+
+    QVariant dataPaletteID(int role)const
+    {
+        if(role == Qt::DisplayRole || role == Qt::EditRole)
+        {
+            return static_cast<int>(m_data.getPalNb());
+        }
+        return QVariant();
+    }
+
+    QVariant dataPriority(int role)const
+    {
+        if(role == Qt::DisplayRole || role == Qt::EditRole)
+        {
+            return static_cast<int>(m_data.getPriority());
+        }
+        return QVariant();
+    }
+
+    QVariant dataCharName(int role)const
+    {
+        if(role == Qt::DisplayRole || role == Qt::EditRole)
+        {
+            return static_cast<int>(m_data.getTileNum());
+        }
+        return QVariant();
+    }
+
+private:
+    fmt::step_t m_data;
+};
+
+//*******************************************************************
+//
+//*******************************************************************
+class MFrame : public BaseListContainerChild<&ElemName_Frame,MFramePart>
+{
+    //Q_OBJECT
+    friend class MFrameDelegate;
+    //Dynamic property for edit controls, so we can keep track of which part they edit!
+    static const char * PropPartID;
+    typedef BaseListContainerChild<&ElemName_Frame,MFramePart> paren_t;
+
+public:
+    MFrame( TreeElement * parent );
+
+    MFrame(const MFrame & cp);
+    MFrame(MFrame && mv);
+    MFrame &  operator=(const MFrame & cp);
+    MFrame &  operator=(MFrame && mv);
+
+    bool operator==( const MFrame & other)const;
+    bool operator!=( const MFrame & other)const;
+
+    void importFrame(const fmt::ImageDB::frm_t & frms)
+    {
+        removeChildren(0, childCount());
+        insertChildren(0, frms.size());
+
+        auto itparts = frms.begin();
+        for( fmt::frmid_t cntid = 0; cntid < frms.size(); ++cntid, ++itparts )
+        {
+            m_container[cntid].importPart(*itparts);
+        }
+    }
+
+    fmt::ImageDB::frm_t exportFrame()const
+    {
+        fmt::ImageDB::frm_t lst;
+        for(const MFramePart & part : m_container)
+            lst.push_back(part.exportPart());
+        return qMove(lst);
+    }
+
+    fmt::step_t *getPart(int id);
+    const fmt::step_t *getPart(int id)const;
+
+    Sprite * parentSprite();
+
+    QPixmap AssembleFrameToPixmap(int xoffset, int yoffset, QRect * out_area = nullptr) const;
 
     QImage AssembleFrame(int xoffset, int yoffset, QRect *out_area = nullptr)const;
     QRect calcFrameBounds()const;
 
 
-    fmt::ImageDB::frm_t & getParts(){return m_parts;}
-    const fmt::ImageDB::frm_t & getParts()const {return m_parts;}
+//    fmt::ImageDB::frm_t         & getParts();
+//    const fmt::ImageDB::frm_t   & getParts()const;
 
+    //Thos can be re-implemented!
+    virtual int columnCount() const override;
+
+    virtual QVariant data(int column, int role) const override;
+
+    //data method of the model and childs!!!
+    //We need this so that we can virtually display entries for each steps of the frame!
+    virtual QVariant data(const QModelIndex &index, int role) const override;
+
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+    //setData method of the model and childs!!!
+    virtual bool setData(const QModelIndex  &index,
+                         const QVariant     &value,
+                         int                role = Qt::EditRole)override;
+
+    virtual int columnCount(const QModelIndex &parent) const;
+
+    QVariant DataForAPart(int row, int column, int role) const;
+
+    virtual int rowCount(const QModelIndex &parent)const override
+    {
+        if(parent.isValid())
+            return static_cast<TreeElement*>(parent.internalPointer())->childCount();
+        else
+            return childCount();
+    }
+
+    inline MFrameDelegate & itemDelegate()
+    {
+        return m_delegate;
+    }
 
 private:
-    //fmt::frmid_t        m_id;
-    fmt::ImageDB::frm_t m_parts;
+
+
+//    int getPartIdFromSender(QObject * sender)
+//    {
+//        if(sender)
+//        {
+//            QVariant val = sender->property(PropPartID);
+//            if(val.isNull())
+//                return -1;
+//            if(val.Int < 0 || val.Int >= m_parts.size())
+//                return -1;
+//            else
+//                return val.Int;
+//        }
+//        return -1;
+//    }
+
+private:
+    //fmt::ImageDB::frm_t m_parts;
+//    BaseTreeNodeModel   m_model; //Virtual model for displaying steps for this frame!
+    MFrameDelegate      m_delegate;
 };
 
 
@@ -479,6 +802,7 @@ private:
 //*******************************************************************
 class FramesContainer : public BaseListContainerChild<&ElemName_FrameCnt, MFrame>
 {
+
 public:
 
     FramesContainer( TreeElement * parent )
@@ -493,13 +817,13 @@ public:
         qDebug("FrameContainer::~FrameContainer()\n");
     }
 
+    //Elem data
     QVariant data(int column, int role) const override
     {
         if( column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
             return QVariant(ElemName());
         return QVariant();
     }
-
 
     void importFrames( const fmt::ImageDB::frmtbl_t & frms )
     {
@@ -532,6 +856,7 @@ public:
         return const_cast<FramesContainer*>(this)->getFrame(id);
     }
 
+    //Model data
     QVariant data(const QModelIndex &index, int role) const override
     {
         if (!index.isValid())
@@ -546,30 +871,25 @@ public:
         const MFrame *frm = static_cast<const MFrame*>(getItem(index));
         return frm->data(index.column(), role);
     }
+
+    //Model headerdata
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
-//        if( role != Qt::DisplayRole )
-//            return QVariant();
+        if( role != Qt::DisplayRole )
+            return QVariant();
 
-//        if( orientation == Qt::Orientation::Vertical )
-//        {
-//            return std::move(QVariant( QString("%1").arg(section) ));
-//        }
-//        else if( orientation == Qt::Orientation::Horizontal )
-//        {
-//            switch(section)
-//            {
-//            case 0:
-//                return std::move(QVariant( QString("Preview") ));
-//            case 1:
-//                return std::move(QVariant( QString("Bit Depth") ));
-//            case 2:
-//                return std::move(QVariant( QString("Resolution") ));
-//            };
-//        }
-        Q_ASSERT(false);
+       if( orientation == Qt::Orientation::Vertical )
+        {
+            return std::move(QVariant( QString("%1").arg(section) ));
+        }
+        else if( orientation == Qt::Orientation::Horizontal && section < FramesHeaderNBColumns )
+        {
+            return FramesHeaderColumnNames[section];
+        }
         return QVariant();
     }
+
+    virtual int columnCount() const override {return FramesHeaderNBColumns;}
 
 private:
 

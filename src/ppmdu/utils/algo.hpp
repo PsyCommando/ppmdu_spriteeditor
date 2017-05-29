@@ -12,7 +12,7 @@ namespace utils
 
     /************************************************************************************
         ExponentOfTwo
-            Calculate exponents of 2 at compile time!
+            Calculate exponents of 2 at compile time! (c++14)
     ************************************************************************************/
     constexpr int ExponentOfTwo( int exp )
     {

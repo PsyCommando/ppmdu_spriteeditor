@@ -15,6 +15,7 @@ const char * ElemName_AnimSequences = "Anim Sequences";
 const char * ElemName_AnimTable     = "Animation Table";
 const char * ElemName_AnimGroup     = "Anim Group";
 const char * ElemName_AnimFrame     = "Anim Frame";
+const char * ElemName_FramePart     = "Frame Part";
 
 
 //
