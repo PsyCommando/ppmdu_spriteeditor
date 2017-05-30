@@ -6,6 +6,7 @@
 #include <QRect>
 #include <QColor>
 #include <QPixmap>
+#include <QFontMetrics>
 
 #include <src/sprite.h>
 
@@ -15,8 +16,7 @@
 const size_t               FramesHeaderNBColumns = static_cast<unsigned int>(eFramesColumnsType::NBColumns);
 const std::vector<QString> FramesHeaderColumnNames
 {
-    QString(("Preview")),
-    QString(("Total Size")),
+    QString(("")),
 
     //The rest below is for the parts/step to assemble the frame!
     QString(("Img ID")),
@@ -32,6 +32,7 @@ const std::vector<QString> FramesHeaderColumnNames
 const char * MFrame::PropPartID = "framePartID";
 
 
+
 //
 //
 //
@@ -39,17 +40,17 @@ const char * MFrame::PropPartID = "framePartID";
 
 Sprite *ImageContainer::parentSprite()
 {
-    return static_cast<Sprite*>(parent());
+    return static_cast<Sprite*>(parentNode());
 }
 
 Sprite *Image::parentSprite()
 {
-    return static_cast<ImageContainer*>(parent())->parentSprite();
+    return static_cast<ImageContainer*>(parentNode())->parentSprite();
 }
 
 Sprite *PaletteContainer::parentSprite()
 {
-    return static_cast<Sprite*>(parent());
+    return static_cast<Sprite*>(parentNode());
 }
 
 QVariant Image::imgData(int column, int role)const
@@ -76,27 +77,27 @@ QVariant Image::imgData(int column, int role)const
 
 Sprite *FramesContainer::parentSprite()
 {
-    return static_cast<Sprite*>(parent());
+    return static_cast<Sprite*>(parentNode());
 }
 
 MFrame::MFrame(TreeElement *parent)
     :paren_t(parent), m_delegate(this)
 {
-    setDataTy(eTreeElemDataType::frame);
+    setNodeDataTy(eTreeElemDataType::frame);
 }
 
 MFrame::MFrame(const MFrame &cp)
     :paren_t(cp), m_delegate(this)
 {
     operator=(cp);
-    setDataTy(eTreeElemDataType::frame);
+    setNodeDataTy(eTreeElemDataType::frame);
 }
 
 MFrame::MFrame(MFrame &&mv)
     :paren_t(mv), m_delegate(this)
 {
     operator=(mv);
-    setDataTy(eTreeElemDataType::frame);
+    setNodeDataTy(eTreeElemDataType::frame);
 }
 
 MFrame &MFrame::operator=(const MFrame &cp)
@@ -145,7 +146,7 @@ const fmt::step_t *MFrame::getPart(int id)const
 
 Sprite *MFrame::parentSprite()
 {
-    return static_cast<FramesContainer*>(parent())->parentSprite();
+    return static_cast<FramesContainer*>(parentNode())->parentSprite();
 }
 
 QPixmap MFrame::AssembleFrameToPixmap(int xoffset, int yoffset, QRect *out_area) const
@@ -249,9 +250,9 @@ QRect MFrame::calcFrameBounds() const
     return QRect( smallestx, smallesty, (biggestx - smallestx), (biggesty - smallesty) );
 }
 
-int MFrame::columnCount() const {return FramesHeaderNBColumns;}
+int MFrame::nodeColumnCount() const {return FramesHeaderNBColumns;}
 
-QVariant MFrame::data(int column, int role) const
+QVariant MFrame::nodeData(int column, int role) const
 {
     if( role != Qt::DisplayRole &&
         role != Qt::DecorationRole &&
@@ -267,18 +268,18 @@ QVariant MFrame::data(int column, int role) const
     case eFramesColumnsType::Preview:
         {
             if(role == Qt::DisplayRole)
-                return QString("frame#%1").arg(childNumber());
+                return QString("frame#%1").arg(nodeIndex());
             if(role != Qt::DecorationRole)
                 break;
             return qMove(QVariant(AssembleFrame(0,0)));
         }
-    case eFramesColumnsType::TotalSize:
-        {
-            if(role != Qt::DisplayRole)
-                break;
-            ///#TODO: Write the total resolution of the assembled frame!
-            break;
-        }
+//    case eFramesColumnsType::TotalSize:
+//        {
+//            if(role != Qt::DisplayRole)
+//                break;
+//            ///#TODO: Write the total resolution of the assembled frame!
+//            break;
+//        }
     default:
         {
         }
@@ -302,18 +303,27 @@ QVariant MFrame::data(const QModelIndex &index, int role) const
 
     const MFramePart *part = static_cast<const MFramePart*>(getItem(index));
     if(part)
-        return part->data(index.column(), role);
+        return part->nodeData(index.column(), role);
     return QVariant();
 }
 
 QVariant MFrame::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if( role != Qt::DisplayRole )
+    if(section < 0 || section >= FramesHeaderNBColumns )
         return QVariant();
 
-    if( orientation == Qt::Orientation::Horizontal && section < FramesHeaderNBColumns )
+    if( role == Qt::DisplayRole )
     {
-        return FramesHeaderColumnNames[section];
+        if( orientation == Qt::Orientation::Horizontal)
+            return FramesHeaderColumnNames[section];
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        if( orientation == Qt::Orientation::Horizontal)
+        {
+            QFontMetrics fm(QFont("Sergoe UI",9));
+            return QSize(fm.width(FramesHeaderColumnNames[section])+4, fm.height()+4);
+        }
     }
     return QVariant();
 }
@@ -383,9 +393,9 @@ bool MFrame::setData(const QModelIndex &index, const QVariant &value, int role)
         }
 
         //Undefined cases
-    case eFramesColumnsType::Preview:
-    case eFramesColumnsType::TotalSize:
-    case eFramesColumnsType::Unk0:
+    //case eFramesColumnsType::Preview:
+    //case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Unk0:
     default:
         return false;
     };
@@ -397,49 +407,14 @@ int MFrame::columnCount(const QModelIndex &parent) const
     return FramesHeaderNBColumns;
 }
 
-//QVariant MFrame::DataForAPart(int row, int column, int role)const
-//{
-//    switch(static_cast<eFramesColumnsType>(column))
-//    {
-//    case eFramesColumnsType::Preview:       return dataImgPreview(row, role);
-//    case eFramesColumnsType::ImgID:         return dataImgId(row, role);
-//    case eFramesColumnsType::Unk0:          return dataUnk0(row, role);
-//    case eFramesColumnsType::Offset:        return dataOffset(row, role);
-//    case eFramesColumnsType::Flip:          return dataFlip(row, role);
-//    case eFramesColumnsType::RotNScaling:   return dataRotNScaling(row, role);
-//    case eFramesColumnsType::PaletteID:     return dataPaletteID(row, role);
-//    case eFramesColumnsType::Priority:      return dataPriority(row, role);
-//    case eFramesColumnsType::CharName:      return dataCharName(row, role);
-
-//        //Undefined cases
-//    case eFramesColumnsType::TotalSize:
-//    default:
-//        break;
-//    };
-//    return QVariant();
-//}
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//
+//
+//
 ImagesManager::ImagesManager(ImageContainer *parent)
     :QAbstractItemModel(), m_parentcnt(parent)
 {}
@@ -452,7 +427,7 @@ ImagesManager::~ImagesManager()
 QModelIndex ImagesManager::index(int row, int column, const QModelIndex &parent) const
 {
     TreeElement *parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
-    TreeElement *childItem  = parentItem->child(row);
+    TreeElement *childItem  = parentItem->nodeChild(row);
     if (childItem)
         return createIndex(row, column, childItem);
     else
@@ -462,19 +437,19 @@ QModelIndex ImagesManager::index(int row, int column, const QModelIndex &parent)
 QModelIndex ImagesManager::parent(const QModelIndex &child) const
 {
     TreeElement *childItem = const_cast<ImagesManager*>(this)->getItem(child);
-    TreeElement *parentItem = childItem->parent();
+    TreeElement *parentItem = childItem->parentNode();
     Q_ASSERT(parentItem != nullptr);
 
     if (parentItem == m_parentcnt)
         return QModelIndex();
 
-    return createIndex(parentItem->childNumber(), 0, parentItem);
+    return createIndex(parentItem->nodeIndex(), 0, parentItem);
 }
 
 int ImagesManager::rowCount(const QModelIndex &parent) const
 {
     TreeElement *parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
-    return parentItem->childCount();
+    return parentItem->nodeChildCount();
 }
 
 int ImagesManager::columnCount(const QModelIndex &parent) const
@@ -482,14 +457,14 @@ int ImagesManager::columnCount(const QModelIndex &parent) const
     if (parent.isValid())
         return static_cast<Image*>(parent.internalPointer())->nbimgcolumns();
     else
-        return m_parentcnt->columnCount();
+        return m_parentcnt->nodeColumnCount();
 }
 
 bool ImagesManager::hasChildren(const QModelIndex &parent) const
 {
     TreeElement * parentItem = const_cast<ImagesManager*>(this)->getItem(parent);
     if(parentItem)
-        return parentItem->childCount() > 0;
+        return parentItem->nodeChildCount() > 0;
     else
         return false;
 }
@@ -524,7 +499,7 @@ QVariant ImagesManager::headerData(int section, Qt::Orientation orientation, int
         switch(section)
         {
         case 0:
-            return std::move(QVariant( QString("Preview") ));
+            return std::move(QVariant( QString("") ));
         case 1:
             return std::move(QVariant( QString("Bit Depth") ));
         case 2:
@@ -540,7 +515,7 @@ bool ImagesManager::insertRows(int row, int count, const QModelIndex &parent)
     bool success;
 
     beginInsertRows(parent, row, row + count - 1);
-    success = parentItem->insertChildren(row, count);
+    success = parentItem->insertChildrenNodes(row, count);
     endInsertRows();
 
     return success;
@@ -552,7 +527,7 @@ bool ImagesManager::removeRows(int row, int count, const QModelIndex &parent)
     bool success = true;
 
     beginRemoveRows(parent, row, row + count - 1);
-    success = parentItem->removeChildren(row, count);
+    success = parentItem->removeChildrenNodes(row, count);
     endRemoveRows();
 
     return success;
@@ -584,7 +559,7 @@ MFrameDelegate::~MFrameDelegate()
 {
 }
 
-QWidget *MFrameDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &, const QModelIndex &index) const
+QWidget *MFrameDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem & option, const QModelIndex &index) const
 {
     QWidget *pedit = nullptr;
     switch(static_cast<eFramesColumnsType>(index.column()))
@@ -612,11 +587,12 @@ QWidget *MFrameDelegate::createEditor(QWidget *parent, const QStyleOptionViewIte
     break;
 
         //Undefined cases
-    case eFramesColumnsType::Unk0:
-    case eFramesColumnsType::Preview:
-    case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Preview:
+    //case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Unk0:
     default:
         //nothing here!
+        return QStyledItemDelegate::createEditor(parent,option,index);
         break;
     };
 
@@ -643,9 +619,8 @@ void MFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index) co
             QComboBox   *pimglist = editor->findChild<QComboBox*>(ImgSelCmbBoxName());
             QPushButton *pbtn     = editor->findChild<QPushButton*>(ImgSelBtnName());
             Q_ASSERT(pimglist && pbtn);
-            pimglist->setModel(m_pfrm->parentSprite()->getImages().getModel());
 
-            if(part->getFrameIndex() > 0)
+            if(part->getFrameIndex() >= 0)
             {
                 pimglist->setEnabled(true);
                 pimglist->setCurrentIndex(part->getFrameIndex());
@@ -672,12 +647,15 @@ void MFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index) co
             QCheckBox *pvf = editor->findChild<QCheckBox*>(VFlipChkBoxName());
             QCheckBox *phf = editor->findChild<QCheckBox*>(HFlipChkBoxName());
             Q_ASSERT(pvf && phf);
+
             if(part->isRotAndScalingOn())
             {
                 pvf->setDisabled(true);
                 phf->setDisabled(true);
                 pvf->setToolTip(QString(tr("VFlip is disabled when rotation and scaling is turned on!")));
                 phf->setToolTip(QString(tr("HFlip is disabled when rotation and scaling is turned on!")));
+                pvf->setChecked(false);
+                phf->setChecked(false);
             }
             else
             {
@@ -720,10 +698,11 @@ void MFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index) co
         }
 
         //Undefined cases
-    case eFramesColumnsType::Unk0:
-    case eFramesColumnsType::Preview:
-    case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Preview:
+    //case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Unk0:
     default:
+        QStyledItemDelegate::setEditorData(editor,index);
         break;
     };
 
@@ -770,9 +749,13 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
             QCheckBox *pvf = editor->findChild<QCheckBox*>(VFlipChkBoxName());
             QCheckBox *phf = editor->findChild<QCheckBox*>(HFlipChkBoxName());
             Q_ASSERT(pvf && phf);
-            QVariant val;
-            val.setValue(QPair<bool,bool>(pvf->isChecked(), phf->isChecked()));
-            model->setData(index, val, Qt::EditRole);
+            if(pvf->isEnabled() && phf->isEnabled())
+            {
+                //We only save the value if the rot&scaling is disabled, aka when the checkboxes are enabled!
+                QVariant val;
+                val.setValue(QPair<bool,bool>(pvf->isChecked(), phf->isChecked()));
+                model->setData(index, val, Qt::EditRole);
+            }
             break;
         }
     case eFramesColumnsType::RotNScaling:
@@ -780,6 +763,7 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
             QCheckBox *prns = editor->findChild<QCheckBox*>(RotNScaleChkBoxName());
             Q_ASSERT(prns);
             model->setData(index, prns->isChecked(), Qt::EditRole);
+            //#TODO: add saving of additional rns data
             break;
         }
     case eFramesColumnsType::PaletteID:
@@ -807,9 +791,9 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
         }
 
         //Undefined cases
-    case eFramesColumnsType::Unk0:
-    case eFramesColumnsType::Preview:
-    case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Preview:
+    //case eFramesColumnsType::TotalSize:
+    //case eFramesColumnsType::Unk0:
     default:
         QStyledItemDelegate::setModelData(editor, model, index);
         break;
@@ -822,9 +806,9 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
     //        model->setData(index, value, Qt::EditRole);
 }
 
-void MFrameDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
+void MFrameDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &/*index*/) const
 {
-
+    editor->setGeometry(option.rect);
 }
 
 
@@ -835,18 +819,29 @@ QWidget *MFrameDelegate::makeImgSelect(QWidget *parent, int row) const
     //Make a combo box or a button to pick an image
     QFrame      *frm        = new QFrame(parent);
     QBoxLayout  *vertlayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, frm);
-    QComboBox   *imglstb    = new QComboBox(parent);
-    QPushButton *dupbtn     = new QPushButton(QString(tr("Prev")), parent);
+    QComboBox   *imglstb    = new QComboBox(frm);
+    QPushButton *dupbtn     = new QPushButton(QString(tr("Prev")), frm);
     imglstb->setObjectName(ImgSelCmbBoxName());
     dupbtn-> setObjectName(ImgSelBtnName());
     dupbtn->setCheckable(true);
     //        connect( imglstb, SIGNAL(currentIndexChanged(int)), this,   SLOT(selectedImageChanged(int)) );
     //        connect( dupbtn,  SIGNAL(toggled(bool)),            this,   SLOT(selectedImageToggledMinOne(bool)) );
+
     connect( dupbtn, &QPushButton::toggled, imglstb, &QComboBox::setDisabled );
+    imglstb->setModel(m_pfrm->parentSprite()->getImages().getModel());
+
+    imglstb->setIconSize( QSize(32,32) );
 
     frm->setLayout(vertlayout);
-    vertlayout->addWidget(imglstb, 1);
-    vertlayout->addWidget(dupbtn, 1);
+    vertlayout->addWidget(imglstb, 2);
+    vertlayout->addWidget(dupbtn, 0);
+    frm->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+    frm->setMinimumHeight(72);
+    dupbtn->setMinimumWidth(32);
+    imglstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    dupbtn->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
+    frm->setContentsMargins(0, 0, 0, 0);
+    vertlayout->setContentsMargins(0, 0, 0, 0);
     return frm;
 }
 
@@ -861,11 +856,15 @@ QWidget *MFrameDelegate::makeFlipSelect(QWidget *parent, int row) const
     QCheckBox   *boxvflip   = new QCheckBox(QString(tr("V")),pselect);
     QCheckBox   *boxhflip   = new QCheckBox(QString(tr("H")),pselect);
 
+    pselect->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::Expanding);
     boxvflip->setObjectName(VFlipChkBoxName());
     boxhflip->setObjectName(HFlipChkBoxName());
     pselect->setLayout(play);
-    play->addWidget(boxvflip,1);
-    play->addWidget(boxhflip,1);
+    play->addWidget(boxvflip,0);
+    play->addWidget(boxhflip,0);
+    pselect->setMinimumWidth(72);
+    pselect->setContentsMargins(1, 1, 1, 1);
+    play->setContentsMargins(0,0,0,0);
     return pselect;
 }
 
@@ -878,9 +877,9 @@ QWidget *MFrameDelegate::makeOffsetSelect(QWidget *parent, int row) const
     QFrame      *pselect = new QFrame(parent);
     QBoxLayout  *play    = new QBoxLayout(QBoxLayout::Direction::LeftToRight, pselect);
     QSpinBox    *pxoff   = new QSpinBox(pselect);
-    QLabel      *pcomma  = new QLabel(QString(tr(", ")),pselect);
     QSpinBox    *pyoff   = new QSpinBox(pselect);
 
+    pselect->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::Expanding);
     pxoff->setObjectName(OffsetXSpinBoxName());
     pyoff->setObjectName(OffsetYSpinBoxName());
     pxoff->setRange(0, fmt::step_t::XOFFSET_MAX);
@@ -888,8 +887,9 @@ QWidget *MFrameDelegate::makeOffsetSelect(QWidget *parent, int row) const
 
     pselect->setLayout(play);
     play->addWidget(pxoff);
-    play->addWidget(pcomma);
     play->addWidget(pyoff);
+    pselect->setContentsMargins(1, 1, 1, 1);
+    play->setContentsMargins(0,0,0,0);
     return pselect;
 }
 
@@ -904,6 +904,7 @@ QWidget *MFrameDelegate::makeRotNScalingSelect(QWidget *parent, int row) const
     QCheckBox   *rotnscale  = new QCheckBox(QString(tr("On")),pselect);
     QPushButton *btnset     = new QPushButton(QString(tr("...")), pselect);
 
+    pselect->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::Expanding);
     rotnscale-> setObjectName(RotNScaleChkBoxName());
     btnset->    setObjectName(RotNScaleBtnName());
 
@@ -919,33 +920,32 @@ QWidget *MFrameDelegate::makeRotNScalingSelect(QWidget *parent, int row) const
     pselect->setLayout(play);
     play->addWidget(rotnscale);
     play->addWidget(btnset);
+    pselect->setContentsMargins(1, 1, 1, 1);
+    play->setContentsMargins(0,0,0,0);
     return pselect;
 }
 
 QWidget *MFrameDelegate::makePaletteIDSelect(QWidget *parent, int row) const
 {
     QSpinBox *ppalid = new QSpinBox(parent);
+    ppalid->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
     ppalid->setRange(0, fmt::step_t::PALID_MAX);
     return ppalid;
 }
 
 QWidget *MFrameDelegate::makePrioritySelect(QWidget *parent, int row) const
 {
-    static const QStringList PRIORITIES
-    {
-        QString(tr("0- Highest")),
-                QString(tr("1- High")),
-                QString(tr("2- Low")),
-                QString(tr("3- Lowest")),
-    };
+
     QComboBox *pselect = new QComboBox(parent);
-    pselect->addItems(PRIORITIES);
+    pselect->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+    pselect->addItems(MFrameDelegate::prioritiesNames());
     return pselect;
 }
 
 QWidget *MFrameDelegate::makeTileIdSelect(QWidget *parent, int row) const
 {
     QSpinBox *ptileid = new QSpinBox(parent);
+    ptileid->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
     ptileid->setRange(0, fmt::step_t::TILENUM_MAX);
     return ptileid;
 }
@@ -956,7 +956,7 @@ QWidget *MFrameDelegate::makeTileIdSelect(QWidget *parent, int row) const
 
 Sprite *MFramePart::parentSprite()
 {
-    return static_cast<MFrame*>(parent())->parentSprite();
+    return static_cast<MFrame*>(parentNode())->parentSprite();
 }
 
 QVariant MFramePart::dataImgPreview(int role) const
@@ -965,7 +965,7 @@ QVariant MFramePart::dataImgPreview(int role) const
     if(role == Qt::DecorationRole)
     {
         //#TODO: Draw only this part/step
-        if( m_data.getFrameIndex() >= 0 && m_data.getFrameIndex() < parentspr->getImages().childCount() )
+        if( m_data.getFrameIndex() >= 0 && m_data.getFrameIndex() < parentspr->getImages().nodeChildCount() )
         {
             Image * pimg = parentspr->getImage(m_data.getFrameIndex());
             if(!pimg)
@@ -977,6 +977,15 @@ QVariant MFramePart::dataImgPreview(int role) const
         {
             //#TODO: draw last step
             return QVariant("COPY PREV");
+        }
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        if( m_data.getFrameIndex() >= 0 && m_data.getFrameIndex() < parentspr->getImages().nodeChildCount() )
+        {
+            Image * pimg = parentspr->getImage(m_data.getFrameIndex());
+            return (pimg->getImageSize());
+//            return (pimg->getImageSize()).width();
         }
     }
     return QVariant();

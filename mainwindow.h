@@ -272,7 +272,7 @@ public:
     void ShowATab(QWidget * ptab);
     void DisplayStartScreen();
     void DisplayPropertiesPage(Sprite * spr);
-    void DisplayAnimFramePage(Sprite * spr, MFrame *frm);
+    void DisplayMFramePage(Sprite * spr, MFrame *frm);
     void DisplayAnimSequencePage(Sprite * spr, AnimSequence *aniseq);
     void DisplayAnimTablePage(Sprite * spr);
     void DisplayPalettePage(Sprite * spr);

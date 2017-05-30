@@ -105,10 +105,10 @@ namespace spr_manager
                 return QVariant();
 
             TreeElement *item = const_cast<SpriteContainer*>(this)->getItem(index);
-            return item->data(index.column(), role);
+            return item->nodeData(index.column(), role);
         }
 
-        QVariant headerData(int section, Qt::Orientation /*orientation*/, int role = Qt::DisplayRole) const
+        QVariant headerData(int /*section*/, Qt::Orientation /*orientation*/, int /*role */= Qt::DisplayRole) const
         {
             //nothing really
             return QVariant();
@@ -120,7 +120,7 @@ namespace spr_manager
                 return 0;
 
             TreeElement *parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
-            return parentItem->childCount();
+            return parentItem->nodeChildCount();
         }
 
         bool hasChildren(const QModelIndex &parent = QModelIndex()) const
@@ -130,7 +130,7 @@ namespace spr_manager
             TreeElement * parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
 
             if(parentItem)
-                return parentItem->childCount() > 0;
+                return parentItem->nodeChildCount() > 0;
             else
                 return false;
         }
@@ -154,7 +154,7 @@ namespace spr_manager
                 return QModelIndex();
 
             TreeElement *parentItem = getItem(parent);
-            TreeElement *childItem  = parentItem->child(row);
+            TreeElement *childItem  = parentItem->nodeChild(row);
             if (childItem)
                 return manager->createIndex(row, column, childItem);
             else
@@ -171,17 +171,17 @@ namespace spr_manager
                 return QModelIndex();
 
             TreeElement *childItem = getItem(index);
-            TreeElement *parentItem = childItem->parent();
+            TreeElement *parentItem = childItem->parentNode();
             Q_ASSERT(parentItem != nullptr);
 
             if (parentItem == this)
                 return QModelIndex();
 
-            return manager->createIndex(parentItem->childNumber(), 0, parentItem);
+            return manager->createIndex(parentItem->nodeIndex(), 0, parentItem);
         }
 
 
-        int columnCount(const QModelIndex &parent = QModelIndex()) const
+        int columnCount(const QModelIndex &/*parent */= QModelIndex()) const
         {
 //            if (parent.isValid())
 //                return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
@@ -196,7 +196,7 @@ namespace spr_manager
             bool success = true;
 
             manager->beginRemoveRows(parent, position, position + rows - 1);
-            success = parentItem->removeChildren(position, rows);
+            success = parentItem->removeChildrenNodes(position, rows);
             manager->endRemoveRows();
 
             return success;
@@ -209,7 +209,7 @@ namespace spr_manager
             bool success;
 
             manager->beginInsertRows(parent, position, position + rows - 1);
-            success = parentItem->insertChildren(position, rows);
+            success = parentItem->insertChildrenNodes(position, rows);
             manager->endInsertRows();
 
             return success;
@@ -226,22 +226,22 @@ namespace spr_manager
                 m_spr.append(*spritem);
         }
 
-        TreeElement *child(int row)override
+        TreeElement *nodeChild(int row)override
         {
             return &m_spr[row];
         }
 
-        int childCount() const override
+        int nodeChildCount() const override
         {
             return m_spr.count();
         }
 
-        int childNumber() const override
+        int nodeIndex() const override
         {
             return 0; //Always first!
         }
 
-        int indexOf( TreeElement * ptr )const override
+        int indexOfNode( TreeElement * ptr )const override
         {
             Sprite * ptrspr = static_cast<Sprite *>(ptr);
 
@@ -250,24 +250,24 @@ namespace spr_manager
             return 0;
         }
 
-        int columnCount() const override
+        int nodeColumnCount() const override
         {
             return 1;
         }
 
-        TreeElement *parent() override
+        TreeElement *parentNode() override
         {
             return m_parentItem;
         }
 
-        QVariant data(int column, int role) const override
+        QVariant nodeData(int column, int role) const override
         {
             if( (role == Qt::DisplayRole || role == Qt::EditRole) && column != 0)
                 return QVariant(getSrcFnameOnly());
             return QVariant();
         }
 
-        bool insertChildren(int position, int count)override
+        bool insertChildrenNodes(int position, int count)override
         {
             if(position > m_spr.size())
                 return false;
@@ -277,7 +277,7 @@ namespace spr_manager
             return true;
         }
 
-        bool removeChildren(int position, int count)override
+        bool removeChildrenNodes(int position, int count)override
         {
             int i = 0;
             for( ; i < count && position < m_spr.size(); ++i )

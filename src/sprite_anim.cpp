@@ -20,51 +20,36 @@ const QList<QVariant> AnimSequence::HEADER_COLUMNS
 };
 
 AnimSequences::AnimSequences(TreeElement *parent)
-    :BaseListContainerChild(parent), m_pmodel(new model_t(this))
+    :BaseTreeContainerChild(parent), m_pmodel(new model_t(this))
 {
-    setElemTy(eTreeElemType::Fixed);
-    setDataTy(eTreeElemDataType::animSequences);
+    setNodeDataTy(eTreeElemDataType::animSequences);
 }
 
 AnimSequences::AnimSequences(const AnimSequences &cp)
-    :BaseListContainerChild(cp), m_pmodel(new model_t(this))
+    :BaseTreeContainerChild(cp), m_pmodel(new model_t(this))
 {
 
 }
 
 AnimSequences::AnimSequences(AnimSequences &&mv)
-    :BaseListContainerChild(mv), m_pmodel(new model_t(this))
+    :BaseTreeContainerChild(mv), m_pmodel(new model_t(this))
 {
 
 }
 
 AnimSequences &AnimSequences::operator=(const AnimSequences &cp)
 {
-    BaseListContainerChild::operator=(cp);
+    BaseTreeContainerChild::operator=(cp);
     return *this;
 }
 
 AnimSequences &AnimSequences::operator=(AnimSequences && mv)
 {
-    BaseListContainerChild::operator=(mv);
+    BaseTreeContainerChild::operator=(mv);
     return *this;
 }
 
-QVariant AnimSequences::data(const QModelIndex & index, int role) const
-{
-    if (!index.isValid())
-        return QVariant("root");
-
-    if (role != Qt::DisplayRole &&
-        role != Qt::DecorationRole &&
-        role != Qt::SizeHintRole &&
-        role != Qt::EditRole)
-        return QVariant();
-
-    return static_cast<TreeElement*>(index.internalPointer())->data(index.column(), role);
-}
-
-QVariant AnimSequences::data(int column, int role) const
+QVariant AnimSequences::nodeData(int column, int role) const
 {
     if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
         return QVariant(ElemName());
@@ -83,28 +68,20 @@ QVariant AnimSequences::headerData(int section, Qt::Orientation orientation, int
     return QVariant();
 }
 
-int AnimSequences::columnCount(const QModelIndex &parent) const
-{
-    if (parent.isValid())
-        return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
-    else
-        return HEADER_COLUMNS.size();
-}
-
 AnimSequence *AnimSequences::getSequenceByID(fmt::AnimDB::animseqid_t id)
 {
-    return static_cast<AnimSequence*>(child(id));
+    return static_cast<AnimSequence*>(nodeChild(id));
 }
 
 void AnimSequences::removeSequence(fmt::AnimDB::animseqid_t id)
 {
-    removeChildren(id,1);
+    removeChildrenNodes(id,1);
 }
 
 void AnimSequences::importSequences(const fmt::AnimDB::animseqtbl_t &src)
 {
-    removeChildren(0, childCount());
-    insertChildren(0, src.size());
+    removeChildrenNodes(0, nodeChildCount());
+    insertChildrenNodes(0, src.size());
 
     for( fmt::AnimDB::animseqid_t cntid = 0; cntid < src.size(); ++cntid )
         m_container[cntid].importSeq(src.at(cntid));
@@ -113,7 +90,7 @@ void AnimSequences::importSequences(const fmt::AnimDB::animseqtbl_t &src)
 fmt::AnimDB::animseqtbl_t AnimSequences::exportSequences()
 {
     fmt::AnimDB::animseqtbl_t seqs;
-    for( int cntid = 0; cntid < childCount(); ++cntid )
+    for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
         seqs[cntid] = std::move(m_container[cntid].exportSeq());
 
     return qMove(seqs);
@@ -123,10 +100,10 @@ AnimSequences::model_t *AnimSequences::getModel() {return m_pmodel.data();}
 
 Sprite *AnimFrame::parentSprite()
 {
-    return static_cast<AnimSequence*>(parent())->parentSprite();
+    return static_cast<AnimSequence*>(parentNode())->parentSprite();
 }
 
-QVariant AnimFrame::data(int column, int role) const
+QVariant AnimFrame::nodeData(int column, int role) const
 {
     if( role != Qt::DisplayRole &&
             role != Qt::DecorationRole &&
@@ -139,7 +116,7 @@ QVariant AnimFrame::data(int column, int role) const
         switch(column)
         {
         case 0: //preview
-            return QVariant(QString("%1#%2").arg(ElemName()).arg(childNumber()));
+            return QVariant(QString("%1#%2").arg(ElemName()).arg(nodeIndex()));
         case 1: //duration
             return QVariant(static_cast<int>(duration()));
         case 2: //x
@@ -166,20 +143,20 @@ QVariant AnimFrame::data(int column, int role) const
 
 Sprite *AnimTable::parentSprite()
 {
-    return static_cast<Sprite*>(parent());
+    return static_cast<Sprite*>(parentNode());
 }
 
 Sprite *AnimGroup::parentSprite()
 {
-    return static_cast<AnimTable*>(parent())->parentSprite();
+    return static_cast<AnimTable*>(parentNode())->parentSprite();
 }
 
 Sprite *AnimSequences::parentSprite()
 {
-    return static_cast<Sprite*>(parent());
+    return static_cast<Sprite*>(parentNode());
 }
 
 Sprite *AnimSequence::parentSprite()
 {
-    return static_cast<AnimSequences*>(parent())->parentSprite();
+    return static_cast<AnimSequences*>(parentNode())->parentSprite();
 }

@@ -115,7 +115,7 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
 
     spr_manager::SpriteContainer * pcnt = spr_manager::SpriteManager::Instance().getContainer();
-    ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOf(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
+    ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOfNode(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
     if( !spr->wasParsed() )
         spr->ParseSpriteData();
    // spr->FillSpriteProperties(ui->tblProperties);
@@ -130,13 +130,17 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     ShowATab(ui->tabproperties);
 }
 
-void MainWindow::DisplayAnimFramePage(Sprite *spr, MFrame * frm)
+void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
 {
     Q_ASSERT(spr && frm);
-    qDebug() << "MainWindow::DisplayAnimFramePage(): Showing frame page!\n";
+    qDebug() << "MainWindow::DisplayMFramePage(): Showing frame page!\n";
     ui->tblframeparts->setModel(frm->getModel());
     ui->tblframeparts->setItemDelegate(&(frm->itemDelegate()));
+    ui->tblframeparts->setEditTriggers(QTableView::EditTrigger::AllEditTriggers);
+    ui->tblframeparts->setSizeAdjustPolicy(QTableView::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
     ShowATab(ui->tabframeseditor);
+    ui->tblframeparts->resizeRowsToContents();
+    ui->tblframeparts->resizeColumnsToContents();
 }
 
 void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
@@ -144,7 +148,7 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
     Q_ASSERT(spr && aniseq);
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
     ShowATab(ui->tabseq);
-    m_previewrender.setScene(spr, aniseq->childNumber());
+    m_previewrender.setScene(spr, aniseq->nodeIndex());
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anime viewer!\n";
     ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
     ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
@@ -194,6 +198,8 @@ void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
     ui->tblviewImages->setModel(pimgs->getModel());
     qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
     ShowATab(ui->tabImages);
+    ui->tblviewImages->resizeRowsToContents();
+    ui->tblviewImages->resizeColumnsToContents();
 }
 
 void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
@@ -341,7 +347,7 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
     ui->tv_sprcontent->setCurrentIndex(index);
 
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Opening proper tab!\n";
-    switch( pcur->getDataTy() )
+    switch( pcur->getNodeDataTy() )
     {
         //Open the appropriate tab
     case eTreeElemDataType::sprite:
@@ -521,7 +527,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
 
     pcur->OnClicked();
 
-    switch( pcur->getDataTy() )
+    switch( pcur->getNodeDataTy() )
     {
         //Open the appropriate tab
     case eTreeElemDataType::sprite:
@@ -555,7 +561,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             MFrame * frm = static_cast<MFrame*>(pcur);
             Sprite * spr = frm->parentSprite();
-            DisplayAnimFramePage(spr, frm);
+            DisplayMFramePage(spr, frm);
             break;
         }
     case eTreeElemDataType::image:

@@ -28,17 +28,23 @@ namespace spr_manager
         Qt::ItemFlags flags(const QModelIndex &index  = QModelIndex()) const
         {
             if (!index.isValid() || !IsContainerLoaded())
-                return 0;
+                return QAbstractItemModel::flags(index);
 
-            switch(getItem(index)->getElemTy())
-            {
-            case eTreeElemType::Editable:
-                return Qt::ItemIsSelectable | Qt::ItemIsEditable | QAbstractItemModel::flags(index);
-            case eTreeElemType::Fixed:
-                return Qt::ItemIsSelectable | QAbstractItemModel::flags(index);
-            };
+            TreeElement * pnode = getItem(index);
+            if(!pnode)
+                return QAbstractItemModel::flags(index);
 
-            return QAbstractItemModel::flags(index);
+            return pnode->nodeFlags();
+
+//            switch(getItem(index)->getElemTy())
+//            {
+//            case eTreeElemType::Editable:
+//                return Qt::ItemIsSelectable | Qt::ItemIsEditable | QAbstractItemModel::flags(index);
+//            case eTreeElemType::Fixed:
+//                return Qt::ItemIsSelectable | QAbstractItemModel::flags(index);
+//            };
+
+            //return QAbstractItemModel::flags(index);
         }
 
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
@@ -60,7 +66,7 @@ namespace spr_manager
                 return 0;
 
             TreeElement *parentItem = getItem(parent);
-            return parentItem->childCount();
+            return parentItem->nodeChildCount();
         }
 
         bool hasChildren(const QModelIndex &parent = QModelIndex()) const override

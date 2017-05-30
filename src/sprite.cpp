@@ -23,7 +23,7 @@ const char * ElemName_FramePart     = "Frame Part";
 //
 Sprite * EffectOffsetContainer::parentSprite()
 {
-    return static_cast<Sprite*>(parent());
+    return static_cast<Sprite*>(parentNode());
 }
 
 

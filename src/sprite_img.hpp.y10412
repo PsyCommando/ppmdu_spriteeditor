@@ -378,7 +378,7 @@ public:
             switch(section)
             {
             case 0:
-                return std::move(QVariant( QString("") ));
+                return std::move(QVariant( QString("Preview") ));
             case 1:
                 return std::move(QVariant( QString("Bit Depth") ));
             case 2:
@@ -468,15 +468,6 @@ public:
     void updateEditorGeometry(QWidget *editor,
                               const QStyleOptionViewItem &option,
                               const QModelIndex &index) const override;
-
-    QSize sizeHint( const QStyleOptionViewItem & /*option*/, const QModelIndex & index ) const override
-    {
-        TreeElement * pnode = static_cast<TreeElement *>(index.internalPointer());
-        if(pnode)
-            return pnode->nodeData(index.column(), Qt::SizeHintRole).toSize();
-        else
-            return QSize();
-    }
 
 private:
 
@@ -607,16 +598,7 @@ public:
         return m_data;
     }
 
-
-
 private:
-    static QSize calcTextSize( const QString & str)
-    {
-        static QFontMetrics fm(QFont("Sergoe UI", 9));
-        return QSize(fm.width(str), fm.height());
-    }
-
-
     QVariant dataImgPreview(int role) const;
 
     QVariant dataImgId(int role)const
@@ -632,10 +614,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            QSize sz = calcTextSize(dataImgId(Qt::DisplayRole).toString());
-            sz.setWidth( sz.width() + 150 );
-            sz.setHeight(sz.height() + 72);
-            return sz;
+            return (dataImgId(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -648,7 +627,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            return calcTextSize(dataUnk0(Qt::DisplayRole).toString());
+            return (dataUnk0(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -667,9 +646,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            QSize sz = calcTextSize(dataOffset(Qt::DisplayRole).toString());
-            sz.setWidth( sz.width() + 80 );
-            return sz;
+            return (dataOffset(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -693,9 +670,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            QSize sz = calcTextSize(dataFlip(Qt::DisplayRole).toString());
-            sz.setWidth( sz.width() + 80 );
-            return sz;
+            return (dataFlip(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -713,9 +688,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            QSize sz = calcTextSize(dataRotNScaling(Qt::DisplayRole).toString());
-            sz.setWidth( sz.width() + 80 );
-            return sz;
+            return (dataRotNScaling(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -728,7 +701,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            return calcTextSize(dataPaletteID(Qt::DisplayRole).toString());
+            return (dataRotNScaling(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -741,9 +714,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            QSize sz = calcTextSize(dataPriority(Qt::DisplayRole).toString());
-            sz.setWidth( sz.width() + 50 );
-            return sz;
+            return (dataPriority(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }
@@ -756,7 +727,7 @@ private:
         }
         else if(role == Qt::SizeHintRole)
         {
-            return calcTextSize(dataCharName(Qt::DisplayRole).toString());
+            return (dataCharName(Qt::DisplayRole).toString().size() * 5);
         }
         return QVariant();
     }

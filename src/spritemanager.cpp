@@ -74,7 +74,7 @@ namespace spr_manager
     int SpriteManager::GetNbSpritesInContainer() const
     {
         if(m_container)
-            return m_container->childCount();
+            return m_container->nodeChildCount();
         else
             return 0;
     }
@@ -105,7 +105,7 @@ namespace spr_manager
         {
             SpriteContainer::sprid_t id = m_container->AddSprite();
             qDebug() << "SpriteManager::AddSpriteToContainer(): Adding new sprite to slot#" <<id <<"!\n";
-            spr.setParent(m_container.data());
+            spr.setParentNode(m_container.data());
             m_container->GetSprite(id) = qMove(spr);
         }
         else

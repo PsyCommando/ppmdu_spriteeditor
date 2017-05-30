@@ -66,7 +66,7 @@ class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
         m_frmcnt.m_parentItem = this;
         m_seqcnt.m_parentItem = this;
         m_anmtbl.m_parentItem = this;
-        setDataTy(eTreeElemDataType::sprite);
+        setNodeDataTy(eTreeElemDataType::sprite);
     }
 
 public:
@@ -189,25 +189,25 @@ public:
 
 public:
 
-    TreeElement *child(int row) override
+    TreeElement *nodeChild(int row) override
     {
         return ElemPtr(row);
     }
 
-    int childCount() const override
+    int nodeChildCount() const override
     {
         return NBChilds;
     }
 
-    int childNumber() const override
+    int nodeIndex() const override
     {
         if (m_parentItem)
-            return m_parentItem->indexOf(const_cast<Sprite*>(this));
+            return m_parentItem->indexOfNode(const_cast<Sprite*>(this));
 
         return -1;
     }
 
-    int indexOf( TreeElement * ptr )const override
+    int indexOfNode( TreeElement * ptr )const override
     {
         //Search a matching child in the list!
         for( int idx = 0; idx < NBChilds; ++idx )
@@ -218,20 +218,20 @@ public:
         return -1;
     }
 
-    int columnCount() const override
+    int nodeColumnCount() const override
     {
         return 1; //Always just 1 column
     }
 
-    TreeElement *parent() override
+    TreeElement *parentNode() override
     {
         return m_parentItem;
     }
 
-    QVariant data(int column, int role) const override
+    QVariant nodeData(int column, int role) const override
     {
         if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
-            return QVariant(QString("Sprite#%1").arg(childNumber()));
+            return QVariant(QString("Sprite#%1").arg(nodeIndex()));
         return QVariant();
     }
 
@@ -266,7 +266,7 @@ public:
         else
             m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
 
-        m_bhasimagedata = m_imgcnt.childCount() != 0;
+        m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
         m_bparsed = true;
     }
 
@@ -300,8 +300,8 @@ public:
     }
 
     //You don't!!
-    bool insertChildren(int, int) override {return false;}
-    bool removeChildren(int, int) override {return false;}
+    bool insertChildrenNodes(int, int) override {return false;}
+    bool removeChildrenNodes(int, int) override {return false;}
 
     inline bool operator==( const Sprite & other)const  {return getID() == other.getID();}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
@@ -347,7 +347,7 @@ public:
 
     inline Image * getImage(fmt::frmid_t idx)
     {
-        if( idx >= 0 && idx < m_imgcnt.childCount() )
+        if( idx >= 0 && idx < m_imgcnt.nodeChildCount() )
             return m_imgcnt.getImage(idx);
         else
             return nullptr;
