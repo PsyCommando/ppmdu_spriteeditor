@@ -279,7 +279,7 @@ public:
     void DisplayEffectsPage(Sprite * spr);
     void DisplayAnimGroupPage(Sprite * spr);
     void DisplayImagePage(Sprite * spr, Image * img);
-    void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs);
+    void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs, Image * img = nullptr );
 
     void LoadContainer( const QString & path );
     void SaveContainer( const QString & path );
@@ -370,6 +370,8 @@ private slots:
         m_progress.setModal(true);
         m_progress.show();
     }
+
+    void on_tblviewImages_clicked(const QModelIndex &index);
 
 signals:
 

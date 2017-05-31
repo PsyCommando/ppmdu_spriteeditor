@@ -814,7 +814,7 @@ public:
 
     QPixmap AssembleFrameToPixmap(int xoffset, int yoffset, QRect * out_area = nullptr) const;
 
-    QImage AssembleFrame(int xoffset, int yoffset, QRect *out_area = nullptr)const;
+    QImage AssembleFrame(int xoffset, int yoffset, QRect *out_area = nullptr, bool makebgtransparent = true)const;
     QRect calcFrameBounds()const;
 
 

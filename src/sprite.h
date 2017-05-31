@@ -601,11 +601,11 @@ public:
         return m_previewPal;
     }
 
-    QPixmap & MakePreviewFrame()
+    QPixmap & MakePreviewFrame(bool transparency = false)
     {
         if(wasParsed() && hasImageData())
         {
-            return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0)) );
+            return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, nullptr, transparency)) );
         }
         return m_previewImg;
     }

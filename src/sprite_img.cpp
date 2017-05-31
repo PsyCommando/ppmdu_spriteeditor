@@ -154,13 +154,13 @@ QPixmap MFrame::AssembleFrameToPixmap(int xoffset, int yoffset, QRect *out_area)
     return qMove( QPixmap::fromImage(AssembleFrame(xoffset, yoffset, out_area)) );
 }
 
-QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect * out_area) const
+QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect * out_area, bool makebgtransparent) const
 {
     Sprite * pspr = const_cast<MFrame*>(this)->parentSprite();
     //QRect dim;
 
     //#TODO: Implement checks for the other paramters for a frame, and for mosaic and etc!
-    QImage      imgres(512,512, QImage::Format_RGB32);
+    QImage      imgres(512,512, QImage::Format_ARGB32_Premultiplied);
     QPainter    painter(&imgres);
     QRect       bounds = calcFrameBounds();
 
@@ -168,12 +168,15 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect * out_area) const
     painter.setBackground( QColor(pspr->getPalette().front()) );
     painter.setBackgroundMode(Qt::BGMode::OpaqueMode);
 
-    //Make first color transparent
     QVector<QRgb> pal = pspr->getPalette();
-    QColor firstcol(pal.front());
-    firstcol.setAlpha(0);
-    pal.front() = firstcol.rgba();
+    //Make first color transparent
+    if(makebgtransparent)
+    {
 
+        QColor firstcol(pal.front());
+        firstcol.setAlpha(0);
+        pal.front() = firstcol.rgba();
+    }
     //Draw all the parts of the frame
     const fmt::step_t * plast = nullptr; //A reference on the last valid frame, so we can properly copy it when encountering a -1 frame!
     for( const MFramePart & pwrap : m_container )

@@ -66,23 +66,17 @@ void MainWindow::HideAllTabs()
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabanims));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabeffects));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabframeseditor));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabpal));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabseq));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabproperties));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabWelcome));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabanimgrp));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabimage));
     ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabImages));
 
     ui->tabanims->hide();
     ui->tabeffects->hide();
     ui->tabframeseditor->hide();
-    ui->tabpal->hide();
     ui->tabseq->hide();
     ui->tabproperties->hide();
     ui->tabWelcome->hide();
-    ui->tabanimgrp->hide();
-    ui->tabimage->hide();
     ui->tabImages->hide();
 
     //ui->tblframeparts->setModel(nullptr);
@@ -171,7 +165,7 @@ void MainWindow::DisplayAnimTablePage(Sprite * spr)
 void MainWindow::DisplayPalettePage(Sprite *spr)
 {
     Q_ASSERT(spr);
-    ShowATab(ui->tabpal);
+    //ShowATab(ui->tabpal);
 }
 
 void MainWindow::DisplayEffectsPage(Sprite *spr)
@@ -183,19 +177,19 @@ void MainWindow::DisplayEffectsPage(Sprite *spr)
 void MainWindow::DisplayAnimGroupPage(Sprite *spr)
 {
     Q_ASSERT(spr);
-    ShowATab(ui->tabanimgrp);
+    //ShowATab(ui->tabanimgrp);
 }
 
 void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
 {
-    Q_ASSERT(spr && img);
-    qDebug() << "MainWindow::DisplayImagePage(): Displaying image page!\n";
-    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(spr->getPalette()), ui->lbl_imgpreview->size()));
-    qDebug() << "MainWindow::DisplayImagePage(): Pixmap assigned!\n";
-    ShowATab(ui->tabimage);
+//    Q_ASSERT(spr && img);
+//    qDebug() << "MainWindow::DisplayImagePage(): Displaying image page!\n";
+//    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(spr->getPalette()), ui->lbl_imgpreview->size()));
+//    qDebug() << "MainWindow::DisplayImagePage(): Pixmap assigned!\n";
+//    ShowATab(ui->tabimage);
 }
 
-void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
+void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs, Image *img)
 {
     Q_ASSERT(spr && pimgs);
     qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
@@ -204,6 +198,15 @@ void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs)
     ShowATab(ui->tabImages);
     ui->tblviewImages->resizeRowsToContents();
     ui->tblviewImages->resizeColumnsToContents();
+
+    if(img)
+    {
+        //select specified image!
+        spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+        QModelIndex ind = ui->tblviewImages->model()->index(pimgs->indexOfNode(img), 0);
+        ui->tblviewImages->setCurrentIndex(ind);
+        on_tblviewImages_clicked(ind);
+    }
 }
 
 void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
@@ -570,9 +573,10 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         }
     case eTreeElemDataType::image:
         {
-            Image  * img = static_cast<Image*>(pcur);
-            Sprite * spr = img->parentSprite();
-            DisplayImagePage(spr,img);
+            Image           * img   = static_cast<Image*>(pcur);
+            ImageContainer  * imgs  = static_cast<ImageContainer*>(img->parentNode());
+            Sprite          * spr   = img->parentSprite();
+            DisplayImageListPage(spr, imgs, img);
             break;
         }
     case eTreeElemDataType::images:
@@ -656,4 +660,17 @@ void MainWindow::on_btnImageCrop_clicked()
         ui->statusBar->setStatusTip("Can't crop! No valid image selected!");
         qWarning("MainWindow::on_btnImageCrop_clicked(): Crop clicked, but no valid images was selected!");
     }
+}
+
+void MainWindow::on_tblviewImages_clicked(const QModelIndex &index)
+{
+    Image * img = static_cast<Image *>(index.internalPointer());
+    if(!index.internalPointer() || !img)
+    {
+        ui->lbl_imgpreview->setPixmap(m_imgNoImg);
+        return;
+    }
+    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
+
+    //#TODO: Update image details if needed
 }

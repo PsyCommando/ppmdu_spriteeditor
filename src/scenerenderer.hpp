@@ -21,6 +21,7 @@ description: Manages scenes used by the main interface for displaying sprite ani
 #include <QFutureWatcher>
 #include <QtConcurrent/QtConcurrent>
 #include <QGradient>
+#include <QBitmap>
 
 #include <src/sprite.h>
 #include <src/spritemanager.h>
@@ -53,7 +54,10 @@ public:
     void Init()
     {
         m_curfrm        = 0;
-        m_ticksnextfrm  = 0;
+        if(m_curfrm < m_cachedframes.size())
+            m_ticksnextfrm  = m_cachedframes[m_curfrm].duration;
+        else
+            m_ticksnextfrm = 0;
     }
 
     void UpdateFrame()
@@ -93,13 +97,15 @@ public:
                 if(pfrm != nullptr )
                 {
                     target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), &area));
-                    //target = target.copy(area);
+//                    if(target.colorTable().size() > 1)
+//                        target.createMaskFromColor( target.colorTable().front(), Qt::MaskOutColor );
+//                    target = target.copy(area);
                 }
                 else
                     qDebug("AnimatedSpriteItem::LoadSequence(): Got invalid frame index %d!\n", afrm.frmidx());
 
                 //#TODO: Removeme! #DEBUG
-                target.save( QString("./aimfrm_%1.png").arg(m_cachedframes.size()), "png");
+                //target.save( QString("./aimfrm_%1.png").arg(m_cachedframes.size()), "png");
 
                 cachedanimfrm_t dest;
                 if( boundsbiggest.x() > area.x() )
@@ -112,6 +118,9 @@ public:
                 if( boundsbiggest.height() < area.height() )
                     boundsbiggest.setHeight(area.height());
 
+
+//                if(target.colorTable().size() > 1)
+//                    pixm.setMask(pixm.createMaskFromColor( target.colorTable().front(), Qt::MaskOutColor ));
                 dest.area     = area;
                 dest.shadowx  = afrm.shadowx();
                 dest.shadowy  = afrm.shadowy();
@@ -154,6 +163,9 @@ public:
 
     void ScheduleFrameUpdate()
     {
+        if(m_frmupdatewatch.isRunning())
+            m_frmupdatewatch.waitForFinished();
+
         m_frmupdate = QtConcurrent::run( this, &AnimatedSpriteItem::UpdateFrame );
         connect(&m_frmupdatewatch, SIGNAL(finished()), this, SLOT(frameupdated()));
         m_frmupdatewatch.setFuture(m_frmupdate);
@@ -201,9 +213,14 @@ public:
             QMutexLocker lk(&m_mtxcache);
             int curfrm = m_curfrm;
 
+            painter->setCompositionMode (QPainter::CompositionMode_Source);
+            painter->fillRect(painter->viewport(), QColor(m_spr->getPalette().front())/*Qt::transparent*/);
+            painter->setCompositionMode( QPainter::CompositionMode_SourceOver );
+
 //            painter->setPen( QColor( 0, 0, 0, 0 ) );
             painter->setBackground(QBrush(QColor(m_spr->getPalette().front())));
             painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
+
 //            painter->drawEllipse(m_cachedframes[curfrm].shadowx,
 //                                 m_cachedframes[curfrm].shadowy,
 //                                 10, 10);
@@ -340,6 +357,7 @@ public:
     void Reset()
     {
         stopAnimUpdates();
+        m_timer.reset();
         if(m_animsprite)
         {
             m_animScene.removeItem(m_animsprite);
@@ -349,8 +367,10 @@ public:
         //m_animScene.setSceneRect( -256, -128, 512, 256 );
 
         //X/Y axis
-        m_animScene.addLine(-512,    0, 512,   0);
-        m_animScene.addLine(   0, -512,   0, 512);
+        QGraphicsLineItem * xaxis = m_animScene.addLine(-512,    0, 512,   0, QPen(QBrush(QColor(128,0,0)),1.5, Qt::PenStyle::DashLine) );
+        QGraphicsLineItem * yaxis = m_animScene.addLine(   0, -512,   0, 512, QPen(QBrush(QColor(0,128,0)),1.5, Qt::PenStyle::DashLine) );
+        xaxis->setZValue(1);
+        yaxis->setZValue(1);
     }
 
     AnimatedSpriteItem * getAnimSprite() {return m_animsprite;}
@@ -372,7 +392,7 @@ public:
 private:
     bool                   m_shouldLoop;
     unsigned int           m_ticks;
-    QTimer                 m_timer;
+    QScopedPointer<QTimer> m_timer;
     QGraphicsScene         m_animScene;
     QGraphicsScene         m_frameScene;
     AnimatedSpriteItem   * m_animsprite;
@@ -393,23 +413,39 @@ signals:
 public slots:
     void startAnimUpdates()
     {
-        if(!m_timer.isActive())
+        if(!m_timer)
         {
-            connect(&m_timer, &QTimer::timeout, this, &SceneRenderer::doTick );
-            m_timer.setInterval(TICK_RATE);
-            m_timer.start();
+            m_timer.reset(new QTimer);
+            connect(m_timer.data(), &QTimer::timeout, this, &SceneRenderer::doTick );
+            m_timer->setInterval(TICK_RATE);
+            m_timer->start();
         }
+//        if(!m_timer.isActive())
+//        {
+//            connect(&m_timer, &QTimer::timeout, this, &SceneRenderer::doTick );
+//            m_timer.setInterval(TICK_RATE);
+//            m_timer.start();
+//        }
     }
 
     void stopAnimUpdates()
     {
-//        if(m_timer.isActive())
-//        {
-            m_timer.stop();
-            disconnect(&m_timer, &QTimer::timeout, this, &SceneRenderer::doTick );
+        if(m_timer)
+        {
+            m_timer->stop();
+            m_timer.reset();
             m_ticks = 0;
             if(m_animsprite)
                 m_animsprite->Init();
+        }
+
+//        if(m_timer.isActive())
+//        {
+//            m_timer.stop();
+//            disconnect(&m_timer, &QTimer::timeout, this, &SceneRenderer::doTick );
+//            m_ticks = 0;
+//            if(m_animsprite)
+//                m_animsprite->Init();
 //        }
     }
 
