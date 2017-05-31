@@ -37,6 +37,8 @@ namespace filetypes
         INVALID,
     };
 
+    extern const std::vector<std::string> CompressionFormatsNames;
+
     /*
      * Information on the compressed data
     */

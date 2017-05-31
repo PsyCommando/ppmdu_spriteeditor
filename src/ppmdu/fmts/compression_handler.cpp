@@ -2,6 +2,15 @@
 
 namespace filetypes
 {
+    const std::vector<std::string> CompressionFormatsNames
+    {
+        "PKDPX",
+        "AT4PX",
+        "AT4PN",
+        "INVALID",
+    };
+
+
     uint16_t DecompressPKDPX( std::vector<uint8_t>::const_iterator             itinputbeg,
                               std::vector<uint8_t>::const_iterator             itinputend,
                               std::back_insert_iterator<std::vector<uint8_t> > itoutwhere )

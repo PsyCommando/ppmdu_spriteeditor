@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QDebug>
 #include <QGraphicsScene>
+#include <QPointer>
 #include <cstdint>
 #include <list>
 #include <src/treeelem.hpp>
@@ -24,35 +25,320 @@
 #include <src/sprite_anim.hpp>
 #include <src/ppmdu/fmts/compression_handler.hpp>
 
+extern const char * ElemName_SpriteProperty;
+enum struct eSpritePropColumns : int
+{
+    Value= 0,
+    Description,
+    NbColumns,
+};
+extern const int         SpritePropertiesNbCols;
+extern const QStringList SpritePropertiesColNames;
+
+enum struct eSpriteProperties : int
+{
+    SpriteType = 0,
+    Compression,
+
+    ColorMode,
+    Unk6,
+    Unk7,
+    Unk8,
+    Unk9,
+    Unk10,
+    Unk11,
+    Unk12,
+    Unk13,
+
+    NbProperties,
+};
+extern const QStringList SpritePropertiesNames;
+extern const QStringList SpritePropertiesDescriptions;
+extern const int         SpriteNbProperties;
+
+//Since we have our own compression settings that differs
+// from those in the compression_handler.hpp file, put them here!
+enum struct eCompressionFmtOptions : int
+{
+    PKDPX = 0,
+    AT4PX,
+    NONE,
+};
+extern const QStringList CompressionFmtOptions; //names for the above options
+filetypes::eCompressionFormats  CompOptionToCompFmt( eCompressionFmtOptions opt );
+eCompressionFmtOptions          CompFmtToCompOption( filetypes::eCompressionFormats fmt );
+
+
+enum struct eSpriteColorModes : int
+{
+    _16Colors = 0,
+    _256Colors,
+    INVALID,
+};
+extern const QStringList SpriteColorModes;
+
+//Forward declare Sprite
 class Sprite;
 
-/*
-*/
+
+//*******************************************************************
+//  SpritePropertiesDelegate
+//*******************************************************************
+class SpritePropertiesDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+
+    Sprite * m_spr;
+
+    static const int PropValueColLen = 128;
+public:
+
+    SpritePropertiesDelegate(Sprite * parentspr, QObject * parent = nullptr)
+        :QStyledItemDelegate(parent), m_spr(parentspr)
+    {
+
+    }
+
+    virtual ~SpritePropertiesDelegate(){}
+
+    // QAbstractItemDelegate interface
+public:
+    virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        QSize ret = QStyledItemDelegate::sizeHint(option, index);
+        if(index.column() == static_cast<int>(eSpritePropColumns::Value))
+        {
+            ret.setWidth( ret.width() + PropValueColLen);
+        }
+        return ret;
+    }
+
+    virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        //Qt takes ownership of the widget we create!
+        if(index.column() != static_cast<int>(eSpritePropColumns::Value))
+            return QStyledItemDelegate::createEditor(parent,option,index);
+
+        switch(static_cast<eSpriteProperties>(index.row()))
+        {
+        case eSpriteProperties::SpriteType:
+            {
+                QComboBox * pspritetypes = new QComboBox(parent);
+                pspritetypes->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Fixed );
+                pspritetypes->setAutoFillBackground(true);
+                pspritetypes->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
+
+                for(const auto & s : fmt::SpriteTypeNames)
+                    pspritetypes->addItem(QString::fromStdString(s));
+                pspritetypes->removeItem(fmt::SpriteTypeNames.size()-1); //remove the last item since we don't want to allow the user to pick it!
+                return pspritetypes;
+            }
+        case eSpriteProperties::Compression:
+            {
+                QComboBox * pcompty = new QComboBox(parent);
+                pcompty->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Fixed );
+                pcompty->setAutoFillBackground(true);
+                pcompty->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
+
+                for(const auto & s : CompressionFmtOptions)
+                    pcompty->addItem(s);
+                return pcompty;
+            }
+        case eSpriteProperties::ColorMode:
+            {
+                QComboBox * pcolmode = new QComboBox(parent);
+                pcolmode->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Fixed );
+                pcolmode->setAutoFillBackground(true);
+                pcolmode->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
+                for(const auto & s : SpriteColorModes)
+                    pcolmode->addItem(s);
+                return pcolmode;
+            }
+        case eSpriteProperties::Unk6:
+        case eSpriteProperties::Unk7:
+        case eSpriteProperties::Unk8:
+        case eSpriteProperties::Unk9:
+        case eSpriteProperties::Unk10:
+        case eSpriteProperties::Unk11:
+        case eSpriteProperties::Unk12:
+        case eSpriteProperties::Unk13:
+        default:
+            {
+                //nothing here
+            }
+        };
+
+        return QStyledItemDelegate::createEditor(parent,option,index);
+    }
+
+    virtual void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+
+    virtual void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override
+    {
+        if(index.column() != static_cast<int>(eSpritePropColumns::Value))
+        {
+            QStyledItemDelegate::setModelData(editor,model,index);
+            return;
+        }
+
+        switch(static_cast<eSpriteProperties>(index.row()))
+        {
+        case eSpriteProperties::SpriteType:
+            {
+                QComboBox * pspritetypes = static_cast<QComboBox*>(editor);
+                Q_ASSERT(pspritetypes);
+                model->setData( index, pspritetypes->currentIndex() );
+                return;
+            }
+        case eSpriteProperties::Compression:
+            {
+                QComboBox * pcompty = static_cast<QComboBox*>(editor);
+                Q_ASSERT(pcompty);
+                model->setData( index, pcompty->currentIndex() );
+                return;
+            }
+        case eSpriteProperties::ColorMode:
+            {
+                QComboBox * pcolmode = static_cast<QComboBox*>(editor);
+                Q_ASSERT(pcolmode);
+                model->setData(index, pcolmode->currentIndex());
+                return;
+            }
+        case eSpriteProperties::Unk6:
+        case eSpriteProperties::Unk7:
+        case eSpriteProperties::Unk8:
+        case eSpriteProperties::Unk9:
+        case eSpriteProperties::Unk10:
+        case eSpriteProperties::Unk11:
+        case eSpriteProperties::Unk12:
+        case eSpriteProperties::Unk13:
+        default:
+            {
+                //nothing here
+            }
+        };
+        QStyledItemDelegate::setModelData(editor,model,index);
+    }
+
+    virtual void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &/*index*/) const override
+    {
+        editor->setGeometry(option.rect);
+    }
+};
+
+//*******************************************************************
+//  SpritePropertiesModel
+//*******************************************************************
+class SpritePropertiesModel : public QAbstractItemModel
+{
+    Q_OBJECT
+    Sprite * m_spr;
+
+//    //PropNode
+//    // Dummy entry for a unique Sprite property
+//    class PropNode : public BaseTreeTerminalChild<&ElemName_SpriteProperty>
+//    {
+//    public:
+//        //Nothing here
+//    };
+//    QList<PropNode> m_dummyProps; //Since we need pointer to an entity in an index, we use these
+public:
+
+    SpritePropertiesModel(Sprite * parentspr, QObject * parent = nullptr);
+
+    virtual ~SpritePropertiesModel();
+
+    int getNbProperties()const;
+
+    // QAbstractItemModel interface
+public:
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+    virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
+
+    virtual QModelIndex parent(const QModelIndex &/*child*/) const override;
+
+    virtual int rowCount(const QModelIndex &parent) const override;
+
+    virtual int columnCount(const QModelIndex &/*parent*/) const override;
+
+    virtual bool hasChildren(const QModelIndex &parent) const override;
+
+    virtual QVariant data(const QModelIndex &index, int role) const override;
+
+
+    virtual bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+private:
+    QVariant dataDisplay(int propid, int column)const;
+
+    QVariant getNameForProperty(int propid)const;
+
+    QVariant getDataForProperty(int propid, int role)const;
+
+    QVariant getDescForProperty(int propid)const;
+
+    void setDataForProperty( eSpriteProperties propid, const QVariant & data );
+
+signals:
+    void spriteTypeSet(fmt::eSpriteType);
+
+public:
+
+
+};
+
+//*******************************************************************
+//  SpritePropertiesHandler
+//      Links the Sprite's properties and its Model and Delegate!
+//*******************************************************************
 class SpritePropertiesHandler : public QObject
 {
     Q_OBJECT
     Sprite * m_powner;
+    QPointer<SpritePropertiesDelegate> m_pDelegate; //QPointer because the hierachy handles deleting those!
+    QPointer<SpritePropertiesModel>    m_pModel;
+
 public:
-    SpritePropertiesHandler( Sprite * owner, QObject * parent = nullptr );
-    virtual ~SpritePropertiesHandler();
+    SpritePropertiesHandler( Sprite * owner, QObject * parent = nullptr )
+        :QObject(parent),
+          m_powner(owner),
+          m_pDelegate(new SpritePropertiesDelegate(m_powner, this)),
+          m_pModel(new SpritePropertiesModel(m_powner, this))
+    {}
 
-    void sendSpriteLoaded();
+    virtual ~SpritePropertiesHandler()
+    {
+        qDebug("SpritePropertiesHandler::~SpritePropertiesHandler()\n");
+    }
 
-    void setOwner( Sprite * own );
+    void setOwner( Sprite * own )
+    {
+        m_powner = own;
+    }
+
+    SpritePropertiesDelegate * delegate() {return m_pDelegate.data();}
+    SpritePropertiesModel    * model()    {return m_pModel.data();}
 
 public slots:
-    void setSpriteType( fmt::eSpriteType ty );
+    void setSpriteType( fmt::eSpriteType ty )
+    {
+        //Convert Sprite Type as neccessary!
+        qDebug("SpritePropertiesHandler::setSpriteType(): Sprite type changed to %d!", static_cast<int>(ty));
+    }
 
 signals:
-    void spriteLoaded();
+
 };
 
 
 
 //*******************************************************************
-//Sprite
+//  Sprite
 //*******************************************************************
-class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
+class Sprite : public TreeElement
 {
 
     void _ctor()
@@ -67,6 +353,7 @@ class Sprite : public TreeElement, public utils::BaseSequentialIDGen<Sprite>
         m_seqcnt.m_parentItem = this;
         m_anmtbl.m_parentItem = this;
         setNodeDataTy(eTreeElemDataType::sprite);
+        m_propshndlr.reset( new SpritePropertiesHandler(this) );
     }
 
 public:
@@ -99,6 +386,7 @@ public:
     {
         _ctor();
     }
+
 
     Sprite( const Sprite & cp )
         :TreeElement(cp),
@@ -176,7 +464,7 @@ public:
 
     ~Sprite()
     {
-        qDebug("Sprite::~Sprite(): Sprite ID: %d\n", m_id);
+        qDebug("Sprite::~Sprite(): Sprite ID: %d\n", nodeIndex());
     }
 
 
@@ -303,7 +591,7 @@ public:
     bool insertChildrenNodes(int, int) override {return false;}
     bool removeChildrenNodes(int, int) override {return false;}
 
-    inline bool operator==( const Sprite & other)const  {return getID() == other.getID();}
+    inline bool operator==( const Sprite & other)const  {return this == &other;}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
 
 
@@ -371,6 +659,80 @@ public:
     {
         return m_imgcnt;
     }
+
+    inline fmt::eSpriteType getSpriteType()const
+    {
+        return m_sprhndl.getSpriteType();
+    }
+
+    void convertSpriteToType(fmt::eSpriteType newty)
+    {
+        //Do nothing if its the same type as the current one!
+        if(newty == getSpriteType())
+            return;
+
+        switch(newty)
+        {
+        case fmt::eSpriteType::Prop:
+
+        case fmt::eSpriteType::Character:
+
+        case fmt::eSpriteType::Effect:
+
+        case fmt::eSpriteType::WAT:
+
+        default:
+            break;
+        };
+
+        //#TODO:!!
+        Q_ASSERT(false);
+    }
+
+    //SPRITE PROPERTIES
+    SpritePropertiesHandler * propHandler()
+    {
+        return m_propshndlr.data();
+    }
+
+    const SpritePropertiesHandler * propHandler()const
+    {
+        return m_propshndlr.data();
+    }
+
+    inline bool is256Colors()const
+    {
+        return m_sprhndl.getImageFmtInfo().is256Colors();
+    }
+
+    inline void setIs256Colors( bool state )
+    {
+        m_sprhndl.getImageFmtInfo().setIs256Colors(state);
+    }
+
+    inline uint16_t unk6()const  {return m_sprhndl.getAnimFmtInfo().unk6;}
+    inline void unk6(uint16_t v) {m_sprhndl.getAnimFmtInfo().unk6 = v;}
+
+    inline uint16_t unk7()const  {return m_sprhndl.getAnimFmtInfo().unk7;}
+    inline void unk7(uint16_t v) {m_sprhndl.getAnimFmtInfo().unk7 = v;}
+
+    inline uint16_t unk8()const  {return m_sprhndl.getAnimFmtInfo().unk8;}
+    inline void unk8(uint16_t v) {m_sprhndl.getAnimFmtInfo().unk8 = v;}
+
+    inline uint16_t unk9()const  {return m_sprhndl.getAnimFmtInfo().unk9;}
+    inline void unk9(uint16_t v) {m_sprhndl.getAnimFmtInfo().unk9 = v;}
+
+    inline uint16_t unk10()const  {return m_sprhndl.getAnimFmtInfo().unk10;}
+    inline void unk10(uint16_t v) {m_sprhndl.getAnimFmtInfo().unk10 = v;}
+
+    inline uint16_t unk11()const  {return m_sprhndl.getImageFmtInfo().unk11;}
+    inline void unk11(uint16_t v) {m_sprhndl.getImageFmtInfo().unk11 = v;}
+
+    inline uint16_t unk12()const  {return m_sprhndl.getUnk12();}
+    inline void unk12(uint16_t v) {m_sprhndl.getUnk12() = v;}
+
+    inline uint16_t unk13()const  {return m_sprhndl.getImageFmtInfo().unk13;}
+    inline void unk13(uint16_t v) {m_sprhndl.getImageFmtInfo().unk13 = v;}
 
 private:
 
@@ -453,6 +815,7 @@ public:
     QPixmap                 m_previewImg;
     QPixmap                 m_previewPal;
     fmt::WA_SpriteHandler   m_sprhndl;
+    QScopedPointer<SpritePropertiesHandler> m_propshndlr;
 };
 
 #endif // SPRITE_H

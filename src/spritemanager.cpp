@@ -3,10 +3,7 @@
 
 namespace spr_manager
 {
-    const QString ShortNameNone     = "NONE";
-    const QString ShortNamePackFile = "PACK";
-    const QString ShortNameWAN      = "WAN";
-    const QString ShortNameWAT      = "WAT";
+
 
     SpriteContainer * SpriteManager::OpenContainer(const QString &fname)
     {
@@ -120,7 +117,7 @@ namespace spr_manager
             qWarning("No container loaded!");
             return;
         }
-        index;
+        m_container->removeRows( index.row(), 1, QModelIndex(), this );
     }
 
     bool SpriteManager::ContainerIsPackFile()const
@@ -144,16 +141,16 @@ namespace spr_manager
             switch( m_container->GetContainerType() )
             {
             case SpriteContainer::eContainerType::PACK:
-                return ShortNamePackFile;
+                return tr("PACK");
             case SpriteContainer::eContainerType::WAN:
-                return ShortNameWAN;
+                return tr("WAN");
             case SpriteContainer::eContainerType::WAT:
-                return ShortNameWAT;
+                return tr("WAT");
             default:
                 return QString("NULL");
             };
         }
-        return ShortNameNone;
+        return tr("NONE");
     }
 
 };

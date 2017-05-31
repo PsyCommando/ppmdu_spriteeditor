@@ -53,8 +53,10 @@ namespace fmt
         Character   = 1,
         Effect      = 2,
         WAT         = 3,
-        INVALID,
+        INVALID     = 4,
     };
+
+    extern const std::vector<std::string> SpriteTypeNames;
 
 //-----------------------------------------------------------------------------
 //  Data
@@ -123,6 +125,7 @@ namespace fmt
 //        }
 
         inline bool is256Colors()const {return colordepth != 0;}
+        inline void setIs256Colors(bool v) {colordepth = (v)? 1 : 0;}
     };
 
     /**********************************************************************
@@ -1211,7 +1214,14 @@ namespace fmt
         inline OffsetsDB           & getEffectOffset()                         {return m_efxoffsets;}
 
         inline const animfmtinfo   & getAnimFmtInfo()const                     {return m_animfmt;}
+        inline animfmtinfo         & getAnimFmtInfo()                          {return m_animfmt;}
         inline const imgfmtinfo    & getImageFmtInfo()const                    {return m_imgfmt;}
+        inline imgfmtinfo          & getImageFmtInfo()                         {return m_imgfmt;}
+
+        inline eSpriteType           getSpriteType()const                      {return m_sprty;}
+
+        inline const uint16_t      & getUnk12()const                           {return m_unk12;}
+        inline uint16_t            & getUnk12()                                {return m_unk12;}
 
     private:
 

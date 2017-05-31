@@ -3,6 +3,7 @@
 namespace fmt
 {
 
+
     const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues
     {{
         { 8, 8},    //00 00
@@ -20,5 +21,16 @@ namespace fmt
         {16,32},    //10 10
         {32,64},    //10 11
     }};
+
+
+    const std::vector<std::string> SpriteTypeNames
+    {
+        "Props",
+        "Characters",
+        "Effects",
+        "Others/WAT",
+
+        "INVALID",
+    };
 
 };

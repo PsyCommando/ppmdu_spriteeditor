@@ -127,6 +127,10 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
         ui->lblPropPreview->setPixmap(m_imgNoImg);
 
     ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
+
+    ui->tblProperties->setModel(spr->propHandler()->model());
+    ui->tblProperties->setItemDelegate(spr->propHandler()->delegate());
+
     ShowATab(ui->tabproperties);
 }
 
