@@ -114,10 +114,33 @@ namespace spr_manager
     {
         if(!m_container)
         {
-            qWarning("No container loaded!");
+            qWarning("No container loaded!\n");
             return;
         }
         m_container->removeRows( index.row(), 1, QModelIndex(), this );
+    }
+
+    bool SpriteManager::DumpSprite(const QModelIndex &index, const QString & path)
+    {
+        if(IsContainerLoaded())
+        {
+            Sprite * spr = static_cast<Sprite*>(m_container->getItem(index));
+            if(!spr)
+            {
+                Q_ASSERT(false);
+                qWarning("SpriteManager::DumpSprite(): Index isn't a sprite! \n");
+                return false;
+            }
+
+            qDebug() <<"SpriteManager::DumpSprite(): Dumping sprite #" <<index.row() <<"!\n";
+            spr->CommitSpriteData();
+            QSaveFile save(path);
+            save.write( (char*)(spr->getRawData().data()), spr->getRawData().size());
+            return save.commit();
+        }
+        else
+            qCritical() << "SpriteManager::DumpSprite() : Tried to dump a sprite while the container was not loaded!\n";
+        return false;
     }
 
     bool SpriteManager::ContainerIsPackFile()const

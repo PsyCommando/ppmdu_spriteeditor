@@ -14,6 +14,8 @@
 //    Fixed,
 //};
 
+class Sprite; //forward declaration
+
 enum struct eTreeElemDataType
 {
     None,
@@ -113,8 +115,14 @@ public:
     virtual void              setNodeFlags(Qt::ItemFlags val)   {m_flags=val;}
 
     virtual TreeElement       * parentNode()                        {return m_parentItem;}
-    virtual const TreeElement * parentNode()const                   {return m_parentItem;}
+    virtual const TreeElement * parentNode()const                   {return const_cast<TreeElement*>(this)->parentNode();}
     virtual void                setParentNode(TreeElement * parent) {m_parentItem = parent;}
+
+    virtual Sprite             *parentSprite() = 0;
+    virtual const Sprite       *parentSprite()const {return const_cast<TreeElement*>(this)->parentSprite();}
+
+    //Whether we can move, remove, insert this kind of node
+    virtual bool nodeIsMutable()const {return true;}
 
     virtual void OnClicked(){}
     virtual void OnExpanded(){}
@@ -443,7 +451,7 @@ public:
 
     TreeElement *nodeChild(int row) override
     {
-        if(nodeChildCount() > 0)
+        if(row < nodeChildCount() && row >= 0)
             return &m_container[row];
         else
             return nullptr;

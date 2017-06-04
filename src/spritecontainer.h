@@ -167,6 +167,9 @@ namespace spr_manager
             if (!index.isValid() )
                 return QModelIndex();
 
+            if( index.internalPointer() == this || index.internalPointer() == manager )
+                return QModelIndex();
+
             if(m_spr.empty())
                 return QModelIndex();
 
@@ -219,6 +222,7 @@ namespace spr_manager
     public:
         void appendChild(TreeElement *item)
         {
+            QMutexLocker lk(&getMutex());
             Sprite * spritem = nullptr;
             spritem = static_cast<Sprite*>(item);
 
@@ -243,6 +247,7 @@ namespace spr_manager
 
         int indexOfNode( TreeElement * ptr )const override
         {
+            QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
             Sprite * ptrspr = static_cast<Sprite *>(ptr);
 
             if( ptrspr )
@@ -260,6 +265,8 @@ namespace spr_manager
             return m_parentItem;
         }
 
+        Sprite *parentSprite()override{return nullptr;}
+
         QVariant nodeData(int column, int role) const override
         {
             if( (role == Qt::DisplayRole || role == Qt::EditRole) && column != 0)
@@ -269,6 +276,7 @@ namespace spr_manager
 
         bool insertChildrenNodes(int position, int count)override
         {
+            QMutexLocker lk(&getMutex());
             if(position > m_spr.size())
                 return false;
 
@@ -279,6 +287,7 @@ namespace spr_manager
 
         bool removeChildrenNodes(int position, int count)override
         {
+            QMutexLocker lk(&getMutex());
             int i = 0;
             for( ; i < count && position < m_spr.size(); ++i )
                 m_spr.removeAt(position);
@@ -288,6 +297,8 @@ namespace spr_manager
 
             return true;
         }
+
+        bool nodeIsMutable()const override {return false;}
 
     private:
         void FetchToC( QDataStream & fdat );

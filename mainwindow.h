@@ -14,11 +14,17 @@
 #include <QGraphicsPixmapItem>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QDataWidgetMapper>
+#include <QMenu>
+#include <QPersistentModelIndex>
+
 #include "src/spritemanager.h"
 #include <src/scenerenderer.hpp>
 #include <dialogabout.hpp>
 #include <dialogprogressbar.hpp>
 #include <atomic>
+
+#include <src/frameeditor.hpp>
 
 namespace Ui {
 class MainWindow;
@@ -262,6 +268,7 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+    friend class TVSpritesContextMenu;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -295,9 +302,14 @@ private:
 
     void updateActions();
 
+    spr_manager::SpriteContainer * getContainer();
+    spr_manager::SpriteManager & getManager();
+
     //Tweak the list view to better display either single sprites or pack files!!
     void setupListView();
     void SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt);
+
+    void setupFrameEditPageForPart( MFrame * frm,  MFramePart * part );
 
     void SaveAs( const QString & path );
 
@@ -326,6 +338,20 @@ private:
     void InitAnimScene();
 
     void ShowStatusMessage(const QString & msg);
+    void ShowStatusErrorMessage(const QString & msg);
+
+    QMenu *makeSpriteContextMenu(QModelIndex entry);
+
+    Sprite      * currentSprite();
+    MFrame      * currentFrame();
+    Image       * currentImage();
+    AnimSequence* currentAnimSequence();
+    eTreeElemDataType currentEntryType();
+    //For specific sub-tables
+    MFramePart  * currentTblFrameParts();
+    Image       * currentTblImages();
+
+
 
 private slots:
     void on_action_Quit_triggered();
@@ -373,6 +399,8 @@ private slots:
 
     void on_tblviewImages_clicked(const QModelIndex &index);
 
+    void on_tblframeparts_clicked(const QModelIndex &index);
+
 signals:
 
 private:
@@ -383,9 +411,73 @@ private:
     QPixmap                 m_imgNoImg;             //Image displayed when no image can be displayed in a view!
     DialogAbout             m_aboutdiag;
     DialogProgressBar       m_progress;
+    QScopedPointer<FrameEditor> m_frmeditor;
 
     SceneRenderer           m_previewrender;
     QString                 m_lastSavePath;
+//    int                     m_idxCurFrmPart;
+//    int                     m_idxCurFrame;
+//    int                     m_idxCurSprite;
+    QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
+
+
+    static const QString & WanFileFilter()
+    {
+        static const QString filter(tr("WAN Sprite (*.wan)"));
+        return filter;
+    }
+    static const QString & WatFileFilter()
+    {
+        static const QString filter(tr("WAT Sprite (*.wat)"));
+        return filter;
+    }
+    static const QString & PACKFileFilter()
+    {
+        static const QString filter(tr("Pack Files (*.bin)"));
+        return filter;
+    }
+
+    static const QString & AllFileFilter()
+    {
+        static const QString filter(tr("All supported formats (*.bin *.wan *.wat *.pkdpx)"));
+        return filter;
+    }
+
+};
+
+//======================================================================================
+//  TVSpritesContextMenu
+//======================================================================================
+class TVSpritesContextMenu : public QMenu
+{
+    Q_OBJECT
+
+    QPersistentModelIndex m_itemidx;
+    TreeElement * m_pitem;
+    QPointer<MainWindow> m_pmainwindow;
+
+public:
+    TVSpritesContextMenu( MainWindow * mainwindow, const QModelIndex & item, QWidget * parent = nullptr );
+
+    void BuildMenu();
+
+public:
+    void ShowProperties();
+
+    void SaveDump();
+
+    void RemoveEntry();
+
+signals:
+    void afterclosed();
+
+    // QWidget interface
+protected:
+    virtual void closeEvent(QCloseEvent *event) override
+    {
+        QWidget::closeEvent(event);
+        emit afterclosed();
+    }
 };
 
 #endif // MAINWINDOW_H

@@ -278,6 +278,8 @@ public:
     model_t * getModel();
     AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id );
 
+    bool nodeIsMutable()const override    {return false;}
+
 private:
     QScopedPointer<model_t> m_pmodel;
 };
@@ -491,6 +493,8 @@ public:
         Q_ASSERT(false);
         return QVariant();
     }
+
+    bool nodeIsMutable()const override    {return false;}
 
 private:
     QList<fmt::AnimDB::animgrpid_t> m_animtbl;

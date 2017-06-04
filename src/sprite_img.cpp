@@ -13,7 +13,7 @@
 //
 //
 //
-const size_t               FramesHeaderNBColumns = static_cast<unsigned int>(eFramesColumnsType::NBColumns);
+const size_t               FramesHeaderNBColumns = static_cast<unsigned int>(eFramesColumnsType::HeaderNBColumns);
 const std::vector<QString> FramesHeaderColumnNames
 {
     QString(("")),
@@ -64,6 +64,10 @@ QVariant Image::imgData(int column, int role)const
         else if( role == Qt::SizeHintRole )
             res.setValue( QSize(m_img.size().width() *2, m_img.size().height() *2) );
         break;
+    case 1:
+        if( role == Qt::DisplayRole || role == Qt::EditRole )
+            res.setValue(getImageUID());
+        break;
     case 1: //depth
         res.setValue(QString("%1bpp").arg(m_depth));
         break;
@@ -72,8 +76,6 @@ QVariant Image::imgData(int column, int role)const
     };
     return std::move(res);
 }
-
-
 
 Sprite *FramesContainer::parentSprite()
 {
@@ -263,7 +265,7 @@ QVariant MFrame::nodeData(int column, int role) const
         role != Qt::EditRole )
         return QVariant();
 
-    if( column < 0 || column >= FramesHeaderNBColumns )
+    if( column < 0 || column >= static_cast<int>(eFramesColumnsType::NBColumns) )
         return QVariant();
 
     switch(static_cast<eFramesColumnsType>(column))
@@ -395,6 +397,27 @@ bool MFrame::setData(const QModelIndex &index, const QVariant &value, int role)
             break;
         }
 
+    //direct access columns
+    case eFramesColumnsType::direct_HFlip:
+        {
+            ppart->setHFlip(value.toBool());
+            break;
+        }
+    case eFramesColumnsType::direct_VFlip:
+        {
+            ppart->setVFlip(value.toBool());
+            break;
+        }
+    case eFramesColumnsType::direct_XOffset:
+        {
+            ppart->setXOffset(value.toUInt(&bok));
+            break;
+        }
+    case eFramesColumnsType::direct_YOffset:
+        {
+            ppart->setYOffset(value.toUInt(&bok));
+            break;
+        }
         //Undefined cases
     //case eFramesColumnsType::Preview:
     //case eFramesColumnsType::TotalSize:
@@ -402,12 +425,15 @@ bool MFrame::setData(const QModelIndex &index, const QVariant &value, int role)
     default:
         return false;
     };
+
+    if(bok && index.model())
+        const_cast<QAbstractItemModel*>(index.model())->dataChanged(index, index, QVector<int>{role});
     return bok;
 }
 
 int MFrame::columnCount(const QModelIndex &parent) const
 {
-    return FramesHeaderNBColumns;
+    return static_cast<int>(eFramesColumnsType::NBColumns);
 }
 
 
@@ -957,9 +983,43 @@ QWidget *MFrameDelegate::makeTileIdSelect(QWidget *parent, int row) const
 //  MFramePart
 //
 
-Sprite *MFramePart::parentSprite()
+Sprite * MFramePart::parentSprite()
 {
     return static_cast<MFrame*>(parentNode())->parentSprite();
+}
+
+QImage MFramePart::drawPart() const
+{
+    if(m_data.getFrameIndex() < 0)
+    {
+        qWarning("MFramePart::drawPart() was asked to draw a -1 frame!!\n");
+        return QImage();
+    }
+
+    //auto res = m_data.GetResolution();
+    QImage imgo;
+    const Sprite* spr = parentSprite();
+    Q_ASSERT(spr);
+    const Image * pimg = spr->getImage( m_data.getFrameIndex() );
+    if(!pimg)
+    {
+        qWarning("MFramePart::drawPart(): Invalid image reference!!\n");
+        return QImage();
+    }
+
+    if(spr->unk13() == 1)
+        qDebug("MFramePart::drawPart(): This part probably won't be drawn correctly, since it appears to be set to 1D mapping!\n");
+
+    imgo = pimg->makeImage(spr->getPalette());
+    imgo = qMove(imgo.convertToFormat(QImage::Format::Format_ARGB32_Premultiplied));
+    applyTransforms(imgo);
+    return qMove(imgo);
+}
+
+void MFramePart::applyTransforms(QImage &srcimg) const
+{
+    srcimg = qMove( srcimg.transformed( QTransform().scale( m_data.isHFlip()? -1 : 1,
+                                                           m_data.isVFlip()? -1 : 1) ) );
 }
 
 QVariant MFramePart::dataImgPreview(int role) const
@@ -993,3 +1053,5 @@ QVariant MFramePart::dataImgPreview(int role) const
     }
     return QVariant();
 }
+
+

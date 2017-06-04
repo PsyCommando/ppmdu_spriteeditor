@@ -484,6 +484,21 @@ public:
 
     int nodeChildCount() const override
     {
+
+//        switch(getSpriteType())
+//        {
+//        case fmt::eSpriteType::Prop:
+//            return 5; // No effects offsets
+//        case fmt::eSpriteType::Character:
+//            return 6;
+//        case fmt::eSpriteType::Effect:
+//            return 5; // No effects offsets
+//        case fmt::eSpriteType::WAT:
+//            return 5; // No effects offsets
+//        default:
+//            break;
+//        };
+
         return NBChilds;
     }
 
@@ -523,8 +538,11 @@ public:
         return QVariant();
     }
 
+    virtual Sprite *parentSprite()override{return nullptr;}
+
     inline void OnClicked() override
     {
+        //Only parse sprites that were loaded from file! Not newly created ones, or already parsed ones!
         if( m_raw.size() != 0 && !m_bparsed )
             ParseSpriteData();
     }
@@ -587,7 +605,7 @@ public:
             CompressRawData(m_targetgompression);
     }
 
-    //You don't!!
+    //Don't allow that, since it would change the sprite type..
     bool insertChildrenNodes(int, int) override {return false;}
     bool removeChildrenNodes(int, int) override {return false;}
 
@@ -609,16 +627,6 @@ public:
         }
         return m_previewImg;
     }
-
-    void setTargetCompression(filetypes::eCompressionFormats fmt)
-    {
-        m_targetgompression = fmt;
-    }
-    inline filetypes::eCompressionFormats getTargetCompression()const
-    {
-        return m_targetgompression;
-    }
-
     static Sprite * ParentSprite( TreeElement * parentspr ) {return static_cast<Sprite*>(parentspr); }
 
     const QVector<QRgb> & getPalette()const { return m_palcnt.m_pal; }
@@ -710,6 +718,16 @@ public:
         m_sprhndl.getImageFmtInfo().setIs256Colors(state);
     }
 
+    void setTargetCompression(filetypes::eCompressionFormats fmt)
+    {
+        m_targetgompression = fmt;
+    }
+    inline filetypes::eCompressionFormats getTargetCompression()const
+    {
+        return m_targetgompression;
+    }
+
+
     inline uint16_t unk6()const  {return m_sprhndl.getAnimFmtInfo().unk6;}
     inline void unk6(uint16_t v) {m_sprhndl.getAnimFmtInfo().unk6 = v;}
 
@@ -781,8 +799,9 @@ private:
             return &m_seqcnt;
         case 5:
             return &m_anmtbl;
+        default:
+            Q_ASSERT(false);
         };
-        Q_ASSERT(false);
         return nullptr;
     }
 
@@ -803,17 +822,14 @@ private:
     bool                    m_bhasimagedata;    //Whether the sprite can be displayed or not!
     filetypes::eCompressionFormats m_targetgompression;
 
-
-    //SpritePropertiesHandler m_prophndlr;
-
 public:
     inline bool wasParsed()const    {return m_bparsed;}
     inline bool hasImageData()const {return m_bhasimagedata;}
 
     //Raw data buffer
     std::vector<uint8_t>    m_raw;
-    QPixmap                 m_previewImg;
-    QPixmap                 m_previewPal;
+    QPixmap                 m_previewImg;       //Cached image preview
+    QPixmap                 m_previewPal;       //Cached palette preview
     fmt::WA_SpriteHandler   m_sprhndl;
     QScopedPointer<SpritePropertiesHandler> m_propshndlr;
 };

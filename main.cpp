@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
+#include <QTime>
 
 //#include <iostream>
 
@@ -29,6 +30,8 @@ int main(int argc, char *argv[])
 {
     QApplication        a(argc, argv);
     QCommandLineParser  parser;
+    qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+
     parser.addOptions(PGRM_Options);
     parser.addPositionalArgument("filepath", "File to open with the program!");
     parser.process(a);

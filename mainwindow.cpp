@@ -6,9 +6,13 @@
 #include <QThread>
 #include <QThreadPool>
 #include <QSvgRenderer>
+#include <QSpinBox>
 #include <dialogexport.hpp>
 #include <diagsingleimgcropper.hpp>
 #include <dialogabout.hpp>
+
+
+
 
 QPixmap ImageToPixmap( QImage && img, const QSize & sz )
 {
@@ -41,6 +45,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
+
+    ui->spbFrmPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
+    ui->spbFrmPartYOffset->setRange(0, fmt::step_t::YOFFSET_MAX);
 
     DisplayStartScreen();
     InitAnimScene();
@@ -139,6 +146,66 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
     ShowATab(ui->tabframeseditor);
     ui->tblframeparts->resizeRowsToContents();
     ui->tblframeparts->resizeColumnsToContents();
+    ui->tblframeparts->setCurrentIndex( ui->tblframeparts->model()->index(0, 0, QModelIndex()) );
+
+    //Setup the frame editor in the viewport!
+    m_frmeditor.reset( new FrameEditor(frm) );
+    ui->gvFrame->setScene( &m_frmeditor->getScene() );
+    m_frmeditor->initScene();
+    ui->gvFrame->repaint();
+
+    if(ui->tblframeparts->currentIndex().isValid())
+        setupFrameEditPageForPart( frm, static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer()) );
+
+
+//    ui->spbFrmPartXOffset->setValue();
+//    ui->spbFrmPartYOffset->setValue();
+
+    //Setup the callbacks
+    connect(frm->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &,const QModelIndex &, const QVector<int>&)
+    {
+        m_frmeditor->updateParts();
+        ui->gvFrame->update();
+    });
+
+    connect(ui->spbFrmZoom, qOverload<int>(&QSpinBox::valueChanged), [&](int val)->void
+    {
+        qreal sc = val * 0.01; //scale the value from 0 to 1 +
+        ui->gvFrame->setTransform(QTransform::fromScale(sc, sc));
+    });
+
+    //Map model's columns to some of the controls
+    m_frmdatmapper.reset(new QDataWidgetMapper);
+    m_frmdatmapper->setModel(frm->getModel());
+    m_frmdatmapper->addMapping(ui->spbFrmPartXOffset,  static_cast<int>(eFramesColumnsType::direct_XOffset) );
+    m_frmdatmapper->addMapping(ui->spbFrmPartYOffset,  static_cast<int>(eFramesColumnsType::direct_YOffset) );
+    m_frmdatmapper->addMapping(ui->btnFrmVFlip,        static_cast<int>(eFramesColumnsType::direct_VFlip) );
+    m_frmdatmapper->addMapping(ui->btnFrmHFlip,        static_cast<int>(eFramesColumnsType::direct_HFlip) );
+    m_frmdatmapper->toFirst();
+    connect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
+
+//    connect(ui->spbFrmPartXOffset, qOverload<int>(&QSpinBox::valueChanged), [&](int val)
+//    {
+//        QModelIndex mi = ui->tblframeparts->currentIndex();
+//        mi = frm->getModel()->index(mi.row(), static_cast<int>(eFramesColumnsType::Offset), mi.parent());
+//        QVariant newoffset;
+//        newoffset.setValue<QPair<int,int>>( QPair<int,int>( val, ui->spbFrmPartYOffset->value()) );
+//        frm->getModel()->setData( mi, newoffset);
+//        m_frmeditor->updateParts();
+//    });
+
+//    connect(ui->spbFrmPartYOffset, qOverload<int>(&QSpinBox::valueChanged), [&](int val)
+//    {
+//        QModelIndex mi = ui->tblframeparts->currentIndex();
+//        mi = frm->getModel()->index(mi.row(), static_cast<int>(eFramesColumnsType::Offset), mi.parent());
+//        QVariant newoffset;
+//        newoffset.setValue<QPair<int,int>>( QPair<int,int>(ui->spbFrmPartXOffset->value(), val) );
+//        frm->getModel()->setData( mi, newoffset);
+//        m_frmeditor->updateParts();
+//    });
+
+
+    //connect(m_frmeditor.data(), &FrameEditor::partMoved, ui->tblframeparts, &QTableView::repaint );
 }
 
 void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
@@ -222,6 +289,18 @@ void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
     ui->tv_sprcontent->repaint();
 }
 
+void MainWindow::setupFrameEditPageForPart(MFrame *frm, MFramePart *part)
+{
+//    if(!frm || !part)
+//    {
+//        qWarning("MainWindow::setupFrameEditPageForPart(): Got null frame or part! Skipping!");
+//        HideAllTabs(); //Reset UI to try to avoid further issues
+//        ui->tv_sprcontent->setCurrentIndex(QModelIndex()); //Reset currently selected sprite
+//        ShowStatusErrorMessage("An error occured. UI reset! Please notify devs!");
+//        return;
+//    }
+}
+
 void MainWindow::LoadContainer(const QString &path)
 {
     HideAllTabs();
@@ -285,6 +364,16 @@ void MainWindow::updateActions()
     }
 }
 
+spr_manager::SpriteManager & MainWindow::getManager()
+{
+    return spr_manager::SpriteManager::Instance();
+}
+
+spr_manager::SpriteContainer *MainWindow::getContainer()
+{
+    return spr_manager::SpriteManager::Instance().getContainer();
+}
+
 void MainWindow::OnActionAddSprite()
 {
     qInfo() <<"MainWindow::OnActionAddSprite(): Adding sprite!\n";
@@ -296,6 +385,7 @@ void MainWindow::OnActionRemSprite()
 {
     qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    Q_ASSERT(false);
 }
 
 QPixmap MainWindow::RenderNoImageSvg()
@@ -308,7 +398,11 @@ void MainWindow::on_action_Open_triggered()
 {
     spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString(),
-            tr("Pack Files (*.bin);;WAN Sprite (*.wan *.wat)"));
+            QString("%1;;%2;;%3;;%4")
+            .arg(WanFileFilter())
+            .arg(WatFileFilter())
+            .arg(PACKFileFilter())
+            .arg(AllFileFilter()) );
 
     if (!fileName.isEmpty())
     {
@@ -363,6 +457,8 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
             DisplayPropertiesPage(spr);
             break;
         }
+    default:
+        break;
     };
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Enabling updates!\n";
     ui->tv_sprcontent->setUpdatesEnabled(true);
@@ -393,17 +489,17 @@ void MainWindow::on_actionSave_As_triggered()
     {
     case spr_manager::SpriteContainer::eContainerType::PACK:
         {
-            filetypestr = tr("Pack Files (*.bin)");
+            filetypestr = PACKFileFilter();
             break;
         }
     case spr_manager::SpriteContainer::eContainerType::WAN:
         {
-            filetypestr = tr("WAN Sprite (*.wan)");
+            filetypestr = WanFileFilter();
             break;
         }
     case spr_manager::SpriteContainer::eContainerType::WAT:
         {
-            filetypestr = tr("WAT Sprite (*.wat)");
+            filetypestr = WatFileFilter();
             break;
         }
     default:
@@ -526,6 +622,13 @@ void MainWindow::ShowStatusMessage(const QString &msg)
     ui->statusBar->showMessage( msg, 8000);
 }
 
+void MainWindow::ShowStatusErrorMessage(const QString &msg)
+{
+    ui->statusBar->showMessage( QString("<span style=\" font-size:9pt; font-weight:600; color:#aa0000;\">%1</span>").arg(msg), 8000);
+}
+
+
+
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
 {
     TreeElement * pcur = static_cast<TreeElement*>(index.internalPointer());
@@ -613,12 +716,29 @@ void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
     {
         //This is triggered when clicking on an item
         //remove/copy/duplicate/etc
+        QMenu * menu = makeSpriteContextMenu(entry);
+        menu->popup(ui->tv_sprcontent->mapToGlobal(pos));
+        //menu->show();
     }
     else
     {
         //This is triggered when clicking in the white unused space
         //Add sprite/frame/sequence/image/etc
     }
+}
+
+QMenu *MainWindow::makeSpriteContextMenu(QModelIndex entry)
+{
+
+    //QMenu * menu = new QMenu(ui->tv_sprcontent);
+    spr_manager::SpriteContainer * pcnt = getContainer();
+    Q_ASSERT(pcnt);
+    TreeElement * elem = static_cast<TreeElement*>(entry.internalPointer());
+    Q_ASSERT(elem);
+
+    TVSpritesContextMenu * menu = new TVSpritesContextMenu( this, entry, ui->tv_sprcontent);
+    connect( menu, SIGNAL(afterclosed()), menu, SLOT(deleteLater()) );
+    return menu;
 }
 
 void MainWindow::on_btnSeqPlay_clicked()
@@ -673,4 +793,151 @@ void MainWindow::on_tblviewImages_clicked(const QModelIndex &index)
     ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
 
     //#TODO: Update image details if needed
+}
+
+void MainWindow::on_tblframeparts_clicked(const QModelIndex &/*index*/)
+{
+//    setupFrameEditPageForPart(currentFrame(), currentTblFrameParts());
+}
+
+Sprite * MainWindow::currentSprite()
+{
+    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    if(!elem)
+        return nullptr;
+    return elem->parentSprite();
+}
+
+MFrame *MainWindow::currentFrame()
+{
+    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
+
+    //In cases where we're in the treeview on a child entry, get the parent!
+    if(elem && elem->getNodeDataTy() == eTreeElemDataType::framepart)
+        return static_cast<MFrame*>(elem->parentNode());
+
+    return static_cast<MFrame*>(elem);
+}
+
+Image *MainWindow::currentImage()
+{
+    Image * elem = static_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    return elem;
+}
+
+AnimSequence *MainWindow::currentAnimSequence()
+{
+    AnimSequence * elem = static_cast<AnimSequence*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    return elem;
+}
+
+eTreeElemDataType MainWindow::currentEntryType()
+{
+    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    if(elem)
+        return elem->getNodeDataTy();
+    return eTreeElemDataType::None;
+}
+
+MFramePart * MainWindow::currentTblFrameParts()
+{
+    MFramePart * elem = static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer());
+    return elem;
+}
+
+Image * MainWindow::currentTblImages()
+{
+    Image * elem = static_cast<Image*>(ui->tblviewImages->currentIndex().internalPointer());
+    return elem;
+}
+
+//===================================================================================================================
+// TVSpritesContextMenu
+//===================================================================================================================
+TVSpritesContextMenu::TVSpritesContextMenu( MainWindow * mainwindow,
+                                            const QModelIndex & item,
+                                            QWidget * parent)
+    :QMenu(parent),
+      m_pitem(static_cast<TreeElement*>(item.internalPointer())),
+      m_itemidx(item),
+      m_pmainwindow(mainwindow)
+{
+    BuildMenu();
+}
+
+void TVSpritesContextMenu::BuildMenu()
+{
+
+    //Common default actions:
+    switch(m_pitem->getNodeDataTy())
+    {
+    case eTreeElemDataType::sprite:
+        {
+            addAction(tr("properties"),   this, &TVSpritesContextMenu::ShowProperties);
+            addAction(tr("dump.."),       this, &TVSpritesContextMenu::SaveDump);
+            break;
+        }
+    };
+
+    if(m_pitem->nodeIsMutable())
+    {
+        addAction(tr("remove"), this, &TVSpritesContextMenu::RemoveEntry);
+    }
+
+}
+
+void TVSpritesContextMenu::ShowProperties()
+{
+    Q_ASSERT(m_pitem && m_pmainwindow && m_pitem->getNodeDataTy() == eTreeElemDataType::sprite);
+    m_pmainwindow->DisplayPropertiesPage(static_cast<Sprite*>(m_pitem));
+    close();
+}
+
+void TVSpritesContextMenu::SaveDump()
+{
+    Q_ASSERT(m_pitem && m_pmainwindow && m_itemidx.isValid());
+    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+    QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
+                                                    tr("Save Sprite Dump As"),
+                                                    QString(),
+                                                    QString("%1;;%2")
+                                                    .arg(m_pmainwindow->WanFileFilter())
+                                                    .arg(m_pmainwindow->WatFileFilter()) );
+    sprman.DumpSprite(m_itemidx, filename);
+    close();
+}
+
+void TVSpritesContextMenu::RemoveEntry()
+{
+    Q_ASSERT(m_pitem && m_pmainwindow && m_itemidx.isValid());
+    TreeElement * pparent = m_pitem->parentNode();
+    if(!pparent)
+    {
+        m_pmainwindow->ShowStatusErrorMessage( QString(tr("Entry to remove is invalid!")) );
+        close();
+        return;
+    }
+    if(m_pitem->getNodeDataTy() == eTreeElemDataType::sprite &&
+       !spr_manager::SpriteManager::Instance().ContainerIsPackFile())
+    {
+        m_pmainwindow->ShowStatusErrorMessage( QString(tr("Cannot delete the main sprite!")) );
+        close();
+        return;
+    }
+
+
+    if(m_pmainwindow->ui->tv_sprcontent->currentIndex() == m_itemidx)
+    {
+        m_pmainwindow->HideAllTabs(); //Deselect everything if we're deleting the current entry
+        m_pmainwindow->ui->tblframeparts->setModel(nullptr);
+        QModelIndex parentidx = m_pmainwindow->ui->tv_sprcontent->currentIndex().parent();
+        if(parentidx.isValid())
+            m_pmainwindow->ui->tv_sprcontent->setCurrentIndex(parentidx);
+        else
+            m_pmainwindow->ui->tv_sprcontent->setCurrentIndex(QModelIndex());
+    }
+    m_pmainwindow->ui->tv_sprcontent->model()->removeRow( m_itemidx.row(), m_itemidx.parent() );
+
+    m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
+    close();
 }

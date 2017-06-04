@@ -22,6 +22,7 @@
 #include <src/treeelem.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/ppmdu/utils/imgutils.hpp>
+#include <src/ppmdu/utils/sequentialgenerator.hpp>
 
 
 class Sprite;
@@ -44,6 +45,13 @@ enum struct eFramesColumnsType : int
     PaletteID,
     Priority,
     CharName,
+    HeaderNBColumns,
+
+
+    direct_XOffset = HeaderNBColumns, //Extra column for accessing directly the x offset
+    direct_YOffset, //Extra column for accessing directly the y offset
+    direct_VFlip,   //Extra column for accessing directly the vflip boolean
+    direct_HFlip,   //Extra column for accessing directly the hflip boolean
     NBColumns,
     INVALID,
 };
@@ -94,6 +102,8 @@ public:
 
     }
 
+    bool nodeIsMutable()const override {return false;}
+
 private:
     std::vector<fmt::effectoffset> m_efx;
 };
@@ -125,14 +135,17 @@ public:
 
     Sprite * parentSprite();
 
+    bool nodeIsMutable()const override {return false;}
+
     QVector<QRgb> m_pal;
 };
 
 //*******************************************************************
-//
+//  Image
 //*******************************************************************
-
-class Image : public BaseTreeTerminalChild<&ElemName_Image>
+//
+class Image : public BaseTreeTerminalChild<&ElemName_Image>,
+              public utils::BaseSequentialIDGen< BaseTreeTerminalChild<&ElemName_Image>, unsigned int>
 {
 public:
     Image(TreeElement * parent)
@@ -208,6 +221,8 @@ public:
 
     //Those can be re-implemented!
     QVariant imgData(int column, int role) const;
+
+    inline id_t getImageUID()const {return getID();} //Get index indepandent id!
 
 private:
     QImage              m_img;
@@ -364,6 +379,7 @@ public:
         const Image *img = static_cast<const Image*>(getItem(index));
         return img->imgData(index.column(), role);
     }
+
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if( role != Qt::DisplayRole )
@@ -380,15 +396,18 @@ public:
             case 0:
                 return std::move(QVariant( QString("") ));
             case 1:
-                return std::move(QVariant( QString("Bit Depth") ));
+                return std::move(QVariant( QString("UID") ));
             case 2:
+                return std::move(QVariant( QString("Bit Depth") ));
+            case 3:
                 return std::move(QVariant( QString("Resolution") ));
             };
         }
         return QVariant();
     }
 
-    virtual int nodeColumnCount() const                 {return 3;}
+    bool        nodeIsMutable()const override           {return false;}
+    virtual int nodeColumnCount() const override        {return 4;}
 
     inline Image        * getImage(fmt::frmid_t id)     { return static_cast<Image*>(nodeChild(id)); }
     inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
@@ -545,13 +564,17 @@ public:
     }
 
     Sprite * parentSprite();
+    const Sprite * parentSprite()const
+    {
+        return const_cast<MFramePart*>(this)->parentSprite();
+    }
 
 public:
     virtual int nodeColumnCount() const                 {return FramesHeaderNBColumns;}
 
     virtual Qt::ItemFlags nodeFlags(int column = 0)const override
     {
-        if(column == static_cast<int>(eFramesColumnsType::Preview))
+        if(column == static_cast<int>(eFramesColumnsType::Preview) )
             return Qt::ItemFlags(m_flags).setFlag(Qt::ItemFlag::ItemIsEditable, false); //The preview is never editable!
         return m_flags;
     }
@@ -576,6 +599,11 @@ public:
         case eFramesColumnsType::Priority:      return dataPriority(role);
         case eFramesColumnsType::CharName:      return dataCharName(role);
 
+        case eFramesColumnsType::direct_VFlip:   return dataDirectVFlip(role);
+        case eFramesColumnsType::direct_HFlip:   return dataDirectHFlip(role);
+        case eFramesColumnsType::direct_XOffset: return dataDirectXOffset(role);
+        case eFramesColumnsType::direct_YOffset: return dataDirectYOffset(role);
+
             //Undefined cases
         default:
             break;
@@ -585,6 +613,13 @@ public:
     }
 
 
+    /*
+     *  drawPart
+     *      Draws an image from the part's data.
+     *      Optimized for displaying the part, return an image in the ARGB32_premultiplied format.
+     *      If the part is a -1 frame, returns a null image!
+    */
+    QImage drawPart()const;
 
 public:
     void importPart(const fmt::step_t & part)
@@ -674,6 +709,42 @@ private:
         return QVariant();
     }
 
+    QVariant dataDirectXOffset(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return QString("%1").arg(m_data.getXOffset());
+        }
+        else if(role == Qt::EditRole)
+        {
+            return QVariant(m_data.getXOffset());
+        }
+        else if(role == Qt::SizeHintRole)
+        {
+            QSize sz = calcTextSize(dataDirectXOffset(Qt::DisplayRole).toString());
+            return sz;
+        }
+        return QVariant();
+    }
+
+    QVariant dataDirectYOffset(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return QString("%1").arg(m_data.getYOffset());
+        }
+        else if(role == Qt::EditRole)
+        {
+            return QVariant(m_data.getYOffset());
+        }
+        else if(role == Qt::SizeHintRole)
+        {
+            QSize sz = calcTextSize(dataDirectYOffset(Qt::DisplayRole).toString());
+            return sz;
+        }
+        return QVariant();
+    }
+
     QVariant dataFlip(int role)const
     {
         if(role == Qt::DisplayRole)
@@ -695,6 +766,42 @@ private:
         {
             QSize sz = calcTextSize(dataFlip(Qt::DisplayRole).toString());
             sz.setWidth( sz.width() + 80 );
+            return sz;
+        }
+        return QVariant();
+    }
+
+    QVariant dataDirectVFlip(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return m_data.isVFlip();
+        }
+        else if(role == Qt::EditRole)
+        {
+            return m_data.isVFlip();
+        }
+        else if(role == Qt::SizeHintRole)
+        {
+            QSize sz = calcTextSize(dataDirectVFlip(Qt::DisplayRole).toString());
+            return sz;
+        }
+        return QVariant();
+    }
+
+    QVariant dataDirectHFlip(int role)const
+    {
+        if(role == Qt::DisplayRole)
+        {
+            return m_data.isHFlip();
+        }
+        else if(role == Qt::EditRole)
+        {
+            return m_data.isHFlip();
+        }
+        else if(role == Qt::SizeHintRole)
+        {
+            QSize sz = calcTextSize(dataDirectHFlip(Qt::DisplayRole).toString());
             return sz;
         }
         return QVariant();
@@ -761,6 +868,9 @@ private:
         return QVariant();
     }
 
+    //Transform the given image according to the parameters stored in this class!
+    void applyTransforms(QImage & srcimg)const;
+
 private:
     fmt::step_t m_data;
 };
@@ -809,6 +919,7 @@ public:
 
     fmt::step_t *getPart(int id);
     const fmt::step_t *getPart(int id)const;
+    inline int getNbParts()const {return nodeChildCount();}
 
     Sprite * parentSprite();
 
@@ -854,6 +965,11 @@ public:
         return m_delegate;
     }
 
+//     inline FrameEditor * makeFrameEditor()
+//     {
+//         return new FrameEditor(this);
+//     }
+
 private:
 
 
@@ -875,7 +991,7 @@ private:
 private:
     //fmt::ImageDB::frm_t m_parts;
 //    BaseTreeNodeModel   m_model; //Virtual model for displaying steps for this frame!
-    MFrameDelegate      m_delegate;
+    MFrameDelegate  m_delegate;
 };
 
 
@@ -970,6 +1086,7 @@ public:
         return QVariant();
     }
 
+    bool        nodeIsMutable()const override    {return false;}
     virtual int nodeColumnCount() const override {return FramesHeaderNBColumns;}
 
 private:

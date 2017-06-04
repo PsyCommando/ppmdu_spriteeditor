@@ -46,7 +46,8 @@ SOURCES += main.cpp\
     dialogexport.cpp \
     dialogabout.cpp \
     dialogprogressbar.cpp \
-    src/ppmdu/fmts/compression_handler.cpp
+    src/ppmdu/fmts/compression_handler.cpp \
+    src/frameeditor.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -72,7 +73,8 @@ HEADERS  += mainwindow.h \
     src/scenerenderer.hpp \
     dialogexport.hpp \
     dialogabout.hpp \
-    dialogprogressbar.hpp
+    dialogprogressbar.hpp \
+    src/frameeditor.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui \

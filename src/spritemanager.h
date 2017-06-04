@@ -168,6 +168,8 @@ namespace spr_manager
         void AddSpriteToContainer  ( Sprite && spr );
         void RemSpriteFromContainer( QModelIndex index );
 
+        bool DumpSprite(const QModelIndex &index, const QString &path);
+
         //Access
         int             GetNbSpritesInContainer()const;
         QString GetContainerSrcFile()const;
