@@ -68,10 +68,10 @@ QVariant Image::imgData(int column, int role)const
         if( role == Qt::DisplayRole || role == Qt::EditRole )
             res.setValue(getImageUID());
         break;
-    case 1: //depth
+    case 2: //depth
         res.setValue(QString("%1bpp").arg(m_depth));
         break;
-    case 2: //resolution
+    case 3: //resolution
         res.setValue(QString("%1x%2").arg(m_img.width()).arg(m_img.height()));
     };
     return std::move(res);
