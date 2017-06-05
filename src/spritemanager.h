@@ -15,7 +15,21 @@
 namespace spr_manager
 {
 
-
+    extern const QVector<QString> PaletteFileFilter; //list of file filters matching the ePaletteDumpType values below!
+    enum struct ePaletteDumpType : unsigned int
+    {
+        RIFF_Pal = 0,
+        TEXT_Pal,
+        GIMP_PAL,
+        INVALID,
+    };
+    inline const QString & GetPaletteFileFilterString( ePaletteDumpType ty )
+    {
+        static const QString InvalidString;
+        if(ty >= ePaletteDumpType::INVALID)
+            return InvalidString;
+        return PaletteFileFilter[static_cast<int>(ty)];
+    }
 
 
     /*
@@ -161,6 +175,7 @@ namespace spr_manager
 
         SpriteContainer * NewContainer( SpriteContainer::eContainerType type );
 
+
         //
         //Empty the sprite list and etc.
         void Reset();
@@ -169,6 +184,9 @@ namespace spr_manager
         void RemSpriteFromContainer( QModelIndex index );
 
         bool DumpSprite(const QModelIndex &index, const QString &path);
+        void DumpPalette(const Sprite * sprite, const QString &path, ePaletteDumpType type);
+        void DumpPalette(const QModelIndex & sprite, const QString &path, ePaletteDumpType type);
+        void ImportPalette(Sprite * sprite, const QString &path, ePaletteDumpType type);
 
         //Access
         int             GetNbSpritesInContainer()const;

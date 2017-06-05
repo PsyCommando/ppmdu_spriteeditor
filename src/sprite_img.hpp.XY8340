@@ -26,6 +26,7 @@
 #include <src/ppmdu/utils/imgutils.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 
+
 class Sprite;
 extern const char * ElemName_EffectOffset ;
 extern const char * ElemName_Palette      ;
@@ -155,7 +156,7 @@ public:
         setNodeDataTy(eTreeElemDataType::image);
     }
 
-    Image(Image && mv)
+    explicit Image(Image && mv)
         :BaseTreeTerminalChild(std::move(mv)), BaseSequentialIDGen(std::move(mv))
     {
         operator=(std::move(mv));
@@ -167,7 +168,7 @@ public:
         operator=(cp);
     }
 
-    Image & operator=(Image && mv)
+    explicit Image & operator=(Image && mv)
     {
         m_img   = qMove(mv.m_img);
         m_raw   = qMove(mv.m_raw);
@@ -177,7 +178,7 @@ public:
         return *this;
     }
 
-    Image & operator=(const Image & cp)
+    explicit Image & operator=(const Image & cp)
     {
         m_img   = cp.m_img;
         m_raw   = cp.m_raw;

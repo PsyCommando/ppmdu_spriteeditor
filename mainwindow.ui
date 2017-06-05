@@ -609,6 +609,9 @@
            </item>
            <item>
             <widget class="QTableView" name="tblProperties">
+             <property name="editTriggers">
+              <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+             </property>
              <property name="showDropIndicator" stdset="0">
               <bool>false</bool>
              </property>
@@ -787,12 +790,20 @@
                 <property name="text">
                  <string>Play</string>
                 </property>
+                <property name="icon">
+                 <iconset resource="appres.qrc">
+                  <normaloff>:/resources/fugue-icons-3.5.6/icons/control.png</normaloff>:/resources/fugue-icons-3.5.6/icons/control.png</iconset>
+                </property>
                </widget>
               </item>
               <item row="0" column="1">
                <widget class="QPushButton" name="btnSeqStop">
                 <property name="text">
                  <string>Stop</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="appres.qrc">
+                  <normaloff>:/resources/fugue-icons-3.5.6/icons/control-stop-square.png</normaloff>:/resources/fugue-icons-3.5.6/icons/control-stop-square.png</iconset>
                 </property>
                </widget>
               </item>
@@ -902,6 +913,12 @@
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>400</width>
+               <height>0</height>
+              </size>
              </property>
              <property name="dragEnabled">
               <bool>true</bool>
@@ -1780,6 +1797,10 @@
                  <property name="text">
                   <string>Add..</string>
                  </property>
+                 <property name="icon">
+                  <iconset resource="appres.qrc">
+                   <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
+                 </property>
                 </widget>
                </item>
                <item>
@@ -1789,6 +1810,10 @@
                  </property>
                  <property name="text">
                   <string>Remove</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="appres.qrc">
+                   <normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -1838,6 +1863,10 @@
                  <property name="text">
                   <string>Add..</string>
                  </property>
+                 <property name="icon">
+                  <iconset resource="appres.qrc">
+                   <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
+                 </property>
                 </widget>
                </item>
                <item>
@@ -1847,6 +1876,10 @@
                  </property>
                  <property name="text">
                   <string>Remove</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="appres.qrc">
+                   <normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</iconset>
                  </property>
                 </widget>
                </item>
@@ -2076,6 +2109,7 @@
     </property>
     <addaction name="action_About"/>
     <addaction name="actionShow_Start_Screen"/>
+    <addaction name="actionReport_a_bug"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="title">
@@ -2242,6 +2276,9 @@
    <property name="text">
     <string>&amp;Settings..</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::PreferencesRole</enum>
+   </property>
   </action>
   <action name="action_About">
    <property name="icon">
@@ -2323,6 +2360,15 @@
    </property>
    <property name="toolTip">
     <string>Remove Sprite</string>
+   </property>
+  </action>
+  <action name="actionReport_a_bug">
+   <property name="icon">
+    <iconset resource="appres.qrc">
+     <normaloff>:/resources/fugue-icons-3.5.6/icons/bug--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/bug--arrow.png</iconset>
+   </property>
+   <property name="text">
+    <string>Report a bug</string>
    </property>
   </action>
  </widget>

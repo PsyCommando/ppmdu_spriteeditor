@@ -7,11 +7,16 @@
 #include <QThreadPool>
 #include <QSvgRenderer>
 #include <QSpinBox>
+#include <QTimer>
 #include <dialogexport.hpp>
 #include <diagsingleimgcropper.hpp>
 #include <dialogabout.hpp>
 
-
+const QString PaletteFilter = spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::RIFF_Pal) +
+                              ";;" +
+                              spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::TEXT_Pal) +
+                              ";;" +
+                              spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::GIMP_PAL);
 
 
 QPixmap ImageToPixmap( QImage && img, const QSize & sz )
@@ -404,26 +409,26 @@ void MainWindow::on_action_Open_triggered()
             .arg(PACKFileFilter())
             .arg(AllFileFilter()) );
 
-    if (!fileName.isEmpty())
+    if(fileName.isNull())
+        return;
+
+    //Check if a sprite was open and ask to save changes!
+    //DO OPEN FILE HERE!
+    if( sprman.IsContainerLoaded() )
     {
-        //Check if a sprite was open and ask to save changes!
-        //DO OPEN FILE HERE!
-        if( sprman.IsContainerLoaded() )
+        qDebug() << "MainWindow::on_action_Open_triggered(): Asking for saving changes!\n";
+        //Ask to save or discard changes!!
+        int choice = AskSaveChanges();
+        switch(choice)
         {
-            qDebug() << "MainWindow::on_action_Open_triggered(): Asking for saving changes!\n";
-            //Ask to save or discard changes!!
-            int choice = AskSaveChanges();
-            switch(choice)
-            {
-            case QMessageBox::StandardButton::Save:
-                this->on_action_Save_triggered();
-                break;
-            case QMessageBox::StandardButton::Cancel:
-                return;
-            };
-        }
-        LoadContainer(fileName);
+        case QMessageBox::StandardButton::Save:
+            this->on_action_Save_triggered();
+            break;
+        case QMessageBox::StandardButton::Cancel:
+            return;
+        };
     }
+    LoadContainer(fileName);
     setupListView();
     updateActions();
 }
@@ -624,7 +629,19 @@ void MainWindow::ShowStatusMessage(const QString &msg)
 
 void MainWindow::ShowStatusErrorMessage(const QString &msg)
 {
-    ui->statusBar->showMessage( QString("<span style=\" font-size:9pt; font-weight:600; color:#aa0000;\">%1</span>").arg(msg), 8000);
+    QString errormsg = QString("<span style=\" font-size:9pt; font-weight:600; color:#aa0000;\">%1</span>").arg(msg);
+
+    if(!m_pStatusError.isNull()) //don's spam!
+        m_pStatusError->setText(errormsg);
+    else
+    {
+        m_pStatusError.reset(new QLabel(errormsg,ui->statusBar) );
+        ui->statusBar->addWidget(m_pStatusError.data());
+        m_pStatusError->setTextFormat(Qt::TextFormat::RichText);
+    }
+    m_pStatusError->show();
+    QApplication::beep();
+    QTimer::singleShot( 8000, m_pStatusError.data(), &QLabel::hide );
 }
 
 
@@ -851,6 +868,114 @@ Image * MainWindow::currentTblImages()
     return elem;
 }
 
+void MainWindow::on_btnExportPalette_clicked()
+{
+    using namespace spr_manager;
+    Sprite * spr = currentSprite();
+    if( !spr )
+    {
+        ShowStatusErrorMessage(QString(tr("No sprites to dump from!")) );
+        return;
+    }
+
+    QString selectedfilter;
+    ePaletteDumpType type;
+    qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Save Palette Dump As"),
+                        QString(),
+                        PaletteFilter,
+                        &selectedfilter);
+
+    if(filename.isNull())
+        return;
+
+    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) &&
+       !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal), Qt::CaseInsensitive))
+    {
+        //filename.append(".pal");
+        type = ePaletteDumpType::RIFF_Pal;
+    }
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) &&
+            !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal), Qt::CaseInsensitive))
+    {
+        //filename.append(".txt");
+        type = ePaletteDumpType::TEXT_Pal;
+    }
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL) &&
+            !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL), Qt::CaseInsensitive))
+    {
+        //filename.append(".gpl");
+        type = ePaletteDumpType::GIMP_PAL;
+    }
+
+    Q_ASSERT(type < ePaletteDumpType::INVALID);
+
+    try
+    {
+        spr_manager::SpriteManager::Instance().DumpPalette(spr, filename, type);
+    }
+    catch(const std::exception & e)
+    {
+        ShowStatusErrorMessage(QString(tr("Error: %1")).arg(e.what()) );
+        return;
+    }
+    catch(...)
+    {
+        std::rethrow_exception(std::current_exception());
+        return;
+    }
+
+    ShowStatusMessage( QString(tr("Palette dumped!")) );
+}
+
+void MainWindow::on_btnImportPalette_clicked()
+{
+    using namespace spr_manager;
+    Sprite * spr = currentSprite();
+    if( !spr )
+    {
+        ShowStatusErrorMessage(QString(tr("No sprite to import to!")) );
+        return;
+    }
+
+    QString selectedfilter;
+    ePaletteDumpType type;
+    QString filename = QFileDialog::getOpenFileName(this, tr("Import Palette File"), QString(),
+            PaletteFilter, &selectedfilter );
+    if(filename.isNull())
+        return;
+
+    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
+        type = ePaletteDumpType::RIFF_Pal;
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
+        type = ePaletteDumpType::TEXT_Pal;
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
+        type = ePaletteDumpType::GIMP_PAL;
+    Q_ASSERT(type < ePaletteDumpType::INVALID);
+
+    try
+    {
+        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, type);
+    }
+    catch(const std::exception & e)
+    {
+        ShowStatusErrorMessage(QString(tr("Error: %1")).arg(e.what()) );
+        return;
+    }
+    catch(...)
+    {
+        std::rethrow_exception(std::current_exception());
+        return;
+    }
+
+    ShowStatusMessage( QString(tr("Palette imported!")) );
+
+    //Refresh property page
+    DisplayPropertiesPage(spr);
+}
+
+
 //===================================================================================================================
 // TVSpritesContextMenu
 //===================================================================================================================
@@ -903,7 +1028,15 @@ void TVSpritesContextMenu::SaveDump()
                                                     QString("%1;;%2")
                                                     .arg(m_pmainwindow->WanFileFilter())
                                                     .arg(m_pmainwindow->WatFileFilter()) );
+
+    if(filename.isNull())
+    {
+        close();
+        return;
+    }
+
     sprman.DumpSprite(m_itemidx, filename);
+    m_pmainwindow->ShowStatusMessage( QString(tr("Sprite dumped!")) );
     close();
 }
 
@@ -941,3 +1074,6 @@ void TVSpritesContextMenu::RemoveEntry()
     m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
     close();
 }
+
+
+

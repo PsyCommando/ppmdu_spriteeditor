@@ -401,11 +401,16 @@ private slots:
 
     void on_tblframeparts_clicked(const QModelIndex &index);
 
+    void on_btnExportPalette_clicked();
+
+    void on_btnImportPalette_clicked();
+
 signals:
 
 private:
     Ui::MainWindow *ui;
     QScopedPointer<QLabel>  m_pStatusFileType;
+    QScopedPointer<QLabel>  m_pStatusError;
     QScopedPointer<QAction> m_pActionAddSprite;
     QScopedPointer<QAction> m_pActionRemSprite;
     QPixmap                 m_imgNoImg;             //Image displayed when no image can be displayed in a view!
@@ -419,6 +424,7 @@ private:
 //    int                     m_idxCurFrame;
 //    int                     m_idxCurSprite;
     QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
+
 
 
     static const QString & WanFileFilter()

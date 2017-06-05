@@ -47,7 +47,9 @@ SOURCES += main.cpp\
     dialogabout.cpp \
     dialogprogressbar.cpp \
     src/ppmdu/fmts/compression_handler.cpp \
-    src/frameeditor.cpp
+    src/frameeditor.cpp \
+    src/extfmt/riff_palette.cpp \
+    src/ppmdu/utils/gfileio.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -74,7 +76,12 @@ HEADERS  += mainwindow.h \
     dialogexport.hpp \
     dialogabout.hpp \
     dialogprogressbar.hpp \
-    src/frameeditor.hpp
+    src/frameeditor.hpp \
+    src/extfmt/riff_palette.hpp \
+    src/ppmdu/utils/gfileio.hpp \
+    src/extfmt/text_palette.hpp \
+    src/extfmt/gpl_palette.hpp \
+    src/ppmdu/utils/color_utils.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui \

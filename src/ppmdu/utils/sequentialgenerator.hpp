@@ -24,6 +24,7 @@ namespace utils
     protected:
         typedef _PARENTTY parent_t;
         typedef _IDTY     id_t;
+        typedef BaseSequentialIDGen<_PARENTTY,_IDTY> my_t;
 
         static id_t & GetCounter()
         {
@@ -66,6 +67,28 @@ namespace utils
         BaseSequentialIDGen()
         {
             m_id = AssignID();
+        }
+
+        BaseSequentialIDGen(const my_t & cp )= delete;
+//        {
+//            operator=(cp);
+//        }
+
+        BaseSequentialIDGen(my_t && mv)
+        {
+            operator=(std::move(mv));
+        }
+
+        BaseSequentialIDGen & operator=(const my_t & cp )= delete;
+//        {
+//            m_id = cp.m_id;
+//            return *this;
+//        }
+
+        BaseSequentialIDGen & operator=(my_t && mv)
+        {
+            m_id = mv.m_id;
+            return *this;
         }
 
         virtual ~BaseSequentialIDGen()

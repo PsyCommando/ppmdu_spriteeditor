@@ -538,7 +538,7 @@ public:
         return QVariant();
     }
 
-    virtual Sprite *parentSprite()override{return nullptr;}
+    virtual Sprite *parentSprite()override{return this;}
 
     inline void OnClicked() override
     {
@@ -623,7 +623,10 @@ public:
     {
         if(wasParsed() && hasImageData())
         {
-            return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, nullptr, transparency)) );
+            if(m_frmcnt.hasChildren())
+                return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, nullptr, transparency)) );
+            else
+                return m_previewImg = std::move(QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette())) );
         }
         return m_previewImg;
     }
@@ -631,6 +634,9 @@ public:
 
     const QVector<QRgb> & getPalette()const { return m_palcnt.m_pal; }
     QVector<QRgb>       & getPalette() { return m_palcnt.m_pal; }
+
+    inline void setPalette(QVector<QRgb> && pal) {m_palcnt.m_pal = qMove(pal);}
+    inline void setPalette(const QVector<QRgb> & pal) {m_palcnt.m_pal = pal;}
 
     inline AnimSequences        & getAnimSequences()        {return m_seqcnt;}
     inline const AnimSequences  & getAnimSequences()const   {return m_seqcnt;}
@@ -824,7 +830,7 @@ private:
 
 public:
     inline bool wasParsed()const    {return m_bparsed;}
-    inline bool hasImageData()const {return m_bhasimagedata;}
+    inline bool hasImageData()const {return m_imgcnt.hasChildren();}
 
     //Raw data buffer
     std::vector<uint8_t>    m_raw;

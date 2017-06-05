@@ -73,6 +73,7 @@ QVariant Image::imgData(int column, int role)const
         break;
     case 3: //resolution
         res.setValue(QString("%1x%2").arg(m_img.width()).arg(m_img.height()));
+        break;
     };
     return std::move(res);
 }
@@ -159,7 +160,8 @@ QPixmap MFrame::AssembleFrameToPixmap(int xoffset, int yoffset, QRect *out_area)
 QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect * out_area, bool makebgtransparent) const
 {
     Sprite * pspr = const_cast<MFrame*>(this)->parentSprite();
-    //QRect dim;
+    if(pspr->getPalette().empty()) //no point drawing anything..
+        return QImage();
 
     //#TODO: Implement checks for the other paramters for a frame, and for mosaic and etc!
     QImage      imgres(512,512, QImage::Format_ARGB32_Premultiplied);
