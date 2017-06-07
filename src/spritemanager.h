@@ -21,6 +21,7 @@ namespace spr_manager
         RIFF_Pal = 0,
         TEXT_Pal,
         GIMP_PAL,
+        PNG_PAL, //Palette from a PNG image!
         INVALID,
     };
     inline const QString & GetPaletteFileFilterString( ePaletteDumpType ty )

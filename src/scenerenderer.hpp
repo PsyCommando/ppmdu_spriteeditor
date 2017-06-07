@@ -88,6 +88,28 @@ public:
         if(pseq)
         {
             QRect boundsbiggest( 512, 512, 0, 0 );
+
+            //First pass, find largest frame
+            for(const auto & afrm : *pseq )
+            {
+                QRect  area;
+                MFrame * pfrm = m_spr->getFrame(afrm.frmidx());
+                if(pfrm != nullptr )
+                    area = pfrm->calcFrameBounds();
+
+                if( boundsbiggest.x() > area.x() )
+                    boundsbiggest.setX(area.x());
+                if( boundsbiggest.y() > area.y() )
+                    boundsbiggest.setY(area.y());
+
+                if( boundsbiggest.width() < area.width() )
+                    boundsbiggest.setWidth(area.width());
+                if( boundsbiggest.height() < area.height() )
+                    boundsbiggest.setHeight(area.height());
+            }
+
+
+            //Second pass, assemble and crop to largest frame
             for(const auto & afrm : *pseq )
             {
                 QImage target;
@@ -96,7 +118,7 @@ public:
                 //
                 if(pfrm != nullptr )
                 {
-                    target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), &area));
+                    target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), boundsbiggest, &area));
 //                    if(target.colorTable().size() > 1)
 //                        target.createMaskFromColor( target.colorTable().front(), Qt::MaskOutColor );
 //                    target = target.copy(area);
@@ -108,15 +130,15 @@ public:
                 //target.save( QString("./aimfrm_%1.png").arg(m_cachedframes.size()), "png");
 
                 cachedanimfrm_t dest;
-                if( boundsbiggest.x() > area.x() )
-                    boundsbiggest.setX(area.x());
-                if( boundsbiggest.y() > area.y() )
-                    boundsbiggest.setY(area.y());
+//                if( boundsbiggest.x() > area.x() )
+//                    boundsbiggest.setX(area.x());
+//                if( boundsbiggest.y() > area.y() )
+//                    boundsbiggest.setY(area.y());
 
-                if( boundsbiggest.width() < area.width() )
-                    boundsbiggest.setWidth(area.width());
-                if( boundsbiggest.height() < area.height() )
-                    boundsbiggest.setHeight(area.height());
+//                if( boundsbiggest.width() < area.width() )
+//                    boundsbiggest.setWidth(area.width());
+//                if( boundsbiggest.height() < area.height() )
+//                    boundsbiggest.setHeight(area.height());
 
 
 //                if(target.colorTable().size() > 1)

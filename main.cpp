@@ -29,6 +29,8 @@ inline bool ShouldDisplayUI(const QCommandLineParser & parser)
 int main(int argc, char *argv[])
 {
     QApplication        a(argc, argv);
+    QCoreApplication::setOrganizationName("PPMDU");
+    QCoreApplication::setApplicationName("Sprite Muncher");
     QCommandLineParser  parser;
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 

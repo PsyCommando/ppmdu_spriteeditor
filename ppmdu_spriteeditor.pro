@@ -49,7 +49,11 @@ SOURCES += main.cpp\
     src/ppmdu/fmts/compression_handler.cpp \
     src/frameeditor.cpp \
     src/extfmt/riff_palette.cpp \
-    src/ppmdu/utils/gfileio.cpp
+    src/ppmdu/utils/gfileio.cpp \
+    paletteeditor.cpp \
+    src/sprite_util_impl.cpp \
+    src/sprite_palette.cpp \
+    src/sprite_frames.cpp
 
 HEADERS  += mainwindow.h \
     src/spritemanager.h \
@@ -81,7 +85,10 @@ HEADERS  += mainwindow.h \
     src/ppmdu/utils/gfileio.hpp \
     src/extfmt/text_palette.hpp \
     src/extfmt/gpl_palette.hpp \
-    src/ppmdu/utils/color_utils.hpp
+    src/ppmdu/utils/color_utils.hpp \
+    paletteeditor.hpp \
+    src/sprite_frames.hpp \
+    src/sprite_palette.hpp
 
 FORMS    += mainwindow.ui \
     processingconsole.ui \
@@ -89,7 +96,8 @@ FORMS    += mainwindow.ui \
     dialognewsprite.ui \
     dialogexport.ui \
     dialogabout.ui \
-    dialogprogressbar.ui
+    dialogprogressbar.ui \
+    paletteeditor.ui
 
 RESOURCES += \
     appres.qrc

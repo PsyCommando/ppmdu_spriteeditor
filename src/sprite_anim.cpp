@@ -135,11 +135,14 @@ QVariant AnimFrame::nodeData(int column, int role) const
     {
         MFrame * pframe = const_cast<AnimFrame*>(this)->parentSprite()->getFrame(frmidx());
         if(pframe)
-            return QVariant(QPixmap::fromImage(pframe->AssembleFrame(0,0)));
+            return QVariant(QPixmap::fromImage(pframe->AssembleFrame(0,0, QRect())));
     }
 
     return QVariant();
 }
+
+
+
 
 Sprite *AnimTable::parentSprite()
 {

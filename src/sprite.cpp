@@ -4,475 +4,422 @@
 #include <QPainter>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 
-const char * ElemName_EffectOffset  = "Effect Offsets";
-const char * ElemName_Palette       = "Palette";
-const char * ElemName_Images        = "Images";
-const char * ElemName_Image         = "Image";
-const char * ElemName_FrameCnt      = "Frames";
-const char * ElemName_Frame         = "Frame";
-const char * ElemName_AnimSequence  = "Anim Sequence";
-const char * ElemName_AnimSequences = "Anim Sequences";
-const char * ElemName_AnimTable     = "Animation Table";
-const char * ElemName_AnimGroup     = "Anim Group";
-const char * ElemName_AnimFrame     = "Anim Frame";
-const char * ElemName_FramePart     = "Frame Part";
-const char * ElemName_SpriteProperty= "Property";
-
-
-
-const QStringList CompressionFmtOptions
-{
-    QString::fromStdString(filetypes::CompressionFormatsNames[static_cast<size_t>(filetypes::eCompressionFormats::PKDPX)]),
-    QString::fromStdString(filetypes::CompressionFormatsNames[static_cast<size_t>(filetypes::eCompressionFormats::AT4PX)]),
-    "Uncompressed",
-};
-
-const int         SpritePropertiesNbCols  = static_cast<int>(eSpritePropColumns::NbColumns);
-const QStringList SpritePropertiesColNames
-{
-    QString("Value"),
-    QString("Description"),
-};
-
-
-const QStringList SpritePropertiesNames
-{
-    "Sprite Type",
-    "Compression",
-    "Color Mode",
-    "Unk#6",
-    "Unk#7",
-    "Unk#8",
-    "Unk#9",
-    "Unk#10",
-    "Unk#11",
-    "Unk#12",
-    "Unk#13",
-};
-
-const QStringList SpritePropertiesDescriptions
-{
-    "**Use with caution!** Setting this will change the sprite type and its content!\n It will remove superflous data if you change an existing sprite's type!",
-    "Sets the compression used on the sprite container when written to file. Its advised not to changed this unless you know what you're doing!",
-    "If set to 256 the game will attempt to treat the content of the sprite as 256 colors/8bpp images. Otherwise, treats it as 4bpp/16colors images.",
-    "##UNKNOWN## Mess with memory alignement of the sprite's tiles and of the next sprites loaded after.",
-    "##UNKNOWN##",
-    "##UNKNOWN##",
-    "##UNKNOWN## Apparently a boolean value linked to animations.",
-    "##UNKNOWN##",
-    "##UNKNOWN## This far 0, 1, 3(d79p41a1.wan), 4(as001.wan).. Seems to deal with the palette slot in-game.",
-    "##UNKNOWN##",
-    "##UNKNOWN## Possibly VRAM Character Mapping. 0 = 2D Mapping(Tiles placed on a 32x32 matrix), 1 = 1D Mapping(Tiles loaded one after another).",
-};
-
-const int SpriteNbProperties = static_cast<int>(eSpriteProperties::NbProperties);
-
-
-filetypes::eCompressionFormats CompOptionToCompFmt( eCompressionFmtOptions opt )
-{
-    switch(opt)
-    {
-    case eCompressionFmtOptions::PKDPX:
-        return filetypes::eCompressionFormats::PKDPX;
-
-    case eCompressionFmtOptions::AT4PX:
-        return filetypes::eCompressionFormats::AT4PX;
-
-    case eCompressionFmtOptions::NONE:
-    default:
-        return filetypes::eCompressionFormats::INVALID;
-    };
-}
-
-eCompressionFmtOptions CompFmtToCompOption( filetypes::eCompressionFormats fmt )
-{
-    switch(fmt)
-    {
-    case filetypes::eCompressionFormats::PKDPX:
-        return eCompressionFmtOptions::PKDPX;
-
-    case filetypes::eCompressionFormats::AT4PX:
-        return eCompressionFmtOptions::AT4PX;
-
-    case filetypes::eCompressionFormats::INVALID:
-    default:
-        return eCompressionFmtOptions::NONE;
-    };
-}
-
-const QStringList SpriteColorModes
-{
-  "16 colors",
-  "256 colors",
-};
-
-
-//
+//=================================================================================================================
 //  Sprite
-//
-Sprite * EffectOffsetContainer::parentSprite()
+//=================================================================================================================
+void Sprite::_ctor()
 {
-    return static_cast<Sprite*>(parentNode());
+    setNodeDataTy(eTreeElemDataType::sprite);
+    m_bparsed             = false;
+    m_bhasimagedata       = false;
+    m_targetgompression   = filetypes::eCompressionFormats::INVALID;
+    m_efxcnt.m_parentItem = this;
+    m_palcnt.m_parentItem = this;
+    m_imgcnt.m_parentItem = this;
+    m_frmcnt.m_parentItem = this;
+    m_seqcnt.m_parentItem = this;
+    m_anmtbl.m_parentItem = this;
+    m_propshndlr.reset(new SpritePropertiesHandler(this));
+    m_overmodel .reset(new SpriteOverviewModel(this));
 }
 
+Sprite::Sprite(TreeElement *parent)
+    :TreeElement(parent),
+      m_efxcnt(this),
+      m_palcnt(this),
+      m_imgcnt(this),
+      m_frmcnt(this),
+      m_seqcnt(this),
+      m_anmtbl(this)
 
-
-//
-//  SpritePropertiesHandler
-//
-
-
-
-
-
-
-
-
-
-
-SpritePropertiesModel::SpritePropertiesModel(Sprite *parentspr, QObject *parent)
-    :QAbstractItemModel(parent), m_spr(parentspr)
 {
-
+    _ctor();
 }
 
-SpritePropertiesModel::~SpritePropertiesModel(){}
-
-int SpritePropertiesModel::getNbProperties() const
+Sprite::Sprite(TreeElement *parent, Sprite::rawdat_t &&raw)
+    :TreeElement(parent),
+      m_raw(raw),
+      m_efxcnt(this),
+      m_palcnt(this),
+      m_imgcnt(this),
+      m_frmcnt(this),
+      m_seqcnt(this),
+      m_anmtbl(this)
 {
-    return SpriteNbProperties;
+    _ctor();
 }
 
-Qt::ItemFlags SpritePropertiesModel::flags(const QModelIndex &index) const
+Sprite::Sprite(const Sprite &cp)
+    :TreeElement(cp),
+      m_efxcnt(this),
+      m_palcnt(this),
+      m_imgcnt(this),
+      m_frmcnt(this),
+      m_seqcnt(this),
+      m_anmtbl(this)
 {
-    if( index.column() == static_cast<int>(eSpritePropColumns::Value) )
+    _ctor();
+    operator=(cp);
+}
+
+Sprite &Sprite::operator=(const Sprite &cp)
+{
+    m_sprhndl               = cp.m_sprhndl;
+    m_efxcnt                = cp.m_efxcnt;
+    m_palcnt                = cp.m_palcnt;
+    m_imgcnt                = cp.m_imgcnt;
+    m_frmcnt                = cp.m_frmcnt;
+    m_seqcnt                = cp.m_seqcnt;
+    m_anmtbl                = cp.m_anmtbl;
+    m_bparsed               = cp.m_bparsed;
+    m_bhasimagedata         = cp.m_bhasimagedata;
+    m_targetgompression     = cp.m_targetgompression;
+    m_raw                   = cp.m_raw;
+
+    //Update the pointer to our instance
+    m_efxcnt.m_parentItem = this;
+    m_palcnt.m_parentItem = this;
+    m_imgcnt.m_parentItem = this;
+    m_frmcnt.m_parentItem = this;
+    m_seqcnt.m_parentItem = this;
+    m_anmtbl.m_parentItem = this;
+    return *this;
+}
+
+Sprite::Sprite(Sprite && mv)
+    :TreeElement(mv),
+      m_efxcnt(this),
+      m_palcnt(this),
+      m_imgcnt(this),
+      m_frmcnt(this),
+      m_seqcnt(this),
+      m_anmtbl(this)
+{
+    _ctor();
+    operator=(mv);
+}
+
+Sprite &Sprite::operator=(Sprite && mv)
+{
+    m_sprhndl               = std::move(mv.m_sprhndl);
+    m_efxcnt                = std::move(mv.m_efxcnt);
+    m_palcnt                = std::move(mv.m_palcnt);
+    m_imgcnt                = std::move(mv.m_imgcnt);
+    m_frmcnt                = std::move(mv.m_frmcnt);
+    m_seqcnt                = std::move(mv.m_seqcnt);
+    m_anmtbl                = std::move(mv.m_anmtbl);
+    m_bparsed               = mv.m_bparsed;
+    m_bhasimagedata         = mv.m_bhasimagedata;
+    m_targetgompression     = mv.m_targetgompression;
+    m_raw                   = std::move(mv.m_raw);
+
+    //Update the pointer to our instance
+    m_efxcnt.m_parentItem = this;
+    m_palcnt.m_parentItem = this;
+    m_imgcnt.m_parentItem = this;
+    m_frmcnt.m_parentItem = this;
+    m_seqcnt.m_parentItem = this;
+    m_anmtbl.m_parentItem = this;
+    return *this;
+}
+
+Sprite::~Sprite()
+{
+    qDebug("Sprite::~Sprite(): Sprite ID: %d\n", nodeIndex());
+}
+
+TreeElement *Sprite::nodeChild(int row)
+{
+    return ElemPtr(row);
+}
+
+int Sprite::nodeChildCount() const
+{
+//    switch(type())
+//    {
+//    case fmt::eSpriteType::Prop:
+//        return 5; // No effects offsets, no animation groups
+//    case fmt::eSpriteType::Character:
+//        return 6;
+//    case fmt::eSpriteType::Effect:
+//        return 5; // No effects offsets, no animation groups
+//    case fmt::eSpriteType::WAT:
+//        return 5; // No effects offsets
+//    default:
+//        Q_ASSERT(false);
+//    };
+    return nbChildCat();
+}
+
+int Sprite::nodeIndex() const
+{
+    Q_ASSERT(m_parentItem);
+    return m_parentItem->indexOfNode(const_cast<Sprite*>(this));
+}
+
+int Sprite::indexOfNode(TreeElement *ptr) const
+{
+    //Search a matching child in the list!
+    for( int idx = 0; idx < nbChildCat(); ++idx )
     {
-        return Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable | Qt::ItemFlag::ItemIsEditable;
+        if(ElemPtr(idx) == ptr)
+            return idx;
     }
-    return Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable;
+    qWarning("Sprite::indexOfNode(): Couldn't find node!!\n");
+    Q_ASSERT(false);
+    return -1;
 }
 
-QModelIndex SpritePropertiesModel::index(int row, int column, const QModelIndex &parent) const
+int Sprite::nodeColumnCount() const
 {
-    if(parent.isValid())
-        return QModelIndex();
-    return createIndex(row, column,  nullptr);
+    return 1; //Always just 1 column
 }
 
-QModelIndex SpritePropertiesModel::parent(const QModelIndex &) const
+TreeElement *Sprite::parentNode()
 {
-    return QModelIndex();
+    return m_parentItem;
 }
 
-int SpritePropertiesModel::rowCount(const QModelIndex &parent) const
+QVariant Sprite::nodeData(int column, int role) const
 {
-    if(parent.isValid())
-        return 0;
-    return getNbProperties();
-}
-
-int SpritePropertiesModel::columnCount(const QModelIndex &) const
-{
-    return SpritePropertiesNbCols;
-}
-
-bool SpritePropertiesModel::hasChildren(const QModelIndex &parent) const
-{
-    if(parent.isValid())
-        return false;
-    return true;
-}
-
-QVariant SpritePropertiesModel::data(const QModelIndex &index, int role) const
-{
-    switch(role)
-    {
-    case Qt::DisplayRole:
-        {
-            return dataDisplay(index.row(), index.column());
-        }
-    case Qt::EditRole:
-        {
-            if(index.column() == static_cast<int>(eSpritePropColumns::Value))
-                return getDataForProperty(index.row(), Qt::EditRole);
-            break;
-        }
-    case Qt::SizeHintRole:
-        {
-            break;
-        }
-    default:
-        {
-
-        }
-    };
+    if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
+        return QVariant(QString("Sprite#%1").arg(nodeIndex()));
     return QVariant();
 }
 
-bool SpritePropertiesModel::setData(const QModelIndex &index, const QVariant &value, int role)
+Sprite *Sprite::parentSprite(){return this;}
+
+void Sprite::OnClicked()
 {
-    if(role == Qt::EditRole && index.column() == static_cast<int>(eSpritePropColumns::Value))
+    //Only parse sprites that were loaded from file! Not newly created ones, or already parsed ones!
+    if( m_raw.size() != 0 && !m_bparsed )
+        ParseSpriteData();
+}
+
+void Sprite::OnExpanded()
+{
+    OnClicked();
+}
+
+void Sprite::ParseSpriteData()
+{
+    if(IsRawDataCompressed(&m_targetgompression))
+        DecompressRawData();
+
+    m_sprhndl.Parse( m_raw.begin(), m_raw.end() );
+    m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
+    m_anmtbl.importAnimationGroups( m_sprhndl.getAnimGroups() );
+
+    m_palcnt.setPalette(std::move(utils::ConvertSpritePalette(m_sprhndl.getPalette()))); //convert the palette once, so we don't do it constantly
+
+    m_seqcnt.importSequences( m_sprhndl.getAnimSeqs());
+    m_frmcnt.importFrames(m_sprhndl.getFrames());
+
+    if( m_sprhndl.getImageFmtInfo().is256Colors() )
+        m_imgcnt.importImages8bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
+    else
+        m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
+
+    m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
+    m_bparsed = true;
+}
+
+void Sprite::CommitSpriteData()
+{
+    rawdat_t   buffer;
+    auto       itback = std::back_inserter(buffer);
+
+    //First convert the data from the UI
+    m_sprhndl.getAnimationTable()   = m_anmtbl.exportAnimationTable();
+    m_sprhndl.getAnimGroups()       = m_anmtbl.exportAnimationGroups();
+    m_sprhndl.getPalette()          = utils::ConvertSpritePaletteFromQt(m_palcnt.getPalette());
+    m_sprhndl.getAnimSeqs()         = m_seqcnt.exportSequences();
+    m_sprhndl.getFrames()           = m_frmcnt.exportFrames();
+
+    if( m_sprhndl.getImageFmtInfo().is256Colors() ) //#FIXME : FIgure out something better!!!!
+        m_sprhndl.getImages() = m_imgcnt.exportImages8bpp();
+    else
+        m_sprhndl.getImages() = m_imgcnt.exportImages4bpp();
+
+    //Write the data
+    itback = m_sprhndl.Write(itback);
+    m_raw  = qMove(buffer);
+
+    //Compress if needed at the end!
+    if(m_targetgompression != filetypes::eCompressionFormats::INVALID)
+        CompressRawData(m_targetgompression);
+}
+
+QPixmap &Sprite::MakePreviewPalette()
+{
+    m_previewPal = utils::PaintPaletteToPixmap(getPalette()); // utils::ConvertSpritePalette(m_sprhndl.getPalette()) );
+    return m_previewPal;
+}
+
+QPixmap &Sprite::MakePreviewFrame(bool transparency)
+{
+    if(wasParsed() && hasImageData())
     {
-        setDataForProperty(static_cast<eSpriteProperties>(index.row()), value);
+        if(m_frmcnt.hasChildren())
+            return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency)) );
+        else
+            return m_previewImg = std::move(QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette())) );
     }
-    return false;
+    return m_previewImg;
 }
 
-QVariant SpritePropertiesModel::headerData(int section, Qt::Orientation orientation, int role) const
+Sprite *Sprite::ParentSprite(TreeElement *parentspr)
 {
-    if(role == Qt::DisplayRole && orientation == Qt::Horizontal)
-        return SpritePropertiesColNames.at(section);
-    else if(role == Qt::DisplayRole && orientation == Qt::Vertical)
-    {
-        return getNameForProperty(section);
-    }
-    return QVariant();
+    return static_cast<Sprite*>(parentspr);
 }
 
-QVariant SpritePropertiesModel::dataDisplay(int propid, int column) const
+Image *Sprite::getImage(fmt::frmid_t idx)
 {
-    switch(static_cast<eSpritePropColumns>(column))
-    {
-    case eSpritePropColumns::Value:
-        return getDataForProperty(propid, Qt::DisplayRole);
-    case eSpritePropColumns::Description:
-        return getDescForProperty(propid);
-    };
-    return QVariant();
+    if( idx >= 0 && idx < m_imgcnt.nodeChildCount() )
+        return m_imgcnt.getImage(idx);
+    else
+        return nullptr;
 }
 
-QVariant SpritePropertiesModel::getNameForProperty(int propid) const
+const Image *Sprite::getImage(fmt::frmid_t idx) const
 {
-    switch(static_cast<eSpriteProperties>(propid))
-    {
-    case eSpriteProperties::SpriteType:
-        return tr("Sprite Type");
-    case eSpriteProperties::Compression:
-        return tr("Compression");
-    case eSpriteProperties::ColorMode:
-        return tr("Color Mode");
-    case eSpriteProperties::Unk6:
-        return tr("Unk#6");
-    case eSpriteProperties::Unk7:
-        return tr("Unk#7");
-    case eSpriteProperties::Unk8:
-        return tr("Unk#8");
-    case eSpriteProperties::Unk9:
-        return tr("Unk#9");
-    case eSpriteProperties::Unk10:
-        return tr("Unk#10");
-    case eSpriteProperties::Unk11:
-        return tr("Unk#11");
-    case eSpriteProperties::Unk12:
-        return tr("Unk#12");
-    case eSpriteProperties::Unk13:
-        return tr("Unk#13");
-    default:
-        Q_ASSERT(false);
-    };
-    return QVariant();
+    return const_cast<Sprite*>(this)->m_imgcnt.getImage(idx);
 }
 
-QVariant SpritePropertiesModel::getDataForProperty(int propid, int role) const
-{
 
-    switch(static_cast<eSpriteProperties>(propid))
-    {
-    case eSpriteProperties::SpriteType:
-        {
-            if(role == Qt::DisplayRole)
-                return QString::fromStdString( fmt::SpriteTypeNames.at(static_cast<size_t>(m_spr->getSpriteType())) );
-            else if(role == Qt::EditRole)
-                return static_cast<int>(m_spr->getSpriteType());
-            break;
-        }
-    case eSpriteProperties::Compression:
-        {
-            eCompressionFmtOptions translated = CompFmtToCompOption(m_spr->getTargetCompression());
-            if(role == Qt::DisplayRole)
-                return CompressionFmtOptions.at(static_cast<size_t>(translated));
-            else if(role == Qt::EditRole)
-                return static_cast<int>(translated);
-            break;
-        }
-    case eSpriteProperties::ColorMode:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-            {
-                return SpriteColorModes.at( m_spr->is256Colors() ? 1 : 0 );
-            }
-            break;
-        }
-    case eSpriteProperties::Unk6:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk6();
-            break;
-        }
-    case eSpriteProperties::Unk7:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk7();
-            break;
-        }
-    case eSpriteProperties::Unk8:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk8();
-            break;
-        }
-    case eSpriteProperties::Unk9:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk9();
-            break;
-        }
-    case eSpriteProperties::Unk10:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk10();
-            break;
-        }
-    case eSpriteProperties::Unk11:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk11();
-            break;
-        }
-    case eSpriteProperties::Unk12:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk12();
-            break;
-        }
-    case eSpriteProperties::Unk13:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk13();
-            break;
-        }
-    default:
-        Q_ASSERT(false);
-    };
-    return QVariant();
-}
 
-QVariant SpritePropertiesModel::getDescForProperty(int propid) const
+void Sprite::convertSpriteToType(fmt::eSpriteType newty)
 {
-    return QVariant(SpritePropertiesDescriptions.at(propid));
-}
-
-void SpritePropertiesModel::setDataForProperty(eSpriteProperties propid, const QVariant &data)
-{
-    switch(propid)
-    {
-    case eSpriteProperties::SpriteType:
-        {
-            m_spr->convertSpriteToType(static_cast<fmt::eSpriteType>(data.toInt()));
-            break;
-        }
-    case eSpriteProperties::Compression:
-        {
-            m_spr->setTargetCompression(CompOptionToCompFmt( static_cast<eCompressionFmtOptions>(data.toInt()) ) );
-            break;
-        }
-    case eSpriteProperties::ColorMode:
-        {
-            m_spr->setIs256Colors(data.toBool());
-            break;
-        }
-    case eSpriteProperties::Unk6:
-        {
-            m_spr->unk6(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk7:
-        {
-            m_spr->unk7(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk8:
-        {
-            m_spr->unk8(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk9:
-        {
-            m_spr->unk9(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk10:
-        {
-            m_spr->unk10(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk11:
-        {
-            m_spr->unk11(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk12:
-        {
-            m_spr->unk12(data.toUInt());
-            break;
-        }
-    case eSpriteProperties::Unk13:
-        {
-            m_spr->unk13(data.toUInt());
-            break;
-        }
-    default:
-        Q_ASSERT(false);
-    };
-}
-
-//
-//  SpritePropertiesDelegate
-//
-void SpritePropertiesDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
-{
-    //Qt takes ownership of the widget we create!
-    if(index.column() != static_cast<int>(eSpritePropColumns::Value))
-    {
-        QStyledItemDelegate::setEditorData(editor, index);
+    //Do nothing if its the same type as the current one!
+    if(newty == type())
         return;
-    }
 
-    switch(static_cast<eSpriteProperties>(index.row()))
+    switch(newty)
     {
-    case eSpriteProperties::SpriteType:
-        {
-            QComboBox * pspritetypes = static_cast<QComboBox*>(editor);
-            Q_ASSERT(pspritetypes);
-            pspritetypes->setCurrentIndex(static_cast<int>(m_spr->getSpriteType()));
-            return;
-        }
-    case eSpriteProperties::Compression:
-        {
-            QComboBox * pcompty = static_cast<QComboBox*>(editor);
-            Q_ASSERT(pcompty);
-            pcompty->setCurrentIndex( static_cast<int>(CompFmtToCompOption(m_spr->getTargetCompression())) );
-            return;
-        }
-    case eSpriteProperties::ColorMode:
-        {
-            QComboBox * pcolmode = static_cast<QComboBox*>(editor);
-            Q_ASSERT(pcolmode);
-            pcolmode->setCurrentIndex((m_spr->m_sprhndl.getImageFmtInfo().is256Colors())? 1 : 0);
-            return;
-        }
-    case eSpriteProperties::Unk6:
-    case eSpriteProperties::Unk7:
-    case eSpriteProperties::Unk8:
-    case eSpriteProperties::Unk9:
-    case eSpriteProperties::Unk10:
-    case eSpriteProperties::Unk11:
-    case eSpriteProperties::Unk12:
-    case eSpriteProperties::Unk13:
+    case fmt::eSpriteType::Prop:
+
+    case fmt::eSpriteType::Character:
+
+    case fmt::eSpriteType::Effect:
+
+    case fmt::eSpriteType::WAT:
+
     default:
-        {
-            //nothing here
-        }
+    break;
     };
-    QStyledItemDelegate::setEditorData(editor, index);
+
+    //#TODO:!!
+    Q_ASSERT(false);
+}
+
+SpritePropertiesHandler *Sprite::propHandler()
+{
+    return m_propshndlr.data();
+}
+
+const SpritePropertiesHandler *Sprite::propHandler() const
+{
+    return m_propshndlr.data();
+}
+
+SpriteOverviewModel *Sprite::overviewModel()
+{
+    return m_overmodel.data();
+}
+
+const SpriteOverviewModel *Sprite::overviewModel() const
+{
+    return m_overmodel.data();
+}
+
+
+
+
+
+bool Sprite::IsRawDataCompressed(filetypes::eCompressionFormats *outfmt) const
+{
+    filetypes::eCompressionFormats fmt = filetypes::IndentifyCompression( m_raw.begin(), m_raw.end() );
+    if(outfmt)
+        (*outfmt) = fmt;
+    return fmt < filetypes::eCompressionFormats::INVALID;
+}
+
+void Sprite::DecompressRawData()
+{
+    filetypes::eCompressionFormats fmt =filetypes::IndentifyCompression(m_raw.begin(), m_raw.end());
+
+    rawdat_t buffer;
+    auto                 itback = std::back_inserter(buffer);
+    if(fmt == filetypes::eCompressionFormats::PKDPX)
+        filetypes::DecompressPKDPX(m_raw.begin(), m_raw.end(), itback);
+    //        else if(fmt == filetypes::eCompressionFormats::AT4PX)
+    //            filetypes::DecompressAT4PX(m_raw.begin(), m_raw.end(), itback);
+    m_raw = std::move(buffer);
+}
+
+void Sprite::CompressRawData(filetypes::eCompressionFormats cpfmt)
+{
+    rawdat_t buffer;
+    auto                 itback = std::back_inserter(buffer);
+    filetypes::Compress( cpfmt, m_raw.begin(), m_raw.end(), itback);
+    m_raw = std::move(buffer);
+}
+
+TreeElement *Sprite::ElemPtr(int idx)
+{
+    if( !hasEfxOffsets() )
+        return ElemPtrNoEfx(idx);
+
+    switch(idx)
+    {
+    case 0:
+        return &m_imgcnt;
+    case 1:
+        return &m_frmcnt;
+    case 2:
+        return &m_seqcnt;
+    case 3:
+        return &m_anmtbl;
+    case 4:
+        return &m_efxcnt;
+    default:
+        Q_ASSERT(false);
+    };
+    return nullptr;
+}
+
+TreeElement *Sprite::ElemPtrNoEfx(int idx)
+{
+    switch(idx)
+    {
+    case 0:
+        return &m_imgcnt;
+    case 1:
+        return &m_frmcnt;
+    case 2:
+        return &m_seqcnt;
+    case 3:
+        return &m_anmtbl;
+    default:
+        Q_ASSERT(false);
+    };
+    return nullptr;
+}
+
+const TreeElement *Sprite::ElemPtr(int idx) const
+{
+    return const_cast<Sprite*>(this)->ElemPtr(idx);
+}
+
+const TreeElement *Sprite::ElemPtrNoEfx(int idx) const
+{
+    return const_cast<Sprite*>(this)->ElemPtrNoEfx(idx);
+}
+
+int Sprite::nbChildCat() const
+{
+    if( !hasEfxOffsets() )
+        return 4;
+    else
+        return 5;
 }

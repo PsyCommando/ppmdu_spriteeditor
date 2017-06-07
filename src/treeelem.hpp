@@ -321,7 +321,7 @@ public:
         return success;
     }
 
-    virtual bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override
+    virtual bool moveRows(const QModelIndex &/*sourceParent*/, int /*sourceRow*/, int /*count*/, const QModelIndex &/*destinationParent*/, int /*destinationChild*/) override
     {
         Q_ASSERT(false);
         return false;
@@ -341,6 +341,12 @@ public:
     virtual const TreeElement *getItem(const QModelIndex &index)const
     {
         return const_cast<BaseTreeNodeModel*>(this)->getItem(index);
+    }
+
+    //Convenience function for emiting the datachanged signal
+    inline void emitDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int> ())
+    {
+        emit dataChanged(topLeft, bottomRight, roles);
     }
 
 protected:
@@ -574,6 +580,8 @@ public:
     {
         return const_cast<my_t*>(this)->getItem(index);
     }
+
+protected:
 
 protected:
     container_t                 m_container;

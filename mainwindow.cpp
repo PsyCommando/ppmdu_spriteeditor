@@ -11,6 +11,7 @@
 #include <dialogexport.hpp>
 #include <diagsingleimgcropper.hpp>
 #include <dialogabout.hpp>
+#include <paletteeditor.hpp>
 
 const QString PaletteFilter = spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::RIFF_Pal) +
                               ";;" +
@@ -30,12 +31,18 @@ MainWindow::MainWindow(QWidget *parent) :
     m_previewrender(true),
     m_aboutdiag(this),
     m_imgNoImg(":/imgs/resources/imgs/noimg.png"),
-    m_progress(this)
+    m_progress(this),
+    m_settings("./settings.ini",QSettings::Format::IniFormat)
 {
     //Resources alloc
     m_pStatusFileType.reset(new QLabel("     "));
     //UI init
     ui->setupUi(this);
+
+    //Parse settings!
+    readSettings();
+
+    //Connect stuff
     connect( ui->chkAnimSeqLoop, &QCheckBox::toggled, &m_previewrender, &SceneRenderer::loopChanged );
     connect( ui->btnSeqPlay, &QPushButton::clicked, &m_previewrender, &SceneRenderer::startAnimUpdates );
     connect( ui->btnSeqStop, &QPushButton::clicked, &m_previewrender, &SceneRenderer::stopAnimUpdates );
@@ -66,6 +73,23 @@ MainWindow::~MainWindow()
     //Delete the sprite container before the Qt framework is unloaded!
     spr_manager::SpriteManager::Instance().CloseContainer();
 }
+
+void MainWindow::writeSettings()
+{
+    m_settings.beginGroup("MainWindow");
+    m_settings.setValue("size", size());
+    m_settings.setValue("pos", pos());
+    m_settings.endGroup();
+}
+
+void MainWindow::readSettings()
+{
+    m_settings.beginGroup("MainWindow");
+    resize( m_settings.value("size", sizeHint() ).toSize());
+    move( m_settings.value("pos", pos() ).toPoint());
+    m_settings.endGroup();
+}
+
 
 void MainWindow::HideAllTabs()
 {
@@ -124,7 +148,6 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOfNode(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
     if( !spr->wasParsed() )
         spr->ParseSpriteData();
-   // spr->FillSpriteProperties(ui->tblProperties);
 
     //display preview only if we have image data!
     if( spr->hasImageData() )
@@ -132,10 +155,14 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     else
         ui->lblPropPreview->setPixmap(m_imgNoImg);
 
-    ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
-
     ui->tblProperties->setModel(spr->propHandler()->model());
     ui->tblProperties->setItemDelegate(spr->propHandler()->delegate());
+
+    //display palette preview
+    ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
+
+    //Setup stats
+    ui->tblOverview;
 
     ShowATab(ui->tabproperties);
 }
@@ -156,7 +183,9 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
     //Setup the frame editor in the viewport!
     m_frmeditor.reset( new FrameEditor(frm) );
     ui->gvFrame->setScene( &m_frmeditor->getScene() );
-    m_frmeditor->initScene();
+    m_frmeditor->initScene(ui->chkColorPartOutlines->isChecked(),
+                           ui->chkFrmMiddleMarker->isChecked(),
+                           ui->chkFrmTransparency->isChecked());
     ui->gvFrame->repaint();
 
     if(ui->tblframeparts->currentIndex().isValid())
@@ -178,6 +207,18 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
         qreal sc = val * 0.01; //scale the value from 0 to 1 +
         ui->gvFrame->setTransform(QTransform::fromScale(sc, sc));
     });
+
+    connect(m_frmeditor.data(), &FrameEditor::zoom, [&](int val)->void
+    {
+        //qreal sc = val * 0.01; //scale the value from 0 to 1 +
+        ui->spbFrmZoom->setValue(val + ui->spbFrmZoom->value());
+        //ui->gvFrame->setTransform(QTransform::fromScale(sc, sc));
+    });
+
+    //Init checkboxes state
+    connect(ui->chkColorPartOutlines, &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawOutlines);
+    connect(ui->chkFrmMiddleMarker,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawMiddleGuide);
+    connect(ui->chkFrmTransparency,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setTransparencyEnabled);
 
     //Map model's columns to some of the controls
     m_frmdatmapper.reset(new QDataWidgetMapper);
@@ -941,8 +982,11 @@ void MainWindow::on_btnImportPalette_clicked()
 
     QString selectedfilter;
     ePaletteDumpType type;
-    QString filename = QFileDialog::getOpenFileName(this, tr("Import Palette File"), QString(),
-            PaletteFilter, &selectedfilter );
+    QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Import Palette File"),
+                                                    QString(),
+            PaletteFilter + ";;" + GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL), //allow loading a PNG for its palette!
+                                                    &selectedfilter );
     if(filename.isNull())
         return;
 
@@ -952,6 +996,8 @@ void MainWindow::on_btnImportPalette_clicked()
         type = ePaletteDumpType::TEXT_Pal;
     else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
         type = ePaletteDumpType::GIMP_PAL;
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
+        type = ePaletteDumpType::PNG_PAL;
     Q_ASSERT(type < ePaletteDumpType::INVALID);
 
     try
@@ -975,6 +1021,25 @@ void MainWindow::on_btnImportPalette_clicked()
     DisplayPropertiesPage(spr);
 }
 
+void MainWindow::on_btnEditPalette_clicked()
+{
+    //FUCK THIS FOR NOW
+    //I SPENT ALL DAY ON IT AND MANAGED TO DESTROY IT COMPLETELY
+    //I GUESS PEOPLE WILL EDIT THE PALETTES USING AN EXTERNAL TOOL!
+    //C:
+
+//    Sprite * spr = currentSprite();
+//    if( !spr )
+//    {
+//        ShowStatusErrorMessage(QString(tr("No valid sprite to edit the palette of!")) );
+//        return;
+//    }
+
+//    PaletteEditor paledit(this);
+//    paledit.setModal(true);
+//    paledit.setPalModel(spr->getPaletteModel());
+//    paledit.exec();
+}
 
 //===================================================================================================================
 // TVSpritesContextMenu
@@ -1074,6 +1139,8 @@ void TVSpritesContextMenu::RemoveEntry()
     m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
     close();
 }
+
+
 
 
 

@@ -45,7 +45,7 @@ namespace spr_manager
         }
 
         SpriteContainer(const QString & str, QObject * parent = nullptr)
-            :QObject(nullptr), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
+            :QObject(parent), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
         {}
 
         SpriteContainer(const SpriteContainer&) = delete;

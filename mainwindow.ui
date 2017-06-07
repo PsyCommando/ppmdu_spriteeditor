@@ -111,7 +111,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>2</number>
        </property>
        <property name="documentMode">
         <bool>false</bool>
@@ -576,6 +576,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="btnEditPalette">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="text">
                 <string>Edit..</string>
                </property>
@@ -716,6 +719,9 @@
                  <width>512.000000000000000</width>
                  <height>512.000000000000000</height>
                 </rectf>
+               </property>
+               <property name="dragMode">
+                <enum>QGraphicsView::ScrollHandDrag</enum>
                </property>
                <property name="resizeAnchor">
                 <enum>QGraphicsView::AnchorUnderMouse</enum>
@@ -1321,7 +1327,7 @@
                 </rectf>
                </property>
                <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                <set>Qt::AlignCenter</set>
                </property>
                <property name="dragMode">
                 <enum>QGraphicsView::ScrollHandDrag</enum>
@@ -1329,14 +1335,17 @@
                <property name="cacheMode">
                 <set>QGraphicsView::CacheNone</set>
                </property>
+               <property name="transformationAnchor">
+                <enum>QGraphicsView::AnchorUnderMouse</enum>
+               </property>
                <property name="resizeAnchor">
                 <enum>QGraphicsView::AnchorUnderMouse</enum>
                </property>
                <property name="viewportUpdateMode">
-                <enum>QGraphicsView::SmartViewportUpdate</enum>
+                <enum>QGraphicsView::FullViewportUpdate</enum>
                </property>
                <property name="rubberBandSelectionMode">
-                <enum>Qt::ContainsItemShape</enum>
+                <enum>Qt::ContainsItemBoundingRect</enum>
                </property>
               </widget>
              </item>
@@ -1549,9 +1558,29 @@
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_14">
                      <item>
+                      <widget class="QCheckBox" name="chkFrmTransparency">
+                       <property name="text">
+                        <string>Transparency</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <widget class="QCheckBox" name="chkColorPartOutlines">
                        <property name="text">
                         <string>Color parts outlines</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="chkFrmMiddleMarker">
+                       <property name="text">
+                        <string>Middel Marker</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
                        </property>
                       </widget>
                      </item>

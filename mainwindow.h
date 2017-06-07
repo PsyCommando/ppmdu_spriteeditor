@@ -17,6 +17,7 @@
 #include <QDataWidgetMapper>
 #include <QMenu>
 #include <QPersistentModelIndex>
+#include <QSettings>
 
 #include "src/spritemanager.h"
 #include <src/scenerenderer.hpp>
@@ -274,6 +275,10 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    //Settings
+    void writeSettings();
+    void readSettings();
+
     //Internal processing stuff
     void HideAllTabs();
     void ShowATab(QWidget * ptab);
@@ -352,7 +357,20 @@ private:
     Image       * currentTblImages();
 
 
-
+    // QWidget interface
+protected:
+    virtual void closeEvent(QCloseEvent *event) override
+    {
+//        if (userReallyWantsToQuit())
+//        {
+            writeSettings();
+            event->accept();
+//        }
+//        else
+//        {
+//            event->ignore();
+//        }
+    }
 private slots:
     void on_action_Quit_triggered();
 
@@ -405,10 +423,12 @@ private slots:
 
     void on_btnImportPalette_clicked();
 
+    void on_btnEditPalette_clicked();
+
 signals:
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow          *ui;
     QScopedPointer<QLabel>  m_pStatusFileType;
     QScopedPointer<QLabel>  m_pStatusError;
     QScopedPointer<QAction> m_pActionAddSprite;
@@ -424,6 +444,7 @@ private:
 //    int                     m_idxCurFrame;
 //    int                     m_idxCurSprite;
     QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
+    QSettings               m_settings;
 
 
 
@@ -448,7 +469,6 @@ private:
         static const QString filter(tr("All supported formats (*.bin *.wan *.wat *.pkdpx)"));
         return filter;
     }
-
 };
 
 //======================================================================================

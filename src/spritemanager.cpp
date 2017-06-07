@@ -14,6 +14,7 @@ namespace spr_manager
         "Microsoft RIFF palette (*.pal)",
         "Text file hex color list (*.txt)",
         "GIMP GPL palette (*.gpl)",
+        "Palette from a PNG image (*.png)",
     };
 
     SpriteContainer * SpriteManager::OpenContainer(const QString &fname)
@@ -227,6 +228,13 @@ namespace spr_manager
             {
                 //can't use move here since we need the implicit convertion on copy
                 spr->setPalette( QVector<QRgb>::fromStdVector( utils::ImportGimpPalette(fdata, utils::RGBToARGB) ) );
+                break;
+            }
+        case ePaletteDumpType::PNG_PAL:
+            {
+                //can't use move here since we need the implicit convertion on copy
+                QImage png(path, "png");
+                spr->setPalette(png.colorTable());
                 break;
             }
         default:

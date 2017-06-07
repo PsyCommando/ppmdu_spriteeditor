@@ -78,7 +78,7 @@ namespace spr_manager
             for( size_t cnt = 0; cnt < ldr.size(); ++cnt )
             {
                 Sprite newspr(this);
-                ldr.CopyEntryData( cnt, std::back_inserter(newspr.m_raw) );
+                ldr.CopyEntryData( cnt, std::back_inserter(newspr.getRawData()) );
                 m_spr.push_back(std::move(newspr));
             }
             manager.endInsertRows();
@@ -90,7 +90,7 @@ namespace spr_manager
             //We load the whole sprite
             manager.beginInsertRows( QModelIndex(), 0, 0);
             m_spr.push_back(Sprite(this));
-            std::copy( data.begin(), data.end(), std::back_inserter(m_spr.front().m_raw) );
+            std::copy( data.begin(), data.end(), std::back_inserter(m_spr.front().getRawData()) );
             manager.endInsertRows();
             m_cntTy = eContainerType::WAN;
         }
@@ -99,7 +99,7 @@ namespace spr_manager
             //We load the whole sprite
             manager.beginInsertRows( QModelIndex(), 0, 0);
             m_spr.push_back(Sprite(this));
-            std::copy( data.begin(), data.end(), std::back_inserter(m_spr.front().m_raw) );
+            std::copy( data.begin(), data.end(), std::back_inserter(m_spr.front().getRawData()) );
             manager.endInsertRows();
             m_cntTy = eContainerType::WAT;
         }

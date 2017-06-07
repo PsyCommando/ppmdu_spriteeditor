@@ -20,34 +20,14 @@ extern const char * ElemName_AnimGroup    ;
 extern const char * ElemName_AnimFrame    ;
 
 
+//*******************************************************************
+//  AnimFrame
+//*******************************************************************
 class AnimFrame :  public BaseTreeTerminalChild<&ElemName_AnimFrame>
 {
-//    friend class UpdateNotifier;
-//    class UpdateNotifier : public QObject
-//    {
-//        Q_OBJECT
-//        AnimFrame * m_pnotifparent;
-//    public:
-//        UpdateNotifier( AnimFrame & notifparent, QObject * parent = nullptr)
-//            :QObject(parent), m_pnotifparent(&notifparent)
-//        {
-
-//        }
-
-//    public slots:
-//        void imagecached()
-//        {
-//            QMutexLocker lk(m_pnotifparent->m_mtxcache);
-//            m_pnotifparent->m_cached = qMove(m_pnotifparent->m_futimg.result());
-//        }
-
-//    signals:
-//    };
-
-
 public:
     AnimFrame( TreeElement * parent )
-        :BaseTreeTerminalChild(parent)/*,m_updatenotifier(this)*/
+        :BaseTreeTerminalChild(parent)
     {
         setNodeDataTy(eTreeElemDataType::animFrame);
     }
@@ -85,25 +65,13 @@ public:
 
     virtual QVariant nodeData(int column, int role) const override;
 
-    //Add paint method maybe??
-
-    //Updates cached image!
-//    void update();
-
-private:
-//    QPixmap BuildCachedImage(MFrame *pframe)const;
-
 private:
     fmt::animfrm_t          m_data;
     QPixmap                 m_cached;
-//    QMutex                  m_mtxcache;
-//    QFuture<QPixmap>        m_futimg;
-//    QFutureWatcher<QPixmap> m_futimgwatch;
-//    UpdateNotifier          m_updatenotifier;
 };
 
 //*******************************************************************
-//
+//  AnimSequence
 //*******************************************************************
 class AnimSequence : public BaseTreeContainerChild<&ElemName_AnimSequence, AnimFrame>
 {
@@ -148,16 +116,13 @@ public:
     inline size_t           size()const {return m_container.size();}
     inline bool             empty()const{return m_container.empty();}
 
-//    inline fmt::AnimDB::animseqid_t getID()const {return m_id;}
-//    inline void setID(fmt::AnimDB::animseqid_t id){m_id = id;}
-
     void importSeq(const fmt::AnimDB::animseq_t & seq)
     {
         removeChildrenNodes(0, nodeChildCount());
         insertChildrenNodes(0, seq.size());
 
         auto itseq = seq.begin();
-        for( fmt::frmid_t cntid = 0; cntid < seq.size(); ++cntid, ++itseq )
+        for( fmt::frmid_t cntid = 0; cntid < static_cast<fmt::frmid_t>(seq.size()); ++cntid, ++itseq )
         {
             m_container[cntid].importFrame(*itseq);
         }
@@ -173,8 +138,6 @@ public:
     }
 
     inline int getSeqLength()const {return nodeChildCount();}
-//    inline fmt::AnimDB::animseq_t & getSequence() {return m_seq;}
-//    const inline fmt::AnimDB::animseq_t & getSequence()const {return m_seq;}
 
     Sprite * parentSprite();
 
@@ -222,8 +185,7 @@ private:
 };
 
 //*******************************************************************
-//
-// Not an animation group!!!! This is just a list of animation sequences!
+//  AnimSequences
 //*******************************************************************
 class AnimSequences : public BaseTreeContainerChild<&ElemName_AnimSequences, AnimSequence>
 {
@@ -285,7 +247,7 @@ private:
 };
 
 //*******************************************************************
-//
+//  AnimGroup
 //*******************************************************************
 class AnimGroup : public BaseTreeTerminalChild<&ElemName_AnimGroup>
 {
@@ -294,10 +256,7 @@ public:
         :BaseTreeTerminalChild(parent)
     {setNodeDataTy(eTreeElemDataType::animGroup);}
 
-    int nodeColumnCount()const override
-    {
-        return 1;
-    }
+    int nodeColumnCount()const override {return 1;}
 
     QVariant nodeData(int column, int role) const override
     {
@@ -316,7 +275,6 @@ public:
 
     void importGroup(const fmt::AnimDB::animgrp_t & grp)
     {
-//        m_id = id;
         m_seqlist.reserve(grp.seqs.size());
         for( const auto & seq : grp.seqs )
             m_seqlist.push_back(seq);
@@ -332,8 +290,6 @@ public:
         dest.unk16 = unk16;
         return std::move(dest);
     }
-
-//    inline fmt::AnimDB::animgrpid_t getGrpId()const {return m_id;}
 
     inline bool operator==( const AnimGroup & other)const  {return this == &other;}
     inline bool operator!=( const AnimGroup & other)const  {return !operator==(other);}
@@ -366,13 +322,12 @@ public:
     Sprite * parentSprite();
 
 private:
-//    fmt::AnimDB::animgrpid_t        m_id;
     QList<fmt::AnimDB::animseqid_t> m_seqlist;
     uint16_t                        unk16;
 };
 
 //*******************************************************************
-//
+//  AnimTable
 //*******************************************************************
 class AnimTable : public BaseTreeContainerChild<&ElemName_AnimTable, AnimGroup>
 {
@@ -413,7 +368,8 @@ public:
         removeChildrenNodes(0, nodeChildCount());
         insertChildrenNodes(0, animgrps.size());
 
-        for( fmt::AnimDB::animgrpid_t cntgrp = 0; cntgrp < animgrps.size(); ++cntgrp )
+        for( fmt::AnimDB::animgrpid_t cntgrp = 0; cntgrp < static_cast<fmt::AnimDB::animgrpid_t>(animgrps.size());
+             ++cntgrp )
             m_container[cntgrp].importGroup(animgrps[cntgrp]);
     }
 
@@ -450,8 +406,8 @@ public:
 //        }
     }
 
-    inline int getAnimTableSize()const {return m_animtbl.size();}
-    inline fmt::AnimDB::animgrpid_t & getAnimTableEntry(int entry) {return m_animtbl[entry];}
+    inline int getAnimTableSize()const                              {return m_animtbl.size();}
+    inline fmt::AnimDB::animgrpid_t & getAnimTableEntry(int entry)  {return m_animtbl[entry];}
 
     Sprite * parentSprite();
 
@@ -471,6 +427,9 @@ public:
     }
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
+        section;
+        orientation;
+        role;
 //        if( role != Qt::DisplayRole )
 //            return QVariant();
 
