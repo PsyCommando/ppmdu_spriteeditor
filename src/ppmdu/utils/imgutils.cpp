@@ -145,30 +145,76 @@ namespace utils
     {
         static const size_t TileWidth  = 8;
         static const size_t TileHeight = 8;
-        std::vector<uint8_t> out;
-        out.reserve(src.byteCount());
-        auto itbackins = std::back_inserter(out);
+//        std::vector<uint8_t> out;
+//        out.reserve(src.byteCount());
+//        auto itbackins = std::back_inserter(out);
 
-        auto lambdacopytile = [&]( size_t begx, size_t begy, auto itout )
-        {
-            for( size_t x = begx; (x-begx) < TileWidth; ++x )
-            {
-                for(size_t y = begy; (y-begy) < TileHeight; ++y)
-                {
-                    *itout = static_cast<uint8_t>(src.pixelIndex(x,y));
-                }
-            }
-        };
+//        auto lambdacopytile = [&]( size_t begx, size_t begy, auto itout )
+//        {
+//            for( size_t x = begx; (x-begx) < TileWidth; ++x )
+//            {
+//                for(size_t y = begy; (y-begy) < TileHeight; ++y)
+//                {
+//                    *itout = static_cast<uint8_t>(src.pixelIndex(x,y));
+//                }
+//            }
+//        };
 
-        for( size_t y = 0; y < src.height(); y+=TileHeight )
+//        for( size_t y = 0; y < src.height(); y+=TileHeight )
+//        {
+//            for(size_t x = 0; x < src.width(); x+=TileWidth)
+//            {
+//                lambdacopytile(x, y, itbackins);
+//            }
+//        }
+
+//        return std::move(out);
+
+
+        const size_t imgnbtileswidth  = src.width()  / TileWidth;
+        const size_t imgnbtilesheight = src.height() / TileHeight;
+        const size_t NbPixelsPerTile  = (TileWidth * TileHeight);
+        const size_t NbPixels         = (imgnbtileswidth * imgnbtilesheight) * NbPixelsPerTile;
+        std::vector<uint8_t> out(NbPixels, 0);
+
+        //std::vector<std::vector<uint8_t>> tiles( imgnbtileswidth * imgnbtilesheight, std::vector<uint8_t>(TileWidth * TileHeight, 0) );
+
+        for( size_t y = 0; y < src.height(); ++y )
         {
-            for(size_t x = 0; x < src.width(); x+=TileWidth)
+            for( size_t x = 0; x < src.width(); ++x )
             {
-                lambdacopytile(x, y, itbackins);
+                size_t rowtile = (y / TileHeight);
+                size_t coltile = (x / TileWidth);
+                size_t tile = ((rowtile * imgnbtileswidth) + coltile);
+                size_t tileX = x % TileWidth;
+                size_t tileY = y % TileHeight;
+
+                size_t pixel = (tile * NbPixelsPerTile) + (tileX + (tileY * TileWidth));
+                Q_ASSERT(pixel < out.size());
+
+                out[pixel] = src.pixelIndex(x, y);
+                //tiles[tile][tileX + (tileY * TileWidth)] = src.pixel(x, y);
             }
         }
-
         return std::move(out);
+
+//        auto lbdReadTile = [&](size_t pos)
+//        {
+//            size_t tilelocalpixelidx = pos % (TileWidth*TileHeight); //The pixel index within only the current tile
+//            size_t curtilerow        = (tilelocalpixelidx / TileWidth);
+//            size_t readpos = curtilerow * src.width(); //pixel to read  from the source
+//            return readpos;
+//        };
+
+//        size_t pixelsz = 1; //bytes
+//        //TODO: Calculate pixel size for the format
+
+//        auto lbdReadPixel = [&](size_t pos)
+//        {
+
+//        };
+
+//        for(size_t cntby = 0; cntby < src.byteCount(); cntby +=  )
     }
 
 };

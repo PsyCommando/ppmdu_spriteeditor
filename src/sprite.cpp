@@ -243,6 +243,7 @@ void Sprite::CommitSpriteData()
 
     //Write the data
     itback = m_sprhndl.Write(itback);
+    utils::AppendPaddingBytes( itback, buffer.size(), 16, 0xAA ); //Align the whole thing on 16 bytes
     m_raw  = qMove(buffer);
 
     //Compress if needed at the end!

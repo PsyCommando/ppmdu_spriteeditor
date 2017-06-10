@@ -16,6 +16,9 @@ Description: Utilities for reading and writing WAN sprites, WAT sprites, and etc
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/sir0.hpp>
 
+//Forward declare
+class WA_SpriteHandler;
+
 namespace fmt
 {
     //Palette colors
@@ -90,18 +93,6 @@ namespace fmt
             return beg;
         }
 
-//        template<class _outit>
-//        _outit write( _outit where )const
-//        {
-//            where = utils::writeBytesFrom( ptrimgtable,    where);
-//            where = utils::writeBytesFrom( ptrpal,         where);
-//            where = utils::writeBytesFrom( unk13,          where);
-//            where = utils::writeBytesFrom( colordepth,     where);
-//            where = utils::writeBytesFrom( unk11,          where);
-//            where = utils::writeBytesFrom( nbimgs,         where);
-//            return where;
-//        }
-
         template<class _writerhelper_t>
             _writerhelper_t & write( _writerhelper_t & sir0hlpr)const
         {
@@ -113,16 +104,6 @@ namespace fmt
             sir0hlpr.writeVal(nbimgs);
             return sir0hlpr;
         }
-
-        //Utility function for pushing the pointer offsets of the pointers in this struct into the specified container
-        //Used for building the SIR0 wrapper
-//        template<class _STDCNT>
-//            uint32_t MarkPointers( uint32_t imgfmtbegoffset, _STDCNT ptrcnt )const
-//        {
-//            ptrcnt.push_back(imgfmtbegoffset); //ptrimgtable
-//            ptrcnt.push_back(imgfmtbegoffset += sizeof(uint32_t)); //ptrpal
-//            return imgfmtbegoffset;
-//        }
 
         inline bool is256Colors()const {return colordepth != 0;}
         inline void setIs256Colors(bool v) {colordepth = (v)? 1 : 0;}
@@ -138,7 +119,7 @@ namespace fmt
         uint32_t ptrefxtbl;     //pointer to the effect offsets table
         uint32_t ptranimtbl;    //pointer to the animation table
         uint16_t nbanims;       //nb of animations in the animation table
-        uint16_t unk6;          //block size?
+        uint16_t unk6;          //Usually the nb of tiles that the bigest assembled frame takes in memory
         uint16_t unk7;
         uint16_t unk8;
         uint16_t unk9;          //possibly boolean
@@ -163,21 +144,6 @@ namespace fmt
             return beg;
         }
 
-//        template<class _outit>
-//        _outit write( _outit where )const
-//        {
-//            where = utils::writeBytesFrom(ptroamtbl,  where);
-//            where = utils::writeBytesFrom(ptrefxtbl,  where);
-//            where = utils::writeBytesFrom(ptranimtbl, where);
-//            where = utils::writeBytesFrom(nbanims,    where);
-//            where = utils::writeBytesFrom(unk6,       where);
-//            where = utils::writeBytesFrom(unk7,       where);
-//            where = utils::writeBytesFrom(unk8,       where);
-//            where = utils::writeBytesFrom(unk9,       where);
-//            where = utils::writeBytesFrom(unk10,      where);
-//            return where;
-//        }
-
         template<class _writerhelper_t>
             _writerhelper_t & write( _writerhelper_t & sir0hlpr )const
         {
@@ -193,16 +159,6 @@ namespace fmt
             return sir0hlpr;
         }
 
-        //Utility function for pushing the pointer offsets of the pointers in this struct into the specified container
-        //Used for building the SIR0 wrapper
-//        template<class _STDCNT>
-//            uint32_t MarkPointers( uint32_t animfmtinfobegoffset, _STDCNT ptrcnt )const
-//        {
-//            ptrcnt.push_back(animfmtinfobegoffset); //ptroamtbl
-//            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptrefxtbl
-//            ptrcnt.push_back(animfmtinfobegoffset += sizeof(uint32_t)); //ptranimtbl
-//            return animfmtinfobegoffset;
-//        }
     };
 
 
@@ -345,9 +301,11 @@ namespace fmt
         inline bool isRotAndScalingOn()const        {return (ATTR0_RotNScaleMask & attr0) != 0;}
         inline uint16_t getYOffset()const           {return (ATTR0_YOffsetMask & attr0);}
 
+        //Before checking VFlip and HFlip, make sure RnS isn't on!!!
         inline bool isVFlip()const                  {return (ATTR1_VFlipMask & attr1) != 0;}
         inline bool isHFlip()const                  {return (ATTR1_HFlipMask & attr1) != 0;}
         inline bool islast()const                   {return (ATTR1_IsLastMask & attr1) != 0;}
+
         inline uint8_t getRnSParam()const           {return static_cast<uint8_t>((ATTR1_RotNScalePrm & attr1) >> 9);}
         inline uint16_t getXOffset()const           {return (ATTR1_XOffsetMask & attr1);}
 
@@ -366,17 +324,17 @@ namespace fmt
         }
 
 
-        inline void setColorPal256  (bool bis256)   {attr0 = (bis256)? (ATTR0_ColPalMask | attr0) : (attr0 ^ ATTR0_ColPalMask);}
-        inline void setMosaicOn     (bool bon)      {attr0 = (bon)? (ATTR0_MosaicMask | attr0) : (attr0 ^ ATTR0_MosaicMask);}
+        inline void setColorPal256  (bool bis256)   {attr0 = (bis256)? (ATTR0_ColPalMask | attr0) : (attr0 & ~ATTR0_ColPalMask);}
+        inline void setMosaicOn     (bool bon)      {attr0 = (bon)? (ATTR0_MosaicMask | attr0) : (attr0 & ~ATTR0_MosaicMask);}
         inline void setObjMode      (eObjMode mode) {attr0 = ((static_cast<uint16_t>(mode) | attr0) & ATTR0_ObjModeMask);}
-        inline void setDisabled     (bool bon)      {attr0 = (bon)? (ATTR0_DblSzDisabled | attr0) : (attr0 ^ ATTR0_DblSzDisabled);}
+        inline void setDisabled     (bool bon)      {attr0 = (bon)? (ATTR0_DblSzDisabled | attr0) : (attr0 & ~ATTR0_DblSzDisabled);}
         inline void setDoubleSize   (bool bon)      {setDisabled(bon);}
-        inline void setRotAndScaling(bool bon)      {attr0 = (bon)? (ATTR0_RotNScaleMask | attr0) : (attr0 ^ ATTR0_RotNScaleMask);}
+        inline void setRotAndScaling(bool bon)      {attr0 = (bon)? (ATTR0_RotNScaleMask | attr0) : (attr0 & ~ATTR0_RotNScaleMask);}
         inline void setYOffset      (uint16_t y)    {attr0 = (attr0 & ATTR0_FlagBitsMask) | (ATTR0_YOffsetMask & y);}
 
-        inline void setVFlip        (bool bon)      {attr1 = (bon)? (ATTR1_VFlipMask | attr1) : (attr1 ^ ATTR1_VFlipMask);}
-        inline void setHFlip        (bool bon)      {attr1 = (bon)? (ATTR1_HFlipMask | attr1) : (attr1 ^ ATTR1_HFlipMask);}
-        inline void setLast         (bool blast)    {attr1 = (blast)? (ATTR1_IsLastMask | attr1) : (attr1 ^ ATTR1_IsLastMask);}
+        inline void setVFlip        (bool bon)      {attr1 = (bon)? (ATTR1_VFlipMask | attr1) : (attr1 & ~ATTR1_VFlipMask);}
+        inline void setHFlip        (bool bon)      {attr1 = (bon)? (ATTR1_HFlipMask | attr1) : (attr1 & ~ATTR1_HFlipMask);}
+        inline void setLast         (bool blast)    {attr1 = (blast)? (ATTR1_IsLastMask | attr1) : (attr1 & ~ATTR1_IsLastMask);}
         inline void setRnSParam     (uint8_t param) {attr1 = (attr1 & ~ATTR1_RotNScalePrm) | ((param << 9) & ATTR1_RotNScalePrm);}
         inline void setXOffset      (uint16_t x)    {attr1 = (attr1 & ATTR1_FlagBitsMask) | (ATTR1_XOffsetMask & x);}
 
@@ -433,19 +391,6 @@ namespace fmt
             beg = utils::readBytesAs(beg, end, shadowyoffs);
             return beg;
         }
-
-//        template<class _outit>
-//            _outit write(_outit where)const
-//        {
-//            where = utils::writeBytesFrom(duration,    where);
-//            where = utils::writeBytesFrom(flag,        where);
-//            where = utils::writeBytesFrom(frmidx,      where);
-//            where = utils::writeBytesFrom(xoffs,       where);
-//            where = utils::writeBytesFrom(yoffs,       where);
-//            where = utils::writeBytesFrom(shadowxoffs, where);
-//            where = utils::writeBytesFrom(shadowyoffs, where);
-//            return where;
-//        }
 
         template<class HELPR_T>
             HELPR_T & write(HELPR_T & sir0hlpr)const
@@ -530,7 +475,7 @@ namespace fmt
 
             inline bool isnull()const
             {
-                return src == 0 && len == 0 && unk14 == 0 && unk2 == 0;
+                return src == 0 && len == 0 /*&& unk14 == 0 && unk2 == 0*/;
             }
         };
 
@@ -684,10 +629,22 @@ namespace fmt
         {
             for(const frm_t & frm : m_frames)
             {
+                pointers.push_back(hlpr.getCurOffset()); //Mark the start of the frame
+                //Make sure last step is set right
+                int nbparts = frm.size();
+                int cntfrm  = 0;
+
                 for(const step_t & step : frm)
                 {
-                    pointers.push_back(hlpr.getCurOffset());
-                    step.writeWHelpr(hlpr);
+                    if(cntfrm == (nbparts - 1))
+                    {
+                        step_t stepcpy = step;
+                        stepcpy.setLast(true);          //Mark the last frame
+                        stepcpy.writeWHelpr(hlpr);
+                    }
+                    else
+                        step.writeWHelpr(hlpr);
+                    ++cntfrm;
                 }
             }
         }
@@ -749,7 +706,7 @@ namespace fmt
         }
 
         template<class _init>
-            void ParseAFrame(_init itsrcbeg, _init itsrcend, uint32_t frmoff)
+            void ParseAFrame(_init itsrcbeg, _init itsrcend, uint32_t frmoff, uint32_t nextfrmoff)
         {
             using namespace std;
             if(frmoff == 0)
@@ -763,7 +720,9 @@ namespace fmt
             {
                 itstep = curstep.read( itstep, itsrcend);
                 curfrm.push_back(move(curstep));
-            }while( !curstep.islast() && itsrcbeg != itsrcend );
+                frmoff+= step_t::FRAME_LEN;
+            }while( (!curstep.islast() || frmoff < nextfrmoff ) && //Added extra check to make sure if the "islast" flag isn't set we won't read the whole file..
+                    itsrcbeg != itsrcend );
             m_frames.push_back(std::move(curfrm));
         }
 
@@ -783,6 +742,9 @@ namespace fmt
             {
                 uint32_t pixsrc = utils::readBytesAs<uint32_t>(itcmptable, itsrcend);
                 len             = utils::readBytesAs<uint16_t>(itcmptable, itsrcend);
+                if(pixsrc == 0 && len == 0)
+                    break;
+
                 curimg.unk14    = utils::readBytesAs<uint16_t>(itcmptable, itsrcend);
                 curimg.unk2     = utils::readBytesAs<uint32_t>(itcmptable, itsrcend);
 
@@ -802,6 +764,10 @@ namespace fmt
             void ParseImgData( _init itsrcbeg, _init itsrcend, const imgfmtinfo & imginf, const animfmtinfo & animinf  )
         {
             using namespace std;
+            uint32_t endFrmTable = CalculateFrameRefTblEnd(itsrcbeg, itsrcend, animinf);
+            uint32_t endFrmParts = CalculateFramePartsEnd(itsrcbeg, itsrcend, animinf);
+            assert(endFrmTable != 0);   //Shouldn't happen
+            assert(endFrmParts != 0);   //Shouldn't happen
 
             if( imginf.ptrimgtable != 0 )
             {
@@ -824,17 +790,103 @@ namespace fmt
 
             if( animinf.ptroamtbl != 0 )
             {
+                if(endFrmTable == 0 || endFrmParts == 0)
+                    throw std::runtime_error("ImageDB::ParseImgData(): End of frame parts, or frame refs table not found! Can't validate.");
+
                 //Grab the frames
-                auto itfrmtbl = next( itsrcbeg, animinf.ptroamtbl );
-                const size_t nbfrm  = (animinf.ptrefxtbl - animinf.ptroamtbl) / sizeof(uint32_t);
+                auto itfrmtbl = next(itsrcbeg, animinf.ptroamtbl);
+                const size_t nbfrm  = (endFrmTable - animinf.ptroamtbl) / sizeof(uint32_t);
 
                 for( size_t cntfrm = 0; cntfrm < nbfrm && itfrmtbl != itsrcend; ++cntfrm )
                 {
-                    uint32_t curptr = utils::readBytesAs<uint32_t>(itfrmtbl, itsrcend);
+                    //Grab the current and peek at the next one!
+                    uint32_t curptr  = utils::readBytesAs<uint32_t>(itfrmtbl, itsrcend);
+                    uint32_t nextptr = 0;
+
+                    if( itfrmtbl != itsrcend && (cntfrm + 1) < nbfrm )
+                        utils::readBytesAs<uint32_t>(itfrmtbl, itsrcend, nextptr); //Don't assign the iterator, so we actually process this next turn
+                    else
+                        nextptr = endFrmParts; //If we're at the last entry, just use the end of the table as nextptr
+
                     if( curptr != 0 )
-                        ParseAFrame(itsrcbeg, itsrcend, curptr);
+                        ParseAFrame(itsrcbeg, itsrcend, curptr, nextptr);
                 }
             }
+        }
+
+        /*
+            GetFirstNonNullAnimSequenceRefTblEntry
+                Search the animation table for an animation linking to the first animation sequence pointer in the animation sequence ref table, and returns it.
+                If it can't find one it'll return 0.
+        */
+        template<class _init>
+            uint32_t GetFirstNonNullAnimSequenceRefTblEntry(_init itsrcbeg, _init itsrcend, const animfmtinfo & animinf)
+        {
+            //In this case, we have to improvise and find the start of the Animation Sequence table.
+            auto itanim = std::next(itsrcbeg, animinf.ptranimtbl);
+            //Find the first non-null animation
+            for( size_t cntanim = 0; cntanim < animinf.nbanims && itanim != itsrcend; ++cntanim )
+            {
+                uint32_t seqlistptr = utils::readBytesAs<uint32_t>(itanim, itsrcend);
+                if(seqlistptr != 0)
+                    return seqlistptr;  //Return the offset of the first sequence list we have. That's the start of the table!
+                std::advance(itanim, 4); //skip the rest of the entry
+            }
+            //assert(false); //This shouldn't happen
+            return 0; //This shouldn't ever happen
+        }
+
+        /*
+            CalculateFrameRefTblEnd
+                Try to find the offset of the end of the Frame references table.
+                Usually, its the offset of the effect offset table, but it works only for character sprites.
+                If it can't get the effect offset table's position, it'll try to find the start of the next
+                chunk after, aka the animation sequence ref table.
+                If it can't find that either, it'll return the start of the animation table.
+        */
+        template<class _init>
+            uint32_t CalculateFrameRefTblEnd(_init itsrcbeg, _init itsrcend, const animfmtinfo & animinf)
+        {
+            if( animinf.ptrefxtbl != 0 )
+                return animinf.ptrefxtbl;
+            else
+            {
+                uint32_t seqref = GetFirstNonNullAnimSequenceRefTblEntry(itsrcbeg, itsrcend, animinf);
+                if(seqref != 0)
+                    return seqref;
+            }
+            //If everything else fails, return the offset of the anim table
+            return animinf.ptranimtbl;
+        }
+
+        /*
+            CalculateFramePartsEnd
+                Find the offset of the end of the frame part lists chunk.
+                Its usually the start of the animation frames lists chunk.
+                If it can't find that, it'll return 0!
+        */
+        template<class _init>
+            uint32_t CalculateFramePartsEnd(_init itsrcbeg, _init itsrcend, const animfmtinfo & animinf)
+        {
+            //We want the address of the first animation sequence's frame entry
+            uint32_t begAniSeq = 0;
+
+            uint32_t seqref = GetFirstNonNullAnimSequenceRefTblEntry(itsrcbeg, itsrcend, animinf);
+            if(seqref != 0)
+            {
+                auto itseqref = std::next(itsrcbeg, seqref);
+                if(itseqref != itsrcend)
+                {
+                    begAniSeq = utils::readBytesAs<uint32_t>(itseqref, itsrcend);
+                }
+            }
+//            else
+//            {
+//                assert(false); //Should never happen!
+//                //Otherwise we'd want to get the start of the compressed images block..
+//            }
+
+            return begAniSeq;
         }
 
     };
@@ -874,7 +926,7 @@ namespace fmt
         animtbl_t     m_animtbl;          //A table of pointers to the animation group associated to an animation
         efxoffsets_t  m_efxoffsets;         //A table of 16bits X,Y coordinates indicating where on the sprite some effects are drawn!
 
-
+    public:
         template<class _writerhelper_t> void WriteEffectsTbl( _writerhelper_t & sir0hlpr )const
         {
             for( const effectoffset & ofs : m_efxoffsets )
@@ -917,17 +969,28 @@ namespace fmt
              * grpentry groups[];
             */
 
+            size_t cntgrp = 0;
             //Writing the first table!
             for( const auto & grp : m_animgrps )
             {
-                ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(), grp.second.seqs.size())); //add to the list of group array pointers + sizes
+                //fill empty groups
+                for( ; cntgrp <  m_animtbl.size() && m_animtbl[cntgrp] == NullGrp; ++cntgrp )
+                {
+                    //For empty groups, we have to insert 4 bytes of 0!
+                    sir0hlpr.writePtr(static_cast<uint32_t>(0));
+                }
 
+                //Then we can put the data for our valid group!
+                ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(),
+                                                     grp.second.seqs.size())); //add to the list of group array pointers + sizes
                 for( const auto & seq : grp.second.seqs )
                 {
                     if(seq >= ptrseqs.size())
                         throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
                     sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
                 }
+
+                ++cntgrp;
             }
         }
 
@@ -1067,7 +1130,6 @@ namespace fmt
             }
         }
 
-
         template<class _init>
             void ParseEfxOffsets(_init itsrcbeg, _init itsrcend, const animfmtinfo & animinf, uint32_t & offsbegefx, uint32_t & offsbeganimseqtbl)
         {
@@ -1120,19 +1182,19 @@ namespace fmt
         template<class _outit>
             _outit Write( _outit itout )
         {
-            SIR0hdr                                 hdr;
-            std::vector<uint8_t>                    buffer;
+            SIR0hdr                                 hdr;                    //SIR0 wrapper header that will be written later
+            std::vector<uint8_t>                    buffer;                 //Output buffer, contains content that will be written to file
             auto                                    itbackins = std::back_inserter(buffer);
-            SIR0_WriterHelper<decltype(itbackins)>  sw(itbackins, hdr);
-            std::vector<uint32_t>   imgptrs;
-            std::vector<uint32_t>   frameptrs;
-            std::vector<uint32_t>   ptrseqs;
-            std::vector<std::pair<uint32_t,size_t>>   ptrgrps;
-            uint32_t                offspal = 0;
-            imgfmtinfo              imginf  = m_imgfmt;
-            animfmtinfo             amiminf = m_animfmt;
-            uint32_t                ptraniminf = 0;
-            uint32_t                ptrimginf = 0;
+            SIR0_WriterHelper<decltype(itbackins)>  sw(itbackins, hdr);     //Helper for handling marking pointer offsets automatically for the SIR0 wraper
+            std::vector<uint32_t>                   imgptrs;                //Pointers to the individual compressed image entries, for building the img ptr table
+            std::vector<uint32_t>                   frameptrs;              //Pointers to the individual frames entries for building the frame ptr table
+            std::vector<uint32_t>                   ptrseqs;                //Pointers to individual animations sequences for building sequence ptr table
+            std::vector<std::pair<uint32_t,size_t>> ptrgrps;                //Pointers to anim groups for assembling the anim group table
+            uint32_t                                offspal = 0;            //Offset of the palette info chunk right after the palette data
+            imgfmtinfo                              imginf  = m_imgfmt;     //img info chunk object
+            animfmtinfo                             amiminf = m_animfmt;    //anim info chunk object
+            uint32_t                                ptraniminf = 0;         //pointer to the img info chunk, for the sprite header
+            uint32_t                                ptrimginf = 0;          //pointer to the anim info chunk, for the sprite header
 
             //#1. Write frame assembly
             m_images.WriteFrames(sw, frameptrs);
@@ -1140,7 +1202,7 @@ namespace fmt
             //#2. Write animation sequences
             m_animtions.WriteSequences(sw, ptrseqs);
 
-            //padding
+            //Need to pad anim sequences on 4 bytes
             sw.putPadding(4, 0xAA);
 
             //#3. Write compressed images
@@ -1148,51 +1210,58 @@ namespace fmt
 
             //#4. Write palette
             m_images.WritePalette(sw, offspal);
-            imginf.ptrpal = offspal;                        //mark offset of palette data for imgfmt chunk
+            imginf.ptrpal = offspal;                            //mark offset of palette data for imgfmt chunk
 
             //#5. Write frame pointer table
-            amiminf.ptroamtbl = sw.getCurOffset();                    //mark offset of effect offset table for animfmt chunk
+            amiminf.ptroamtbl = sw.getCurOffset();              //mark offset of frame table for animfmt chunk
             for(const auto & ptr : frameptrs)
                 sw.writePtr(ptr);
 
             //#6. Write effect offset table
-            amiminf.ptrefxtbl = sw.getCurOffset();                    //mark offset of frame table for animfmt chunk
-            m_animtions.WriteEffectsTbl(sw);
+            if( !m_animtions.m_efxoffsets.empty() )
+            {
+                amiminf.ptrefxtbl = sw.getCurOffset();          //mark offset of effect offset table for animfmt chunk
+                m_animtions.WriteEffectsTbl(sw);
+            }
+            else
+                amiminf.ptrefxtbl = 0;                          //Don't write an effect table at all in this case!
 
             //#7. Write animation groups sequences array table
             m_animtions.WriteAnimGroups(sw, ptrseqs, ptrgrps);
 
             //#8. Write anim group table
-            amiminf.ptranimtbl  = sw.getCurOffset();                      //mark offset of anim table for animfmt chunk
+            amiminf.ptranimtbl  = sw.getCurOffset();            //mark offset of anim table for animfmt chunk
             amiminf.nbanims     = m_animtions.m_animtbl.size(); //mark nb animations for animfmt chunk
             m_animtions.WriteAnimTbl(sw, ptrgrps);
 
             //#8. Write image pointer table
-            imginf.ptrimgtable = sw.getCurOffset();                   //mark chunk position for imgfmt chunk
-            imginf.nbimgs      = m_images.m_images.size();  //mark nb images for imgfmt chunk
+            imginf.ptrimgtable = sw.getCurOffset();             //mark chunk position for imgfmt chunk
+            imginf.nbimgs      = m_images.m_images.size();      //mark nb images for imgfmt chunk
             for(const auto & ptr : imgptrs)
                 sw.writePtr(ptr);
 
             //#9. Write anim info chunk
-            ptraniminf = sw.getCurOffset();   //mark chunk position for wan header
+            ptraniminf = sw.getCurOffset();                     //mark chunk position for wan header
             WriteAnimInfo(sw, amiminf);
 
             //#10.Write image info chunk
-            ptrimginf = sw.getCurOffset();    //mark chunk position for wan header
-            WriteImageInfo(sw, imginf);
+            if( !m_images.m_frames.empty() )
+            {
+                ptrimginf = sw.getCurOffset();                  //mark chunk position for wan header
+                WriteImageInfo(sw, imginf);
+            }
 
             //#11.Write wan header
-            hdr.ptrsub = sw.getCurOffset(); //mark header pos in sir0 header
-
+            hdr.ptrsub = sw.getCurOffset();                     //mark header pos in sir0 header
             sw.writePtr(ptraniminf);
             sw.writePtr(ptrimginf);
             sw.writeVal(static_cast<uint16_t>(m_sprty));
-            sw.writeVal(static_cast<uint16_t>(0));
+            sw.writeVal(m_unk12);
 
-            //padding
+            //Padding to align the encoded ptr offset table on 16 bytes
             sw.putPadding(16, 0xAA);
 
-            hdr.ptrtranslatetbl = sw.getCurOffset(); //mark ptr offset list pos in sir0 header
+            hdr.ptrtranslatetbl = sw.getCurOffset();            //mark ptr offset list pos in sir0 header
 
             //#12.Write out buffer with SIR0 header and pointerlist!
             //Generate and track SIR0 pointer list!!!
@@ -1224,17 +1293,13 @@ namespace fmt
         inline uint16_t            & getUnk12()                                {return m_unk12;}
 
     private:
-
-        //pointer to the sprite header
-        //uint32_t    m_ptrsprhdr;
-
         //Sprite Header
         uint32_t    m_offsetAnimInfo;
         uint32_t    m_offsetImgInfo;
         eSpriteType m_sprty;
         uint16_t    m_unk12;
 
-        //
+        //Info chunks
         imgfmtinfo  m_imgfmt;
         animfmtinfo m_animfmt;
 
@@ -1266,7 +1331,7 @@ namespace fmt
             if( m_offsetAnimInfo != 0 )
                 m_animfmt.read(std::next( itsrcbeg, m_offsetAnimInfo ), itend); //Parse anim info chunk
 
-            if( m_offsetImgInfo != 0 )
+            if( m_offsetImgInfo != 0 ) //Effects often have no image data
                 m_imgfmt.read(std::next( itsrcbeg, m_offsetImgInfo ), itend);
         }
 
@@ -1285,21 +1350,10 @@ namespace fmt
             m_animtions.ParseAnimTbl(itbeg, itend, m_animfmt, begseqptrtbl);
             if(m_animfmt.ptrefxtbl != 0 && begseqptrtbl != std::numeric_limits<uint32_t>::max())
             {
-                //1. Calculate effect table length/end
+                //Calculate effect table length/end
                 int nbentries = (begseqptrtbl - m_animfmt.ptrefxtbl) / sizeof(uint16_t);
                 m_efxoffsets.reserve(nbentries);
                 m_animtions.ParseEfxOffsets(itbeg, itend, m_animfmt, m_animfmt.ptrefxtbl, begseqptrtbl);
-
-//                auto itefxtbl    = std::next(itbeg, m_animfmt.ptrefxtbl);
-//                auto itendefxtbl = std::next(itbeg, begseqptrtbl);
-
-//                m_efxoffsets.reserve(nbentries);
-//                for( size_t cntefx = 0; cntefx < nbentries; ++cntefx )
-//                {
-//                    //read the coordinates
-//                    m_efxoffsets.push_back(utils::readBytesAs<uint16_t>(itefxtbl, itendefxtbl));
-//                    m_efxoffsets.push_back(utils::readBytesAs<uint16_t>(itefxtbl, itendefxtbl));
-//                }
             }
         }
 
