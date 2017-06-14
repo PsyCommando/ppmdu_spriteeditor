@@ -251,7 +251,7 @@ public:
     QVariant        nodeData(int column, int role) const override;
     virtual Sprite  *parentSprite()override;
 
-    //Don't allow that, since it would change the sprite type..
+    //Don't allow that, since we have static childs
     inline bool insertChildrenNodes(int, int)override {return false;}
     inline bool removeChildrenNodes(int, int)override {return false;}
 

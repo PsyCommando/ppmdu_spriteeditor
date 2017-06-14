@@ -118,8 +118,8 @@ public:
 
     void importSeq(const fmt::AnimDB::animseq_t & seq)
     {
-        removeChildrenNodes(0, nodeChildCount());
-        insertChildrenNodes(0, seq.size());
+        getModel().removeRows(0, nodeChildCount());
+        getModel().insertRows(0, seq.size());
 
         auto itseq = seq.begin();
         for( fmt::frmid_t cntid = 0; cntid < static_cast<fmt::frmid_t>(seq.size()); ++cntid, ++itseq )
@@ -365,8 +365,8 @@ public:
     void importAnimationGroups( fmt::AnimDB::animgrptbl_t & animgrps )
     {
         m_container.reserve(animgrps.size());
-        removeChildrenNodes(0, nodeChildCount());
-        insertChildrenNodes(0, animgrps.size());
+        getModel()->removeRows(0, nodeChildCount());
+        getModel()->insertRows(0, animgrps.size());
 
         for( fmt::AnimDB::animgrpid_t cntgrp = 0; cntgrp < static_cast<fmt::AnimDB::animgrpid_t>(animgrps.size());
              ++cntgrp )
@@ -402,7 +402,7 @@ public:
 //        {
 //            AnimGroup   * pchild = static_cast<AnimGroup*>(child(cntchild));
 //            if( pchild && pchild->getGrpId() == id )
-                 removeChildrenNodes(id,1);
+                getModel()->removeRow(id);
 //        }
     }
 

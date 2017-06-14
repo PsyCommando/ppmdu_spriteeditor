@@ -75,13 +75,13 @@ AnimSequence *AnimSequences::getSequenceByID(fmt::AnimDB::animseqid_t id)
 
 void AnimSequences::removeSequence(fmt::AnimDB::animseqid_t id)
 {
-    removeChildrenNodes(id,1);
+    getModel()->removeRow(id);
 }
 
 void AnimSequences::importSequences(const fmt::AnimDB::animseqtbl_t &src)
 {
-    removeChildrenNodes(0, nodeChildCount());
-    insertChildrenNodes(0, src.size());
+    getModel()->removeRows(0, nodeChildCount());
+    getModel()->insertRows(0, src.size());
 
     for( fmt::AnimDB::animseqid_t cntid = 0; cntid < src.size(); ++cntid )
         m_container[cntid].importSeq(src.at(cntid));

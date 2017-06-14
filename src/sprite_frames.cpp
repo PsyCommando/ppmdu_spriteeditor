@@ -2,6 +2,9 @@
 #include <src/sprite_frames.hpp>
 #include <src/sprite.h>
 
+
+const QString MinusOneImgRes(":/resources/imgs/minus_one.png");
+
 //*******************************************************************
 //  MFramePart
 //*******************************************************************
@@ -10,6 +13,12 @@ MFramePart::MFramePart(TreeElement *parent)
     :partparent_t(parent, Qt::ItemFlag::ItemIsEditable | DEFFlags())
 {
     setNodeDataTy(eTreeElemDataType::framepart);
+    m_data.attr0 = 0;
+    m_data.attr1 = 0;
+    m_data.attr2 = 0;
+    m_data.setXOffset(255);
+    m_data.setYOffset(255);
+    m_data.setFrameIndex(-1);
 }
 
 MFramePart::MFramePart(TreeElement *parent, const fmt::step_t &part)
@@ -25,8 +34,8 @@ MFramePart::~MFramePart()
 bool MFramePart::operator==(const MFramePart &other) const
 {
     return m_data.attr0 == other.m_data.attr0 &&
-            m_data.attr1 == other.m_data.attr1 &&
-            m_data.attr2 == other.m_data.attr2;
+           m_data.attr1 == other.m_data.attr1 &&
+           m_data.attr2 == other.m_data.attr2;
 }
 
 bool MFramePart::operator!=(const MFramePart &other) const
@@ -65,13 +74,15 @@ QVariant MFramePart::nodeData(int column, int role) const
     {
     case eFramesColumnsType::Preview:       return dataImgPreview(role);
     case eFramesColumnsType::ImgID:         return dataImgId(role);
+    case eFramesColumnsType::TileNum:       return dataTileNum(role);
+    case eFramesColumnsType::PaletteID:     return dataPaletteID(role);
     case eFramesColumnsType::Unk0:          return dataUnk0(role);
     case eFramesColumnsType::Offset:        return dataOffset(role);
     case eFramesColumnsType::Flip:          return dataFlip(role);
     case eFramesColumnsType::RotNScaling:   return dataRotNScaling(role);
-    case eFramesColumnsType::PaletteID:     return dataPaletteID(role);
+    case eFramesColumnsType::Mosaic:        return dataMosaic(role);
+    case eFramesColumnsType::Mode:          return dataMode(role);
     case eFramesColumnsType::Priority:      return dataPriority(role);
-    case eFramesColumnsType::CharName:      return dataCharName(role);
 
     case eFramesColumnsType::direct_VFlip:   return dataDirectVFlip(role);
     case eFramesColumnsType::direct_HFlip:   return dataDirectHFlip(role);
@@ -237,7 +248,7 @@ QVariant MFramePart::dataImgId(int role) const
     {
         QSize sz = calcTextSize(dataImgId(Qt::DisplayRole).toString());
         sz.setWidth( sz.width() + 150 );
-        sz.setHeight(sz.height() + 72);
+        //sz.setHeight(sz.height() + 72);
         return sz;
     }
     return QVariant();
@@ -318,10 +329,15 @@ QVariant MFramePart::dataFlip(int role) const
     if(role == Qt::DisplayRole)
     {
         QString flipval;
-        if(m_data.isVFlip())
-            flipval += "V ";
-        if(m_data.isHFlip())
-            flipval += "H ";
+        if( !m_data.isVFlip() && !m_data.isHFlip() )
+            flipval = "Not flipped";
+        else
+        {
+            if(m_data.isVFlip())
+                flipval += "V ";
+            if(m_data.isHFlip())
+                flipval += "H ";
+        }
         return flipval;
     }
     else if(role == Qt::EditRole)
@@ -423,7 +439,7 @@ QVariant MFramePart::dataPriority(int role) const
     return QVariant();
 }
 
-QVariant MFramePart::dataCharName(int role) const
+QVariant MFramePart::dataTileNum(int role) const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
@@ -431,7 +447,41 @@ QVariant MFramePart::dataCharName(int role) const
     }
     else if(role == Qt::SizeHintRole)
     {
-        return calcTextSize(dataCharName(Qt::DisplayRole).toString());
+        return calcTextSize(dataTileNum(Qt::DisplayRole).toString());
+    }
+    return QVariant();
+}
+
+QVariant MFramePart::dataMosaic(int role) const
+{
+    if(role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        return m_data.isMosaicOn();
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        QSize sz = calcTextSize(dataMosaic(Qt::DisplayRole).toString());
+        sz.setWidth(sz.width() + 20);
+        return sz;
+    }
+    return QVariant();
+}
+
+QVariant MFramePart::dataMode(int role) const
+{
+    if(role == Qt::DisplayRole)
+    {
+        return MFrameDelegate::modeNames().at(static_cast<int>(m_data.getObjMode()));
+    }
+    else if(role == Qt::EditRole)
+    {
+        return static_cast<int>(m_data.getObjMode());
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        QSize sz = calcTextSize(dataMode(Qt::DisplayRole).toString());
+        sz.setWidth(sz.width() + 60);
+        return sz;
     }
     return QVariant();
 }
@@ -441,13 +491,13 @@ QVariant MFramePart::dataCharName(int role) const
 //  MFrameDelegate
 //=====================================================================================
 MFrameDelegate::MFrameDelegate(const MFrameDelegate & cp)
-    :QStyledItemDelegate()
+    :QStyledItemDelegate(), m_minusone(MinusOneImgRes)
 {
     operator=(cp);
 }
 
 MFrameDelegate::MFrameDelegate(MFrameDelegate && mv)
-    :QStyledItemDelegate()
+    :QStyledItemDelegate(), m_minusone(MinusOneImgRes)
 {
     operator=(mv);
 }
@@ -465,6 +515,11 @@ MFrameDelegate & MFrameDelegate::operator=(MFrameDelegate && mv)
     return *this;
 }
 
+MFrameDelegate::MFrameDelegate(MFrame *frm, QObject *parent)
+    :m_pfrm(frm), QStyledItemDelegate(parent), m_minusone(MinusOneImgRes)
+{
+}
+
 QSize MFrameDelegate::sizeHint( const QStyleOptionViewItem & /*option*/, const QModelIndex & index ) const
 {
     TreeElement * pnode = static_cast<TreeElement *>(index.internalPointer());
@@ -474,10 +529,6 @@ QSize MFrameDelegate::sizeHint( const QStyleOptionViewItem & /*option*/, const Q
         return QSize();
 }
 
-MFrameDelegate::MFrameDelegate(MFrame *frm, QObject *parent)
-    :m_pfrm(frm), QStyledItemDelegate(parent)
-{
-}
 
 MFrameDelegate::~MFrameDelegate()
 {
@@ -491,6 +542,12 @@ QWidget *MFrameDelegate::createEditor(QWidget *parent, const QStyleOptionViewIte
     case eFramesColumnsType::ImgID:
         pedit = makeImgSelect(parent, index.row());
     break;
+    case eFramesColumnsType::TileNum:
+        pedit = makeTileIdSelect(parent, index.row());
+    break;
+    case eFramesColumnsType::PaletteID:
+        pedit = makePaletteIDSelect(parent, index.row());
+    break;
     case eFramesColumnsType::Offset:
         pedit = makeOffsetSelect(parent, index.row());
     break;
@@ -500,20 +557,18 @@ QWidget *MFrameDelegate::createEditor(QWidget *parent, const QStyleOptionViewIte
     case eFramesColumnsType::RotNScaling:
         pedit = makeRotNScalingSelect(parent, index.row());
     break;
-    case eFramesColumnsType::PaletteID:
-        pedit = makePaletteIDSelect(parent, index.row());
+    case eFramesColumnsType::Mode:
+        pedit = makeModeSelect(parent, index.row());
     break;
     case eFramesColumnsType::Priority:
         pedit = makePrioritySelect(parent, index.row());
     break;
-    case eFramesColumnsType::CharName:
-        pedit = makeTileIdSelect(parent, index.row());
-    break;
 
-        //Undefined cases
+    //Undefined cases
     //case eFramesColumnsType::Preview:
     //case eFramesColumnsType::TotalSize:
     //case eFramesColumnsType::Unk0:
+    //case eFramesColumnsType::Mosaic:
     default:
         //nothing here!
         return QStyledItemDelegate::createEditor(parent,option,index);
@@ -608,6 +663,13 @@ void MFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index) co
             ppalid->setValue(part->getPalNb());
             break;
         }
+    case eFramesColumnsType::Mode:
+        {
+            QComboBox *pobjmode = static_cast<QComboBox*>(editor);
+            Q_ASSERT(pobjmode);
+            pobjmode->setCurrentIndex(static_cast<int>(part->getObjMode()));
+            break;
+        }
     case eFramesColumnsType::Priority:
         {
             QComboBox *pprio = static_cast<QComboBox*>(editor);
@@ -615,7 +677,7 @@ void MFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index) co
             pprio->setCurrentIndex(part->getPriority());
             break;
         }
-    case eFramesColumnsType::CharName:
+    case eFramesColumnsType::TileNum:
         {
             QSpinBox *ptid = static_cast<QSpinBox*>(editor);
             Q_ASSERT(ptid);
@@ -710,6 +772,13 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
             model->setData(index, ppalid->value(), Qt::EditRole);
             break;
         }
+    case eFramesColumnsType::Mode:
+        {
+            QComboBox *pobjmode = static_cast<QComboBox*>(editor);
+            Q_ASSERT(pobjmode);
+            model->setData(index, pobjmode->currentIndex(), Qt::EditRole);
+            break;
+        }
     case eFramesColumnsType::Priority:
         {
             QComboBox *pprio = static_cast<QComboBox*>(editor);
@@ -717,7 +786,7 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
             model->setData(index, pprio->currentIndex(), Qt::EditRole);
             break;
         }
-    case eFramesColumnsType::CharName:
+    case eFramesColumnsType::TileNum:
         {
             QSpinBox *ptid = static_cast<QSpinBox*>(editor);
             Q_ASSERT(ptid);
@@ -747,57 +816,30 @@ void MFrameDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionVie
     editor->setGeometry(option.rect);
 }
 
-
-
-
 QWidget *MFrameDelegate::makeImgSelect(QWidget *parent, int /*row*/) const
 {
-    //#TODO: Replace with popup dialog!
-    //Make a combo box or a button to pick an image
-    //QFrame      *frm        = new QFrame(parent);
-    //QBoxLayout  *vertlayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, frm);
-    QComboBox   *imglstb    = new QComboBox(parent/*frm*/);
-    //QPushButton *dupbtn     = new QPushButton(QString(tr("Prev")), frm);
-    //imglstb->setObjectName(ImgSelCmbBoxName());
-    //dupbtn-> setObjectName(ImgSelBtnName());
-    //dupbtn->setCheckable(true);
-    //        connect( imglstb, SIGNAL(currentIndexChanged(int)), this,   SLOT(selectedImageChanged(int)) );
-    //        connect( dupbtn,  SIGNAL(toggled(bool)),            this,   SLOT(selectedImageToggledMinOne(bool)) );
-
-    //connect( dupbtn, &QPushButton::toggled, imglstb, &QComboBox::setDisabled );
-    //imglstb->setModel(m_pfrm->parentSprite()->getImages().getImageSelectModel());
-    ImageContainer * pcnt = &(m_pfrm->parentSprite()->getImages());
-    imglstb->
+    QComboBox      *imglstb = new QComboBox(parent);
+    ImageContainer * pcnt   = &(m_pfrm->parentSprite()->getImages());
     imglstb->setIconSize( QSize(32,32) );
+    imglstb->setStyleSheet(pcnt->ComboBoxStyleSheet());
+
+    //Fill the combobox!
 
     //Add nodraw frame
-    imglstb->addItem("ID:-1 No Draw Frame");
+    imglstb->addItem( QPixmap::fromImage(m_minusone), "ID:-1 No Draw Frame", QVariant(-1)); //Set user data to -1
+    //Add actual images!
     for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
     {
         Image* pimg = pcnt->getImage(cntimg);
         QPixmap pmap = QPixmap::fromImage(pimg->imgDataCondensed(Qt::DecorationRole).value<QImage>());
         QString text = pimg->imgDataCondensed(Qt::DisplayRole).toString();
-        imglstb->addItem( QIcon(pmap), text );
+        imglstb->addItem( QIcon(pmap), text, QVariant(pimg->getID()) ); //Set user data to image's UID
     }
-
-    //frm->setLayout(vertlayout);
-    //vertlayout->addWidget(imglstb, 2);
-    //vertlayout->addWidget(dupbtn, 0);
-    //frm->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
-    //frm->setMinimumHeight(72);
-    //dupbtn->setMinimumWidth(32);
     imglstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
-    //dupbtn->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
-    //frm->setContentsMargins(0, 0, 0, 0);
-    //vertlayout->setContentsMargins(0, 0, 0, 0);
     return imglstb;
 }
 
-
-
-
-
-QWidget *MFrameDelegate::makeFlipSelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makeFlipSelect(QWidget *parent, int /*row*/) const
 {
     QFrame      *pselect    = new QFrame(parent);
     QBoxLayout  *play       = new QBoxLayout(QBoxLayout::Direction::LeftToRight, pselect);
@@ -820,7 +862,7 @@ QWidget *MFrameDelegate::makeFlipSelect(QWidget *parent, int row) const
 
 
 
-QWidget *MFrameDelegate::makeOffsetSelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makeOffsetSelect(QWidget *parent, int /*row*/) const
 {
     QFrame      *pselect = new QFrame(parent);
     QBoxLayout  *play    = new QBoxLayout(QBoxLayout::Direction::LeftToRight, pselect);
@@ -845,7 +887,7 @@ QWidget *MFrameDelegate::makeOffsetSelect(QWidget *parent, int row) const
 
 
 
-QWidget *MFrameDelegate::makeRotNScalingSelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makeRotNScalingSelect(QWidget *parent, int /*row*/) const
 {
     QFrame      *pselect    = new QFrame(parent);
     QBoxLayout  *play       = new QBoxLayout(QBoxLayout::Direction::LeftToRight, pselect);
@@ -873,7 +915,7 @@ QWidget *MFrameDelegate::makeRotNScalingSelect(QWidget *parent, int row) const
     return pselect;
 }
 
-QWidget *MFrameDelegate::makePaletteIDSelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makePaletteIDSelect(QWidget *parent, int /*row*/) const
 {
     //#TODO: Make this into a combo box to pick the palette and get a preview!
     QSpinBox *ppalid = new QSpinBox(parent);
@@ -882,21 +924,29 @@ QWidget *MFrameDelegate::makePaletteIDSelect(QWidget *parent, int row) const
     return ppalid;
 }
 
-QWidget *MFrameDelegate::makePrioritySelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makePrioritySelect(QWidget *parent, int /*row*/) const
 {
-
     QComboBox *pselect = new QComboBox(parent);
     pselect->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
     pselect->addItems(MFrameDelegate::prioritiesNames());
     return pselect;
 }
 
-QWidget *MFrameDelegate::makeTileIdSelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makeTileIdSelect(QWidget *parent, int /*row*/) const
 {
     QSpinBox *ptileid = new QSpinBox(parent);
     ptileid->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
     ptileid->setRange(0, fmt::step_t::TILENUM_MAX);
     return ptileid;
+}
+
+QWidget *MFrameDelegate::makeModeSelect(QWidget *parent, int /*row*/) const
+{
+    QComboBox *pselect = new QComboBox(parent);
+    pselect->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+    pselect->addItems(MFrameDelegate::modeNames());
+    pselect->setMinimumWidth(100);
+    return pselect;
 }
 
 //=====================================================================================
@@ -1226,12 +1276,17 @@ bool MFrame::setData(const QModelIndex &index, const QVariant &value, int role)
             ppart->setPalNb(value.toInt(&bok));
             break;
         }
+    case eFramesColumnsType::Mode:
+        {
+            ppart->setObjMode(static_cast<fmt::step_t::eObjMode>(value.toInt(&bok)));
+            break;
+        }
     case eFramesColumnsType::Priority:
         {
             ppart->setPriority(value.toInt(&bok));
             break;
         }
-    case eFramesColumnsType::CharName:
+    case eFramesColumnsType::TileNum:
         {
             ppart->setTileNum(value.toInt(&bok));
             break;

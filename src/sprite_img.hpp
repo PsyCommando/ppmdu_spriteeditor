@@ -270,56 +270,55 @@ public:
 //  ImageSelectorModel
 //============================================================================================
 // Model for selecting an image in a popup dialog. Mainly intended for the frames tab
-class ImageSelectorModel : public ImagesManager
-{
-    Q_OBJECT
-    /*
-        "Virtual" image entry for allowing users to set a frame so its a -1 frame!
-    */
-    class NullFirstEntry : public Image
-    {
-    public:
-        using Image::Image;
+//class ImageSelectorModel : public ImagesManager
+//{
+//    Q_OBJECT
+//    /*
+//        "Virtual" image entry for allowing users to set a frame so its a -1 frame!
+//    */
+//    class NullFirstEntry : public Image
+//    {
+//    public:
+//        using Image::Image;
 
-        // Image interface
-    public:
-        virtual QVariant imgDataCondensed(int role) const override;
-    };
+//        // Image interface
+//    public:
+//        virtual QVariant imgDataCondensed(int role) const override;
+//    };
 
-    QScopedPointer<NullFirstEntry> m_minusoneimg;
+//    QScopedPointer<NullFirstEntry> m_minusoneimg;
 
-public:
+//public:
+//    ImageSelectorModel(ImageContainer * pcnt);
 
-    ImageSelectorModel(ImageContainer * pcnt);
 
+//    // QAbstractItemModel interface
+//public:
+//    virtual int columnCount(const QModelIndex &/*parent*/) const override {return 1;}
 
-    // QAbstractItemModel interface
-public:
-    virtual int columnCount(const QModelIndex &/*parent*/) const override {return 1;}
+//    virtual QVariant data(const QModelIndex &index, int role) const override;
 
-    virtual QVariant data(const QModelIndex &index, int role) const override;
+//    virtual bool insertRows(int /*row*/, int /*count*/, const QModelIndex &/*parent*/) override {return false;}
+//    virtual bool removeRows(int /*row*/, int /*count*/, const QModelIndex &/*parent*/) override {return false;}
+//    virtual bool moveRows(const QModelIndex &/*sourceParent*/,
+//                          int /*sourceRow*/,
+//                          int /*count*/,
+//                          const QModelIndex &/*destinationParent*/,
+//                          int /*destinationChild*/) override {return false;}
 
-    virtual bool insertRows(int /*row*/, int /*count*/, const QModelIndex &/*parent*/) override {return false;}
-    virtual bool removeRows(int /*row*/, int /*count*/, const QModelIndex &/*parent*/) override {return false;}
-    virtual bool moveRows(const QModelIndex &/*sourceParent*/,
-                          int /*sourceRow*/,
-                          int /*count*/,
-                          const QModelIndex &/*destinationParent*/,
-                          int /*destinationChild*/) override {return false;}
+//    virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
 
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
+//    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+//    virtual int rowCount(const QModelIndex &parent) const override;
+//    virtual bool hasChildren(const QModelIndex &parent) const override;
 
-    virtual int rowCount(const QModelIndex &parent) const override;
-    virtual bool hasChildren(const QModelIndex &parent) const override;
-
-    TreeElement *getItem(const QModelIndex &index);
-    const TreeElement *getItem(const QModelIndex &index)const
-    {
-        return const_cast<ImageSelectorModel*>(this)->getItem(index);
-    }
-};
+//    TreeElement *getItem(const QModelIndex &index);
+//    const TreeElement *getItem(const QModelIndex &index)const
+//    {
+//        return const_cast<ImageSelectorModel*>(this)->getItem(index);
+//    }
+//};
 
 //*******************************************************************
 //  ImageContainer
@@ -329,17 +328,17 @@ class ImageContainer : public BaseTreeContainerChild<&ElemName_Images, Image>
 {
 public:
     ImageContainer( TreeElement * parent)
-        :BaseTreeContainerChild(parent), m_pimgselmodel(new ImageSelectorModel(this))
+        :BaseTreeContainerChild(parent)//, m_pimgselmodel(new ImageSelectorModel(this))
     {
         setNodeDataTy(eTreeElemDataType::images);
     }
 
     ImageContainer( const ImageContainer & cp)
-        :BaseTreeContainerChild(cp), m_pimgselmodel(new ImageSelectorModel(this))
+        :BaseTreeContainerChild(cp)//, m_pimgselmodel(new ImageSelectorModel(this))
     {}
 
     ImageContainer( ImageContainer && mv)
-        :BaseTreeContainerChild(mv), m_pimgselmodel(new ImageSelectorModel(this))
+        :BaseTreeContainerChild(mv)//, m_pimgselmodel(new ImageSelectorModel(this))
     {}
 
     ~ImageContainer()
@@ -363,6 +362,12 @@ public:
 //Image container stuff
 //
 public:
+    static const QString & ComboBoxStyleSheet()
+    {
+        static const QString SSheet("QComboBox QAbstractItemView::item {margin-top: 2px;}");
+        return SSheet;
+    }
+
     /*
         importImages
             Imports a table of raw images into the container, and convert them to a displayable format!
@@ -396,7 +401,7 @@ public:
     inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
 
 
-    ImageSelectorModel * getImageSelectModel() {return m_pimgselmodel.data();}
+    //ImageSelectorModel * getImageSelectModel() {return m_pimgselmodel.data();}
 
 //
 //BaseContainerChild overrides
@@ -458,7 +463,7 @@ public:
     virtual int nodeColumnCount() const override        {return 4;}
 
 private:
-    QScopedPointer<ImageSelectorModel> m_pimgselmodel;
+    //QScopedPointer<ImageSelectorModel> m_pimgselmodel;
 };
 
 

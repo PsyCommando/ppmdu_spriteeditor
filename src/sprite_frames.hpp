@@ -34,13 +34,15 @@ enum struct eFramesColumnsType : int
 {
     Preview     = 0,
     ImgID,
+    TileNum,
+    PaletteID,
     Unk0,
     Offset,
     Flip,
     RotNScaling,
-    PaletteID,
+    Mosaic,
+    Mode,
     Priority,
-    CharName,
     HeaderNBColumns,
 
 
@@ -77,6 +79,18 @@ public:
             QString(tr("3- Lowest")),
         };
         return PRIO;
+    }
+
+    static const QStringList & modeNames()
+    {
+        static const QStringList Modes
+        {
+            QString(tr("Normal")),
+            QString(tr("Blended")),
+            QString(tr("Windowed")),
+            QString(tr("Bitmap")),
+        };
+        return Modes;
     }
 
     MFrameDelegate(MFrame * frm, QObject *parent = nullptr);
@@ -133,9 +147,11 @@ private:
     QWidget * makePaletteIDSelect(QWidget * parent, int row)const;
     QWidget * makePrioritySelect (QWidget * parent, int row)const;
     QWidget * makeTileIdSelect   (QWidget * parent, int row)const;
+    QWidget * makeModeSelect     (QWidget * parent, int row)const;
 
 private:
     MFrame *m_pfrm;
+    QImage  m_minusone;
 };
 
 //*******************************************************************
@@ -191,7 +207,9 @@ private:
     QVariant dataRotNScaling    (int role)const;
     QVariant dataPaletteID      (int role)const;
     QVariant dataPriority       (int role)const;
-    QVariant dataCharName       (int role)const;
+    QVariant dataTileNum        (int role)const;
+    QVariant dataMosaic         (int role)const;
+    QVariant dataMode           (int role)const;
 
     //Transform the given image according to the parameters stored in this class!
     void applyTransforms(QImage & srcimg)const;
@@ -223,8 +241,8 @@ public:
 
     void importFrame(const fmt::ImageDB::frm_t & frms)
     {
-        removeChildrenNodes(0, nodeChildCount());
-        insertChildrenNodes(0, frms.size());
+        getModel()->removeRows(0, nodeChildCount());
+        getModel()->insertRows(0, frms.size());
 
         auto itparts = frms.begin();
         for( size_t cntid = 0; cntid < frms.size(); ++cntid, ++itparts )
@@ -316,8 +334,8 @@ public:
 
     void importFrames( const fmt::ImageDB::frmtbl_t & frms )
     {
-        removeChildrenNodes(0, nodeChildCount());
-        insertChildrenNodes(0, frms.size());
+        getModel()->removeRows(0, nodeChildCount());
+        getModel()->insertRows(0, frms.size());
 
         for( size_t cntid = 0; cntid < frms.size(); ++cntid )
             m_container[cntid].importFrame(frms[cntid]);

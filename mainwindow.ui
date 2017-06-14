@@ -1399,7 +1399,7 @@
                     <item row="0" column="0">
                      <widget class="QPushButton" name="btnFrmHFlip">
                       <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
@@ -1442,7 +1442,7 @@
                     <item row="1" column="0">
                      <widget class="QPushButton" name="btnFrmVFlip">
                       <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
@@ -1482,30 +1482,10 @@
                       </property>
                      </widget>
                     </item>
-                    <item row="2" column="0">
-                     <widget class="QPushButton" name="btnFrmDup">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="toolTip">
-                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Duplicates the current part, and put the copy at the bottom of the part list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                      </property>
-                      <property name="text">
-                       <string>Duplicate</string>
-                      </property>
-                      <property name="icon">
-                       <iconset resource="appres.qrc">
-                        <normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</iconset>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="2" column="1">
+                    <item row="3" column="1">
                      <widget class="QPushButton" name="btnFrmRmPart">
                       <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
@@ -1519,6 +1499,43 @@
                       <property name="icon">
                        <iconset resource="appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/cross-script.png</normaloff>:/resources/fugue-icons-3.5.6/icons/cross-script.png</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="1">
+                     <widget class="QPushButton" name="btnFrmAdPart">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="text">
+                       <string>Add Part</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="appres.qrc">
+                        <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="0">
+                     <widget class="QPushButton" name="btnFrmDup">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="toolTip">
+                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Duplicates the current part, and put the copy at the bottom of the part list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      </property>
+                      <property name="text">
+                       <string>Duplicate</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="appres.qrc">
+                        <normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</iconset>
                       </property>
                      </widget>
                     </item>
@@ -1627,22 +1644,6 @@
                       <width>60</width>
                       <height>16777215</height>
                      </size>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="btnFrmPartResetPos">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="toolTip">
-                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the part's offset to 0,0.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                    </property>
-                    <property name="text">
-                     <string>Reset Pos</string>
                     </property>
                    </widget>
                   </item>

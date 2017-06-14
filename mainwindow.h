@@ -433,6 +433,18 @@ private slots:
 
     void on_btnImagesExport_clicked();
 
+    void on_btnFrmRmPart_clicked();
+
+    void on_btnFrmAdPart_clicked();
+
+    void on_btnFrmMvUp_clicked();
+
+    void on_btnFrmMvDown_clicked();
+
+    void on_btnFrmDup_clicked();
+
+    void on_cmbFrmQuickPrio_currentIndexChanged(int index);
+
 signals:
 
 private:

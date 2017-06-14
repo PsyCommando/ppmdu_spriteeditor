@@ -237,8 +237,9 @@ namespace fmt
         enum struct eObjMode: uint16_t
         {
             Normal      = 0,
-            SemiTransp  = 0x400,
-            Window      = 0x800,
+            SemiTransp,
+            Window,
+            Bitmap,
             Invalid,
         };
 
@@ -297,7 +298,6 @@ namespace fmt
 
         inline bool isColorPal256()const            {return (ATTR0_ColPalMask & attr0) != 0;}
         inline bool isMosaicOn()const               {return (ATTR0_MosaicMask & attr0) != 0;}
-        inline eObjMode ObjMode()const              {return static_cast<eObjMode>(attr0 & ATTR0_ObjModeMask);}
         inline bool isDisabled()const               {return !isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
         inline bool isDoubleSize()const             {return isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
         inline bool isRotAndScalingOn()const        {return (ATTR0_RotNScaleMask & attr0) != 0;}
@@ -308,6 +308,7 @@ namespace fmt
         inline bool isHFlip()const                  {return (ATTR1_HFlipMask & attr1) != 0;}
         inline bool islast()const                   {return (ATTR1_IsLastMask & attr1) != 0;}
 
+        inline eObjMode getObjMode()const           {return static_cast<eObjMode>((attr0 & ATTR0_ObjModeMask) >> 10);}
         inline uint8_t getRnSParam()const           {return static_cast<uint8_t>((ATTR1_RotNScalePrm & attr1) >> 9);}
         inline uint16_t getXOffset()const           {return (ATTR1_XOffsetMask & attr1);}
 
@@ -337,7 +338,7 @@ namespace fmt
 
         inline void setColorPal256  (bool bis256)   {attr0 = (bis256)? (ATTR0_ColPalMask | attr0) : (attr0 & ~ATTR0_ColPalMask);}
         inline void setMosaicOn     (bool bon)      {attr0 = (bon)? (ATTR0_MosaicMask | attr0) : (attr0 & ~ATTR0_MosaicMask);}
-        inline void setObjMode      (eObjMode mode) {attr0 = ((static_cast<uint16_t>(mode) | attr0) & ATTR0_ObjModeMask);}
+        inline void setObjMode      (eObjMode mode) {attr0 = (attr0 & ~ATTR0_ObjModeMask) | ((static_cast<uint16_t>(mode) & 0x3 ) << 10);}
         inline void setDisabled     (bool bon)      {attr0 = (bon)? (ATTR0_DblSzDisabled | attr0) : (attr0 & ~ATTR0_DblSzDisabled);}
         inline void setDoubleSize   (bool bon)      {setDisabled(bon);}
         inline void setRotAndScaling(bool bon)      {attr0 = (bon)? (ATTR0_RotNScaleMask | attr0) : (attr0 & ~ATTR0_RotNScaleMask);}

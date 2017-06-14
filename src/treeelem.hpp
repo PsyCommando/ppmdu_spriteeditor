@@ -40,6 +40,7 @@ enum struct eTreeElemDataType
 //**************************************************************************************
 class TreeElement
 {
+    friend class BaseTreeNodeModel;
 public:
 //    static constexpr Qt::ItemFlags DEFFlags()
 //    {
@@ -297,34 +298,51 @@ public:
         return m_modelparent->headerData(section, orientation, role);
     }
 
-    virtual bool insertRows(int row, int count, const QModelIndex &parent) override
+    virtual bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override
     {
         TreeElement *parentItem = getItem(parent);
         bool success;
 
-        beginInsertRows(parent, row, row + count - 1);
-        success = parentItem->insertChildrenNodes(row, count);
-        endInsertRows();
+        if( count > 0 )
+        {
+            beginInsertRows(parent, row, row + count - 1);
+            success = parentItem->insertChildrenNodes(row, count);
+            endInsertRows();
+        }
 
         return success;
     }
 
-    virtual bool removeRows(int row, int count, const QModelIndex &parent) override
+    virtual bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override
     {
         TreeElement *parentItem = getItem(parent);
         bool success = true;
 
-        beginRemoveRows(parent, row, row + count - 1);
-        success = parentItem->removeChildrenNodes(row, count);
-        endRemoveRows();
-
+        if( count > 0 )
+        {
+            beginRemoveRows(parent, row, row + count - 1);
+            success = parentItem->removeChildrenNodes(row, count);
+            endRemoveRows();
+        }
         return success;
     }
 
-    virtual bool moveRows(const QModelIndex &/*sourceParent*/, int /*sourceRow*/, int /*count*/, const QModelIndex &/*destinationParent*/, int /*destinationChild*/) override
+    virtual bool moveRows(const QModelIndex &sourceParent,
+                          int sourceRow,
+                          int count,
+                          const QModelIndex &destinationParent,
+                          int destinationChild) override
     {
-        Q_ASSERT(false);
-        return false;
+        TreeElement *srcparentItem = getItem(sourceParent);
+        TreeElement *destparentItem = getItem(sourceParent);
+
+        if( count > 0 )
+        {
+            beginMoveRows(sourceParent, sourceRow, (sourceRow + count) - 1, destinationParent, destinationChild);
+            Q_ASSERT(false);
+            endRemoveRows();
+        }
+        return true;
     }
 
     virtual TreeElement *getItem(const QModelIndex &index)
@@ -543,7 +561,6 @@ public:
         QMutexLocker lk(&getMutex());
         if( (position + count) >= m_container.size() )
             return false;
-
         int i = 0;
         for( ; i < count; ++i )
             m_container.removeAt(position);

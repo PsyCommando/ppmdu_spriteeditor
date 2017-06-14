@@ -203,6 +203,27 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
         m_frmeditor->updateParts();
         ui->gvFrame->update();
     });
+    connect(frm->getModel(), &QAbstractItemModel::rowsInserted, [&](const QModelIndex & /*parent*/, int /*first*/, int /*last*/)
+    {
+        m_frmeditor->updateParts();
+        ui->gvFrame->update();
+    });
+    connect(frm->getModel(), &QAbstractItemModel::rowsMoved, [&](const QModelIndex & /*parent*/,
+                                                                int /*start*/,
+                                                                int /*end*/,
+                                                                const QModelIndex & /*destination*/,
+                                                                int /*row*/)
+    {
+        m_frmeditor->updateParts();
+        ui->gvFrame->update();
+    });
+    connect(frm->getModel(), &QAbstractItemModel::rowsRemoved, [&](const QModelIndex & /*parent*/,
+                                                                int /*first*/,
+                                                                int /*last*/)
+    {
+        m_frmeditor->updateParts();
+        ui->gvFrame->update();
+    });
 
     connect(ui->spbFrmZoom, qOverload<int>(&QSpinBox::valueChanged), [&](int val)->void
     {
@@ -1114,16 +1135,7 @@ void MainWindow::on_btnSeqExport_clicked()
 
 void MainWindow::on_btnImagesExport_clicked()
 {
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Export Image"),
-                        QString(),
-                        "PNG image (*.png)");
-
-    if(filename.isNull())
-        return;
-
     Image * pimg = nullptr;
-
     if(ui->tblviewImages->currentIndex().isValid())
         pimg = static_cast<Image*>( ui->tblviewImages->currentIndex().internalPointer() );
 
@@ -1133,9 +1145,157 @@ void MainWindow::on_btnImagesExport_clicked()
         return;
     }
 
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Export Image"),
+                        QString(),
+                        "PNG image (*.png)");
+
+    if(filename.isNull())
+        return;
+
     QImage img = qMove( pimg->makeImage(pimg->parentSprite()->getPalette()) );
-    img.save(filename, "PNG");
+
+    if(img.save( filename, "PNG" ))
+        ShowStatusMessage(QString(tr("Exported image to %1!")).arg(filename));
+    else
+        ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
 }
+
+void MainWindow::on_btnFrmRmPart_clicked()
+{
+    QModelIndex ind = ui->tblframeparts->currentIndex();
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No part selected!"));
+        return;
+    }
+    MFramePart* ppart = static_cast<MFramePart*>(ind.internalPointer());
+    MFrame    * pfrm  = static_cast<MFrame*>(ppart->parentNode());
+    Q_ASSERT(ppart && pfrm);
+
+    ui->tblframeparts->setCurrentIndex(QModelIndex());
+    if(pfrm->removeChildrenNodes(ind.row(), 1))
+        ShowStatusMessage(tr("Removed part!"));
+    else
+        ShowStatusErrorMessage(tr("Removal failed!"));
+
+    m_frmeditor->updateParts();
+    ui->gvFrame->update();
+    ui->tblframeparts->update();
+}
+
+void MainWindow::on_btnFrmAdPart_clicked()
+{
+    QModelIndex ind = ui->tblframeparts->currentIndex();
+    MFrame      *curframe = currentFrame();
+
+    Q_ASSERT(curframe);
+    int insertpos = 0;
+
+    if(ind.isValid())
+        insertpos = ind.row();
+    else
+        insertpos = (curframe->nodeChildCount() > 0)? (curframe->nodeChildCount() - 1) : 0;
+
+    if(curframe->getModel()->insertRow(insertpos))
+    {
+        ShowStatusMessage(tr("Appended part!"));
+    }
+    else
+        ShowStatusErrorMessage(tr("Insertion failed!"));
+
+    m_frmeditor->updateParts();
+    ui->gvFrame->update();
+    ui->tblframeparts->update();
+}
+
+void MainWindow::on_btnFrmMvUp_clicked()
+{
+    QModelIndex ind = ui->tblframeparts->currentIndex();
+    MFrame      *curframe = currentFrame();
+    Q_ASSERT(curframe);
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No part selected!"));
+        return;
+    }
+
+    int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
+    if(destrow != ind.row())
+    {
+        if(curframe->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+            ShowStatusMessage(tr("Part moved up!"));
+        else
+            ShowStatusErrorMessage(tr("Failed to move part!"));
+    }
+
+    m_frmeditor->updateParts();
+    ui->gvFrame->update();
+    ui->tblframeparts->update();
+}
+
+void MainWindow::on_btnFrmMvDown_clicked()
+{
+    QModelIndex ind = ui->tblframeparts->currentIndex();
+    MFrame      *curframe = currentFrame();
+    Q_ASSERT(curframe);
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No part selected!"));
+        return;
+    }
+
+    int destrow = (ind.row() < curframe->nodeChildCount()-2 )? ind.row() + 1 : ind.row();
+    if(destrow != ind.row())
+    {
+        if(curframe->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+            ShowStatusMessage(tr("Part moved down!"));
+        else
+            ShowStatusErrorMessage(tr("Failed to move part!"));
+    }
+
+    m_frmeditor->updateParts();
+    ui->gvFrame->update();
+    ui->tblframeparts->update();
+}
+
+void MainWindow::on_btnFrmDup_clicked()
+{
+    QModelIndex ind = ui->tblframeparts->currentIndex();
+    MFrame      *curframe = currentFrame();
+    Q_ASSERT(curframe);
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No part selected!"));
+        return;
+    }
+
+    MFramePart tmppart = *(static_cast<MFramePart*>(ind.internalPointer()));
+
+    int insertpos = ind.row();
+    if(curframe->getModel()->insertRow(insertpos))
+    {
+        MFramePart * pnewfrm = static_cast<MFramePart *>(curframe->getItem( curframe->getModel()->index(insertpos, 0, QModelIndex()) ));
+        Q_ASSERT(pnewfrm);
+        (*pnewfrm) = tmppart;
+        ShowStatusMessage(tr("Duplicated part!"));
+    }
+    else
+        ShowStatusErrorMessage(tr("Duplication failed!"));
+
+    m_frmeditor->updateParts();
+    ui->gvFrame->update();
+    ui->tblframeparts->update();
+}
+
+void MainWindow::on_cmbFrmQuickPrio_currentIndexChanged(int index)
+{
+
+    m_frmeditor->updateParts();
+    ui->gvFrame->update();
+    ui->tblframeparts->update();
+}
+
 
 //===================================================================================================================
 // TVSpritesContextMenu
@@ -1237,14 +1397,4 @@ void TVSpritesContextMenu::RemoveEntry()
     m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
     close();
 }
-
-
-
-
-
-
-
-
-
-
 

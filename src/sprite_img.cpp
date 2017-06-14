@@ -20,13 +20,15 @@ const std::vector<QString> FramesHeaderColumnNames
 
     //The rest below is for the parts/step to assemble the frame!
     QString(("Img ID")),
+    QString(("Tile ID")),
+    QString(("Palette")),
     QString(("Unk#0")),
     QString(("Offset")),
     QString(("Flip")),
     QString(("Rotation & Scaling")),
-    QString(("Palette")),
+    QString(("Mosaic")),
+    QString(("Mode")),
     QString(("Priority")),
-    QString(("Tile ID")),
 };
 
 const char * MFrame::PropPartID = "framePartID";
@@ -47,8 +49,8 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
     static const int TileWidth  = 8;
     static const int TileHeight = 8;
     static const int TileLength = 64;
-    removeChildrenNodes(0, nodeChildCount());
-    insertChildrenNodes(0, imgs.size());
+    getModel()->removeRows(0, nodeChildCount());
+    getModel()->insertRows(0, imgs.size());
 
     for( size_t cntid = 0; cntid < imgs.size(); ++cntid )
     {
@@ -366,91 +368,91 @@ TreeElement *ImagesManager::getItem(const QModelIndex &index)
 //======================================================================================================
 //  ImageSelectorModel
 //======================================================================================================
-QVariant ImageSelectorModel::NullFirstEntry::imgDataCondensed(int role) const
-{
-    QVariant res;
-    if( role == Qt::DecorationRole )
-        res.setValue(QImage(32, 32, QImage::Format::Format_ARGB32_Premultiplied));
-    else if( role == Qt::DisplayRole )
-        res.setValue(QString("ID:-1 Nodraw Frame"));
-    else if(role == Qt::EditRole)
-        res.setValue(-1);
-    return std::move(res);
-}
+//QVariant ImageSelectorModel::NullFirstEntry::imgDataCondensed(int role) const
+//{
+//    QVariant res;
+//    if( role == Qt::DecorationRole )
+//        res.setValue(QImage(32, 32, QImage::Format::Format_ARGB32_Premultiplied));
+//    else if( role == Qt::DisplayRole )
+//        res.setValue(QString("ID:-1 Nodraw Frame"));
+//    else if(role == Qt::EditRole)
+//        res.setValue(-1);
+//    return std::move(res);
+//}
 
-ImageSelectorModel::ImageSelectorModel(ImageContainer *pcnt)
-    :ImagesManager(pcnt), m_minusoneimg(new NullFirstEntry(pcnt))
-{}
+//ImageSelectorModel::ImageSelectorModel(ImageContainer *pcnt)
+//    :ImagesManager(pcnt), m_minusoneimg(new NullFirstEntry(pcnt))
+//{}
 
-QVariant ImageSelectorModel::data(const QModelIndex &index, int role) const
-{
-    if (!index.isValid())
-        return QVariant("root");
+//QVariant ImageSelectorModel::data(const QModelIndex &index, int role) const
+//{
+//    if (!index.isValid())
+//        return QVariant("root");
 
-    if (role != Qt::DisplayRole &&
-        role != Qt::DecorationRole &&
-        role != Qt::SizeHintRole &&
-        role != Qt::EditRole)
-        return QVariant();
+//    if (role != Qt::DisplayRole &&
+//        role != Qt::DecorationRole &&
+//        role != Qt::SizeHintRole &&
+//        role != Qt::EditRole)
+//        return QVariant();
 
-    if(index.column() != 0)
-        return QVariant();
+//    if(index.column() != 0)
+//        return QVariant();
 
-    //We fuse all columns together!
-    const Image *img = static_cast<const Image*>(getItem(index));
-    return img->imgDataCondensed(role);
-}
+//    //We fuse all columns together!
+//    const Image *img = static_cast<const Image*>(getItem(index));
+//    return img->imgDataCondensed(role);
+//}
 
-QModelIndex ImageSelectorModel::index(int row, int column, const QModelIndex &parent) const
-{
-    //insert our minus one frame entry at the beginning!
-    if(row == 0)
-        return createIndex(0, column, m_minusoneimg.data());
-    else if(row < 0)
-        return QModelIndex();
+//QModelIndex ImageSelectorModel::index(int row, int column, const QModelIndex &parent) const
+//{
+//    //insert our minus one frame entry at the beginning!
+//    if(row == 0)
+//        return createIndex(0, column, m_minusoneimg.data());
+//    else if(row < 0)
+//        return QModelIndex();
 
-    //Otherwise, subtract 1 from the index, so it matches the actual item indices in the imagecontainer object!
-    row -= 1;
-    //And let the original handle it normally
-    return ImagesManager::index(row, column, parent);
-}
+//    //Otherwise, subtract 1 from the index, so it matches the actual item indices in the imagecontainer object!
+//    row -= 1;
+//    //And let the original handle it normally
+//    return ImagesManager::index(row, column, parent);
+//}
 
-QVariant ImageSelectorModel::headerData(int section, Qt::Orientation orientation, int role) const
-{
-    if( role != Qt::DisplayRole )
-        return QVariant();
+//QVariant ImageSelectorModel::headerData(int section, Qt::Orientation orientation, int role) const
+//{
+//    if( role != Qt::DisplayRole )
+//        return QVariant();
 
-    if( orientation == Qt::Orientation::Vertical )
-    {
-        return std::move(QVariant( QString("%1").arg(section) ));
-    }
-    else if( orientation == Qt::Orientation::Horizontal && section == 0 )
-    {
-        return std::move(QVariant( QString("Image") ));
-    }
-    return QVariant();
-}
+//    if( orientation == Qt::Orientation::Vertical )
+//    {
+//        return std::move(QVariant( QString("%1").arg(section) ));
+//    }
+//    else if( orientation == Qt::Orientation::Horizontal && section == 0 )
+//    {
+//        return std::move(QVariant( QString("Image") ));
+//    }
+//    return QVariant();
+//}
 
-int ImageSelectorModel::rowCount(const QModelIndex &parent) const
-{
-    return m_parentcnt->rowCount(parent) + 1; //We always have an extra row!
-}
+//int ImageSelectorModel::rowCount(const QModelIndex &parent) const
+//{
+//    return m_parentcnt->rowCount(parent) + 1; //We always have an extra row!
+//}
 
-bool ImageSelectorModel::hasChildren(const QModelIndex &/*parent*/) const
-{
-    return true; //We always have children!
-}
+//bool ImageSelectorModel::hasChildren(const QModelIndex &/*parent*/) const
+//{
+//    return true; //We always have children!
+//}
 
-TreeElement *ImageSelectorModel::getItem(const QModelIndex &index)
-{
-    if (index.isValid())
-    {
-        if( index.row() == 0 ) //special case for -1 frames
-            return m_minusoneimg.data();
+//TreeElement *ImageSelectorModel::getItem(const QModelIndex &index)
+//{
+//    if (index.isValid())
+//    {
+//        if( index.row() == 0 ) //special case for -1 frames
+//            return m_minusoneimg.data();
 
-        TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
-        if (item)
-            return item;
-    }
-    return m_parentcnt;
-}
+//        TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
+//        if (item)
+//            return item;
+//    }
+//    return m_parentcnt;
+//}
