@@ -293,6 +293,8 @@ public:
     void DisplayImagePage(Sprite * spr, Image * img);
     void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs, Image * img = nullptr );
 
+    void PrepareForNewContainer();
+
     void LoadContainer( const QString & path );
     void SaveContainer( const QString & path );
     void ExportContainer( const QString & path );
@@ -424,6 +426,12 @@ private slots:
     void on_btnImportPalette_clicked();
 
     void on_btnEditPalette_clicked();
+
+    void on_btnFrmExport_clicked();
+
+    void on_btnSeqExport_clicked();
+
+    void on_btnImagesExport_clicked();
 
 signals:
 

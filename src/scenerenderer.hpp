@@ -75,6 +75,38 @@ public:
         m_ticksnextfrm = m_cachedframes[m_curfrm].duration;
     }
 
+    QFuture<QVector<QImage>> DumpSequence()const
+    {
+        if(m_cachedframes.empty())
+        {
+            qInfo("AnimatedSpriteItem::DumpSequence():No sequence was loaded! Nothing to export!\n");
+            return qMove(QFuture<QVector<QImage>>());
+        }
+        auto lambdaDump = [&]()->QVector<QImage>
+        {
+            QMutexLocker lk(& const_cast<AnimatedSpriteItem*>(this)->m_mtxcache);
+            QVector<QImage> outimgs;
+            for(int curfrm = 0; curfrm < m_cachedframes.size(); ++curfrm)
+            {
+                QImage pic = QImage(1024,1024, QImage::Format::Format_ARGB32_Premultiplied);
+                QPainter painter(&pic);
+                int xdiff = (m_cachedframes[curfrm].area.x() - m_biggestFrame.x());
+                int ydiff = (m_cachedframes[curfrm].area.y() - m_biggestFrame.y());
+                painter.drawPixmap( m_cachedframes[curfrm].offsetx + xdiff,
+                                    m_cachedframes[curfrm].offsety + ydiff,
+                                    m_cachedframes[curfrm].img );
+
+                outimgs.push_back(pic.copy(m_cachedframes[curfrm].offsetx + xdiff,
+                                           m_cachedframes[curfrm].offsety + ydiff,
+                                           m_cachedframes[curfrm].area.width(),
+                                           m_cachedframes[curfrm].area.height()));
+            }
+            return qMove(outimgs);
+        };
+
+        return QtConcurrent::run(lambdaDump);
+    }
+
     void LoadSequence()
     {
         QMutexLocker lk(&m_mtxcache);
@@ -409,6 +441,17 @@ public:
         return m_animScene;
     }
 
+    QVector<QImage> DumpSequence()const
+    {
+        if(!m_animsprite)
+        {
+            qInfo("SceneRenderer::DumpSequence(): No anim sprite instanciated. No anim to dump!\n");
+            return QVector<QImage>();
+        }
+
+        QFuture<QVector<QImage>> fut = m_animsprite->DumpSequence();
+        return qMove(fut.result());
+    }
 
 
 private:

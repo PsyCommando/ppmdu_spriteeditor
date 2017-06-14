@@ -28,8 +28,10 @@ namespace fmt
 
     //Frame resolutions
     extern const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues;
+
     //Possible resolutions for individual parts of an assembled frame.
     //The value of the bits matches the 2 first bits of attr1 and attr2 respectively for representing the resolution!
+    //SO PLEASE DO NOT REORDER OR OR ADD TO THIS TABLE!
     enum struct eFrameRes : uint16_t
     {
         Square_8x8   = 0,
@@ -319,8 +321,17 @@ namespace fmt
         inline std::pair<uint16_t,uint16_t> GetResolution()const
         {
             uint8_t  flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
-            assert(flagresval < 12);
-            return FrameResValues[flagresval];
+            assert(flagresval < FrameResValues.size());
+
+            if(isDoubleSize())
+            {
+                auto res = FrameResValues[flagresval];
+                res.first  *= 2;
+                res.second *= 2;
+                return res;
+            }
+            else
+                return FrameResValues[flagresval];
         }
 
 
@@ -734,7 +745,9 @@ namespace fmt
             if(imgoff == 0)
                 return;
 
-            //Read comp table
+            //Read image assembly table
+            // Basically each entry tells us how to assemble the image,
+            // step by step. Each steps tells us whether we write zeros, or a pixel strip from the file.
             auto itcmptable = next(itsrcbeg, imgoff);
             img_t curimg;
             uint16_t len = 0;
@@ -742,6 +755,8 @@ namespace fmt
             {
                 uint32_t pixsrc = utils::readBytesAs<uint32_t>(itcmptable, itsrcend);
                 len             = utils::readBytesAs<uint16_t>(itcmptable, itsrcend);
+
+                //NOTE: Break here so we don't end up changing unk14 and unk2 to zero for the entire image
                 if(pixsrc == 0 && len == 0)
                     break;
 

@@ -197,7 +197,8 @@ private:
     void applyTransforms(QImage & srcimg)const;
 
 private:
-    fmt::step_t m_data;
+    fmt::step_t  m_data;
+    fmt::frmid_t m_imgUID;
 };
 
 //*******************************************************************
@@ -226,7 +227,7 @@ public:
         insertChildrenNodes(0, frms.size());
 
         auto itparts = frms.begin();
-        for( fmt::frmid_t cntid = 0; cntid < frms.size(); ++cntid, ++itparts )
+        for( size_t cntid = 0; cntid < frms.size(); ++cntid, ++itparts )
         {
             m_container[cntid].importPart(*itparts);
         }
@@ -318,7 +319,7 @@ public:
         removeChildrenNodes(0, nodeChildCount());
         insertChildrenNodes(0, frms.size());
 
-        for( fmt::frmid_t cntid = 0; cntid < frms.size(); ++cntid )
+        for( size_t cntid = 0; cntid < frms.size(); ++cntid )
             m_container[cntid].importFrame(frms[cntid]);
     }
 
@@ -370,7 +371,8 @@ public:
         {
             return std::move(QVariant( QString("%1").arg(section) ));
         }
-        else if( orientation == Qt::Orientation::Horizontal && section < FramesHeaderNBColumns )
+        else if( orientation == Qt::Orientation::Horizontal &&
+                 static_cast<size_t>(section) < FramesHeaderNBColumns )
         {
             return FramesHeaderColumnNames[section];
         }

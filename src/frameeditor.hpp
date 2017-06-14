@@ -141,6 +141,9 @@ public:
     inline QGraphicsScene       & getScene()        {return *this;}
     inline const QGraphicsScene & getScene()const   {return *this;}
 
+    inline MFrame       * getFrame()        {return m_pfrm;}
+    inline const MFrame * getFrame()const   {return m_pfrm;}
+
 public slots:
     void onPartMoved();
     void partListChanged(MFrame *pfrm);

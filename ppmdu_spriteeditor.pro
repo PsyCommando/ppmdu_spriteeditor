@@ -102,6 +102,7 @@ FORMS    += mainwindow.ui \
 RESOURCES += \
     appres.qrc
 
-QMAKE_CXXFLAGS_WARN_OFF -= -Wunused-parameter
+QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
+QMAKE_CXXFLAGS_WARN_OFF +=
 
 DISTFILES +=

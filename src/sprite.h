@@ -320,6 +320,10 @@ public:
         m_sprhndl.getImageFmtInfo().setIs256Colors(state);
     }
 
+    //0 == 2D mapping, 1 == 1D mapping
+    inline bool     isTiled()const              {return unk13() == 0;}
+    inline void     SetIsTiled(bool state)      {return unk13(state);}
+
     void                                    setTargetCompression(filetypes::eCompressionFormats fmt){ m_targetgompression = fmt;}
     inline filetypes::eCompressionFormats   getTargetCompression()const                             {return m_targetgompression;}
 
@@ -339,6 +343,8 @@ public:
     inline void     unk12(uint16_t v)   {m_sprhndl.getUnk12() = v;}
     inline uint16_t unk13()const        {return m_sprhndl.getImageFmtInfo().unk13;}
     inline void     unk13(uint16_t v)   {m_sprhndl.getImageFmtInfo().unk13 = v;}
+
+
 
 private:
     bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const;

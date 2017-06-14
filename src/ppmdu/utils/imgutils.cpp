@@ -59,6 +59,52 @@ namespace utils
         return std::move(out);
     }
 
+    std::vector<uint8_t> Reduce8bppTo4bpp(const QImage &src )
+    {
+        std::vector<uint8_t> out;
+        size_t sz = src.size().width() * src.size().height();
+        out.reserve(sz / 2);
+
+        size_t cntpix = 0;
+        for(; (cntpix + 1) < sz; cntpix += 2)
+        {
+            int x0 = cntpix % src.width();
+            int y0 = cntpix / src.width();
+            int x1 = (cntpix+1) % src.width();
+            int y1 = (cntpix+1) / src.width();
+            out.push_back((src.pixelIndex(x0,y0) & 0x0F) | ((src.pixelIndex(x1,y1) << 4) & 0xF0));
+        }
+
+        //Handle leftover last if its the case
+        if(cntpix != sz)
+        {
+            int x0 = cntpix % src.width();
+            int y0 = cntpix / src.width();
+            out.push_back(src.pixelIndex(x0,y0) & 0x0F);
+        }
+
+        return std::move(out);
+    }
+
+    std::vector<uint8_t> ImgToRaw(const QImage & src)
+    {
+        const int BPP = src.pixelFormat().bitsPerPixel();
+        std::vector<uint8_t> out;
+        for(size_t  y = 0; y < src.height(); ++y)
+        {
+            for(size_t x = 0; x < src.width(); ++x)
+            {
+                if( BPP == 8 )
+                    out.push_back(static_cast<uint8_t>(src.pixelIndex(x, y)));
+                else if(BPP == 32)
+                    utils::writeBytesFrom<uint32_t>(static_cast<uint32_t>(src.pixel(x, y)), std::back_inserter(out) );
+                else //Unsupported format!
+                    Q_ASSERT(false);
+            }
+        }
+        return std::move(out);
+    }
+
 //    template<class _ByteCntTy>
 //        QPixmap UntileIntoImg( unsigned int pixwidth, unsigned int pixheight, const _ByteCntTy & src, const QVector<QRgb> & colors )
 //    {

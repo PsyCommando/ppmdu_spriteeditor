@@ -427,9 +427,9 @@ public:
     }
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
-        section;
-        orientation;
-        role;
+//        section;
+//        orientation;
+//        role;
 //        if( role != Qt::DisplayRole )
 //            return QVariant();
 

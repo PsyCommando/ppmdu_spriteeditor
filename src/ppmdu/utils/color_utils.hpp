@@ -40,20 +40,20 @@ namespace utils
     //Decode a ARGB 32 bits color to its components
     inline rgbaComponents ARGBToComponents(uint32_t argb)
     {
-        return rgbaComponents{ 0xFF & (argb >> 16), //red
-                               0xFF & (argb >>  8), //green
-                               0xFF &  argb,        //blue
-                               0xFF & (argb >> 24), //alpha
+        return rgbaComponents{ static_cast<uint8_t>(0xFF & (argb >> 16)), //red
+                               static_cast<uint8_t>(0xFF & (argb >>  8)), //green
+                               static_cast<uint8_t>(0xFF &  argb),        //blue
+                               static_cast<uint8_t>(0xFF & (argb >> 24)), //alpha
                              };
     }
 
     //Decode a RGBA 32 bits color to its components
     inline rgbaComponents RGBAToComponents(uint32_t rgba)
     {
-        return rgbaComponents{ 0xFF & (rgba >> 24), //red
-                               0xFF & (rgba >> 16), //green
-                               0xFF & (rgba >>  8), //blue
-                               0xFF &  rgba,        //alpha
+        return rgbaComponents{ static_cast<uint8_t>(0xFF & (rgba >> 24)), //red
+                               static_cast<uint8_t>(0xFF & (rgba >> 16)), //green
+                               static_cast<uint8_t>(0xFF & (rgba >>  8)), //blue
+                               static_cast<uint8_t>(0xFF &  rgba),        //alpha
                              };
     }
 };

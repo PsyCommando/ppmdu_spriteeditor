@@ -540,20 +540,22 @@ void MFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index) co
     {
     case eFramesColumnsType::ImgID:
         {
-            QComboBox   *pimglist = editor->findChild<QComboBox*>(ImgSelCmbBoxName());
-            QPushButton *pbtn     = editor->findChild<QPushButton*>(ImgSelBtnName());
-            Q_ASSERT(pimglist && pbtn);
+            //QComboBox   *pimglist = editor->findChild<QComboBox*>(ImgSelCmbBoxName());
+            //QPushButton *pbtn     = editor->findChild<QPushButton*>(ImgSelBtnName());
+            QComboBox * pimglist = static_cast<QComboBox*>(editor);
+            Q_ASSERT(pimglist/* && pbtn*/);
 
             if(part->getFrameIndex() >= 0)
             {
-                pimglist->setEnabled(true);
-                pimglist->setCurrentIndex(part->getFrameIndex());
-                pbtn->setChecked(false);
+//                pimglist->setEnabled(true);
+                pimglist->setCurrentIndex(part->getFrameIndex() + 1); //add one, because 0 is reserved!!
+                //pbtn->setChecked(false);
             }
             else
             {
-                pimglist->setDisabled(true);
-                pbtn->setChecked(true);
+//                pimglist->setDisabled(true);
+                pimglist->setCurrentIndex(0); //index 0 is -1 frame!
+                //pbtn->setChecked(true);
             }
             break;
         }
@@ -647,13 +649,23 @@ void MFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, co
     {
     case eFramesColumnsType::ImgID:
         {
-            QComboBox   *pimglist = editor->findChild<QComboBox*>(ImgSelCmbBoxName());
-            QPushButton *pbtn     = editor->findChild<QPushButton*>(ImgSelBtnName());
-            Q_ASSERT(pimglist && pbtn);
-            if(pbtn->isChecked())
-                model->setData(index, (-1), Qt::EditRole);
+            //QComboBox   *pimglist = editor->findChild<QComboBox*>(ImgSelCmbBoxName());
+            QComboBox   *pimglist = static_cast<QComboBox*>(editor);
+            //QPushButton *pbtn     = editor->findChild<QPushButton*>(ImgSelBtnName());
+            Q_ASSERT(pimglist /*&& pbtn*/);
+//            if(pbtn->isChecked())
+//                model->setData(index, (-1), Qt::EditRole);
+//            else
+//                model->setData(index, pimglist->currentIndex(), Qt::EditRole);
+
+            if(pimglist->currentIndex() == 0)
+            {
+                model->setData(index, -1, Qt::EditRole);
+            }
             else
-                model->setData(index, pimglist->currentIndex(), Qt::EditRole);
+            {
+                model->setData(index, (pimglist->currentIndex() - 1), Qt::EditRole);
+            }
             break;
         }
     case eFramesColumnsType::Offset:
@@ -738,35 +750,47 @@ void MFrameDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionVie
 
 
 
-QWidget *MFrameDelegate::makeImgSelect(QWidget *parent, int row) const
+QWidget *MFrameDelegate::makeImgSelect(QWidget *parent, int /*row*/) const
 {
+    //#TODO: Replace with popup dialog!
     //Make a combo box or a button to pick an image
-    QFrame      *frm        = new QFrame(parent);
-    QBoxLayout  *vertlayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, frm);
-    QComboBox   *imglstb    = new QComboBox(frm);
-    QPushButton *dupbtn     = new QPushButton(QString(tr("Prev")), frm);
-    imglstb->setObjectName(ImgSelCmbBoxName());
-    dupbtn-> setObjectName(ImgSelBtnName());
-    dupbtn->setCheckable(true);
+    //QFrame      *frm        = new QFrame(parent);
+    //QBoxLayout  *vertlayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, frm);
+    QComboBox   *imglstb    = new QComboBox(parent/*frm*/);
+    //QPushButton *dupbtn     = new QPushButton(QString(tr("Prev")), frm);
+    //imglstb->setObjectName(ImgSelCmbBoxName());
+    //dupbtn-> setObjectName(ImgSelBtnName());
+    //dupbtn->setCheckable(true);
     //        connect( imglstb, SIGNAL(currentIndexChanged(int)), this,   SLOT(selectedImageChanged(int)) );
     //        connect( dupbtn,  SIGNAL(toggled(bool)),            this,   SLOT(selectedImageToggledMinOne(bool)) );
 
-    connect( dupbtn, &QPushButton::toggled, imglstb, &QComboBox::setDisabled );
-    imglstb->setModel(m_pfrm->parentSprite()->getImages().getModel());
-
+    //connect( dupbtn, &QPushButton::toggled, imglstb, &QComboBox::setDisabled );
+    //imglstb->setModel(m_pfrm->parentSprite()->getImages().getImageSelectModel());
+    ImageContainer * pcnt = &(m_pfrm->parentSprite()->getImages());
+    imglstb->
     imglstb->setIconSize( QSize(32,32) );
 
-    frm->setLayout(vertlayout);
-    vertlayout->addWidget(imglstb, 2);
-    vertlayout->addWidget(dupbtn, 0);
-    frm->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
-    frm->setMinimumHeight(72);
-    dupbtn->setMinimumWidth(32);
+    //Add nodraw frame
+    imglstb->addItem("ID:-1 No Draw Frame");
+    for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
+    {
+        Image* pimg = pcnt->getImage(cntimg);
+        QPixmap pmap = QPixmap::fromImage(pimg->imgDataCondensed(Qt::DecorationRole).value<QImage>());
+        QString text = pimg->imgDataCondensed(Qt::DisplayRole).toString();
+        imglstb->addItem( QIcon(pmap), text );
+    }
+
+    //frm->setLayout(vertlayout);
+    //vertlayout->addWidget(imglstb, 2);
+    //vertlayout->addWidget(dupbtn, 0);
+    //frm->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
+    //frm->setMinimumHeight(72);
+    //dupbtn->setMinimumWidth(32);
     imglstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
-    dupbtn->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
-    frm->setContentsMargins(0, 0, 0, 0);
-    vertlayout->setContentsMargins(0, 0, 0, 0);
-    return frm;
+    //dupbtn->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
+    //frm->setContentsMargins(0, 0, 0, 0);
+    //vertlayout->setContentsMargins(0, 0, 0, 0);
+    return imglstb;
 }
 
 
@@ -851,6 +875,7 @@ QWidget *MFrameDelegate::makeRotNScalingSelect(QWidget *parent, int row) const
 
 QWidget *MFrameDelegate::makePaletteIDSelect(QWidget *parent, int row) const
 {
+    //#TODO: Make this into a combo box to pick the palette and get a preview!
     QSpinBox *ppalid = new QSpinBox(parent);
     ppalid->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
     ppalid->setRange(0, fmt::step_t::PALID_MAX);
@@ -930,12 +955,9 @@ fmt::step_t *MFrame::getPart(int id)
     }
     else if( id >= m_container.size())
     {
-        qCritical("MFrame::getPart(): Got partid out of range!(%1)\n", id);
+        qCritical("MFrame::getPart(): Got partid out of range!(%d)\n", id);
     }
-    else
-    {
-        return &(m_container[id].getPartData());
-    }
+    return &(m_container[id].getPartData());
 }
 
 const fmt::step_t *MFrame::getPart(int id)const

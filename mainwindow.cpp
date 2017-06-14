@@ -116,6 +116,8 @@ void MainWindow::HideAllTabs()
     ui->tabImages->hide();
 
     //ui->tblframeparts->setModel(nullptr);
+    ui->lbl_imgpreview->clear();
+    ui->lbl_imgpreview->setPixmap(m_imgNoImg);
 
     ui->tabMain->setUpdatesEnabled(true);
 }
@@ -347,12 +349,27 @@ void MainWindow::setupFrameEditPageForPart(MFrame *frm, MFramePart *part)
 //    }
 }
 
-void MainWindow::LoadContainer(const QString &path)
+//Clear all selections to avoid warnings and  etc..
+void MainWindow::PrepareForNewContainer()
 {
     HideAllTabs();
-    ui->tv_sprcontent->clearSelection();
-    ui->tv_sprcontent->setModel(nullptr);
-    ui->tv_sprcontent->reset();
+    auto lambdaClearModel = [&](auto * pmod)
+    {
+        pmod->clearSelection();
+        pmod->setModel(nullptr);
+        pmod->reset();
+    };
+
+    lambdaClearModel(ui->tv_sprcontent);
+    lambdaClearModel(ui->tblframeparts);
+    lambdaClearModel(ui->tblProperties);
+    lambdaClearModel(ui->tblseqfrmlst);
+    lambdaClearModel(ui->tblviewImages);
+}
+
+void MainWindow::LoadContainer(const QString &path)
+{
+    PrepareForNewContainer();
     //Open
     qInfo() <<"MainWindow::LoadContainer() : " <<path <<"!\n";
     spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().OpenContainer(path);
@@ -634,7 +651,7 @@ void MainWindow::setupListView()
         ui->tv_sprcontent->viewport()->update();
         ui->tv_sprcontent->collapseAll();
         ui->tv_sprcontent->viewport()->update();
-        ui->tv_sprcontent->expandToDepth(1);
+        ui->tv_sprcontent->expandToDepth(0);
     }
     else
     {
@@ -1041,6 +1058,85 @@ void MainWindow::on_btnEditPalette_clicked()
 //    paledit.exec();
 }
 
+void MainWindow::on_btnFrmExport_clicked()
+{
+    const MFrame * pfrm = m_frmeditor->getFrame();
+    if(!pfrm)
+    {
+        ShowStatusErrorMessage(tr("Couldn't export, no frame loaded!"));
+        return;
+    }
+
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Export Image"),
+                        QString(),
+                        "PNG image (*.png)");
+
+    if(filename.isNull())
+        return;
+
+
+    QImage img( qMove(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds() )) );
+    if(img.save( filename, "PNG" ))
+        ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
+    else
+        ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
+}
+
+void MainWindow::on_btnSeqExport_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Export Images Sequence : Pick name+path first image!"),
+                        QString(),
+                        "PNG image (*.png)");
+
+    if(filename.isNull())
+    {
+        return;
+    }
+
+    int rmpast = filename.size() - filename.lastIndexOf('.');
+    if( rmpast > 0 && rmpast < filename.size() )
+        filename.chop(rmpast);
+    QVector<QImage> sequence = m_previewrender.DumpSequence();
+
+    if(sequence.isEmpty())
+    {
+        ShowStatusErrorMessage(tr("Error: No sequence was loaded for export!"));
+    }
+
+    int cntimg = 0;
+    for(; cntimg < sequence.size(); ++cntimg )
+        sequence[cntimg].save( QString("%1_%2.png").arg(filename).arg(cntimg) );
+
+    ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
+}
+
+void MainWindow::on_btnImagesExport_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Export Image"),
+                        QString(),
+                        "PNG image (*.png)");
+
+    if(filename.isNull())
+        return;
+
+    Image * pimg = nullptr;
+
+    if(ui->tblviewImages->currentIndex().isValid())
+        pimg = static_cast<Image*>( ui->tblviewImages->currentIndex().internalPointer() );
+
+    if(!pimg)
+    {
+        ShowStatusErrorMessage(tr("Error: No image selected for export!"));
+        return;
+    }
+
+    QImage img = qMove( pimg->makeImage(pimg->parentSprite()->getPalette()) );
+    img.save(filename, "PNG");
+}
+
 //===================================================================================================================
 // TVSpritesContextMenu
 //===================================================================================================================
@@ -1067,6 +1163,8 @@ void TVSpritesContextMenu::BuildMenu()
             addAction(tr("dump.."),       this, &TVSpritesContextMenu::SaveDump);
             break;
         }
+    default:
+        break;
     };
 
     if(m_pitem->nodeIsMutable())
@@ -1139,6 +1237,12 @@ void TVSpritesContextMenu::RemoveEntry()
     m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
     close();
 }
+
+
+
+
+
+
 
 
 
