@@ -43,19 +43,66 @@ MainWindow::MainWindow(QWidget *parent) :
     readSettings();
 
     //Connect stuff
-    connect( ui->chkAnimSeqLoop, &QCheckBox::toggled, &m_previewrender, &SceneRenderer::loopChanged );
-    connect( ui->btnSeqPlay, &QPushButton::clicked, &m_previewrender, &SceneRenderer::startAnimUpdates );
-    connect( ui->btnSeqStop, &QPushButton::clicked, &m_previewrender, &SceneRenderer::stopAnimUpdates );
+    connect( ui->chkAnimSeqLoop,&QCheckBox::toggled,    &m_previewrender, &SceneRenderer::loopChanged );
+    connect( ui->btnSeqPlay,    &QPushButton::clicked,  &m_previewrender, &SceneRenderer::startAnimUpdates );
+    connect( ui->btnSeqStop,    &QPushButton::clicked,  &m_previewrender, &SceneRenderer::stopAnimUpdates );
 
-    connect( &m_previewrender, SIGNAL(rangechanged(int,int)), ui->sldrAnimSeq, SLOT(setRange(int,int)) );
-    connect( &m_previewrender, SIGNAL(framechanged(int)), ui->sldrAnimSeq, SLOT(setValue(int)) );
-    connect( &m_previewrender, SIGNAL(framechanged(int)), ui->spinCurFrm, SLOT(setValue(int)) );
+    connect( &m_previewrender, &SceneRenderer::rangechanged, [&](int min, int max)
+    {
+        //Set this so we don't end up with messed up logic!
+        ui->spinCurFrm->blockSignals(true);
+        ui->spinCurFrm->setRange(min, max);
+        ui->spinCurFrm->blockSignals(false);
 
-    connect( ui->spinCurFrm, SIGNAL(valueChanged(int)), &m_previewrender, SLOT(setCurrentFrame(int)) );
-    connect( ui->sldrAnimSeq, SIGNAL(valueChanged(int)), &m_previewrender, SLOT(setCurrentFrame(int)) );
+        ui->sldrAnimSeq->blockSignals(true);
+        ui->sldrAnimSeq->setRange(min, max);
+        ui->sldrAnimSeq->blockSignals(false);
+    });
+             //, ui->sldrAnimSeq, &QSlider::setRange );
+
+    //connect( &m_previewrender, &SceneRenderer::rangechanged, ui->spinCurFrm,  &QSpinBox::setRange );
+    connect( &m_previewrender, &SceneRenderer::framechanged, [&](int frm)
+    {
+        //Set this so we don't end up with messed up logic!
+        ui->spinCurFrm->blockSignals(true);
+        ui->spinCurFrm->setValue(frm);
+        ui->spinCurFrm->blockSignals(false);
+
+        ui->sldrAnimSeq->blockSignals(true);
+        ui->sldrAnimSeq->setValue(frm);
+        ui->sldrAnimSeq->blockSignals(false);
+    });
+             //ui->spinCurFrm,  &QSpinBox::setValue);
+
+//    connect( ui->spinCurFrm,   qOverload<int>(&QSpinBox::valueChanged),      [&](int frm)
+//    {
+//        //Set this so we don't end up with messed up logic!
+//        ui->sldrAnimSeq->blockSignals(true);
+//        ui->sldrAnimSeq->setValue(frm);
+//        ui->sldrAnimSeq->blockSignals(false);
+//    });
+
+//    connect( ui->spinCurFrm,  qOverload<int>(&QSpinBox::valueChanged), &m_previewrender, &SceneRenderer::setCurrentFrame );
+//    connect( ui->sldrAnimSeq, qOverload<int>(&QSlider::valueChanged),  ui->spinCurFrm,   &QSpinBox::setValue );
+
+//    connect( ui->spinCurFrm,  qOverload<int>(&QSpinBox::valueChanged), [&](int val)
+//    {
+//        ui->sldrAnimSeq->blockSignals(true);
+//        ui->sldrAnimSeq->setValue(val);
+//        ui->sldrAnimSeq->blockSignals(false);
+//        m_previewrender.setCurrentFrame(val);
+//    });
+
+    connect(ui->sldrAnimSeq, &QSlider::sliderMoved, [&](int val)
+    {
+        ui->spinCurFrm->blockSignals(true);
+        ui->spinCurFrm->setValue(val);
+        ui->spinCurFrm->blockSignals(false);
+        m_previewrender.setCurrentFrame(val);
+    });
 
     ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
-    ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
+    ui->tv_sprcontent->setModel( &spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
 
     ui->spbFrmPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
@@ -1059,25 +1106,25 @@ void MainWindow::on_btnImportPalette_clicked()
     DisplayPropertiesPage(spr);
 }
 
-void MainWindow::on_btnEditPalette_clicked()
-{
-    //FUCK THIS FOR NOW
-    //I SPENT ALL DAY ON IT AND MANAGED TO DESTROY IT COMPLETELY
-    //I GUESS PEOPLE WILL EDIT THE PALETTES USING AN EXTERNAL TOOL!
-    //C:
+//void MainWindow::on_btnEditPalette_clicked()
+//{
+//    //FUCK THIS FOR NOW
+//    //I SPENT ALL DAY ON IT AND MANAGED TO DESTROY IT COMPLETELY
+//    //I GUESS PEOPLE WILL EDIT THE PALETTES USING AN EXTERNAL TOOL!
+//    //C:
 
-//    Sprite * spr = currentSprite();
-//    if( !spr )
-//    {
-//        ShowStatusErrorMessage(QString(tr("No valid sprite to edit the palette of!")) );
-//        return;
-//    }
+////    Sprite * spr = currentSprite();
+////    if( !spr )
+////    {
+////        ShowStatusErrorMessage(QString(tr("No valid sprite to edit the palette of!")) );
+////        return;
+////    }
 
-//    PaletteEditor paledit(this);
-//    paledit.setModal(true);
-//    paledit.setPalModel(spr->getPaletteModel());
-//    paledit.exec();
-}
+////    PaletteEditor paledit(this);
+////    paledit.setModal(true);
+////    paledit.setPalModel(spr->getPaletteModel());
+////    paledit.exec();
+//}
 
 void MainWindow::on_btnFrmExport_clicked()
 {

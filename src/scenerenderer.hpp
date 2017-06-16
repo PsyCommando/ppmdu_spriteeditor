@@ -66,13 +66,14 @@ public:
             return;
         QMutexLocker lk(&m_mtxcache);
         ++m_curfrm;
-        emit framechanged(m_curfrm);
         if( m_curfrm >= m_cachedframes.size() )
         {
             m_curfrm = 0;
             emit loopcomplete();
         }
+        emit framechanged(m_curfrm);
         m_ticksnextfrm = m_cachedframes[m_curfrm].duration;
+        qDebug("Frame Updated to %d, next in %d ticks\n",  m_curfrm, m_ticksnextfrm);
     }
 
     QFuture<QVector<QImage>> DumpSequence()const
@@ -151,9 +152,6 @@ public:
                 if(pfrm != nullptr )
                 {
                     target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), boundsbiggest, &area));
-//                    if(target.colorTable().size() > 1)
-//                        target.createMaskFromColor( target.colorTable().front(), Qt::MaskOutColor );
-//                    target = target.copy(area);
                 }
                 else
                     qDebug("AnimatedSpriteItem::LoadSequence(): Got invalid frame index %d!\n", afrm.frmidx());
@@ -162,19 +160,6 @@ public:
                 //target.save( QString("./aimfrm_%1.png").arg(m_cachedframes.size()), "png");
 
                 cachedanimfrm_t dest;
-//                if( boundsbiggest.x() > area.x() )
-//                    boundsbiggest.setX(area.x());
-//                if( boundsbiggest.y() > area.y() )
-//                    boundsbiggest.setY(area.y());
-
-//                if( boundsbiggest.width() < area.width() )
-//                    boundsbiggest.setWidth(area.width());
-//                if( boundsbiggest.height() < area.height() )
-//                    boundsbiggest.setHeight(area.height());
-
-
-//                if(target.colorTable().size() > 1)
-//                    pixm.setMask(pixm.createMaskFromColor( target.colorTable().front(), Qt::MaskOutColor ));
                 dest.area     = area;
                 dest.shadowx  = afrm.shadowx();
                 dest.shadowy  = afrm.shadowy();
@@ -364,7 +349,10 @@ public slots:
     void setCurFrame(int frmid)
     {
         if(frmid < m_cachedframes.size())
-            m_curfrm = frmid;
+        {
+            m_curfrm       = frmid;
+            m_ticksnextfrm = m_cachedframes[m_curfrm].duration;
+        }
         //emit framechanged(m_curfrm);
         emit framechanged(boundingRect());
     }
@@ -380,6 +368,21 @@ class SceneRenderer : public QObject
 public:
     explicit SceneRenderer(bool bshouldloop, QObject *parent = 0);
 
+    virtual ~SceneRenderer()
+    {
+        clearAnimSprite();
+    }
+
+    void clearAnimSprite()
+    {
+        if(m_animsprite)
+        {
+            m_animScene.removeItem(m_animsprite);
+            delete m_animsprite;
+            m_animsprite = nullptr;
+        }
+    }
+
     //void              setSprite( Sprite * spr ) { m_spr = spr; }
     //Sprite          * getSprite()               { return m_spr; }
     //const Sprite    * getSprite()const          { return m_spr; }
@@ -388,22 +391,23 @@ public:
 
     void setScene( Sprite * spr, fmt::AnimDB::animseqid_t id )
     {
-        if(m_animsprite)
-        {
-            m_animScene.removeItem(m_animsprite);
-            m_animsprite = nullptr;
-        }
-
+        clearAnimSprite();
         m_animsprite = new AnimatedSpriteItem(spr, id, m_shouldLoop);
         connect(this, &SceneRenderer::tick, m_animsprite, &AnimatedSpriteItem::tick);
         //connect(this, &SceneRenderer::setloop, m_animsprite, &AnimatedSpriteItem::setloop);
-        connect(this, SIGNAL(setCurFrm(int)), m_animsprite, SLOT(setCurFrame(int)) );
+        connect(this, &SceneRenderer::setCurFrm, m_animsprite, &AnimatedSpriteItem::setCurFrame );
 
-        connect(m_animsprite, SIGNAL(framechanged(QRectF)), &m_animScene, SLOT(update(QRectF)) );
-//        connect(m_animsprite, SIGNAL(framechanged(int)), this, SLOT(OnFrameChanged(int)) );
-//        connect(m_animsprite, SIGNAL(rangechanged(int,int)), this, SLOT(OnRangeChanged(int,int)) );
+//        connect(m_animsprite, qOverload<QRectF>(AnimatedSpriteItem::framechanged),
+//                &m_animScene, qOverload<QRectF>(&QGraphicsScene::update) );
+        connect(m_animsprite, qOverload<QRectF>(&AnimatedSpriteItem::framechanged), [&](QRectF r)
+        {
+            m_animScene.update(r);
+        });
 
-        connect(m_animsprite, SIGNAL(loopcomplete()), this, SLOT(loopComplete()));
+        connect(m_animsprite, qOverload<int>(&AnimatedSpriteItem::framechanged), this, &SceneRenderer::OnFrameChanged );
+        connect(m_animsprite, &AnimatedSpriteItem::rangechanged, this, &SceneRenderer::OnRangeChanged );
+
+        connect(m_animsprite, &AnimatedSpriteItem::loopcomplete, this, &SceneRenderer::loopComplete);
         m_animsprite->ScheduleSequenceLoad();
         m_animScene.addItem(m_animsprite);
     }
@@ -412,11 +416,7 @@ public:
     {
         stopAnimUpdates();
         m_timer.reset();
-        if(m_animsprite)
-        {
-            m_animScene.removeItem(m_animsprite);
-            m_animsprite = nullptr;
-        }
+        clearAnimSprite();
         m_animScene.clear();
         //m_animScene.setSceneRect( -256, -128, 512, 256 );
 
@@ -498,6 +498,7 @@ public slots:
         if(m_timer)
         {
             m_timer->stop();
+            disconnect(m_timer.data(), &QTimer::timeout, this, &SceneRenderer::doTick );
             m_timer.reset();
             m_ticks = 0;
             if(m_animsprite)

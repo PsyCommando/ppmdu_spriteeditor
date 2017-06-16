@@ -111,7 +111,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>4</number>
+        <number>1</number>
        </property>
        <property name="documentMode">
         <bool>false</bool>
@@ -575,16 +575,6 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="btnEditPalette">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>Edit..</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <spacer name="verticalSpacer_3">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -1004,7 +994,7 @@
            <item>
             <widget class="QGroupBox" name="groupBox_7">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -1013,40 +1003,47 @@
               <string/>
              </property>
              <layout class="QFormLayout" name="formLayout_4">
-              <item row="0" column="0">
+              <item row="2" column="0">
                <widget class="QPushButton" name="btnImagesExportAll">
                 <property name="text">
                  <string>Export All..</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QPushButton" name="btnImagesMoveUp">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
+              <item row="3" column="0">
+               <widget class="QPushButton" name="btnImagesExport">
                 <property name="text">
-                 <string>Move Up</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QPushButton" name="btnImagesMoveDown">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Move Down</string>
+                 <string>Export..</string>
                 </property>
                </widget>
               </item>
               <item row="2" column="1">
+               <widget class="QPushButton" name="btnImagesImport">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Import..</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QPushButton" name="btnImageCrop">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Crop..</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
                <widget class="QPushButton" name="btnImagesRemove">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1056,27 +1053,6 @@
                 </property>
                 <property name="text">
                  <string>Remove</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QPushButton" name="btnImagesExport">
-                <property name="text">
-                 <string>Export..</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QPushButton" name="btnImagesImport">
-                <property name="text">
-                 <string>Import..</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QPushButton" name="btnImageCrop">
-                <property name="text">
-                 <string>Crop..</string>
                 </property>
                </widget>
               </item>
@@ -1098,25 +1074,6 @@
               </size>
              </property>
             </spacer>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="groupBox_8">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>120</width>
-               <height>100</height>
-              </size>
-             </property>
-             <property name="title">
-              <string>Details</string>
-             </property>
-            </widget>
            </item>
           </layout>
          </item>
@@ -1745,32 +1702,16 @@
                  </widget>
                 </item>
                 <item row="2" column="0">
-                 <widget class="QPushButton" name="pushButton">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Insert a new part at the bottom of the part list!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
+                 <widget class="QLabel" name="label_19">
                   <property name="text">
-                   <string>Insert Part</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="4" column="0">
-                 <widget class="QComboBox" name="cmbFrmQuickPrio">
-                  <property name="toolTip">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Z priority for all parts in the frame to the one chosen!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   <string>Quick Priority:</string>
                   </property>
                  </widget>
                 </item>
                 <item row="3" column="0">
-                 <widget class="QLabel" name="label_19">
-                  <property name="text">
-                   <string>Quick Priority:</string>
+                 <widget class="QComboBox" name="cmbFrmQuickPrio">
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Z priority for all parts in the frame to the one chosen!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                  </widget>
                 </item>

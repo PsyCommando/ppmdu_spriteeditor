@@ -425,7 +425,7 @@ private slots:
 
     void on_btnImportPalette_clicked();
 
-    void on_btnEditPalette_clicked();
+    //void on_btnEditPalette_clicked();
 
     void on_btnFrmExport_clicked();
 
