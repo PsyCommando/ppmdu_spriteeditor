@@ -31,6 +31,7 @@ class PaletteModel : public QAbstractItemModel
  public:
     PaletteModel(QVector<QRgb> * pal, QObject * parent = nullptr);
 
+
     // QAbstractItemModel interface
 public:
     virtual QModelIndex index(int row, int column, const QModelIndex & parent) const override;
@@ -67,6 +68,14 @@ public:
     PaletteContainer & operator=( const PaletteContainer & cp );
     PaletteContainer & operator=( PaletteContainer && mv );
     ~PaletteContainer();
+
+    void clone(const TreeElement *other)
+    {
+        const PaletteContainer * ptr = static_cast<const PaletteContainer*>(other);
+        if(!ptr)
+            throw std::runtime_error("PaletteContainer::clone(): other is not a PaletteContainer!");
+        (*this) = *ptr;
+    }
 
 public:
     QVariant nodeData(int column, int role) const override;

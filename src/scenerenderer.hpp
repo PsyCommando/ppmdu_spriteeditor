@@ -323,7 +323,7 @@ public slots:
     //Rebuilds the cached frames!
     void reload()
     {
-        Init();
+        ScheduleSequenceLoad();
     }
 
     void setloop(bool bshouldloop)
@@ -529,7 +529,13 @@ public slots:
     void invalidateAnim()
     {
 
+    }
 
+    void reloadAnim()
+    {
+        stopAnimUpdates();
+        if(m_animsprite)
+            m_animsprite->reload();
     }
 
     void loopComplete()

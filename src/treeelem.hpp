@@ -104,6 +104,7 @@ public:
 //    virtual QVariant        headerData(int section, bool bhorizontal, int role) const = 0;
     virtual bool            insertChildrenNodes(int position, int count)=0;
     virtual bool            removeChildrenNodes(int position, int count)=0;
+    virtual bool            moveChildrenNodes(int srcrow, int count, int destrow)=0;
     virtual int             indexOfNode( TreeElement * ptr )const = 0;
 
 //    eTreeElemType           getElemTy()const { return m_elemty; }
@@ -121,6 +122,9 @@ public:
 
     virtual Sprite             *parentSprite() = 0;
     virtual const Sprite       *parentSprite()const {return const_cast<TreeElement*>(this)->parentSprite();}
+
+    //clone methode for childs to be copied properly
+    virtual void                clone(const TreeElement * other) = 0;
 
     //Whether we can move, remove, insert this kind of node
     virtual bool nodeIsMutable()const {return true;}
@@ -334,13 +338,27 @@ public:
                           int destinationChild) override
     {
         TreeElement *srcparentItem = getItem(sourceParent);
-        TreeElement *destparentItem = getItem(sourceParent);
+        TreeElement *destparentItem = getItem(destinationParent);
 
-        if( count > 0 )
+        if( destinationParent == sourceParent && sourceRow == destinationChild )
+            return true;
+
+        if(destinationParent == sourceParent)
         {
-            beginMoveRows(sourceParent, sourceRow, (sourceRow + count) - 1, destinationParent, destinationChild);
-            Q_ASSERT(false);
-            endRemoveRows();
+            int newdest = (sourceRow < destinationChild)? destinationChild + 1 : destinationChild;
+            if(beginMoveRows(sourceParent, sourceRow, sourceRow + (count - 1), destinationParent, newdest))
+            {
+                bool result = srcparentItem->moveChildrenNodes(sourceRow, count, destinationChild);
+                endMoveRows();
+                return result;
+            }
+            else
+                return false;
+        }
+        else
+        {
+            Q_ASSERT(false); //Not implemented
+            return false;
         }
         return true;
     }
@@ -404,6 +422,7 @@ public:
     //You don't!!
     bool insertChildrenNodes(int, int) final {return false;}
     bool removeChildrenNodes(int, int) final {return false;}
+    bool moveChildrenNodes(int, int, int)final {return false;}
 
 
     //Thos can be re-implemented!
@@ -564,6 +583,30 @@ public:
         int i = 0;
         for( ; i < count; ++i )
             m_container.removeAt(position);
+        return true;
+    }
+
+    bool moveChildrenNodes(int srcrow, int count, int destrow)override
+    {
+        QMutexLocker lk(&getMutex());
+
+        if( srcrow + count > m_container.size() || destrow > m_container.size() )
+        {
+            Q_ASSERT(false);
+            return false;
+        }
+
+        if(destrow > srcrow)
+        {
+            for( int i = 0; i < count; ++i )
+                m_container.move(srcrow, destrow);
+        }
+        else
+        {
+            for( int i = 0; i < count; ++i )
+                m_container.move(srcrow, destrow + i);
+        }
+
         return true;
     }
 

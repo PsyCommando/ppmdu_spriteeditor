@@ -63,6 +63,12 @@ namespace spr_manager
             qDebug("SpriteContainer::~SpriteContainer(): Done!\n");
         }
 
+
+        void clone(const TreeElement */*other*/)
+        {
+            throw std::runtime_error("SpriteContainer::clone(): Copy is deactivated!");
+        }
+
         //
         bool ContainerLoaded()const;
         bool ContainerIsPackFile()const;
@@ -219,6 +225,7 @@ namespace spr_manager
         }
 
 
+
     public:
         void appendChild(TreeElement *item)
         {
@@ -294,6 +301,30 @@ namespace spr_manager
 
             if( i+1 != count )
                 return false;
+
+            return true;
+        }
+
+        inline bool moveChildrenNodes  (int srcrow, int count, int destrow)override
+        {
+            QMutexLocker lk(&getMutex());
+
+            if( srcrow + count > m_spr.size() || destrow > m_spr.size() )
+            {
+                Q_ASSERT(false);
+                return false;
+            }
+
+            if(destrow > srcrow)
+            {
+                for( int i = 0; i < count; ++i )
+                    m_spr.move(srcrow, destrow);
+            }
+            else
+            {
+                for( int i = 0; i < count; ++i )
+                    m_spr.move(srcrow, destrow + i);
+            }
 
             return true;
         }

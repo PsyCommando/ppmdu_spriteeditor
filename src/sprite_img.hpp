@@ -52,6 +52,14 @@ public:
         qDebug("EffectOffsetContainer::~EffectOffsetContainer()\n");
     }
 
+    void clone(const TreeElement *other)
+    {
+        const EffectOffsetContainer * ptr = static_cast<const EffectOffsetContainer*>(other);
+        if(!ptr)
+            throw std::runtime_error("EffectOffsetContainer::clone(): other is not a EffectOffsetContainer!");
+        (*this) = *ptr;
+    }
+
     QVariant nodeData(int column, int role) const override
     {
         if( column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
@@ -121,6 +129,15 @@ public:
         m_unk2  = cp.m_unk2;
         m_unk14 = cp.m_unk14;
         return *this;
+    }
+
+
+    void clone(const TreeElement *other)
+    {
+        const Image * ptr = static_cast<const Image*>(other);
+        if(!ptr)
+            throw std::runtime_error("Image::clone(): other is not a Image!");
+        (*this) = *ptr;
     }
 
     inline bool operator==( const Image & other)const  {return this == &other;}
@@ -356,6 +373,14 @@ public:
     {
         BaseTreeContainerChild::operator=(mv);
         return *this;
+    }
+
+    void clone(const TreeElement *other)
+    {
+        const ImageContainer * ptr = static_cast<const ImageContainer*>(other);
+        if(!ptr)
+            throw std::runtime_error("ImageContainer::clone(): other is not a ImageContainer!");
+        (*this) = *ptr;
     }
 
 //

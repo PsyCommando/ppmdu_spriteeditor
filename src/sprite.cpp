@@ -128,6 +128,14 @@ Sprite::~Sprite()
     qDebug("Sprite::~Sprite(): Sprite ID: %d\n", nodeIndex());
 }
 
+void Sprite::clone(const TreeElement *other)
+{
+    const Sprite * spr = static_cast<const Sprite*>(other);
+    if(!spr)
+        throw std::runtime_error("Sprite::clone(): other is not a Sprite!");
+    (*this) = *spr;
+}
+
 TreeElement *Sprite::nodeChild(int row)
 {
     return ElemPtr(row);

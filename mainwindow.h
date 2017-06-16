@@ -402,12 +402,6 @@ private slots:
 
     void on_action_Open_triggered();
 
-    void on_btnSeqPlay_clicked();
-
-    void on_btnSeqStop_clicked();
-
-    void on_chkAnimSeqLoop_toggled(bool checked);
-
     void on_btnImageCrop_clicked();
 
     void ShowProgressDiag(QFuture<void> & task)
@@ -444,6 +438,16 @@ private slots:
     void on_btnFrmDup_clicked();
 
     void on_cmbFrmQuickPrio_currentIndexChanged(int index);
+
+    void on_btnSeqAddFrm_clicked();
+
+    void on_btnSeqRemFrm_clicked();
+
+    void on_btnSeqMvUp_clicked();
+
+    void on_btnSeqMvDown_clicked();
+
+    void on_btnSeqDup_clicked();
 
 signals:
 

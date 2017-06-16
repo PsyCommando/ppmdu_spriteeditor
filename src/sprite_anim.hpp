@@ -32,6 +32,14 @@ public:
         setNodeDataTy(eTreeElemDataType::animFrame);
     }
 
+    void clone(const TreeElement *other)
+    {
+        const AnimFrame * ptr = static_cast<const AnimFrame*>(other);
+        if(!ptr)
+            throw std::runtime_error("AnimFrame::clone(): other is not a AnimFrame!");
+        (*this) = *ptr;
+    }
+
     inline bool operator==( const AnimFrame & other)const  {return this == &other;}
     inline bool operator!=( const AnimFrame & other)const  {return !operator==(other);}
 
@@ -104,6 +112,14 @@ public:
     {
         BaseTreeContainerChild::operator=(mv);
         return *this;
+    }
+
+    void clone(const TreeElement *other)
+    {
+        const AnimSequence * ptr = static_cast<const AnimSequence*>(other);
+        if(!ptr)
+            throw std::runtime_error("AnimFrame::clone(): other is not a AnimFrame!");
+        (*this) = *ptr;
     }
 
     inline bool operator==( const AnimSequence & other)const  {return this == &other;}
@@ -203,6 +219,14 @@ public:
         qDebug("AnimSequences::~AnimSequences()\n");
     }
 
+    void clone(const TreeElement *other)
+    {
+        const AnimSequences * ptr = static_cast<const AnimSequences*>(other);
+        if(!ptr)
+            throw std::runtime_error("AnimSequences::clone(): other is not a AnimSequences!");
+        (*this) = *ptr;
+    }
+
     AnimSequences & operator=( const AnimSequences & cp );
     AnimSequences & operator=( AnimSequences && mv );
 
@@ -255,6 +279,14 @@ public:
     AnimGroup( TreeElement * parent )
         :BaseTreeTerminalChild(parent)
     {setNodeDataTy(eTreeElemDataType::animGroup);}
+
+    void clone(const TreeElement *other)
+    {
+        const AnimGroup * ptr = static_cast<const AnimGroup*>(other);
+        if(!ptr)
+            throw std::runtime_error("AnimGroup::clone(): other is not a AnimGroup!");
+        (*this) = *ptr;
+    }
 
     int nodeColumnCount()const override {return 1;}
 
@@ -337,6 +369,14 @@ public:
         :BaseTreeContainerChild(parent)
     {
         setNodeDataTy(eTreeElemDataType::animTable);
+    }
+
+    void clone(const TreeElement *other)
+    {
+        const AnimTable * ptr = static_cast<const AnimTable*>(other);
+        if(!ptr)
+            throw std::runtime_error("AnimTable::clone(): other is not a AnimTable!");
+        (*this) = *ptr;
     }
 
     QVariant nodeData(int column, int role) const override

@@ -237,6 +237,7 @@ public:
     Sprite & operator=(const Sprite & cp);
     Sprite & operator=(Sprite       && mv);
     ~Sprite();
+    void clone(const TreeElement * other);
 
     inline bool operator==( const Sprite & other)const  {return this == &other;}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
@@ -254,6 +255,7 @@ public:
     //Don't allow that, since we have static childs
     inline bool insertChildrenNodes(int, int)override {return false;}
     inline bool removeChildrenNodes(int, int)override {return false;}
+    inline bool moveChildrenNodes  (int, int, int)override {return false;}
 
 public:
     void OnClicked() override;

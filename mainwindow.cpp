@@ -872,8 +872,6 @@ void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
 
 QMenu *MainWindow::makeSpriteContextMenu(QModelIndex entry)
 {
-
-    //QMenu * menu = new QMenu(ui->tv_sprcontent);
     spr_manager::SpriteContainer * pcnt = getContainer();
     Q_ASSERT(pcnt);
     TreeElement * elem = static_cast<TreeElement*>(entry.internalPointer());
@@ -884,59 +882,6 @@ QMenu *MainWindow::makeSpriteContextMenu(QModelIndex entry)
     return menu;
 }
 
-void MainWindow::on_btnSeqPlay_clicked()
-{
-//    if(!m_curanim)
-//        return;
-    qDebug() << "MainWindow::on_btnSeqPlay_clicked(): Pressed play!\n";
-    //m_curanim->Play();
-}
-
-void MainWindow::on_btnSeqStop_clicked()
-{
-//    if(!m_curanim)
-//        return;
-    qDebug() << "MainWindow::on_btnSeqStop_clicked(): Pressed stop!\n";
-    //m_curanim->Stop();
-}
-
-void MainWindow::on_chkAnimSeqLoop_toggled(bool checked)
-{
-//    if(!m_curanim)
-//        return;
-    //m_curanim->loop(checked);
-}
-
-void MainWindow::on_btnImageCrop_clicked()
-{
-    Image * pimg = static_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
-
-    if(pimg)
-    {
-        DiagSingleImgCropper cropper(this, pimg);
-        cropper.setModal(true);
-        cropper.show();
-    }
-    else
-    {
-        QApplication::beep();
-        ui->statusBar->setStatusTip("Can't crop! No valid image selected!");
-        qWarning("MainWindow::on_btnImageCrop_clicked(): Crop clicked, but no valid images was selected!");
-    }
-}
-
-void MainWindow::on_tblviewImages_clicked(const QModelIndex &index)
-{
-    Image * img = static_cast<Image *>(index.internalPointer());
-    if(!index.internalPointer() || !img)
-    {
-        ui->lbl_imgpreview->setPixmap(m_imgNoImg);
-        return;
-    }
-    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
-
-    //#TODO: Update image details if needed
-}
 
 void MainWindow::on_tblframeparts_clicked(const QModelIndex &/*index*/)
 {
@@ -992,6 +937,61 @@ Image * MainWindow::currentTblImages()
 {
     Image * elem = static_cast<Image*>(ui->tblviewImages->currentIndex().internalPointer());
     return elem;
+}
+
+
+// *********************************
+//  Properties Tab
+// *********************************
+void MainWindow::on_btnImportPalette_clicked()
+{
+    using namespace spr_manager;
+    Sprite * spr = currentSprite();
+    if( !spr )
+    {
+        ShowStatusErrorMessage(QString(tr("No sprite to import to!")) );
+        return;
+    }
+
+    QString selectedfilter;
+    ePaletteDumpType type;
+    QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Import Palette File"),
+                                                    QString(),
+            PaletteFilter + ";;" + GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL), //allow loading a PNG for its palette!
+                                                    &selectedfilter );
+    if(filename.isNull())
+        return;
+
+    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
+        type = ePaletteDumpType::RIFF_Pal;
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
+        type = ePaletteDumpType::TEXT_Pal;
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
+        type = ePaletteDumpType::GIMP_PAL;
+    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
+        type = ePaletteDumpType::PNG_PAL;
+    Q_ASSERT(type < ePaletteDumpType::INVALID);
+
+    try
+    {
+        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, type);
+    }
+    catch(const std::exception & e)
+    {
+        ShowStatusErrorMessage(QString(tr("Error: %1")).arg(e.what()) );
+        return;
+    }
+    catch(...)
+    {
+        std::rethrow_exception(std::current_exception());
+        return;
+    }
+
+    ShowStatusMessage( QString(tr("Palette imported!")) );
+
+    //Refresh property page
+    DisplayPropertiesPage(spr);
 }
 
 void MainWindow::on_btnExportPalette_clicked()
@@ -1055,129 +1055,39 @@ void MainWindow::on_btnExportPalette_clicked()
     ShowStatusMessage( QString(tr("Palette dumped!")) );
 }
 
-void MainWindow::on_btnImportPalette_clicked()
+
+// *********************************
+//  Image Tab
+// *********************************
+void MainWindow::on_btnImageCrop_clicked()
 {
-    using namespace spr_manager;
-    Sprite * spr = currentSprite();
-    if( !spr )
+    Image * pimg = static_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
+
+    if(pimg)
     {
-        ShowStatusErrorMessage(QString(tr("No sprite to import to!")) );
-        return;
+        DiagSingleImgCropper cropper(this, pimg);
+        cropper.setModal(true);
+        cropper.show();
     }
-
-    QString selectedfilter;
-    ePaletteDumpType type;
-    QString filename = QFileDialog::getOpenFileName(this,
-                                                    tr("Import Palette File"),
-                                                    QString(),
-            PaletteFilter + ";;" + GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL), //allow loading a PNG for its palette!
-                                                    &selectedfilter );
-    if(filename.isNull())
-        return;
-
-    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
-        type = ePaletteDumpType::RIFF_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
-        type = ePaletteDumpType::TEXT_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
-        type = ePaletteDumpType::GIMP_PAL;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
-        type = ePaletteDumpType::PNG_PAL;
-    Q_ASSERT(type < ePaletteDumpType::INVALID);
-
-    try
-    {
-        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, type);
-    }
-    catch(const std::exception & e)
-    {
-        ShowStatusErrorMessage(QString(tr("Error: %1")).arg(e.what()) );
-        return;
-    }
-    catch(...)
-    {
-        std::rethrow_exception(std::current_exception());
-        return;
-    }
-
-    ShowStatusMessage( QString(tr("Palette imported!")) );
-
-    //Refresh property page
-    DisplayPropertiesPage(spr);
-}
-
-//void MainWindow::on_btnEditPalette_clicked()
-//{
-//    //FUCK THIS FOR NOW
-//    //I SPENT ALL DAY ON IT AND MANAGED TO DESTROY IT COMPLETELY
-//    //I GUESS PEOPLE WILL EDIT THE PALETTES USING AN EXTERNAL TOOL!
-//    //C:
-
-////    Sprite * spr = currentSprite();
-////    if( !spr )
-////    {
-////        ShowStatusErrorMessage(QString(tr("No valid sprite to edit the palette of!")) );
-////        return;
-////    }
-
-////    PaletteEditor paledit(this);
-////    paledit.setModal(true);
-////    paledit.setPalModel(spr->getPaletteModel());
-////    paledit.exec();
-//}
-
-void MainWindow::on_btnFrmExport_clicked()
-{
-    const MFrame * pfrm = m_frmeditor->getFrame();
-    if(!pfrm)
-    {
-        ShowStatusErrorMessage(tr("Couldn't export, no frame loaded!"));
-        return;
-    }
-
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Export Image"),
-                        QString(),
-                        "PNG image (*.png)");
-
-    if(filename.isNull())
-        return;
-
-
-    QImage img( qMove(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds() )) );
-    if(img.save( filename, "PNG" ))
-        ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
     else
-        ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
+    {
+        QApplication::beep();
+        ui->statusBar->setStatusTip("Can't crop! No valid image selected!");
+        qWarning("MainWindow::on_btnImageCrop_clicked(): Crop clicked, but no valid images was selected!");
+    }
 }
 
-void MainWindow::on_btnSeqExport_clicked()
+void MainWindow::on_tblviewImages_clicked(const QModelIndex &index)
 {
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Export Images Sequence : Pick name+path first image!"),
-                        QString(),
-                        "PNG image (*.png)");
-
-    if(filename.isNull())
+    Image * img = static_cast<Image *>(index.internalPointer());
+    if(!index.internalPointer() || !img)
     {
+        ui->lbl_imgpreview->setPixmap(m_imgNoImg);
         return;
     }
+    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
 
-    int rmpast = filename.size() - filename.lastIndexOf('.');
-    if( rmpast > 0 && rmpast < filename.size() )
-        filename.chop(rmpast);
-    QVector<QImage> sequence = m_previewrender.DumpSequence();
-
-    if(sequence.isEmpty())
-    {
-        ShowStatusErrorMessage(tr("Error: No sequence was loaded for export!"));
-    }
-
-    int cntimg = 0;
-    for(; cntimg < sequence.size(); ++cntimg )
-        sequence[cntimg].save( QString("%1_%2.png").arg(filename).arg(cntimg) );
-
-    ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
+    //#TODO: Update image details if needed
 }
 
 void MainWindow::on_btnImagesExport_clicked()
@@ -1208,6 +1118,9 @@ void MainWindow::on_btnImagesExport_clicked()
         ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
 }
 
+// *********************************
+//  Frame Tab
+// *********************************
 void MainWindow::on_btnFrmRmPart_clicked()
 {
     QModelIndex ind = ui->tblframeparts->currentIndex();
@@ -1337,12 +1250,191 @@ void MainWindow::on_btnFrmDup_clicked()
 
 void MainWindow::on_cmbFrmQuickPrio_currentIndexChanged(int index)
 {
+    Q_ASSERT(false); //#TODO: Make this work!
 
     m_frmeditor->updateParts();
     ui->gvFrame->update();
     ui->tblframeparts->update();
 }
 
+void MainWindow::on_btnFrmExport_clicked()
+{
+    const MFrame * pfrm = m_frmeditor->getFrame();
+    if(!pfrm)
+    {
+        ShowStatusErrorMessage(tr("Couldn't export, no frame loaded!"));
+        return;
+    }
+
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Export Image"),
+                        QString(),
+                        "PNG image (*.png)");
+
+    if(filename.isNull())
+        return;
+
+
+    QImage img( qMove(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds() )) );
+    if(img.save( filename, "PNG" ))
+        ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
+    else
+        ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
+}
+
+
+// *********************************
+//  Anim Sequence Tab
+// *********************************
+void MainWindow::on_btnSeqAddFrm_clicked()
+{
+    QModelIndex     ind       = ui->tblseqfrmlst->currentIndex();
+    AnimSequence    *curseq = currentAnimSequence();
+    Q_ASSERT(curseq);
+    int insertpos = 0;
+
+    if(ind.isValid())
+        insertpos = ind.row();
+    else
+        insertpos = (curseq->nodeChildCount() > 0)? (curseq->nodeChildCount() - 1) : 0;
+
+    if(curseq->getModel().insertRow(insertpos))
+    {
+        ShowStatusMessage(tr("Appended animation frame!"));
+    }
+    else
+        ShowStatusErrorMessage(tr("Insertion failed!"));
+
+    m_previewrender.reloadAnim();
+    ui->tblseqfrmlst->update();
+}
+
+void MainWindow::on_btnSeqRemFrm_clicked()
+{
+    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No frame selected!"));
+        return;
+    }
+    AnimFrame       * pafrm = static_cast<AnimFrame*>(ind.internalPointer());
+    AnimSequence    * pseq  = static_cast<AnimSequence*>(pafrm->parentNode());
+    Q_ASSERT(pseq && pafrm);
+
+    ui->tblseqfrmlst->setCurrentIndex(QModelIndex());
+    if(pseq->removeChildrenNodes(ind.row(), 1))
+        ShowStatusMessage(tr("Removed animation frame!"));
+    else
+        ShowStatusErrorMessage(tr("Removal failed!"));
+
+    m_previewrender.reloadAnim();
+    ui->tblseqfrmlst->update();
+}
+
+void MainWindow::on_btnSeqMvUp_clicked()
+{
+    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
+    AnimSequence    *curseq = currentAnimSequence();
+    Q_ASSERT(curseq);
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No animation frame selected!"));
+        return;
+    }
+
+    int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
+    if(destrow != ind.row())
+    {
+        if(curseq->getModel().moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+            ShowStatusMessage(tr("Animation frame moved down!"));
+        else
+            ShowStatusErrorMessage(tr("Failed to move frame!"));
+    }
+
+    m_previewrender.reloadAnim();
+    ui->tblseqfrmlst->update();
+}
+
+void MainWindow::on_btnSeqMvDown_clicked()
+{
+    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
+    AnimSequence    *curseq = currentAnimSequence();
+    Q_ASSERT(curseq);
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No animation frame selected!"));
+        return;
+    }
+
+    int destrow = (ind.row() < curseq->nodeChildCount()-1 )? ind.row() + 1 : ind.row();
+    if(destrow != ind.row())
+    {
+        if(curseq->getModel().moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+            ShowStatusMessage(tr("Animation frame moved down!"));
+        else
+            ShowStatusErrorMessage(tr("Failed to move frame!"));
+    }
+
+    m_previewrender.reloadAnim();
+    ui->tblseqfrmlst->update();
+}
+
+void MainWindow::on_btnSeqDup_clicked()
+{
+    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
+    AnimSequence    *curseq = currentAnimSequence();
+    Q_ASSERT(curseq);
+    if(!ind.isValid())
+    {
+        ShowStatusErrorMessage(tr("No animation frame selected!"));
+        return;
+    }
+
+    AnimFrame tmpfrm = *(static_cast<AnimFrame*>(ind.internalPointer()));
+
+    int insertpos = ind.row();
+    if(curseq->getModel().insertRow(insertpos))
+    {
+        AnimFrame * pnewfrm = static_cast<AnimFrame *>(curseq->getItem( curseq->getModel().index(insertpos, 0, QModelIndex()) ));
+        Q_ASSERT(pnewfrm);
+        (*pnewfrm) = tmpfrm;
+        ShowStatusMessage(tr("Duplicated animation frame!"));
+    }
+    else
+        ShowStatusErrorMessage(tr("Duplication failed!"));
+
+    m_previewrender.reloadAnim();
+    ui->tblseqfrmlst->update();
+}
+
+void MainWindow::on_btnSeqExport_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(this,
+                        tr("Export Images Sequence : Pick name+path first image!"),
+                        QString(),
+                        "PNG image (*.png)");
+
+    if(filename.isNull())
+    {
+        return;
+    }
+
+    int rmpast = filename.size() - filename.lastIndexOf('.');
+    if( rmpast > 0 && rmpast < filename.size() )
+        filename.chop(rmpast);
+    QVector<QImage> sequence = m_previewrender.DumpSequence();
+
+    if(sequence.isEmpty())
+    {
+        ShowStatusErrorMessage(tr("Error: No sequence was loaded for export!"));
+    }
+
+    int cntimg = 0;
+    for(; cntimg < sequence.size(); ++cntimg )
+        sequence[cntimg].save( QString("%1_%2.png").arg(filename).arg(cntimg) );
+
+    ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
+}
 
 //===================================================================================================================
 // TVSpritesContextMenu
@@ -1444,4 +1536,8 @@ void TVSpritesContextMenu::RemoveEntry()
     m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
     close();
 }
+
+
+
+
 

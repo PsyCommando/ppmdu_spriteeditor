@@ -168,6 +168,14 @@ public:
     bool operator==( const MFramePart & other)const;
     bool operator!=( const MFramePart & other)const;
 
+    void clone(const TreeElement *other)
+    {
+        const MFramePart * ptr = static_cast<const MFramePart*>(other);
+        if(!ptr)
+            throw std::runtime_error("MFramePart::clone(): other is not a MFramePart!");
+        (*this) = *ptr;
+    }
+
     Sprite          * parentSprite();
     const Sprite    * parentSprite()const;
 
@@ -235,6 +243,14 @@ public:
     MFrame(MFrame      && mv);
     MFrame &  operator=(const MFrame & cp);
     MFrame &  operator=(MFrame      && mv);
+
+    void clone(const TreeElement *other)
+    {
+        const MFrame * ptr = static_cast<const MFrame*>(other);
+        if(!ptr)
+            throw std::runtime_error("MFrame::clone(): other is not a MFrame!");
+        (*this) = *ptr;
+    }
 
     bool operator==( const MFrame & other)const;
     bool operator!=( const MFrame & other)const;
@@ -322,6 +338,14 @@ public:
     ~FramesContainer()
     {
         qDebug("FrameContainer::~FrameContainer()\n");
+    }
+
+    void clone(const TreeElement *other)
+    {
+        const FramesContainer * ptr = static_cast<const FramesContainer*>(other);
+        if(!ptr)
+            throw std::runtime_error("FramesContainer::clone(): other is not a FramesContainer!");
+        (*this) = *ptr;
     }
 
     //Elem data
