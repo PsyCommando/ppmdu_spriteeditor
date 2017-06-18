@@ -8,7 +8,6 @@
 #include <QSvgRenderer>
 #include <QSpinBox>
 #include <QTimer>
-#include <dialogexport.hpp>
 #include <diagsingleimgcropper.hpp>
 #include <dialogabout.hpp>
 #include <paletteeditor.hpp>
@@ -36,6 +35,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     //Resources alloc
     m_pStatusFileType.reset(new QLabel("     "));
+    setWindowTitle(QString("PMD2 Sprite Muncher v%1").arg(QString(GIT_MAJORMINOR_VERSION)));
+
     //UI init
     ui->setupUi(this);
 
@@ -58,9 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->sldrAnimSeq->setRange(min, max);
         ui->sldrAnimSeq->blockSignals(false);
     });
-             //, ui->sldrAnimSeq, &QSlider::setRange );
 
-    //connect( &m_previewrender, &SceneRenderer::rangechanged, ui->spinCurFrm,  &QSpinBox::setRange );
     connect( &m_previewrender, &SceneRenderer::framechanged, [&](int frm)
     {
         //Set this so we don't end up with messed up logic!
@@ -72,26 +71,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->sldrAnimSeq->setValue(frm);
         ui->sldrAnimSeq->blockSignals(false);
     });
-             //ui->spinCurFrm,  &QSpinBox::setValue);
-
-//    connect( ui->spinCurFrm,   qOverload<int>(&QSpinBox::valueChanged),      [&](int frm)
-//    {
-//        //Set this so we don't end up with messed up logic!
-//        ui->sldrAnimSeq->blockSignals(true);
-//        ui->sldrAnimSeq->setValue(frm);
-//        ui->sldrAnimSeq->blockSignals(false);
-//    });
-
-//    connect( ui->spinCurFrm,  qOverload<int>(&QSpinBox::valueChanged), &m_previewrender, &SceneRenderer::setCurrentFrame );
-//    connect( ui->sldrAnimSeq, qOverload<int>(&QSlider::valueChanged),  ui->spinCurFrm,   &QSpinBox::setValue );
-
-//    connect( ui->spinCurFrm,  qOverload<int>(&QSpinBox::valueChanged), [&](int val)
-//    {
-//        ui->sldrAnimSeq->blockSignals(true);
-//        ui->sldrAnimSeq->setValue(val);
-//        ui->sldrAnimSeq->blockSignals(false);
-//        m_previewrender.setCurrentFrame(val);
-//    });
 
     connect(ui->sldrAnimSeq, &QSlider::sliderMoved, [&](int val)
     {
@@ -211,7 +190,7 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
 
     //Setup stats
-    ui->tblOverview;
+    ui->tblOverview->setModel(spr->overviewModel());
 
     ShowATab(ui->tabproperties);
 }
@@ -239,10 +218,6 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
 
     if(ui->tblframeparts->currentIndex().isValid())
         setupFrameEditPageForPart( frm, static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer()) );
-
-
-//    ui->spbFrmPartXOffset->setValue();
-//    ui->spbFrmPartYOffset->setValue();
 
     //Setup the callbacks
     connect(frm->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &,const QModelIndex &, const QVector<int>&)
@@ -280,9 +255,7 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
 
     connect(m_frmeditor.data(), &FrameEditor::zoom, [&](int val)->void
     {
-        //qreal sc = val * 0.01; //scale the value from 0 to 1 +
         ui->spbFrmZoom->setValue(val + ui->spbFrmZoom->value());
-        //ui->gvFrame->setTransform(QTransform::fromScale(sc, sc));
     });
 
     //Init checkboxes state
@@ -299,29 +272,6 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
     m_frmdatmapper->addMapping(ui->btnFrmHFlip,        static_cast<int>(eFramesColumnsType::direct_HFlip) );
     m_frmdatmapper->toFirst();
     connect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
-
-//    connect(ui->spbFrmPartXOffset, qOverload<int>(&QSpinBox::valueChanged), [&](int val)
-//    {
-//        QModelIndex mi = ui->tblframeparts->currentIndex();
-//        mi = frm->getModel()->index(mi.row(), static_cast<int>(eFramesColumnsType::Offset), mi.parent());
-//        QVariant newoffset;
-//        newoffset.setValue<QPair<int,int>>( QPair<int,int>( val, ui->spbFrmPartYOffset->value()) );
-//        frm->getModel()->setData( mi, newoffset);
-//        m_frmeditor->updateParts();
-//    });
-
-//    connect(ui->spbFrmPartYOffset, qOverload<int>(&QSpinBox::valueChanged), [&](int val)
-//    {
-//        QModelIndex mi = ui->tblframeparts->currentIndex();
-//        mi = frm->getModel()->index(mi.row(), static_cast<int>(eFramesColumnsType::Offset), mi.parent());
-//        QVariant newoffset;
-//        newoffset.setValue<QPair<int,int>>( QPair<int,int>(ui->spbFrmPartXOffset->value(), val) );
-//        frm->getModel()->setData( mi, newoffset);
-//        m_frmeditor->updateParts();
-//    });
-
-
-    //connect(m_frmeditor.data(), &FrameEditor::partMoved, ui->tblframeparts, &QTableView::repaint );
 }
 
 void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
@@ -335,7 +285,15 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
     ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
     m_previewrender.getAnimSprite()->setScale(2.0);
     ui->tblseqfrmlst->setModel(&aniseq->getModel());
+    ui->tblseqfrmlst->setItemDelegate(aniseq->getDelegate());
+    ui->tblseqfrmlst->resizeRowsToContents();
+    ui->tblseqfrmlst->resizeColumnsToContents();
 
+    connect( &aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
+    {
+        m_previewrender.reloadAnim();
+        ui->gvAnimSeqViewport->update();
+    });
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Scene set!\n";
 }
 
@@ -403,6 +361,7 @@ void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
     if(sprcnt && sprcnt->hasChildren())
         DisplayPropertiesPage(&sprcnt->GetSprite(0));
     ui->tv_sprcontent->repaint();
+    setWindowFilePath(sprcnt->GetContainerSrcPath());
 }
 
 void MainWindow::setupFrameEditPageForPart(MFrame *frm, MFramePart *part)
@@ -451,6 +410,8 @@ void MainWindow::SaveContainer(const QString &path)
 {
     spr_manager::SpriteManager::Instance().SaveContainer(path);
     updateActions();
+    if(spr_manager::SpriteManager::Instance().getContainer())
+        setWindowFilePath(spr_manager::SpriteManager::Instance().getContainer()->GetContainerSrcPath());
 }
 
 void MainWindow::ExportContainer(const QString &path)
@@ -471,6 +432,7 @@ void MainWindow::CloseContainer()
     HideAllTabs();
     spr_manager::SpriteManager::Instance().CloseContainer();
     DisplayStartScreen();
+    setWindowFilePath(QString());
 }
 
 void MainWindow::updateActions()
@@ -645,9 +607,7 @@ void MainWindow::on_actionSave_As_triggered()
 
 void MainWindow::on_action_Export_triggered()
 {
-    DialogExport exp(this);
-    exp.setModal(true);
-    exp.show();
+
     //QSaveFile;
 }
 

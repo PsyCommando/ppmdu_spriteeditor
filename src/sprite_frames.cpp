@@ -491,25 +491,27 @@ QVariant MFramePart::dataMode(int role) const
 //  MFrameDelegate
 //=====================================================================================
 MFrameDelegate::MFrameDelegate(const MFrameDelegate & cp)
-    :QStyledItemDelegate(), m_minusone(MinusOneImgRes)
+    :QStyledItemDelegate(cp.parent()), m_minusone(MinusOneImgRes)
 {
     operator=(cp);
 }
 
 MFrameDelegate::MFrameDelegate(MFrameDelegate && mv)
-    :QStyledItemDelegate(), m_minusone(MinusOneImgRes)
+    :QStyledItemDelegate(mv.parent()), m_minusone(MinusOneImgRes)
 {
     operator=(mv);
 }
 
 MFrameDelegate & MFrameDelegate::operator=(const MFrameDelegate & cp)
 {
+    setParent(cp.parent());
     m_pfrm    = cp.m_pfrm;
     return *this;
 }
 
 MFrameDelegate & MFrameDelegate::operator=(MFrameDelegate && mv)
 {
+    setParent(mv.parent());
     m_pfrm    = mv.m_pfrm;
     mv.m_pfrm = nullptr;
     return *this;
@@ -880,6 +882,7 @@ QWidget *MFrameDelegate::makeOffsetSelect(QWidget *parent, int /*row*/) const
     play->addWidget(pyoff);
     pselect->setContentsMargins(1, 1, 1, 1);
     play->setContentsMargins(0,0,0,0);
+    pselect->setFocusProxy(pxoff);
     return pselect;
 }
 
@@ -1202,9 +1205,32 @@ QVariant MFrame::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+QVariant MFrame::frameDataCondensed(int role) const
+{
+    if(role == Qt::DecorationRole)
+    {
+        return QPixmap::fromImage(AssembleFrame(0,0,QRect()));
+    }
+    else if(role == Qt::DisplayRole)
+    {
+        return QString("FrameID:%1").arg(getFrameUID());
+    }
+    else if(role == Qt::EditRole)
+    {
+        return getFrameUID();
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        QFontMetrics fm(QFont("Sergoe UI",9));
+        return QSize(fm.width(frameDataCondensed(role == Qt::DisplayRole).toInt()+32),
+                     qMax(fm.height() + 32, calcFrameBounds().height()) );
+    }
+    return QVariant();
+}
+
 QVariant MFrame::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(section < 0 || section >= FramesHeaderNBColumns )
+    if(section < 0 || static_cast<size_t>(section) >= FramesHeaderColumnNames.size() )
         return QVariant();
 
     if( role == Qt::DisplayRole )

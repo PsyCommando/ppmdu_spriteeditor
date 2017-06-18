@@ -29,7 +29,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <property name="usesScrollButtons">
       <bool>false</bool>
@@ -75,6 +75,29 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="currentIndex">
+             <number>0</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>Prop/Misc Sprite</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Character Sprite</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Effect Sprite</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>WAT Sprite</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
@@ -143,7 +166,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>10</x>

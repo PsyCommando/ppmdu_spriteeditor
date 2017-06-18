@@ -293,6 +293,7 @@ public:
     //data method of the model and childs!!!
     //We need this so that we can virtually display entries for each steps of the frame!
     virtual QVariant data(const QModelIndex &index, int role) const override;
+    QVariant frameDataCondensed(int role)const;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
     //setData method of the model and childs!!!
@@ -315,6 +316,12 @@ public:
     inline MFrameDelegate & itemDelegate()
     {
         return m_delegate;
+    }
+
+    //For now UID is index!
+    int getFrameUID()const
+    {
+        return nodeIndex();
     }
 private:
     MFrameDelegate m_delegate;

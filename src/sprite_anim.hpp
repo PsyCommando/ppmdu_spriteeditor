@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QMutex>
 #include <QtConcurrent/QtConcurrent>
+#include <QStyledItemDelegate>
 
 #include <src/treeelem.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
@@ -19,15 +20,38 @@ extern const char * ElemName_AnimTable    ;
 extern const char * ElemName_AnimGroup    ;
 extern const char * ElemName_AnimFrame    ;
 
-
 //*******************************************************************
 //  AnimFrame
 //*******************************************************************
 class AnimFrame :  public BaseTreeTerminalChild<&ElemName_AnimFrame>
 {
+    static QSize calcTextSize(const QString &str);
+public:
+    static const char *         UProp_AnimFrameID;  //UserProp name used for storing the id of this frame!
+    static const QStringList    ColumnNames;        //Name displayed in the column header for each properties of the frame! Is tied to eColumnsType
+
+    //NOTE: Be sure to update ColumnNames when changing this!
+    enum struct eColumnsType : int
+    {
+        Frame = 0,
+        Duration,
+        Offset,
+        ShadowOffset,
+        Flags,
+        NBColumns,
+        //Everything below this is not displayed as header column
+
+        //To acces some of the merged data individually via model data! Since we merged both x/y param entry into a single one for each categories
+        Direct_XOffset,
+        Direct_YOffset,
+        Direct_ShadowXOffset,
+        Direct_ShadowYOffset,
+    };
+
+
 public:
     AnimFrame( TreeElement * parent )
-        :BaseTreeTerminalChild(parent)
+        :BaseTreeTerminalChild(parent, Qt::ItemFlag::ItemIsEditable | DEFFlags())
     {
         setNodeDataTy(eTreeElemDataType::animFrame);
     }
@@ -69,13 +93,70 @@ public:
     inline void setShadowx (int16_t val) {m_data.shadowxoffs = val;}
     inline void setShadowy (int16_t val) {m_data.shadowyoffs = val;}
 
-    Sprite * parentSprite();
+    Sprite * parentSprite() override;
+    const Sprite * parentSprite() const override
+    {
+        return const_cast<AnimFrame*>(this)->parentSprite();
+    }
 
     virtual QVariant nodeData(int column, int role) const override;
 
 private:
     fmt::animfrm_t          m_data;
     QPixmap                 m_cached;
+};
+
+//*******************************************************************
+//  AnimSequenceDelegate
+//*******************************************************************
+class AnimSequence;
+class AnimSequenceDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    AnimSequenceDelegate(AnimSequence * seq, QObject *parent = nullptr)
+        :QStyledItemDelegate(parent), m_pOwner(seq)
+    {}
+
+
+    AnimSequenceDelegate(AnimSequenceDelegate && mv)
+        :QStyledItemDelegate(mv.parent())
+    {
+        operator=(qMove(mv));
+    }
+
+    AnimSequenceDelegate & operator=(AnimSequenceDelegate && mv)
+    {
+        m_pOwner = mv.m_pOwner;
+        return *this;
+    }
+
+    //No copies plz
+    AnimSequenceDelegate(const AnimSequenceDelegate & cp) = delete;
+    AnimSequenceDelegate & operator=(const AnimSequenceDelegate & cp) = delete;
+
+    // QAbstractItemDelegate interface
+public:
+    virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    virtual void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    virtual void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    virtual void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+private:
+    //Returns the stylesheet used for comboboxes this delegate makes
+    static const QString & ComboBoxStyleSheet();
+    static const QString XOffsSpinBoxName;
+    static const QString YOffsSpinBoxName;
+
+    QWidget * makeFrameSelect       (QWidget *parent)const;
+    QWidget * makeOffsetWidget      (QWidget *parent)const;
+    QWidget * makeShadowOffsetWidget(QWidget *parent)const;
+    QWidget * makeFlagSelect        (QWidget *parent)const;
+
+    //Variable:
+private:
+    AnimSequence * m_pOwner;
 };
 
 //*******************************************************************
@@ -89,17 +170,17 @@ public:
     typedef BaseTreeNodeModel                           model_t;
 
     AnimSequence( TreeElement * parent )
-        :BaseTreeContainerChild(parent), m_model(this)
+        :BaseTreeContainerChild(parent, Qt::ItemFlag::ItemIsEditable | DEFFlags()), m_model(this), m_delegate(this)
     {
         setNodeDataTy(eTreeElemDataType::animSequence);
     }
 
     AnimSequence( const AnimSequence & cp )
-        :BaseTreeContainerChild(cp), m_model(this)
+        :BaseTreeContainerChild(cp), m_model(this), m_delegate(this)
     {}
 
     AnimSequence( AnimSequence && mv )
-        :BaseTreeContainerChild(mv), m_model(this)
+        :BaseTreeContainerChild(mv), m_model(this), m_delegate(this)
     {}
 
     AnimSequence & operator=( const AnimSequence & cp )
@@ -155,17 +236,17 @@ public:
 
     inline int getSeqLength()const {return nodeChildCount();}
 
-    Sprite * parentSprite();
+    Sprite * parentSprite()override;
 
     inline model_t & getModel() {return m_model;}
     inline const model_t & getModel()const {return m_model;}
 
-    inline int nodeColumnCount() const
+    inline int nodeColumnCount() const override
     {
-        return HEADER_COLUMNS.size();
+        return AnimFrame::ColumnNames.size();
     }
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if( role != Qt::DisplayRole )
             return QVariant();
@@ -174,16 +255,17 @@ public:
         {
             return std::move(QVariant( QString("%1").arg(section) ));
         }
-        else if( orientation == Qt::Orientation::Horizontal && section < HEADER_COLUMNS.size() )
+        else if( orientation == Qt::Orientation::Horizontal && section < AnimFrame::ColumnNames.size() )
         {
-            return HEADER_COLUMNS[section];
+            return AnimFrame::ColumnNames[section];
         }
         return QVariant();
     }
 
 
-    QVariant data(const QModelIndex &index, int role) const
-    {        if (!index.isValid())
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        if (!index.isValid())
             return QVariant("root");
 
         if (role != Qt::DisplayRole &&
@@ -195,9 +277,14 @@ public:
         return static_cast<TreeElement*>(index.internalPointer())->nodeData(index.column(), role);
     }
 
+    virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+
+    inline AnimSequenceDelegate         * getDelegate()     {return &m_delegate;}
+    inline const AnimSequenceDelegate   * getDelegate()const{return &m_delegate;}
+
 private:
     model_t                 m_model;
-    static const QList<QVariant> HEADER_COLUMNS;
+    AnimSequenceDelegate    m_delegate;
 };
 
 //*******************************************************************

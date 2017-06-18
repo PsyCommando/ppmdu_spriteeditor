@@ -7,6 +7,8 @@
 QT       += core gui concurrent svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+GIT_VERSION = $$system(gitversion -output json -showvariable SemVer) ##(git --git-dir $$PWD/.git --work-tree $$PWD describe --always --tags)
+GIT_MAJORMINOR_VERSION = $$system(gitversion -output json -showvariable MajorMinorPatch)
 
 TARGET = ppmdu_spriteeditor
 TEMPLATE = app
@@ -18,6 +20,8 @@ CONFIG += c++14
 # depend on your compiler). Please consult the documentation of the
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
+DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\" \
+           GIT_MAJORMINOR_VERSION=\\\"$$GIT_MAJORMINOR_VERSION\\\"
 
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -43,7 +47,6 @@ SOURCES += main.cpp\
     src/sprite_anim.cpp \
     src/scenerenderer.cpp \
     src/sprite_img.cpp \
-    dialogexport.cpp \
     dialogabout.cpp \
     dialogprogressbar.cpp \
     src/ppmdu/fmts/compression_handler.cpp \
@@ -77,7 +80,6 @@ HEADERS  += mainwindow.h \
     src/sprite_img.hpp \
     src/sprite_anim.hpp \
     src/scenerenderer.hpp \
-    dialogexport.hpp \
     dialogabout.hpp \
     dialogprogressbar.hpp \
     src/frameeditor.hpp \
@@ -94,7 +96,6 @@ FORMS    += mainwindow.ui \
     processingconsole.ui \
     diagsingleimgcropper.ui \
     dialognewsprite.ui \
-    dialogexport.ui \
     dialogabout.ui \
     dialogprogressbar.ui \
     paletteeditor.ui
