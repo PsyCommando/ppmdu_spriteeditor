@@ -125,19 +125,19 @@ void MainWindow::HideAllTabs()
     //Stop any animations
     InitAnimScene();
 
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabanims));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabeffects));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabframeseditor));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabseq));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabproperties));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabWelcome));
-    ui->tabMain->removeTab(ui->tabMain->indexOf(ui->tabImages));
+    ui->tabMain->removeWidget(ui->tabAnimTable);
+    ui->tabMain->removeWidget(ui->tabEfx);
+    ui->tabMain->removeWidget(ui->tabFrame);
+    ui->tabMain->removeWidget(ui->tabSequence);
+    ui->tabMain->removeWidget(ui->tabProperties);
+    ui->tabMain->removeWidget(ui->tabWelcome);
+    ui->tabMain->removeWidget(ui->tabImages);
 
-    ui->tabanims->hide();
-    ui->tabeffects->hide();
-    ui->tabframeseditor->hide();
-    ui->tabseq->hide();
-    ui->tabproperties->hide();
+    ui->tabAnimTable->hide();
+    ui->tabEfx->hide();
+    ui->tabFrame->hide();
+    ui->tabSequence->hide();
+    ui->tabProperties->hide();
     ui->tabWelcome->hide();
     ui->tabImages->hide();
 
@@ -153,7 +153,7 @@ void MainWindow::ShowATab(QWidget *ptab)
     Q_ASSERT(ptab);
     HideAllTabs();
     qDebug() << "MainWindow::ShowATab(): Hiding tabs!\n";
-    ui->tabMain->insertTab(0, ptab, ptab->windowTitle() );
+    ui->tabMain->insertWidget(0, ptab );
     qDebug() << "MainWindow::ShowATab(): Adding tab to be displayed!\n";
     ptab->show();
     ptab->setFocus();
@@ -192,7 +192,7 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     //Setup stats
     ui->tblOverview->setModel(spr->overviewModel());
 
-    ShowATab(ui->tabproperties);
+    ShowATab(ui->tabProperties);
 }
 
 void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
@@ -203,7 +203,7 @@ void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
     ui->tblframeparts->setItemDelegate(&(frm->itemDelegate()));
     ui->tblframeparts->setEditTriggers(QTableView::EditTrigger::AllEditTriggers);
     ui->tblframeparts->setSizeAdjustPolicy(QTableView::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
-    ShowATab(ui->tabframeseditor);
+    ShowATab(ui->tabFrame);
     ui->tblframeparts->resizeRowsToContents();
     ui->tblframeparts->resizeColumnsToContents();
     ui->tblframeparts->setCurrentIndex( ui->tblframeparts->model()->index(0, 0, QModelIndex()) );
@@ -278,18 +278,18 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
 {
     Q_ASSERT(spr && aniseq);
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
-    ShowATab(ui->tabseq);
+    ShowATab(ui->tabSequence);
     m_previewrender.setScene(spr, aniseq->nodeIndex());
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anime viewer!\n";
     ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
     ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
     m_previewrender.getAnimSprite()->setScale(2.0);
-    ui->tblseqfrmlst->setModel(&aniseq->getModel());
+    ui->tblseqfrmlst->setModel(aniseq->getModel());
     ui->tblseqfrmlst->setItemDelegate(aniseq->getDelegate());
     ui->tblseqfrmlst->resizeRowsToContents();
     ui->tblseqfrmlst->resizeColumnsToContents();
 
-    connect( &aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
+    connect( aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
     {
         m_previewrender.reloadAnim();
         ui->gvAnimSeqViewport->update();
@@ -300,7 +300,32 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
 void MainWindow::DisplayAnimTablePage(Sprite * spr)
 {
     Q_ASSERT(spr);
-    ShowATab(ui->tabanims);
+    ShowATab(ui->tabAnimTable);
+    ui->tvAnimTbl->setModel(spr->getAnimTable().getModel());
+    ui->tvAnimTblAnimSeqs->setModel(nullptr);
+    ui->lvAnimTblAnimSeqList->setModel(spr->getAnimSequences().getPickerModel());
+
+    connect( spr->getAnimTable().getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
+    {
+        ui->tvAnimTbl->repaint();
+        ui->tvAnimTblAnimSeqs->repaint();
+    });
+
+    connect(ui->tvAnimTbl, &QTableView::activated, [spr,this](const QModelIndex &index)
+    {
+        Q_ASSERT(spr);
+        AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(index)));
+        Q_ASSERT(grp);
+        ui->tvAnimTblAnimSeqs->setModel(grp->getModel());
+    });
+
+    connect(ui->tvAnimTbl, &QTableView::clicked, [spr,this](const QModelIndex &index)
+    {
+        Q_ASSERT(spr);
+        AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(index)));
+        Q_ASSERT(grp);
+        ui->tvAnimTblAnimSeqs->setModel(grp->getModel());
+    });
 }
 
 void MainWindow::DisplayPalettePage(Sprite *spr)
@@ -312,7 +337,7 @@ void MainWindow::DisplayPalettePage(Sprite *spr)
 void MainWindow::DisplayEffectsPage(Sprite *spr)
 {
     Q_ASSERT(spr);
-    ShowATab(ui->tabeffects);
+    ShowATab(ui->tabEfx);
 }
 
 void MainWindow::DisplayAnimGroupPage(Sprite *spr)
@@ -343,7 +368,7 @@ void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs, Image 
     if(img)
     {
         //select specified image!
-        spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
+        //spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
         QModelIndex ind = ui->tblviewImages->model()->index(pimgs->indexOfNode(img), 0);
         ui->tblviewImages->setCurrentIndex(ind);
         on_tblviewImages_clicked(ind);
@@ -558,11 +583,6 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
     ui->tv_sprcontent->viewport()->update();
 }
 
-//void MainWindow::on_tv_sprcontent_itemClicked(QTreeWidgetItem *item, int column)
-//{
-
-//}
-
 void MainWindow::on_action_Save_triggered()
 {
     //QSaveFile;
@@ -605,44 +625,11 @@ void MainWindow::on_actionSave_As_triggered()
     SaveAs(filename);
 }
 
-void MainWindow::on_action_Export_triggered()
-{
-
-    //QSaveFile;
-}
-
-//void MainWindow::on_actionSprite_triggered()
-//{
-
-//}
-
-//void MainWindow::on_actionSprite_Pack_File_triggered()
-//{
-
-//}
-
-void MainWindow::on_actionUndo_triggered()
-{
-
-}
-
-void MainWindow::on_actionRedo_triggered()
-{
-
-}
-
-void MainWindow::on_action_Settings_triggered()
-{
-
-}
-
 void MainWindow::on_action_About_triggered()
 {
     m_aboutdiag.setModal(true);
     m_aboutdiag.show();
 }
-
-
 
 void MainWindow::on_actionNewSprite_triggered()
 {
@@ -701,6 +688,28 @@ void MainWindow::SaveAs(const QString &path)
     }
     else
         qWarning() << "Got an empty path!\n";
+}
+
+int MainWindow::AskSaveChanges()
+{
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Icon::Question);
+    msgBox.setText("Really close this file?");
+    msgBox.setInformativeText("Do you want to save your changes?");
+    msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Save);
+    return msgBox.exec();
+}
+
+void MainWindow::Warn(const QString &title, const QString &text)
+{
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Icon::Warning);
+    msgBox.setText(title);
+    msgBox.setInformativeText(text);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    msgBox.exec();
 }
 
 void MainWindow::InitAnimScene()
@@ -840,12 +849,6 @@ QMenu *MainWindow::makeSpriteContextMenu(QModelIndex entry)
     TVSpritesContextMenu * menu = new TVSpritesContextMenu( this, entry, ui->tv_sprcontent);
     connect( menu, SIGNAL(afterclosed()), menu, SLOT(deleteLater()) );
     return menu;
-}
-
-
-void MainWindow::on_tblframeparts_clicked(const QModelIndex &/*index*/)
-{
-//    setupFrameEditPageForPart(currentFrame(), currentTblFrameParts());
 }
 
 Sprite * MainWindow::currentSprite()
@@ -1035,6 +1038,13 @@ void MainWindow::on_btnImageCrop_clicked()
         ui->statusBar->setStatusTip("Can't crop! No valid image selected!");
         qWarning("MainWindow::on_btnImageCrop_clicked(): Crop clicked, but no valid images was selected!");
     }
+}
+
+void MainWindow::ShowProgressDiag(QFuture<void> &task)
+{
+    m_progress.setFuture(task);
+    m_progress.setModal(true);
+    m_progress.show();
 }
 
 void MainWindow::on_tblviewImages_clicked(const QModelIndex &index)
@@ -1258,7 +1268,7 @@ void MainWindow::on_btnSeqAddFrm_clicked()
     else
         insertpos = (curseq->nodeChildCount() > 0)? (curseq->nodeChildCount() - 1) : 0;
 
-    if(curseq->getModel().insertRow(insertpos))
+    if(curseq->getModel()->insertRow(insertpos))
     {
         ShowStatusMessage(tr("Appended animation frame!"));
     }
@@ -1305,7 +1315,7 @@ void MainWindow::on_btnSeqMvUp_clicked()
     int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
     if(destrow != ind.row())
     {
-        if(curseq->getModel().moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+        if(curseq->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
             ShowStatusMessage(tr("Animation frame moved down!"));
         else
             ShowStatusErrorMessage(tr("Failed to move frame!"));
@@ -1329,7 +1339,7 @@ void MainWindow::on_btnSeqMvDown_clicked()
     int destrow = (ind.row() < curseq->nodeChildCount()-1 )? ind.row() + 1 : ind.row();
     if(destrow != ind.row())
     {
-        if(curseq->getModel().moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+        if(curseq->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
             ShowStatusMessage(tr("Animation frame moved down!"));
         else
             ShowStatusErrorMessage(tr("Failed to move frame!"));
@@ -1353,9 +1363,9 @@ void MainWindow::on_btnSeqDup_clicked()
     AnimFrame tmpfrm = *(static_cast<AnimFrame*>(ind.internalPointer()));
 
     int insertpos = ind.row();
-    if(curseq->getModel().insertRow(insertpos))
+    if(curseq->getModel()->insertRow(insertpos))
     {
-        AnimFrame * pnewfrm = static_cast<AnimFrame *>(curseq->getItem( curseq->getModel().index(insertpos, 0, QModelIndex()) ));
+        AnimFrame * pnewfrm = static_cast<AnimFrame *>(curseq->getItem( curseq->getModel()->index(insertpos, 0, QModelIndex()) ));
         Q_ASSERT(pnewfrm);
         (*pnewfrm) = tmpfrm;
         ShowStatusMessage(tr("Duplicated animation frame!"));
@@ -1501,3 +1511,8 @@ void TVSpritesContextMenu::RemoveEntry()
 
 
 
+
+void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
+{
+
+}

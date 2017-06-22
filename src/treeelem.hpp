@@ -510,7 +510,7 @@ public:
     }
 
 
-    int nodeChildCount() const override         {return m_container.size();}
+    virtual int nodeChildCount() const override         {return m_container.size();}
 
     inline bool hasChildren()const {return nodeChildCount() > 0;}
 

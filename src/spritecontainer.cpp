@@ -18,7 +18,9 @@ namespace spr_manager
     const QString WANFileExt  = "wan";
     const QString WATFileExt  = "wat";
 
-
+//=================================================================================================
+//  SpriteContainer
+//=================================================================================================
     const QList<QString> SpriteContainer::SpriteContentCategories=
     {
         "Images",
@@ -28,6 +30,30 @@ namespace spr_manager
         "Palette",
         "Effects Offsets",
     };
+
+    SpriteContainer::SpriteContainer(QObject *parent)
+        :QObject(parent), TreeElement(nullptr), m_cntTy(eContainerType::NONE)
+    {
+    }
+
+    SpriteContainer::SpriteContainer(const QString &str, QObject *parent)
+        :QObject(parent), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
+    {}
+
+    SpriteContainer::~SpriteContainer()
+    {
+        //m_rootelem = nullptr;
+        qDebug("SpriteContainer::~SpriteContainer(): Deleting sprite container!\n");
+        m_workthread.terminate();
+        qDebug("SpriteContainer::~SpriteContainer(): Waiting on thread..\n");
+        m_workthread.wait();
+        qDebug("SpriteContainer::~SpriteContainer(): Done!\n");
+    }
+
+    void SpriteContainer::clone(const TreeElement *)
+    {
+        throw std::runtime_error("SpriteContainer::clone(): Copy is deactivated!");
+    }
 
     bool SpriteContainer::ContainerLoaded() const
     {
@@ -184,6 +210,184 @@ namespace spr_manager
         return offset;
     }
 
+    QVariant SpriteContainer::data(const QModelIndex &index, int role) const
+    {
+        if(!ContainerLoaded() || m_spr.empty())
+            return QVariant();
+
+        if (!index.isValid())
+            return QVariant("root");
+
+        if (role != Qt::DisplayRole && role != Qt::EditRole)
+            return QVariant();
+
+        TreeElement *item = const_cast<SpriteContainer*>(this)->getItem(index);
+        return item->nodeData(index.column(), role);
+    }
+
+    QVariant SpriteContainer::headerData(int, Qt::Orientation, int) const
+    {
+        //nothing really
+        return QVariant();
+    }
+
+    int SpriteContainer::rowCount(const QModelIndex &parent) const
+    {
+        if (!ContainerLoaded() || m_spr.empty())
+            return 0;
+
+        TreeElement *parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
+        Q_ASSERT(parentItem);
+
+        //Exclude some items from being displayed as having childrens!
+        if(parentItem->getNodeDataTy() == eTreeElemDataType::animSequence ||
+           parentItem->getNodeDataTy() == eTreeElemDataType::animTable    ||
+           parentItem->getNodeDataTy() == eTreeElemDataType::frame)
+            return 0;
+
+        return parentItem->nodeChildCount();
+    }
+
+    bool SpriteContainer::hasChildren(const QModelIndex &parent) const
+    {
+        if(!ContainerLoaded() || m_spr.empty())
+            return false;
+
+        return rowCount(parent) > 0;
+//        TreeElement * parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
+
+//        if(parentItem)
+//            return parentItem->nodeChildCount() > 0;
+//        else
+//            return false;
+    }
+
+    TreeElement *SpriteContainer::getItem(const QModelIndex &index)
+    {
+        if (index.isValid())
+        {
+            TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
+            if (item)
+                return item;
+        }
+        return this;
+    }
+
+    int SpriteContainer::columnCount(const QModelIndex &) const
+    {
+        //            if (parent.isValid())
+        //                return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
+        //            else
+        return 1;
+    }
+
+    void SpriteContainer::appendChild(TreeElement *item)
+    {
+        QMutexLocker lk(&getMutex());
+        Sprite * spritem = nullptr;
+        spritem = static_cast<Sprite*>(item);
+
+        if(spritem)
+            m_spr.append(*spritem);
+    }
+
+    TreeElement *SpriteContainer::nodeChild(int row)
+    {
+        return &m_spr[row];
+    }
+
+    int SpriteContainer::nodeChildCount() const
+    {
+        return m_spr.count();
+    }
+
+    int SpriteContainer::nodeIndex() const
+    {
+        return 0; //Always first!
+    }
+
+    int SpriteContainer::indexOfNode(TreeElement *ptr) const
+    {
+        QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
+        Sprite * ptrspr = static_cast<Sprite *>(ptr);
+
+        if( ptrspr )
+            return m_spr.indexOf(*ptrspr);
+        return 0;
+    }
+
+    int SpriteContainer::nodeColumnCount() const
+    {
+        return 1;
+    }
+
+    TreeElement *SpriteContainer::parentNode()
+    {
+        return m_parentItem;
+    }
+
+    Sprite *SpriteContainer::parentSprite()
+    {
+        return nullptr;
+    }
+
+    QVariant SpriteContainer::nodeData(int column, int role) const
+    {
+        if( (role == Qt::DisplayRole || role == Qt::EditRole) && column != 0)
+            return QVariant(getSrcFnameOnly());
+        return QVariant();
+    }
+
+    bool SpriteContainer::insertChildrenNodes(int position, int count)
+    {
+        QMutexLocker lk(&getMutex());
+        if(position > m_spr.size())
+            return false;
+
+        for( int i = 0; i < count; ++i )
+            m_spr.insert(position, Sprite(this));
+        return true;
+    }
+
+    bool SpriteContainer::removeChildrenNodes(int position, int count)
+    {
+        QMutexLocker lk(&getMutex());
+        int i = 0;
+        for( ; i < count && position < m_spr.size(); ++i )
+            m_spr.removeAt(position);
+
+        if( i+1 != count )
+            return false;
+
+        return true;
+    }
+
+    bool SpriteContainer::moveChildrenNodes(int srcrow, int count, int destrow)
+    {
+        QMutexLocker lk(&getMutex());
+
+        if( srcrow + count > m_spr.size() || destrow > m_spr.size() )
+        {
+            Q_ASSERT(false);
+            return false;
+        }
+
+        if(destrow > srcrow)
+        {
+            for( int i = 0; i < count; ++i )
+                m_spr.move(srcrow, destrow);
+        }
+        else
+        {
+            for( int i = 0; i < count; ++i )
+                m_spr.move(srcrow, destrow + i);
+        }
+
+        return true;
+    }
+
+    bool SpriteContainer::nodeIsMutable() const {return false;}
+
     void SpriteContainer::FetchToC(QDataStream &fdat)
     {
 
@@ -194,6 +398,14 @@ namespace spr_manager
 
     }
 
+    QString SpriteContainer::getSrcFnameOnly() const
+    {
+        return m_srcpath.mid( m_srcpath.lastIndexOf('/') );
+    }
+
+    //=================================================================================================
+    //  ThreadedWriter
+    //=================================================================================================
     ThreadedWriter::ThreadedWriter(QSaveFile *sfile, SpriteContainer *cnt)
         :QObject(nullptr),savefile(sfile), sprdata(cnt), bywritten(0)
     {

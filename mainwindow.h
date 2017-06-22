@@ -320,27 +320,11 @@ private:
 
     void SaveAs( const QString & path );
 
-    int AskSaveChanges()
-    {
-        QMessageBox msgBox(this);
-        msgBox.setIcon(QMessageBox::Icon::Question);
-        msgBox.setText("Really close this file?");
-        msgBox.setInformativeText("Do you want to save your changes?");
-        msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-        msgBox.setDefaultButton(QMessageBox::Save);
-        return msgBox.exec();
-    }
+    //Show a message box asking if we should save the changes, and return the button pressed!
+    int AskSaveChanges();
 
-    void Warn(const QString & title, const QString & text)
-    {
-        QMessageBox msgBox(this);
-        msgBox.setIcon(QMessageBox::Icon::Warning);
-        msgBox.setText(title);
-        msgBox.setInformativeText(text);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.setDefaultButton(QMessageBox::Ok);
-        msgBox.exec();
-    }
+    //Show a warning message box with the specified content
+    void Warn(const QString & title, const QString & text);
 
     void InitAnimScene();
 
@@ -374,81 +358,45 @@ protected:
 //        }
     }
 private slots:
-    void on_action_Quit_triggered();
-
     void on_tv_sprcontent_expanded(const QModelIndex &index);
-
-    void on_action_Save_triggered();
-
-    void on_actionSave_As_triggered();
-
-    void on_action_Export_triggered();
-
-    void on_actionUndo_triggered();
-
-    void on_actionRedo_triggered();
-
-    void on_action_Settings_triggered();
-
-    void on_action_About_triggered();
-
-    void on_actionNewSprite_triggered();
-
-    void on_actionNewSprite_Pack_File_triggered();
-
     void on_tv_sprcontent_clicked(const QModelIndex &index);
-
     void on_tv_sprcontent_customContextMenuRequested(const QPoint &pos);
 
+    void on_action_Save_triggered();
+    void on_actionSave_As_triggered();
+    void on_action_About_triggered();
+    void on_action_Quit_triggered();
     void on_action_Open_triggered();
 
     void on_btnImageCrop_clicked();
 
-    void ShowProgressDiag(QFuture<void> & task)
-    {
-        m_progress.setFuture(task);
-        m_progress.setModal(true);
-        m_progress.show();
-    }
+    void ShowProgressDiag(QFuture<void> & task);
 
     void on_tblviewImages_clicked(const QModelIndex &index);
-
-    void on_tblframeparts_clicked(const QModelIndex &index);
-
-    void on_btnExportPalette_clicked();
-
-    void on_btnImportPalette_clicked();
-
-    //void on_btnEditPalette_clicked();
-
-    void on_btnFrmExport_clicked();
-
-    void on_btnSeqExport_clicked();
-
     void on_btnImagesExport_clicked();
 
+    void on_tblframeparts_clicked(const QModelIndex &index);
+    void on_btnFrmExport_clicked();
     void on_btnFrmRmPart_clicked();
-
     void on_btnFrmAdPart_clicked();
-
     void on_btnFrmMvUp_clicked();
-
     void on_btnFrmMvDown_clicked();
-
     void on_btnFrmDup_clicked();
-
     void on_cmbFrmQuickPrio_currentIndexChanged(int index);
 
+
+    void on_btnExportPalette_clicked();
+    void on_btnImportPalette_clicked();
+
+    void on_btnSeqExport_clicked();
     void on_btnSeqAddFrm_clicked();
-
     void on_btnSeqRemFrm_clicked();
-
     void on_btnSeqMvUp_clicked();
-
     void on_btnSeqMvDown_clicked();
-
     void on_btnSeqDup_clicked();
 
+    void on_actionNewSprite_triggered();
+    void on_actionNewSprite_Pack_File_triggered();
 signals:
 
 private:

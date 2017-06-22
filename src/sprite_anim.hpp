@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QtConcurrent/QtConcurrent>
 #include <QStyledItemDelegate>
+#include <QStandardItemModel>
 
 #include <src/treeelem.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
@@ -100,6 +101,9 @@ public:
     }
 
     virtual QVariant nodeData(int column, int role) const override;
+    bool nodeIsMutable()const override    {return true;}
+
+    QImage makePreview()const;
 
 private:
     fmt::animfrm_t          m_data;
@@ -134,7 +138,6 @@ public:
     //No copies plz
     AnimSequenceDelegate(const AnimSequenceDelegate & cp) = delete;
     AnimSequenceDelegate & operator=(const AnimSequenceDelegate & cp) = delete;
-
     // QAbstractItemDelegate interface
 public:
     virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
@@ -152,12 +155,12 @@ private:
     QWidget * makeFrameSelect       (QWidget *parent)const;
     QWidget * makeOffsetWidget      (QWidget *parent)const;
     QWidget * makeShadowOffsetWidget(QWidget *parent)const;
-    QWidget * makeFlagSelect        (QWidget *parent)const;
 
     //Variable:
 private:
     AnimSequence * m_pOwner;
 };
+
 
 //*******************************************************************
 //  AnimSequence
@@ -167,20 +170,19 @@ class AnimSequence : public BaseTreeContainerChild<&ElemName_AnimSequence, AnimF
 public:
     typedef container_t::iterator                       iterator;
     typedef container_t::const_iterator                 const_iterator;
-    typedef BaseTreeNodeModel                           model_t;
 
     AnimSequence( TreeElement * parent )
-        :BaseTreeContainerChild(parent, Qt::ItemFlag::ItemIsEditable | DEFFlags()), m_model(this), m_delegate(this)
+        :BaseTreeContainerChild(parent, Qt::ItemFlag::ItemIsEditable | DEFFlags()), m_delegate(this)
     {
         setNodeDataTy(eTreeElemDataType::animSequence);
     }
 
     AnimSequence( const AnimSequence & cp )
-        :BaseTreeContainerChild(cp), m_model(this), m_delegate(this)
+        :BaseTreeContainerChild(cp), m_delegate(this)
     {}
 
     AnimSequence( AnimSequence && mv )
-        :BaseTreeContainerChild(mv), m_model(this), m_delegate(this)
+        :BaseTreeContainerChild(mv), m_delegate(this)
     {}
 
     AnimSequence & operator=( const AnimSequence & cp )
@@ -213,78 +215,74 @@ public:
     inline size_t           size()const {return m_container.size();}
     inline bool             empty()const{return m_container.empty();}
 
-    void importSeq(const fmt::AnimDB::animseq_t & seq)
-    {
-        getModel().removeRows(0, nodeChildCount());
-        getModel().insertRows(0, seq.size());
+    void importSeq(const fmt::AnimDB::animseq_t & seq);
 
-        auto itseq = seq.begin();
-        for( fmt::frmid_t cntid = 0; cntid < static_cast<fmt::frmid_t>(seq.size()); ++cntid, ++itseq )
-        {
-            m_container[cntid].importFrame(*itseq);
-        }
-    }
-
-    fmt::AnimDB::animseq_t exportSeq()const
-    {
-        fmt::AnimDB::animseq_t seq;
-        for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-            seq.push_back(std::move(m_container[cntid].exportFrame()));
-
-        return qMove(seq);
-    }
+    fmt::AnimDB::animseq_t exportSeq()const;
 
     inline int getSeqLength()const {return nodeChildCount();}
 
-    Sprite * parentSprite()override;
-
-    inline model_t & getModel() {return m_model;}
-    inline const model_t & getModel()const {return m_model;}
+    Sprite              * parentSprite()override;
 
     inline int nodeColumnCount() const override
     {
         return AnimFrame::ColumnNames.size();
     }
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-    {
-        if( role != Qt::DisplayRole )
-            return QVariant();
-
-        if( orientation == Qt::Orientation::Vertical )
-        {
-            return std::move(QVariant( QString("%1").arg(section) ));
-        }
-        else if( orientation == Qt::Orientation::Horizontal && section < AnimFrame::ColumnNames.size() )
-        {
-            return AnimFrame::ColumnNames[section];
-        }
-        return QVariant();
-    }
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 
-    QVariant data(const QModelIndex &index, int role) const override
-    {
-        if (!index.isValid())
-            return QVariant("root");
-
-        if (role != Qt::DisplayRole &&
-            role != Qt::DecorationRole &&
-            role != Qt::SizeHintRole &&
-            role != Qt::EditRole)
-            return QVariant();
-
-        return static_cast<TreeElement*>(index.internalPointer())->nodeData(index.column(), role);
-    }
+    QVariant data(const QModelIndex &index, int role) const override;
 
     virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
 
     inline AnimSequenceDelegate         * getDelegate()     {return &m_delegate;}
     inline const AnimSequenceDelegate   * getDelegate()const{return &m_delegate;}
 
+    QImage makePreview()const;
+
 private:
-    model_t                 m_model;
     AnimSequenceDelegate    m_delegate;
+};
+
+//*******************************************************************
+//  AnimSequencesPickerModel
+//*******************************************************************
+//Model meant to display all animation sequences so they can be dragged to an animation slot in the animation table.
+class AnimSequences;
+class AnimSequencesPickerModel : public QAbstractItemModel
+{
+    AnimSequences *  m_pOwner;
+public:
+
+    enum struct eColumns : int
+    {
+        Preview = 0,
+        NbFrames,
+        NbColumns,
+    };
+
+    static const QStringList ColumnNames;
+
+public:
+    AnimSequencesPickerModel(AnimSequences * pseqs, QObject * parent = nullptr);
+
+
+
+    // QAbstractItemModel interface
+public:
+    virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
+
+    virtual QModelIndex parent(const QModelIndex &child) const override;
+
+    virtual int rowCount(const QModelIndex &parent) const override;
+
+    virtual int columnCount(const QModelIndex &parent) const override;
+
+    virtual QVariant data(const QModelIndex &index, int role) const override;
+
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
 };
 
 //*******************************************************************
@@ -301,45 +299,18 @@ public:
     AnimSequences( const AnimSequences & cp );
     AnimSequences( AnimSequences && mv );
 
-    ~AnimSequences()
-    {
-        qDebug("AnimSequences::~AnimSequences()\n");
-    }
+    ~AnimSequences();
 
-    void clone(const TreeElement *other)
-    {
-        const AnimSequences * ptr = static_cast<const AnimSequences*>(other);
-        if(!ptr)
-            throw std::runtime_error("AnimSequences::clone(): other is not a AnimSequences!");
-        (*this) = *ptr;
-    }
+    void clone(const TreeElement *other);
 
     AnimSequences & operator=( const AnimSequences & cp );
     AnimSequences & operator=( AnimSequences && mv );
 
     //QTreeModel
-    virtual QVariant data(const QModelIndex &index, int role)const override
-    {
-        if (!index.isValid())
-            return QVariant("root");
-
-        if (role != Qt::DisplayRole &&
-            role != Qt::DecorationRole &&
-            role != Qt::SizeHintRole &&
-            role != Qt::EditRole)
-            return QVariant();
-
-        return static_cast<TreeElement*>(index.internalPointer())->nodeData(index.column(), role);
-    }
+    virtual QVariant data(const QModelIndex &index, int role)const override;
     QVariant nodeData(int column, int role)const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    virtual int columnCount(const QModelIndex &parent) override
-    {
-        if (parent.isValid())
-            return static_cast<TreeElement*>(parent.internalPointer())->nodeColumnCount();
-        else
-            return HEADER_COLUMNS.size();
-    }
+    virtual int columnCount(const QModelIndex &parent) override;
 
     //
     void                        removeSequence( fmt::AnimDB::animseqid_t id );
@@ -351,11 +322,51 @@ public:
     model_t * getModel();
     AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id );
 
+    AnimSequencesPickerModel * getPickerModel();
+
     bool nodeIsMutable()const override    {return false;}
 
 private:
     QScopedPointer<model_t> m_pmodel;
+    QScopedPointer<AnimSequencesPickerModel> m_pickermodel;
 };
+
+//*******************************************************************
+//  AnimGroupModel
+//*******************************************************************
+class AnimGroup;
+class AnimGroupModel : public QAbstractItemModel
+{
+    AnimGroup * m_pOwner;
+public:
+    AnimGroupModel(AnimGroup * pgrp, QObject * parent = nullptr);
+
+    // QAbstractItemModel interface
+public:
+    virtual QModelIndex index(int row, int column, const QModelIndex &parent) const override;
+    virtual QModelIndex parent(const QModelIndex &/*child*/) const override;
+    virtual int         rowCount(const QModelIndex &parent) const override;
+    virtual int         columnCount(const QModelIndex &parent) const override;
+    virtual bool        hasChildren(const QModelIndex &parent) const override;
+    virtual QVariant    data(const QModelIndex &index, int role) const override;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+    virtual bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    virtual bool insertRows(int row, int count, const QModelIndex &parent) override;
+    virtual bool removeRows(int row, int count, const QModelIndex &parent) override;
+    virtual bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+    virtual QMap<int, QVariant> itemData(const QModelIndex &index) const override;
+    virtual bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles) override;
+    virtual Qt::DropActions supportedDropActions() const override;
+    virtual Qt::DropActions supportedDragActions() const override;
+};
+
+//*******************************************************************
+//  AnimGroupDelegate
+//*******************************************************************
+class AnimGroupDelegate;
 
 //*******************************************************************
 //  AnimGroup
@@ -363,87 +374,64 @@ private:
 class AnimGroup : public BaseTreeTerminalChild<&ElemName_AnimGroup>
 {
 public:
-    AnimGroup( TreeElement * parent )
-        :BaseTreeTerminalChild(parent)
-    {setNodeDataTy(eTreeElemDataType::animGroup);}
-
-    void clone(const TreeElement *other)
+    enum struct eColumns : int
     {
-        const AnimGroup * ptr = static_cast<const AnimGroup*>(other);
-        if(!ptr)
-            throw std::runtime_error("AnimGroup::clone(): other is not a AnimGroup!");
-        (*this) = *ptr;
-    }
+        GroupID = 0,
+        GroupName,
+        NbSlots,
+        NbColumns,
+    };
 
-    int nodeColumnCount()const override {return 1;}
+    static const QStringList ColumnNames;
+    typedef QList<fmt::AnimDB::animseqid_t> slots_t;
 
-    QVariant nodeData(int column, int role) const override
-    {
-        if( role != Qt::DisplayRole && role != Qt::EditRole)
-            return QVariant();
+    AnimGroup(TreeElement * parent);
+    AnimGroup(AnimGroup && mv);
+    AnimGroup(const AnimGroup & cp);
+    AnimGroup & operator=(AnimGroup && mv);
+    AnimGroup & operator=(const AnimGroup & cp);
+    ~AnimGroup();
 
-        if( column == 0 )
-            return QVariant( QString("%1 %2").arg(ElemName()).arg(nodeIndex()) );
-        else if(column == 1)
-            return QVariant(QString("%1").arg(unk16));
-        else if(column == 2)
-            return QVariant(QString("%1").arg(m_seqlist.size()));
-        else
-            return QVariant();
-    }
+    void clone(const TreeElement *other);
 
-    void importGroup(const fmt::AnimDB::animgrp_t & grp)
-    {
-        m_seqlist.reserve(grp.seqs.size());
-        for( const auto & seq : grp.seqs )
-            m_seqlist.push_back(seq);
 
-        unk16 = grp.unk16;
-    }
+    int             nodeColumnCount()const override {return ColumnNames.size();}
+    QVariant        nodeData(int column, int role) const override;
 
-    fmt::AnimDB::animgrp_t exportGroup()
-    {
-        fmt::AnimDB::animgrp_t dest;
-        dest.seqs.resize(m_seqlist.size());
-        std::copy(m_seqlist.begin(), m_seqlist.end(), dest.seqs.begin());
-        dest.unk16 = unk16;
-        return std::move(dest);
-    }
+
+    void                    importGroup(const fmt::AnimDB::animgrp_t & grp);
+    fmt::AnimDB::animgrp_t  exportGroup();
 
     inline bool operator==( const AnimGroup & other)const  {return this == &other;}
     inline bool operator!=( const AnimGroup & other)const  {return !operator==(other);}
 
-    void fillTableWidget( QTableWidget * tbl, AnimSequences & seqs )
-    {
-        tbl->setRowCount(m_seqlist.size());
 
-        int cntrow = 0;
-        for( auto seq : m_seqlist )
-        {
-            tbl->setItem(cntrow, 0, new QTableWidgetItem(QString("Sequence ID ").arg(seq)) );
-            AnimSequence * pseq = static_cast<AnimSequence*>(seqs.nodeChild(seq));
-            if( pseq )
-                tbl->setItem(cntrow, 1, new QTableWidgetItem(QString("%1").arg(pseq->getSeqLength())) );
-            ++cntrow;
-        }
-    }
-
-
-    void removeSequenceReferences( fmt::AnimDB::animseqid_t id )
-    {
-        for( auto & seq : m_seqlist )
-        {
-            if(seq == id)
-                seq = -1;
-        }
-    }
+    void removeSequenceReferences( fmt::AnimDB::animseqid_t id );
 
     Sprite * parentSprite();
 
+    inline uint16_t getUnk16()const         {return m_unk16;}
+    inline void     setUnk16(uint16_t val)  {m_unk16 = val;}
+
+    int getGroupUID()const {return nodeIndex();}
+
+    inline const slots_t & seqSlots()const {return m_seqlist;}
+    inline slots_t       & seqSlots()      {return m_seqlist;}
+
+     inline AnimGroupModel * getModel() {return &m_model;}
+     inline const AnimGroupModel * getModel()const {return &m_model;}
+
 private:
-    QList<fmt::AnimDB::animseqid_t> m_seqlist;
-    uint16_t                        unk16;
+    slots_t                             m_seqlist;
+    uint16_t                            m_unk16;
+    AnimGroupModel                      m_model;
+    QScopedPointer<AnimGroupDelegate>   m_delegate;
 };
+
+//*******************************************************************
+//  AnimTableDelegate
+//*******************************************************************
+class AnimTableDelegate;
 
 //*******************************************************************
 //  AnimTable
@@ -451,139 +439,64 @@ private:
 class AnimTable : public BaseTreeContainerChild<&ElemName_AnimTable, AnimGroup>
 {
 public:
+    typedef QPair<fmt::AnimDB::animgrpid_t, QString> animtblentry_t; //Second is the animation name assigned to the slot, first is the animation group assigned!
 
-    AnimTable( TreeElement * parent )
-        :BaseTreeContainerChild(parent)
-    {
-        setNodeDataTy(eTreeElemDataType::animTable);
-    }
+    AnimTable(TreeElement * parent);
+    AnimTable(const AnimTable & cp);
+    AnimTable(AnimTable && mv);
+    AnimTable & operator=(const AnimTable & cp);
+    AnimTable & operator=(AnimTable && mv);
+    void clone(const TreeElement *other);
 
-    void clone(const TreeElement *other)
-    {
-        const AnimTable * ptr = static_cast<const AnimTable*>(other);
-        if(!ptr)
-            throw std::runtime_error("AnimTable::clone(): other is not a AnimTable!");
-        (*this) = *ptr;
-    }
+    ~AnimTable();
 
-    QVariant nodeData(int column, int role) const override
-    {
-        if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
-            return QVariant(ElemName());
-        return QVariant();
-    }
 
     //Load the animation table
-    void importAnimationTable( const fmt::AnimDB::animtbl_t & orig )
-    {
-        for(auto id : orig)
-            m_animtbl.push_back(id);
-    }
+    void                    importAnimationTable( const fmt::AnimDB::animtbl_t & orig );
+    fmt::AnimDB::animtbl_t  exportAnimationTable();
 
-    fmt::AnimDB::animtbl_t exportAnimationTable()
-    {
-        fmt::AnimDB::animtbl_t dest;
-        dest.reserve(m_animtbl.size());
-        for( auto id : m_animtbl )
-            dest.push_back(id);
-        return std::move(dest);
-    }
-
-    void importAnimationGroups( fmt::AnimDB::animgrptbl_t & animgrps )
-    {
-        m_container.reserve(animgrps.size());
-        getModel()->removeRows(0, nodeChildCount());
-        getModel()->insertRows(0, animgrps.size());
-
-        for( fmt::AnimDB::animgrpid_t cntgrp = 0; cntgrp < static_cast<fmt::AnimDB::animgrpid_t>(animgrps.size());
-             ++cntgrp )
-            m_container[cntgrp].importGroup(animgrps[cntgrp]);
-    }
-
-    fmt::AnimDB::animgrptbl_t exportAnimationGroups()
-    {
-        fmt::AnimDB::animgrptbl_t grps;
-        for( int cntgrp = 0; cntgrp < nodeChildCount(); ++cntgrp )
-        {
-            grps[cntgrp] = std::move(m_container[cntgrp].exportGroup());
-        }
-        return std::move(grps);
-    }
+    void                        importAnimationGroups( fmt::AnimDB::animgrptbl_t & animgrps );
+    fmt::AnimDB::animgrptbl_t   exportAnimationGroups();
 
     //Clears any references to a group from the animation table!
-    void DeleteGroupRefs( fmt::AnimDB::animgrpid_t id )
+    void DeleteGroupRefs( fmt::AnimDB::animgrpid_t id );
+    void DeleteGroupChild( fmt::AnimDB::animgrpid_t id );
+
+    inline int getSlotsTableSize()const {return m_slotNames.size();}
+
+    //Returns the associated animation name for a slot, or an empty string if no anim is associated
+    inline const QString getSlotName (fmt::AnimDB::animgrpid_t entry)const
     {
-        int idx = -1;
-        do
+        if(entry >= 0 && entry < m_slotNames.size() )
         {
-            idx = m_animtbl.indexOf(id);
-            if( idx != -1 )
-                m_animtbl[idx] = -1;
-        }while( idx != -1 );
+            auto itf = m_slotNames.find(entry);
+            if(itf != m_slotNames.end())
+                return (*itf);
+        }
+        return QString();
     }
-
-    void DeleteGroupChild( fmt::AnimDB::animgrpid_t id )
+    inline void setSlotName (fmt::AnimDB::animgrpid_t entry, const QString & name)
     {
-        DeleteGroupRefs(id);
-//        for( size_t cntchild = 0; cntchild < childCount(); ++cntchild )
-//        {
-//            AnimGroup   * pchild = static_cast<AnimGroup*>(child(cntchild));
-//            if( pchild && pchild->getGrpId() == id )
-                getModel()->removeRow(id);
-//        }
+        if(entry >= 0 && entry < m_slotNames.size())
+            m_slotNames[entry] = name;
     }
-
-    inline int getAnimTableSize()const                              {return m_animtbl.size();}
-    inline fmt::AnimDB::animgrpid_t & getAnimTableEntry(int entry)  {return m_animtbl[entry];}
 
     Sprite * parentSprite();
 
-    QVariant data(const QModelIndex &index, int role) const override
-    {
-        if (!index.isValid())
-            return QVariant("root");
+    QVariant data(const QModelIndex &index, int role) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    QVariant nodeData(int column, int role) const override;
+    bool     nodeIsMutable()const override    {return true;}
+    virtual int nodeColumnCount() const       {return 1;}
 
-        if (role != Qt::DisplayRole &&
-                role != Qt::DecorationRole &&
-                role != Qt::SizeHintRole &&
-                role != Qt::EditRole)
-            return QVariant();
-
-        const AnimGroup *grp = static_cast<const AnimGroup*>(getItem(index));
-        return grp->nodeData(index.column(), role);
-    }
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-    {
-//        section;
-//        orientation;
-//        role;
-//        if( role != Qt::DisplayRole )
-//            return QVariant();
-
-//        if( orientation == Qt::Orientation::Vertical )
-//        {
-//            return std::move(QVariant( QString("%1").arg(section) ));
-//        }
-//        else if( orientation == Qt::Orientation::Horizontal )
-//        {
-//            switch(section)
-//            {
-//            case 0:
-//                return std::move(QVariant( QString("Preview") ));
-//            case 1:
-//                return std::move(QVariant( QString("Bit Depth") ));
-//            case 2:
-//                return std::move(QVariant( QString("Resolution") ));
-//            };
-//        }
-        Q_ASSERT(false);
-        return QVariant();
-    }
-
-    bool nodeIsMutable()const override    {return false;}
+    AnimTableDelegate       * getDelegate();
+    const AnimTableDelegate *getDelegate()const;
 
 private:
-    QList<fmt::AnimDB::animgrpid_t> m_animtbl;
+    QHash<fmt::AnimDB::animgrpid_t, QString> m_slotNames; //List of all the named slots indices and their name
+    //QList<animtblentry_t> m_animtbl;      //This list is meant to tell which anim group index correspond to what animation entry index
+    //The actual AnimGroup objects are stored in the base class
+    QScopedPointer<AnimTableDelegate>   m_delegate;
 };
 
 

@@ -39,35 +39,14 @@ namespace spr_manager
         static const QList<QString> SpriteContentCategories;
 
         //
-        SpriteContainer(QObject * parent = nullptr)
-            :QObject(parent), TreeElement(nullptr), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
-        {
-        }
-
-        SpriteContainer(const QString & str, QObject * parent = nullptr)
-            :QObject(parent), TreeElement(nullptr), m_srcpath(str), m_cntTy(eContainerType::NONE)//, m_rootelem(this)
-        {}
-
+        SpriteContainer(QObject * parent = nullptr);
+        SpriteContainer(const QString & str, QObject * parent = nullptr);
         SpriteContainer(const SpriteContainer&) = delete;
         SpriteContainer(SpriteContainer&&) = delete;
         SpriteContainer & operator=(const SpriteContainer&) = delete;
         SpriteContainer & operator=(SpriteContainer&&) = delete;
-
-        virtual ~SpriteContainer()
-        {
-            //m_rootelem = nullptr;
-            qDebug("SpriteContainer::~SpriteContainer(): Deleting sprite container!\n");
-            m_workthread.terminate();
-            qDebug("SpriteContainer::~SpriteContainer(): Waiting on thread..\n");
-            m_workthread.wait();
-            qDebug("SpriteContainer::~SpriteContainer(): Done!\n");
-        }
-
-
-        void clone(const TreeElement */*other*/)
-        {
-            throw std::runtime_error("SpriteContainer::clone(): Copy is deactivated!");
-        }
+        virtual ~SpriteContainer();
+        void clone(const TreeElement */*other*/);
 
         //
         bool ContainerLoaded()const;
@@ -92,65 +71,22 @@ namespace spr_manager
         Sprite & GetSprite( sprid_t idx );
         sprid_t  AddSprite();
 
-        inline iterator begin() {return m_spr.begin();}
-        inline const_iterator begin()const {return m_spr.begin();}
-        inline iterator end() {return m_spr.end();}
-        inline const_iterator end()const {return m_spr.end();}
+        inline iterator         begin()     {return m_spr.begin();}
+        inline const_iterator   begin()const{return m_spr.begin();}
+        inline iterator         end()       {return m_spr.end();}
+        inline const_iterator   end()const  {return m_spr.end();}
         //
     public:
 
-        QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
-        {
-            if(!ContainerLoaded() || m_spr.empty())
-                return QVariant();
+        QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 
-            if (!index.isValid())
-                return QVariant("root");
+        QVariant headerData(int /*section*/, Qt::Orientation /*orientation*/, int /*role */= Qt::DisplayRole) const;
 
-            if (role != Qt::DisplayRole && role != Qt::EditRole)
-                return QVariant();
+        int rowCount(const QModelIndex &parent = QModelIndex()) const;
 
-            TreeElement *item = const_cast<SpriteContainer*>(this)->getItem(index);
-            return item->nodeData(index.column(), role);
-        }
+        bool hasChildren(const QModelIndex &parent = QModelIndex()) const;
 
-        QVariant headerData(int /*section*/, Qt::Orientation /*orientation*/, int /*role */= Qt::DisplayRole) const
-        {
-            //nothing really
-            return QVariant();
-        }
-
-        int rowCount(const QModelIndex &parent = QModelIndex()) const
-        {
-            if (!ContainerLoaded() || m_spr.empty())
-                return 0;
-
-            TreeElement *parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
-            return parentItem->nodeChildCount();
-        }
-
-        bool hasChildren(const QModelIndex &parent = QModelIndex()) const
-        {
-            if(!ContainerLoaded() || m_spr.empty())
-                return false;
-            TreeElement * parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
-
-            if(parentItem)
-                return parentItem->nodeChildCount() > 0;
-            else
-                return false;
-        }
-
-        TreeElement *getItem(const QModelIndex &index)
-        {
-            if (index.isValid())
-            {
-                TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
-                if (item)
-                    return item;
-            }
-            return this;
-        }
+        TreeElement *getItem(const QModelIndex &index);
 
 
         template<class _MANAGERTY>
@@ -190,13 +126,7 @@ namespace spr_manager
         }
 
 
-        int columnCount(const QModelIndex &/*parent */= QModelIndex()) const
-        {
-//            if (parent.isValid())
-//                return static_cast<TreeElement*>(parent.internalPointer())->columnCount();
-//            else
-                return 1;
-        }
+        int columnCount(const QModelIndex &/*parent */= QModelIndex()) const;
 
         template<class _MANAGERTY>
             bool removeRows(int position, int rows, const QModelIndex &parent, _MANAGERTY * manager)
@@ -227,118 +157,25 @@ namespace spr_manager
 
 
     public:
-        void appendChild(TreeElement *item)
-        {
-            QMutexLocker lk(&getMutex());
-            Sprite * spritem = nullptr;
-            spritem = static_cast<Sprite*>(item);
-
-            if(spritem)
-                m_spr.append(*spritem);
-        }
-
-        TreeElement *nodeChild(int row)override
-        {
-            return &m_spr[row];
-        }
-
-        int nodeChildCount() const override
-        {
-            return m_spr.count();
-        }
-
-        int nodeIndex() const override
-        {
-            return 0; //Always first!
-        }
-
-        int indexOfNode( TreeElement * ptr )const override
-        {
-            QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
-            Sprite * ptrspr = static_cast<Sprite *>(ptr);
-
-            if( ptrspr )
-                return m_spr.indexOf(*ptrspr);
-            return 0;
-        }
-
-        int nodeColumnCount() const override
-        {
-            return 1;
-        }
-
-        TreeElement *parentNode() override
-        {
-            return m_parentItem;
-        }
-
-        Sprite *parentSprite()override{return nullptr;}
-
-        QVariant nodeData(int column, int role) const override
-        {
-            if( (role == Qt::DisplayRole || role == Qt::EditRole) && column != 0)
-                return QVariant(getSrcFnameOnly());
-            return QVariant();
-        }
-
-        bool insertChildrenNodes(int position, int count)override
-        {
-            QMutexLocker lk(&getMutex());
-            if(position > m_spr.size())
-                return false;
-
-            for( int i = 0; i < count; ++i )
-                m_spr.insert(position, Sprite(this));
-            return true;
-        }
-
-        bool removeChildrenNodes(int position, int count)override
-        {
-            QMutexLocker lk(&getMutex());
-            int i = 0;
-            for( ; i < count && position < m_spr.size(); ++i )
-                m_spr.removeAt(position);
-
-            if( i+1 != count )
-                return false;
-
-            return true;
-        }
-
-        inline bool moveChildrenNodes  (int srcrow, int count, int destrow)override
-        {
-            QMutexLocker lk(&getMutex());
-
-            if( srcrow + count > m_spr.size() || destrow > m_spr.size() )
-            {
-                Q_ASSERT(false);
-                return false;
-            }
-
-            if(destrow > srcrow)
-            {
-                for( int i = 0; i < count; ++i )
-                    m_spr.move(srcrow, destrow);
-            }
-            else
-            {
-                for( int i = 0; i < count; ++i )
-                    m_spr.move(srcrow, destrow + i);
-            }
-
-            return true;
-        }
-
-        bool nodeIsMutable()const override {return false;}
+        void appendChild(TreeElement *item);
+        TreeElement *nodeChild(int row)override;
+        int nodeChildCount() const override;
+        int nodeIndex() const override;
+        int indexOfNode( TreeElement * ptr )const override;
+        int nodeColumnCount() const override;
+        TreeElement *parentNode() override;
+        Sprite *parentSprite()override;
+        QVariant nodeData(int column, int role) const override;
+        bool insertChildrenNodes(int position, int count)override;
+        bool removeChildrenNodes(int position, int count)override;
+        bool moveChildrenNodes  (int srcrow, int count, int destrow)override;
+        bool nodeIsMutable()const override;
 
     private:
         void FetchToC( QDataStream & fdat );
         void LoadEntry(sprid_t idx);
 
-        QString getSrcFnameOnly()const
-        {
-            return m_srcpath.mid( m_srcpath.lastIndexOf('/') );
-        }
+        QString getSrcFnameOnly()const;
 
     private:
         QString                 m_srcpath;      //Original path of the container if applicable!

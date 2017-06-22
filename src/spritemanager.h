@@ -50,16 +50,6 @@ namespace spr_manager
                 return QAbstractItemModel::flags(index);
 
             return pnode->nodeFlags();
-
-//            switch(getItem(index)->getElemTy())
-//            {
-//            case eTreeElemType::Editable:
-//                return Qt::ItemIsSelectable | Qt::ItemIsEditable | QAbstractItemModel::flags(index);
-//            case eTreeElemType::Fixed:
-//                return Qt::ItemIsSelectable | QAbstractItemModel::flags(index);
-//            };
-
-            //return QAbstractItemModel::flags(index);
         }
 
         QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
