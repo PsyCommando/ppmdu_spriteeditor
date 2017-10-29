@@ -279,22 +279,39 @@ void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
     Q_ASSERT(spr && aniseq);
     qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
     ShowATab(ui->tabSequence);
-    m_previewrender.setScene(spr, aniseq->nodeIndex());
-    qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anime viewer!\n";
-    ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
-    ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
-    m_previewrender.getAnimSprite()->setScale(2.0);
+    //m_previewrender.setScene(spr, aniseq->nodeIndex());
+    qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anim viewer!\n";
+
+    //ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
+    //ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
+    //m_previewrender.getAnimSprite()->setScale(2.0);
     ui->tblseqfrmlst->setModel(aniseq->getModel());
     ui->tblseqfrmlst->setItemDelegate(aniseq->getDelegate());
     ui->tblseqfrmlst->resizeRowsToContents();
     ui->tblseqfrmlst->resizeColumnsToContents();
 
+    //connect( aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
+    //{
+    //    m_previewrender.reloadAnim();
+    //    ui->gvAnimSeqViewport->update();
+    //});
+    InstallAnimPreview(ui->gvAnimSeqViewport, spr, aniseq);
+    qDebug() << "MainWindow::DisplayAnimSequencePage(): Scene set!\n";
+}
+
+void MainWindow::InstallAnimPreview(QGraphicsView * viewport, Sprite *spr, AnimSequence * aniseq)
+{
+    qDebug() << "MainWindow::InstallAnimPreview(): Displaying animation..\n";
+    m_previewrender.setScene(spr, aniseq->nodeIndex());
+    viewport->setScene(&m_previewrender.getAnimScene());
+    viewport->centerOn(m_previewrender.getAnimSprite());
+    m_previewrender.getAnimSprite()->setScale(2.0);
+
     connect( aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
     {
         m_previewrender.reloadAnim();
-        ui->gvAnimSeqViewport->update();
+        viewport->update();
     });
-    qDebug() << "MainWindow::DisplayAnimSequencePage(): Scene set!\n";
 }
 
 void MainWindow::DisplayAnimTablePage(Sprite * spr)
@@ -325,6 +342,27 @@ void MainWindow::DisplayAnimTablePage(Sprite * spr)
         AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(index)));
         Q_ASSERT(grp);
         ui->tvAnimTblAnimSeqs->setModel(grp->getModel());
+    });
+
+    connect(ui->tvAnimTblAnimSeqs, &QTableView::clicked, [&](const QModelIndex & index)
+    {
+        if( ui->chkAnimTblAutoPlay->isChecked() )
+        {
+            Q_ASSERT(spr);
+            AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(ui->tvAnimTbl->currentIndex())));
+            Q_ASSERT(grp);
+            AnimSequence * seq = spr->getAnimSequence( grp->seqSlots()[index.row()] );
+            InstallAnimPreview(ui->gvAnimTablePreview, spr, seq);
+        }
+    });
+
+    connect(ui->lvAnimTblAnimSeqList, &QTreeView::clicked, [&](const QModelIndex & index)
+    {
+        if( ui->chkAnimTblAutoPlay->isChecked() )
+        {
+            Q_ASSERT(spr);
+            InstallAnimPreview(ui->gvAnimTablePreview, spr, spr->getAnimSequence(index.row()));
+        }
     });
 }
 
@@ -1406,6 +1444,16 @@ void MainWindow::on_btnSeqExport_clicked()
     ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
 }
 
+
+//
+//
+//
+void MainWindow::on_btnAnimTblMoveSeq_clicked()
+{
+
+}
+
+
 //===================================================================================================================
 // TVSpritesContextMenu
 //===================================================================================================================
@@ -1516,3 +1564,5 @@ void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
 {
 
 }
+
+
