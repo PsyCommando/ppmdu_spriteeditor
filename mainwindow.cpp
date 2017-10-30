@@ -156,7 +156,7 @@ void MainWindow::ShowATab(QWidget *ptab)
     ui->tabMain->insertWidget(0, ptab );
     qDebug() << "MainWindow::ShowATab(): Adding tab to be displayed!\n";
     ptab->show();
-    ptab->setFocus();
+    //ptab->setFocus();
     qDebug() << "MainWindow::ShowATab(): Tab displayed!\n";
 }
 
@@ -1566,3 +1566,8 @@ void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
 }
 
 
+
+void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
+{
+    this->on_tv_sprcontent_clicked(index);
+}

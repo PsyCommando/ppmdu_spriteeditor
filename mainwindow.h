@@ -165,6 +165,8 @@ private slots:
     void on_actionNewSprite_Pack_File_triggered();
     void on_btnAnimTblMoveSeq_clicked();
 
+    void on_tv_sprcontent_activated(const QModelIndex &index);
+
 signals:
 
 private:
