@@ -10,7 +10,7 @@
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/spritemanager.h>
 #include <src/sprite.h>
-#include <dialogprogressbar.hpp>
+#include <src/ui/dialogprogressbar.hpp>
 
 namespace spr_manager
 {

@@ -7,8 +7,8 @@
 QT       += core gui concurrent svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-GIT_VERSION = $$system(gitversion -output json -showvariable SemVer) ##(git --git-dir $$PWD/.git --work-tree $$PWD describe --always --tags)
-GIT_MAJORMINOR_VERSION = $$system(gitversion -output json -showvariable MajorMinorPatch)
+GIT_VERSION = $$system(GitVersion -output json -showvariable SemVer) ##(git --git-dir $$PWD/.git --work-tree $$PWD describe --always --tags)
+GIT_MAJORMINOR_VERSION = $$system(GitVersion -output json -showvariable MajorMinorPatch)
 
 TARGET = ppmdu_spriteeditor
 TEMPLATE = app
@@ -29,10 +29,10 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\" \
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
+SOURCES += src/main.cpp\
+        src/ui/mainwindow.cpp \
     src/spritecontainer.cpp \
-    processingconsole.cpp \
+    src/ui/processingconsole.cpp \
     src/sprite.cpp \
     src/spritemanager.cpp \
     src/ppmdu/fmts/sir0.cpp \
@@ -41,26 +41,26 @@ SOURCES += main.cpp\
     src/ppmdu/fmts/pxhandler.cpp \
     src/ppmdu/fmts/wa_sprite.cpp \
     src/ppmdu/utils/imgutils.cpp \
-    diagsingleimgcropper.cpp \
-    dialognewsprite.cpp \
+    src/ui/diagsingleimgcropper.cpp \
+    src/ui/dialognewsprite.cpp \
     src/sprite_anim.cpp \
     src/scenerenderer.cpp \
     src/sprite_img.cpp \
-    dialogabout.cpp \
-    dialogprogressbar.cpp \
+    src/ui/dialogabout.cpp \
+    src/ui/dialogprogressbar.cpp \
     src/ppmdu/fmts/compression_handler.cpp \
     src/frameeditor.cpp \
     src/extfmt/riff_palette.cpp \
     src/ppmdu/utils/gfileio.cpp \
-    paletteeditor.cpp \
+    src/ui/paletteeditor.cpp \
     src/sprite_util_impl.cpp \
     src/sprite_palette.cpp \
     src/sprite_frames.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += src/ui/mainwindow.h \
     src/spritemanager.h \
     src/spritecontainer.h \
-    processingconsole.h \
+    src/ui/processingconsole.h \
     src/sprite.h \
     src/ppmdu/fmts/sir0.hpp \
     src/ppmdu/utils/byteutils.hpp \
@@ -73,30 +73,30 @@ HEADERS  += mainwindow.h \
     src/ppmdu/fmts/wa_sprite.hpp \
     src/ppmdu/utils/algo.hpp \
     src/ppmdu/utils/imgutils.hpp \
-    diagsingleimgcropper.hpp \
-    dialognewsprite.hpp \
+    src/ui/diagsingleimgcropper.hpp \
+    src/ui/dialognewsprite.hpp \
     src/sprite_img.hpp \
     src/sprite_anim.hpp \
     src/scenerenderer.hpp \
-    dialogabout.hpp \
-    dialogprogressbar.hpp \
+    src/ui/dialogabout.hpp \
+    src/ui/dialogprogressbar.hpp \
     src/frameeditor.hpp \
     src/extfmt/riff_palette.hpp \
     src/ppmdu/utils/gfileio.hpp \
     src/extfmt/text_palette.hpp \
     src/extfmt/gpl_palette.hpp \
     src/ppmdu/utils/color_utils.hpp \
-    paletteeditor.hpp \
+    src/ui/paletteeditor.hpp \
     src/sprite_frames.hpp \
     src/sprite_palette.hpp
 
-FORMS    += mainwindow.ui \
-    processingconsole.ui \
-    diagsingleimgcropper.ui \
-    dialognewsprite.ui \
-    dialogabout.ui \
-    dialogprogressbar.ui \
-    paletteeditor.ui
+FORMS    += src/ui/mainwindow.ui \
+    src/ui/processingconsole.ui \
+    src/ui/diagsingleimgcropper.ui \
+    src/ui/dialognewsprite.ui \
+    src/ui/dialogabout.ui \
+    src/ui/dialogprogressbar.ui \
+    src/ui/paletteeditor.ui
 
 RESOURCES += \
     appres.qrc
