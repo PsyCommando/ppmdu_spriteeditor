@@ -12,17 +12,7 @@
 #include <src/ui/dialogabout.hpp>
 #include <src/ui/paletteeditor.hpp>
 
-const QString PaletteFilter = spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::RIFF_Pal) +
-                              ";;" +
-                              spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::TEXT_Pal) +
-                              ";;" +
-                              spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::GIMP_PAL);
 
-
-QPixmap ImageToPixmap( QImage && img, const QSize & sz )
-{
-    return qMove(QPixmap::fromImage(img, Qt::ImageConversionFlag::AvoidDither | Qt::ImageConversionFlag::ColorOnly).scaled( sz, Qt::KeepAspectRatio));
-}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -100,6 +90,9 @@ MainWindow::~MainWindow()
     spr_manager::SpriteManager::Instance().CloseContainer();
 }
 
+//
+// Serialization for using settings
+//
 void MainWindow::writeSettings()
 {
     m_settings.beginGroup("MainWindow");
@@ -119,12 +112,13 @@ void MainWindow::readSettings()
 
 void MainWindow::HideAllTabs()
 {
-    //Hide all
+    //Disable updates temporarily
     ui->tabMain->setUpdatesEnabled(false);
 
     //Stop any animations
     InitAnimScene();
 
+    //Remove tabs from the widget
     ui->tabMain->removeWidget(ui->tabAnimTable);
     ui->tabMain->removeWidget(ui->tabEfx);
     ui->tabMain->removeWidget(ui->tabFrame);
@@ -133,6 +127,7 @@ void MainWindow::HideAllTabs()
     ui->tabMain->removeWidget(ui->tabWelcome);
     ui->tabMain->removeWidget(ui->tabImages);
 
+    //Hide all removed tabs
     ui->tabAnimTable->hide();
     ui->tabEfx->hide();
     ui->tabFrame->hide();
@@ -141,7 +136,7 @@ void MainWindow::HideAllTabs()
     ui->tabWelcome->hide();
     ui->tabImages->hide();
 
-    //ui->tblframeparts->setModel(nullptr);
+    //Clear the property tab's preview
     ui->lbl_imgpreview->clear();
     ui->lbl_imgpreview->setPixmap(m_imgNoImg);
 
@@ -156,7 +151,6 @@ void MainWindow::ShowATab(QWidget *ptab)
     ui->tabMain->insertWidget(0, ptab );
     qDebug() << "MainWindow::ShowATab(): Adding tab to be displayed!\n";
     ptab->show();
-    //ptab->setFocus();
     qDebug() << "MainWindow::ShowATab(): Tab displayed!\n";
 }
 
@@ -167,251 +161,13 @@ void MainWindow::DisplayStartScreen()
     ShowStatusMessage(tr("Welcome! May you encounter no bugs today!"));
 }
 
-void MainWindow::DisplayPropertiesPage(Sprite * spr)
-{
-    Q_ASSERT(spr);
-    qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
-
-    spr_manager::SpriteContainer * pcnt = spr_manager::SpriteManager::Instance().getContainer();
-    ui->tv_sprcontent->setCurrentIndex(pcnt->index(pcnt->indexOfNode(spr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance() ));
-    if( !spr->wasParsed() )
-        spr->ParseSpriteData();
-
-    //display preview only if we have image data!
-    if( spr->hasImageData() )
-        ui->lblPropPreview->setPixmap(spr->MakePreviewFrame().scaled( ui->lblPropPreview->size(), Qt::KeepAspectRatio) );
-    else
-        ui->lblPropPreview->setPixmap(m_imgNoImg);
-
-    ui->tblProperties->setModel(spr->propHandler()->model());
-    ui->tblProperties->setItemDelegate(spr->propHandler()->delegate());
-
-    //display palette preview
-    ui->lbl_test_palette->setPixmap(spr->MakePreviewPalette());
-
-    //Setup stats
-    ui->tblOverview->setModel(spr->overviewModel());
-
-    ShowATab(ui->tabProperties);
-}
-
-void MainWindow::DisplayMFramePage(Sprite *spr, MFrame * frm)
-{
-    Q_ASSERT(spr && frm);
-    qDebug() << "MainWindow::DisplayMFramePage(): Showing frame page!\n";
-    ui->tblframeparts->setModel(frm->getModel());
-    ui->tblframeparts->setItemDelegate(&(frm->itemDelegate()));
-    ui->tblframeparts->setEditTriggers(QTableView::EditTrigger::AllEditTriggers);
-    ui->tblframeparts->setSizeAdjustPolicy(QTableView::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
-    ShowATab(ui->tabFrame);
-    ui->tblframeparts->resizeRowsToContents();
-    ui->tblframeparts->resizeColumnsToContents();
-    ui->tblframeparts->setCurrentIndex( ui->tblframeparts->model()->index(0, 0, QModelIndex()) );
-
-    //Setup the frame editor in the viewport!
-    m_frmeditor.reset( new FrameEditor(frm) );
-    ui->gvFrame->setScene( &m_frmeditor->getScene() );
-    m_frmeditor->initScene(ui->chkColorPartOutlines->isChecked(),
-                           ui->chkFrmMiddleMarker->isChecked(),
-                           ui->chkFrmTransparency->isChecked());
-    ui->gvFrame->repaint();
-
-    if(ui->tblframeparts->currentIndex().isValid())
-        setupFrameEditPageForPart( frm, static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer()) );
-
-    //Setup the callbacks
-    connect(frm->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &,const QModelIndex &, const QVector<int>&)
-    {
-        m_frmeditor->updateParts();
-        ui->gvFrame->update();
-    });
-    connect(frm->getModel(), &QAbstractItemModel::rowsInserted, [&](const QModelIndex & /*parent*/, int /*first*/, int /*last*/)
-    {
-        m_frmeditor->updateParts();
-        ui->gvFrame->update();
-    });
-    connect(frm->getModel(), &QAbstractItemModel::rowsMoved, [&](const QModelIndex & /*parent*/,
-                                                                int /*start*/,
-                                                                int /*end*/,
-                                                                const QModelIndex & /*destination*/,
-                                                                int /*row*/)
-    {
-        m_frmeditor->updateParts();
-        ui->gvFrame->update();
-    });
-    connect(frm->getModel(), &QAbstractItemModel::rowsRemoved, [&](const QModelIndex & /*parent*/,
-                                                                int /*first*/,
-                                                                int /*last*/)
-    {
-        m_frmeditor->updateParts();
-        ui->gvFrame->update();
-    });
-
-    connect(ui->spbFrmZoom, qOverload<int>(&QSpinBox::valueChanged), [&](int val)->void
-    {
-        qreal sc = val * 0.01; //scale the value from 0 to 1 +
-        ui->gvFrame->setTransform(QTransform::fromScale(sc, sc));
-    });
-
-    connect(m_frmeditor.data(), &FrameEditor::zoom, [&](int val)->void
-    {
-        ui->spbFrmZoom->setValue(val + ui->spbFrmZoom->value());
-    });
-
-    //Init checkboxes state
-    connect(ui->chkColorPartOutlines, &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawOutlines);
-    connect(ui->chkFrmMiddleMarker,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawMiddleGuide);
-    connect(ui->chkFrmTransparency,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setTransparencyEnabled);
-
-    //Map model's columns to some of the controls
-    m_frmdatmapper.reset(new QDataWidgetMapper);
-    m_frmdatmapper->setModel(frm->getModel());
-    m_frmdatmapper->addMapping(ui->spbFrmPartXOffset,  static_cast<int>(eFramesColumnsType::direct_XOffset) );
-    m_frmdatmapper->addMapping(ui->spbFrmPartYOffset,  static_cast<int>(eFramesColumnsType::direct_YOffset) );
-    m_frmdatmapper->addMapping(ui->btnFrmVFlip,        static_cast<int>(eFramesColumnsType::direct_VFlip) );
-    m_frmdatmapper->addMapping(ui->btnFrmHFlip,        static_cast<int>(eFramesColumnsType::direct_HFlip) );
-    m_frmdatmapper->toFirst();
-    connect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
-}
-
-void MainWindow::DisplayAnimSequencePage(Sprite *spr, AnimSequence * aniseq)
-{
-    Q_ASSERT(spr && aniseq);
-    qDebug() << "MainWindow::DisplayAnimSequencePage(): Showing anim sequence page!\n";
-    ShowATab(ui->tabSequence);
-    //m_previewrender.setScene(spr, aniseq->nodeIndex());
-    qDebug() << "MainWindow::DisplayAnimSequencePage(): Instanciated anim viewer!\n";
-
-    //ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
-    //ui->gvAnimSeqViewport->centerOn(m_previewrender.getAnimSprite());
-    //m_previewrender.getAnimSprite()->setScale(2.0);
-    ui->tblseqfrmlst->setModel(aniseq->getModel());
-    ui->tblseqfrmlst->setItemDelegate(aniseq->getDelegate());
-    ui->tblseqfrmlst->resizeRowsToContents();
-    ui->tblseqfrmlst->resizeColumnsToContents();
-
-    //connect( aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
-    //{
-    //    m_previewrender.reloadAnim();
-    //    ui->gvAnimSeqViewport->update();
-    //});
-    InstallAnimPreview(ui->gvAnimSeqViewport, spr, aniseq);
-    qDebug() << "MainWindow::DisplayAnimSequencePage(): Scene set!\n";
-}
-
-void MainWindow::InstallAnimPreview(QGraphicsView * viewport, Sprite *spr, AnimSequence * aniseq)
-{
-    qDebug() << "MainWindow::InstallAnimPreview(): Displaying animation..\n";
-    m_previewrender.setScene(spr, aniseq->nodeIndex());
-    viewport->setScene(&m_previewrender.getAnimScene());
-    viewport->centerOn(m_previewrender.getAnimSprite());
-    m_previewrender.getAnimSprite()->setScale(2.0);
-
-    connect( aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
-    {
-        m_previewrender.reloadAnim();
-        viewport->update();
-    });
-}
-
-void MainWindow::DisplayAnimTablePage(Sprite * spr)
-{
-    Q_ASSERT(spr);
-    ShowATab(ui->tabAnimTable);
-    ui->tvAnimTbl->setModel(spr->getAnimTable().getModel());
-    ui->tvAnimTblAnimSeqs->setModel(nullptr);
-    ui->lvAnimTblAnimSeqList->setModel(spr->getAnimSequences().getPickerModel());
-
-    connect( spr->getAnimTable().getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
-    {
-        ui->tvAnimTbl->repaint();
-        ui->tvAnimTblAnimSeqs->repaint();
-    });
-
-    connect(ui->tvAnimTbl, &QTableView::activated, [spr,this](const QModelIndex &index)
-    {
-        Q_ASSERT(spr);
-        AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(index)));
-        Q_ASSERT(grp);
-        ui->tvAnimTblAnimSeqs->setModel(grp->getModel());
-    });
-
-    connect(ui->tvAnimTbl, &QTableView::clicked, [spr,this](const QModelIndex &index)
-    {
-        Q_ASSERT(spr);
-        AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(index)));
-        Q_ASSERT(grp);
-        ui->tvAnimTblAnimSeqs->setModel(grp->getModel());
-    });
-
-    connect(ui->tvAnimTblAnimSeqs, &QTableView::clicked, [&](const QModelIndex & index)
-    {
-        if( ui->chkAnimTblAutoPlay->isChecked() )
-        {
-            Q_ASSERT(spr);
-            AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(ui->tvAnimTbl->currentIndex())));
-            Q_ASSERT(grp);
-            AnimSequence * seq = spr->getAnimSequence( grp->seqSlots()[index.row()] );
-            InstallAnimPreview(ui->gvAnimTablePreview, spr, seq);
-        }
-    });
-
-    connect(ui->lvAnimTblAnimSeqList, &QTreeView::clicked, [&](const QModelIndex & index)
-    {
-        if( ui->chkAnimTblAutoPlay->isChecked() )
-        {
-            Q_ASSERT(spr);
-            InstallAnimPreview(ui->gvAnimTablePreview, spr, spr->getAnimSequence(index.row()));
-        }
-    });
-}
-
-void MainWindow::DisplayPalettePage(Sprite *spr)
-{
-    Q_ASSERT(spr);
-    //ShowATab(ui->tabpal);
-}
-
 void MainWindow::DisplayEffectsPage(Sprite *spr)
 {
     Q_ASSERT(spr);
     ShowATab(ui->tabEfx);
 }
 
-void MainWindow::DisplayAnimGroupPage(Sprite *spr)
-{
-    Q_ASSERT(spr);
-    //ShowATab(ui->tabanimgrp);
-}
 
-void MainWindow::DisplayImagePage(Sprite *spr, Image * img)
-{
-//    Q_ASSERT(spr && img);
-//    qDebug() << "MainWindow::DisplayImagePage(): Displaying image page!\n";
-//    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(spr->getPalette()), ui->lbl_imgpreview->size()));
-//    qDebug() << "MainWindow::DisplayImagePage(): Pixmap assigned!\n";
-//    ShowATab(ui->tabimage);
-}
-
-void MainWindow::DisplayImageListPage(Sprite *spr, ImageContainer *pimgs, Image *img)
-{
-    Q_ASSERT(spr && pimgs);
-    qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
-    ui->tblviewImages->setModel(pimgs->getModel());
-    qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
-    ShowATab(ui->tabImages);
-    ui->tblviewImages->resizeRowsToContents();
-    ui->tblviewImages->resizeColumnsToContents();
-
-    if(img)
-    {
-        //select specified image!
-        //spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
-        QModelIndex ind = ui->tblviewImages->model()->index(pimgs->indexOfNode(img), 0);
-        ui->tblviewImages->setCurrentIndex(ind);
-        on_tblviewImages_clicked(ind);
-    }
-}
 
 void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
 {
@@ -777,7 +533,10 @@ void MainWindow::ShowStatusErrorMessage(const QString &msg)
     QTimer::singleShot( 8000, m_pStatusError.data(), &QLabel::hide );
 }
 
-
+void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
+{
+    this->on_tv_sprcontent_clicked(index);
+}
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
 {
@@ -794,13 +553,6 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             Sprite * spr = static_cast<Sprite*>(pcur);
             DisplayPropertiesPage(spr);
-            break;
-        }
-    case eTreeElemDataType::palette:
-        {
-            PaletteContainer    * pal = static_cast<PaletteContainer*>(pcur);
-            Sprite              * spr = pal->parentSprite();
-            DisplayPalettePage(spr);
             break;
         }
     case eTreeElemDataType::effectOffsets:
@@ -846,13 +598,8 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
             DisplayAnimSequencePage(spr,seq);
             break;
         }
+    case eTreeElemDataType::palette:
     case eTreeElemDataType::animGroup:
-        {
-            AnimGroup   * grp = static_cast<AnimGroup*>(pcur);
-            Sprite      * spr = grp->parentSprite();
-            DisplayAnimGroupPage(spr);
-            break;
-        }
     default:
         HideAllTabs();
     };
@@ -941,516 +688,11 @@ Image * MainWindow::currentTblImages()
 }
 
 
-// *********************************
-//  Properties Tab
-// *********************************
-void MainWindow::on_btnImportPalette_clicked()
-{
-    using namespace spr_manager;
-    Sprite * spr = currentSprite();
-    if( !spr )
-    {
-        ShowStatusErrorMessage(QString(tr("No sprite to import to!")) );
-        return;
-    }
-
-    QString selectedfilter;
-    ePaletteDumpType type;
-    QString filename = QFileDialog::getOpenFileName(this,
-                                                    tr("Import Palette File"),
-                                                    QString(),
-            PaletteFilter + ";;" + GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL), //allow loading a PNG for its palette!
-                                                    &selectedfilter );
-    if(filename.isNull())
-        return;
-
-    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
-        type = ePaletteDumpType::RIFF_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
-        type = ePaletteDumpType::TEXT_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
-        type = ePaletteDumpType::GIMP_PAL;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
-        type = ePaletteDumpType::PNG_PAL;
-    Q_ASSERT(type < ePaletteDumpType::INVALID);
-
-    try
-    {
-        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, type);
-    }
-    catch(const std::exception & e)
-    {
-        ShowStatusErrorMessage(QString(tr("Error: %1")).arg(e.what()) );
-        return;
-    }
-    catch(...)
-    {
-        std::rethrow_exception(std::current_exception());
-        return;
-    }
-
-    ShowStatusMessage( QString(tr("Palette imported!")) );
-
-    //Refresh property page
-    DisplayPropertiesPage(spr);
-}
-
-void MainWindow::on_btnExportPalette_clicked()
-{
-    using namespace spr_manager;
-    Sprite * spr = currentSprite();
-    if( !spr )
-    {
-        ShowStatusErrorMessage(QString(tr("No sprites to dump from!")) );
-        return;
-    }
-
-    QString selectedfilter;
-    ePaletteDumpType type;
-    qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Save Palette Dump As"),
-                        QString(),
-                        PaletteFilter,
-                        &selectedfilter);
-
-    if(filename.isNull())
-        return;
-
-    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) &&
-       !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal), Qt::CaseInsensitive))
-    {
-        //filename.append(".pal");
-        type = ePaletteDumpType::RIFF_Pal;
-    }
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) &&
-            !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal), Qt::CaseInsensitive))
-    {
-        //filename.append(".txt");
-        type = ePaletteDumpType::TEXT_Pal;
-    }
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL) &&
-            !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL), Qt::CaseInsensitive))
-    {
-        //filename.append(".gpl");
-        type = ePaletteDumpType::GIMP_PAL;
-    }
-
-    Q_ASSERT(type < ePaletteDumpType::INVALID);
-
-    try
-    {
-        spr_manager::SpriteManager::Instance().DumpPalette(spr, filename, type);
-    }
-    catch(const std::exception & e)
-    {
-        ShowStatusErrorMessage(QString(tr("Error: %1")).arg(e.what()) );
-        return;
-    }
-    catch(...)
-    {
-        std::rethrow_exception(std::current_exception());
-        return;
-    }
-
-    ShowStatusMessage( QString(tr("Palette dumped!")) );
-}
-
-
-// *********************************
-//  Image Tab
-// *********************************
-void MainWindow::on_btnImageCrop_clicked()
-{
-    Image * pimg = static_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
-
-    if(pimg)
-    {
-        DiagSingleImgCropper cropper(this, pimg);
-        cropper.setModal(true);
-        cropper.show();
-    }
-    else
-    {
-        QApplication::beep();
-        ui->statusBar->setStatusTip("Can't crop! No valid image selected!");
-        qWarning("MainWindow::on_btnImageCrop_clicked(): Crop clicked, but no valid images was selected!");
-    }
-}
-
 void MainWindow::ShowProgressDiag(QFuture<void> &task)
 {
     m_progress.setFuture(task);
     m_progress.setModal(true);
     m_progress.show();
-}
-
-void MainWindow::on_tblviewImages_clicked(const QModelIndex &index)
-{
-    Image * img = static_cast<Image *>(index.internalPointer());
-    if(!index.internalPointer() || !img)
-    {
-        ui->lbl_imgpreview->setPixmap(m_imgNoImg);
-        return;
-    }
-    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
-
-    //#TODO: Update image details if needed
-}
-
-void MainWindow::on_btnImagesExport_clicked()
-{
-    Image * pimg = nullptr;
-    if(ui->tblviewImages->currentIndex().isValid())
-        pimg = static_cast<Image*>( ui->tblviewImages->currentIndex().internalPointer() );
-
-    if(!pimg)
-    {
-        ShowStatusErrorMessage(tr("Error: No image selected for export!"));
-        return;
-    }
-
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Export Image"),
-                        QString(),
-                        "PNG image (*.png)");
-
-    if(filename.isNull())
-        return;
-
-    QImage img = qMove( pimg->makeImage(pimg->parentSprite()->getPalette()) );
-
-    if(img.save( filename, "PNG" ))
-        ShowStatusMessage(QString(tr("Exported image to %1!")).arg(filename));
-    else
-        ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
-}
-
-// *********************************
-//  Frame Tab
-// *********************************
-void MainWindow::on_btnFrmRmPart_clicked()
-{
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No part selected!"));
-        return;
-    }
-    MFramePart* ppart = static_cast<MFramePart*>(ind.internalPointer());
-    MFrame    * pfrm  = static_cast<MFrame*>(ppart->parentNode());
-    Q_ASSERT(ppart && pfrm);
-
-    ui->tblframeparts->setCurrentIndex(QModelIndex());
-    if(pfrm->removeChildrenNodes(ind.row(), 1))
-        ShowStatusMessage(tr("Removed part!"));
-    else
-        ShowStatusErrorMessage(tr("Removal failed!"));
-
-    m_frmeditor->updateParts();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
-void MainWindow::on_btnFrmAdPart_clicked()
-{
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    MFrame      *curframe = currentFrame();
-
-    Q_ASSERT(curframe);
-    int insertpos = 0;
-
-    if(ind.isValid())
-        insertpos = ind.row();
-    else
-        insertpos = (curframe->nodeChildCount() > 0)? (curframe->nodeChildCount() - 1) : 0;
-
-    if(curframe->getModel()->insertRow(insertpos))
-    {
-        ShowStatusMessage(tr("Appended part!"));
-    }
-    else
-        ShowStatusErrorMessage(tr("Insertion failed!"));
-
-    m_frmeditor->updateParts();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
-void MainWindow::on_btnFrmMvUp_clicked()
-{
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    MFrame      *curframe = currentFrame();
-    Q_ASSERT(curframe);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No part selected!"));
-        return;
-    }
-
-    int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
-    if(destrow != ind.row())
-    {
-        if(curframe->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
-            ShowStatusMessage(tr("Part moved up!"));
-        else
-            ShowStatusErrorMessage(tr("Failed to move part!"));
-    }
-
-    m_frmeditor->updateParts();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
-void MainWindow::on_btnFrmMvDown_clicked()
-{
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    MFrame      *curframe = currentFrame();
-    Q_ASSERT(curframe);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No part selected!"));
-        return;
-    }
-
-    int destrow = (ind.row() < curframe->nodeChildCount()-2 )? ind.row() + 1 : ind.row();
-    if(destrow != ind.row())
-    {
-        if(curframe->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
-            ShowStatusMessage(tr("Part moved down!"));
-        else
-            ShowStatusErrorMessage(tr("Failed to move part!"));
-    }
-
-    m_frmeditor->updateParts();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
-void MainWindow::on_btnFrmDup_clicked()
-{
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    MFrame      *curframe = currentFrame();
-    Q_ASSERT(curframe);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No part selected!"));
-        return;
-    }
-
-    MFramePart tmppart = *(static_cast<MFramePart*>(ind.internalPointer()));
-
-    int insertpos = ind.row();
-    if(curframe->getModel()->insertRow(insertpos))
-    {
-        MFramePart * pnewfrm = static_cast<MFramePart *>(curframe->getItem( curframe->getModel()->index(insertpos, 0, QModelIndex()) ));
-        Q_ASSERT(pnewfrm);
-        (*pnewfrm) = tmppart;
-        ShowStatusMessage(tr("Duplicated part!"));
-    }
-    else
-        ShowStatusErrorMessage(tr("Duplication failed!"));
-
-    m_frmeditor->updateParts();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
-void MainWindow::on_cmbFrmQuickPrio_currentIndexChanged(int index)
-{
-    Q_ASSERT(false); //#TODO: Make this work!
-
-    m_frmeditor->updateParts();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
-void MainWindow::on_btnFrmExport_clicked()
-{
-    const MFrame * pfrm = m_frmeditor->getFrame();
-    if(!pfrm)
-    {
-        ShowStatusErrorMessage(tr("Couldn't export, no frame loaded!"));
-        return;
-    }
-
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Export Image"),
-                        QString(),
-                        "PNG image (*.png)");
-
-    if(filename.isNull())
-        return;
-
-
-    QImage img( qMove(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds() )) );
-    if(img.save( filename, "PNG" ))
-        ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
-    else
-        ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
-}
-
-
-// *********************************
-//  Anim Sequence Tab
-// *********************************
-void MainWindow::on_btnSeqAddFrm_clicked()
-{
-    QModelIndex     ind       = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
-    Q_ASSERT(curseq);
-    int insertpos = 0;
-
-    if(ind.isValid())
-        insertpos = ind.row();
-    else
-        insertpos = (curseq->nodeChildCount() > 0)? (curseq->nodeChildCount() - 1) : 0;
-
-    if(curseq->getModel()->insertRow(insertpos))
-    {
-        ShowStatusMessage(tr("Appended animation frame!"));
-    }
-    else
-        ShowStatusErrorMessage(tr("Insertion failed!"));
-
-    m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
-}
-
-void MainWindow::on_btnSeqRemFrm_clicked()
-{
-    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No frame selected!"));
-        return;
-    }
-    AnimFrame       * pafrm = static_cast<AnimFrame*>(ind.internalPointer());
-    AnimSequence    * pseq  = static_cast<AnimSequence*>(pafrm->parentNode());
-    Q_ASSERT(pseq && pafrm);
-
-    ui->tblseqfrmlst->setCurrentIndex(QModelIndex());
-    if(pseq->removeChildrenNodes(ind.row(), 1))
-        ShowStatusMessage(tr("Removed animation frame!"));
-    else
-        ShowStatusErrorMessage(tr("Removal failed!"));
-
-    m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
-}
-
-void MainWindow::on_btnSeqMvUp_clicked()
-{
-    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
-    Q_ASSERT(curseq);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No animation frame selected!"));
-        return;
-    }
-
-    int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
-    if(destrow != ind.row())
-    {
-        if(curseq->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
-            ShowStatusMessage(tr("Animation frame moved down!"));
-        else
-            ShowStatusErrorMessage(tr("Failed to move frame!"));
-    }
-
-    m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
-}
-
-void MainWindow::on_btnSeqMvDown_clicked()
-{
-    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
-    Q_ASSERT(curseq);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No animation frame selected!"));
-        return;
-    }
-
-    int destrow = (ind.row() < curseq->nodeChildCount()-1 )? ind.row() + 1 : ind.row();
-    if(destrow != ind.row())
-    {
-        if(curseq->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
-            ShowStatusMessage(tr("Animation frame moved down!"));
-        else
-            ShowStatusErrorMessage(tr("Failed to move frame!"));
-    }
-
-    m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
-}
-
-void MainWindow::on_btnSeqDup_clicked()
-{
-    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
-    Q_ASSERT(curseq);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No animation frame selected!"));
-        return;
-    }
-
-    AnimFrame tmpfrm = *(static_cast<AnimFrame*>(ind.internalPointer()));
-
-    int insertpos = ind.row();
-    if(curseq->getModel()->insertRow(insertpos))
-    {
-        AnimFrame * pnewfrm = static_cast<AnimFrame *>(curseq->getItem( curseq->getModel()->index(insertpos, 0, QModelIndex()) ));
-        Q_ASSERT(pnewfrm);
-        (*pnewfrm) = tmpfrm;
-        ShowStatusMessage(tr("Duplicated animation frame!"));
-    }
-    else
-        ShowStatusErrorMessage(tr("Duplication failed!"));
-
-    m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
-}
-
-void MainWindow::on_btnSeqExport_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Export Images Sequence : Pick name+path first image!"),
-                        QString(),
-                        "PNG image (*.png)");
-
-    if(filename.isNull())
-    {
-        return;
-    }
-
-    int rmpast = filename.size() - filename.lastIndexOf('.');
-    if( rmpast > 0 && rmpast < filename.size() )
-        filename.chop(rmpast);
-    QVector<QImage> sequence = m_previewrender.DumpSequence();
-
-    if(sequence.isEmpty())
-    {
-        ShowStatusErrorMessage(tr("Error: No sequence was loaded for export!"));
-    }
-
-    int cntimg = 0;
-    for(; cntimg < sequence.size(); ++cntimg )
-        sequence[cntimg].save( QString("%1_%2.png").arg(filename).arg(cntimg) );
-
-    ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
-}
-
-
-//
-//
-//
-void MainWindow::on_btnAnimTblMoveSeq_clicked()
-{
-
 }
 
 
@@ -1555,11 +797,6 @@ void TVSpritesContextMenu::RemoveEntry()
     close();
 }
 
-
-
-
-
-
 void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
 {
 
@@ -1567,7 +804,4 @@ void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
 
 
 
-void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
-{
-    this->on_tv_sprcontent_clicked(index);
-}
+

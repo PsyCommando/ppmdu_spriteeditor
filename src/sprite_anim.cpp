@@ -1150,8 +1150,8 @@ AnimGroupModel::AnimGroupModel(AnimGroup *pgrp, QObject *parent)
 
 QModelIndex AnimGroupModel::index(int row, int column, const QModelIndex &parent) const
 {
-    if(row < m_pOwner->nodeChildCount() && row >= 0 &&
-       column < m_pOwner->nodeColumnCount() && column >= 0)
+    if(row < rowCount(parent) && row >= 0 &&
+       column < columnCount(parent) && column >= 0)
         return createIndex(row, column, row);
     return QModelIndex();
 }
@@ -1164,6 +1164,7 @@ QModelIndex AnimGroupModel::parent(const QModelIndex &) const
 
 int AnimGroupModel::rowCount(const QModelIndex &/*parent*/) const
 {
+    Q_ASSERT(m_pOwner);
     return m_pOwner->seqSlots().size();
 }
 
@@ -1181,9 +1182,9 @@ bool AnimGroupModel::hasChildren(const QModelIndex &parent) const
 
 QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
 {
-    if( role != Qt::DisplayRole ||
-        role != Qt::EditRole    ||
-        role != Qt::SizeHintRole||
+    if( role != Qt::DisplayRole  &&
+        role != Qt::EditRole     &&
+        role != Qt::SizeHintRole &&
         role != Qt::DecorationRole )
         return QVariant();
 
@@ -1222,7 +1223,14 @@ QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
         {
             QFontMetrics fm(QFont("Sergoe UI", 9));
             QString str = data(index, Qt::DisplayRole).toString();
-            return QSize(fm.width(str), fm.height());
+            QSize   szimg = data(index, Qt::DecorationRole).value<QImage>().size();
+            QSize   sztxt(fm.width(str), fm.height());
+
+            QSize outsz = sztxt;
+            if( szimg.height() > sztxt.height() )
+                outsz.setHeight(szimg.height());
+            outsz.setWidth( szimg.width() + sztxt.width());
+            return outsz;
         }
     }
     return QVariant();

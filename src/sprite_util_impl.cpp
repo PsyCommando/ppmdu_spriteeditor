@@ -612,10 +612,10 @@ SpriteOverviewModel::SpriteOverviewModel(Sprite *spr)
 
 QModelIndex SpriteOverviewModel::index(int row, int, const QModelIndex &parent) const
 {
-    if( !parent.isValid() )
-        return QModelIndex();
+    //if( !parent.isValid() )
+    //    return QModelIndex();
 
-    return createIndex( row, 0, row );
+    return createIndex( row, 0 );
 }
 
 QModelIndex SpriteOverviewModel::parent(const QModelIndex &child) const
@@ -633,7 +633,7 @@ int SpriteOverviewModel::rowCount(const QModelIndex &parent) const
 
 int SpriteOverviewModel::columnCount(const QModelIndex &parent) const
 {
-    return 1;
+    return 2;
 }
 
 QVariant SpriteOverviewModel::data(const QModelIndex &index, int role) const
@@ -641,8 +641,8 @@ QVariant SpriteOverviewModel::data(const QModelIndex &index, int role) const
     if( role != Qt::DisplayRole )
         return QVariant();
 
-    if(index.internalId() >= 0 && index.internalId() < StatEntries.size())
-        return StatEntries.at(index.internalId()).second(m_spr);
+    if(index.row() >= 0 && index.row() < StatEntries.size())
+        return StatEntries.at(index.row()).second(m_spr);
 
     return QVariant();
 }

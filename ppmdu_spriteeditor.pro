@@ -55,7 +55,12 @@ SOURCES += src/main.cpp\
     src/ui/paletteeditor.cpp \
     src/sprite_util_impl.cpp \
     src/sprite_palette.cpp \
-    src/sprite_frames.cpp
+    src/sprite_frames.cpp \
+    src/ui/mw_tabproperties.cpp \
+    src/ui/mw_tabframe.cpp \
+    src/ui/mw_tabanimtable.cpp \
+    src/ui/mw_tabanimseq.cpp \
+    src/ui/mw_tabimages.cpp
 
 HEADERS  += src/ui/mainwindow.h \
     src/spritemanager.h \

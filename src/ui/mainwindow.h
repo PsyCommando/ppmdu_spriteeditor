@@ -52,10 +52,7 @@ public:
     void DisplayMFramePage(Sprite * spr, MFrame *frm);
     void DisplayAnimSequencePage(Sprite * spr, AnimSequence *aniseq);
     void DisplayAnimTablePage(Sprite * spr);
-    void DisplayPalettePage(Sprite * spr);
     void DisplayEffectsPage(Sprite * spr);
-    void DisplayAnimGroupPage(Sprite * spr);
-    void DisplayImagePage(Sprite * spr, Image * img);
     void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs, Image * img = nullptr );
 
     void PrepareForNewContainer();
@@ -167,6 +164,9 @@ private slots:
 
     void on_tv_sprcontent_activated(const QModelIndex &index);
 
+    void on_tvAnimTbl_activated(const QModelIndex &index);
+    void OnAnimTableItemActivate(const QModelIndex &index);
+
 signals:
 
 private:
@@ -189,6 +189,15 @@ private:
     QSettings               m_settings;
 
 
+    static const QString PaletteFilterString()
+    {
+        static const QString filter = spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::RIFF_Pal) +
+                                      ";;" +
+                                      spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::TEXT_Pal) +
+                                      ";;" +
+                                      spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::GIMP_PAL);
+        return filter;
+    }
 
     static const QString & WanFileFilter()
     {

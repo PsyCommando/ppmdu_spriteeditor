@@ -437,7 +437,7 @@
               <string notr="true"/>
              </property>
              <property name="pixmap">
-              <pixmap resource="appres.qrc">:/imgs/resources/imgs/noimg.png</pixmap>
+              <pixmap resource="../../appres.qrc">:/imgs/resources/imgs/noimg.png</pixmap>
              </property>
              <property name="scaledContents">
               <bool>false</bool>
@@ -748,7 +748,7 @@
                      <string>Play</string>
                     </property>
                     <property name="icon">
-                     <iconset resource="appres.qrc">
+                     <iconset resource="../../appres.qrc">
                       <normaloff>:/resources/fugue-icons-3.5.6/icons/control.png</normaloff>:/resources/fugue-icons-3.5.6/icons/control.png</iconset>
                     </property>
                    </widget>
@@ -765,7 +765,7 @@
                      <string>Stop</string>
                     </property>
                     <property name="icon">
-                     <iconset resource="appres.qrc">
+                     <iconset resource="../../appres.qrc">
                       <normaloff>:/resources/fugue-icons-3.5.6/icons/control-stop-square.png</normaloff>:/resources/fugue-icons-3.5.6/icons/control-stop-square.png</iconset>
                     </property>
                    </widget>
@@ -933,7 +933,7 @@
                  <string>Add</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="appres.qrc">
+                 <iconset resource="../../appres.qrc">
                   <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
                 </property>
                </widget>
@@ -944,7 +944,7 @@
                  <string>Remove</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="appres.qrc">
+                 <iconset resource="../../appres.qrc">
                   <normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</iconset>
                 </property>
                </widget>
@@ -955,7 +955,7 @@
                  <string>Duplicate</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="appres.qrc">
+                 <iconset resource="../../appres.qrc">
                   <normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</iconset>
                 </property>
                </widget>
@@ -966,7 +966,7 @@
                  <string>Move Up</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="appres.qrc">
+                 <iconset resource="../../appres.qrc">
                   <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-090.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-090.png</iconset>
                 </property>
                </widget>
@@ -977,7 +977,7 @@
                  <string>Move Down</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="appres.qrc">
+                 <iconset resource="../../appres.qrc">
                   <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-270.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-270.png</iconset>
                 </property>
                </widget>
@@ -1458,7 +1458,7 @@
                        <string>HFlip</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/layer-flip.png</normaloff>:/resources/fugue-icons-3.5.6/icons/layer-flip.png</iconset>
                       </property>
                       <property name="checkable">
@@ -1481,7 +1481,7 @@
                        <string>Move Up</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-090.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-090.png</iconset>
                       </property>
                      </widget>
@@ -1501,7 +1501,7 @@
                        <string>VFlip</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/layer-flip-vertical.png</normaloff>:/resources/fugue-icons-3.5.6/icons/layer-flip-vertical.png</iconset>
                       </property>
                       <property name="checkable">
@@ -1524,7 +1524,7 @@
                        <string>Move Down</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-270.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-270.png</iconset>
                       </property>
                      </widget>
@@ -1544,7 +1544,7 @@
                        <string>Remove Part</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/cross-script.png</normaloff>:/resources/fugue-icons-3.5.6/icons/cross-script.png</iconset>
                       </property>
                      </widget>
@@ -1561,7 +1561,7 @@
                        <string>Add Part</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
                       </property>
                      </widget>
@@ -1581,7 +1581,7 @@
                        <string>Duplicate</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="appres.qrc">
+                       <iconset resource="../../appres.qrc">
                         <normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</normaloff>:/resources/fugue-icons-3.5.6/icons/document-copy.png</iconset>
                       </property>
                      </widget>
@@ -1867,7 +1867,7 @@
                 <string>Add..</string>
                </property>
                <property name="icon">
-                <iconset resource="appres.qrc">
+                <iconset resource="../../appres.qrc">
                  <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
                </property>
               </widget>
@@ -1881,7 +1881,7 @@
                 <string>Remove</string>
                </property>
                <property name="icon">
-                <iconset resource="appres.qrc">
+                <iconset resource="../../appres.qrc">
                  <normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</iconset>
                </property>
               </widget>
@@ -1974,7 +1974,7 @@
               <string>Add Slot</string>
              </property>
              <property name="icon">
-              <iconset resource="appres.qrc">
+              <iconset resource="../../appres.qrc">
                <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
              </property>
             </widget>
@@ -1990,7 +1990,7 @@
                 <string>Remove Slot</string>
                </property>
                <property name="icon">
-                <iconset resource="appres.qrc">
+                <iconset resource="../../appres.qrc">
                  <normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</iconset>
                </property>
               </widget>
@@ -2066,7 +2066,7 @@
               <string>Add selected to new slots</string>
              </property>
              <property name="icon">
-              <iconset resource="appres.qrc">
+              <iconset resource="../../appres.qrc">
                <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-180.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-180.png</iconset>
              </property>
             </widget>
@@ -2160,7 +2160,7 @@
             <x>280</x>
             <y>50</y>
             <width>181</width>
-            <height>22</height>
+            <height>24</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -2189,7 +2189,7 @@
             <x>280</x>
             <y>20</y>
             <width>181</width>
-            <height>22</height>
+            <height>24</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -2327,7 +2327,7 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="action_Save">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/disk.png</normaloff>:/resources/fugue-icons-3.5.6/icons/disk.png</iconset>
    </property>
    <property name="text">
@@ -2342,7 +2342,7 @@
   </action>
   <action name="actionSave_As">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/disk--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/disk--arrow.png</iconset>
    </property>
    <property name="text">
@@ -2354,7 +2354,7 @@
   </action>
   <action name="action_Export">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/document-export.png</normaloff>:/resources/fugue-icons-3.5.6/icons/document-export.png</iconset>
    </property>
    <property name="text">
@@ -2369,7 +2369,7 @@
   </action>
   <action name="action_Quit">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/door--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/door--arrow.png</iconset>
    </property>
    <property name="text">
@@ -2384,7 +2384,7 @@
   </action>
   <action name="actionNewSprite">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/blue-document-medium.png</normaloff>:/resources/fugue-icons-3.5.6/icons/blue-document-medium.png</iconset>
    </property>
    <property name="text">
@@ -2396,7 +2396,7 @@
   </action>
   <action name="actionNewSprite_Pack_File">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/box-medium.png</normaloff>:/resources/fugue-icons-3.5.6/icons/box-medium.png</iconset>
    </property>
    <property name="text">
@@ -2408,7 +2408,7 @@
   </action>
   <action name="actionUndo">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-curve-180-left.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-curve-180-left.png</iconset>
    </property>
    <property name="text">
@@ -2420,7 +2420,7 @@
   </action>
   <action name="actionRedo">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-curve.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-curve.png</iconset>
    </property>
    <property name="text">
@@ -2432,7 +2432,7 @@
   </action>
   <action name="action_Settings">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/gear--pencil.png</normaloff>:/resources/fugue-icons-3.5.6/icons/gear--pencil.png</iconset>
    </property>
    <property name="text">
@@ -2444,7 +2444,7 @@
   </action>
   <action name="action_About">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/information-white.png</normaloff>:/resources/fugue-icons-3.5.6/icons/information-white.png</iconset>
    </property>
    <property name="text">
@@ -2461,7 +2461,7 @@
   </action>
   <action name="action_Open">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/folder-open-document.png</normaloff>:/resources/fugue-icons-3.5.6/icons/folder-open-document.png</iconset>
    </property>
    <property name="text">
@@ -2481,7 +2481,7 @@
   </action>
   <action name="actionSprite_Sheet_Auto_Importer">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/slide--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/slide--arrow.png</iconset>
    </property>
    <property name="text">
@@ -2493,7 +2493,7 @@
   </action>
   <action name="actionSprite_Validator">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/magnifier--exclamation.png</normaloff>:/resources/fugue-icons-3.5.6/icons/magnifier--exclamation.png</iconset>
    </property>
    <property name="text">
@@ -2505,7 +2505,7 @@
   </action>
   <action name="action_AddSprite">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/blue-document--plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/blue-document--plus.png</iconset>
    </property>
    <property name="text">
@@ -2514,7 +2514,7 @@
   </action>
   <action name="action_RemoveSprite">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/blue-document--minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/blue-document--minus.png</iconset>
    </property>
    <property name="text">
@@ -2526,7 +2526,7 @@
   </action>
   <action name="actionReport_a_bug">
    <property name="icon">
-    <iconset resource="appres.qrc">
+    <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/bug--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/bug--arrow.png</iconset>
    </property>
    <property name="text">
@@ -2536,7 +2536,7 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="appres.qrc"/>
+  <include location="../../appres.qrc"/>
  </resources>
  <connections/>
 </ui>
