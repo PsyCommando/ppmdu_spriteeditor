@@ -418,6 +418,16 @@ public:
     inline const slots_t & seqSlots()const {return m_seqlist;}
     inline slots_t       & seqSlots()      {return m_seqlist;}
 
+    void InsertRow(int row, fmt::AnimDB::animseqid_t val)
+    {
+        m_seqlist.insert(row, val);
+    }
+
+    void RemoveRow(int row)
+    {
+        m_seqlist.removeAt(row);
+    }
+
      inline AnimGroupModel * getModel() {return &m_model;}
      inline const AnimGroupModel * getModel()const {return &m_model;}
 

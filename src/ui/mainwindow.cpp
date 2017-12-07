@@ -801,7 +801,3 @@ void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
 {
 
 }
-
-
-
-

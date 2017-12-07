@@ -1827,6 +1827,9 @@
            </item>
            <item>
             <widget class="QTableView" name="tvAnimTbl">
+             <property name="autoScroll">
+              <bool>false</bool>
+             </property>
              <property name="editTriggers">
               <set>QAbstractItemView::NoEditTriggers</set>
              </property>
@@ -1860,6 +1863,9 @@
             <layout class="QHBoxLayout" name="horizontalLayout_8">
              <item>
               <widget class="QPushButton" name="btnAnimTblAddAnim">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Add an animation entry to the table.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
@@ -1874,6 +1880,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="btnAnimTblRemAnim">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Remove the selected animation entry from the table.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
@@ -1890,6 +1899,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="btnAnimTblImportTemplate">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Imports a template animation table to fill out for common animated sprite animation layouts!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
@@ -1900,6 +1912,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="btnAnimTblExportTemplate">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Export the animation table as a new template file!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
@@ -2061,6 +2076,17 @@
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="btnAnimTblReplaceSeq">
+             <property name="text">
+              <string>Replace Sequence</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../../appres.qrc">
+               <normaloff>:/resources/fugue-icons-3.5.6/icons/fill-180.png</normaloff>:/resources/fugue-icons-3.5.6/icons/fill-180.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="btnAnimTblMoveSeq">
              <property name="text">
               <string>Add selected to new slots</string>
@@ -2089,6 +2115,22 @@
             <widget class="QCheckBox" name="chkAnimTblAutoPlay">
              <property name="text">
               <string>Selected Sequence Playback</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkAnimTblAutoSelectSeq">
+             <property name="toolTip">
+              <string>If this is checked, when a slot from the current animation table entry is selected, the animation sequence will be automatically selected in the list of available animations.</string>
+             </property>
+             <property name="statusTip">
+              <string/>
+             </property>
+             <property name="text">
+              <string>Auto Select Sequence</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -2250,14 +2292,6 @@
     <addaction name="separator"/>
     <addaction name="action_Quit"/>
    </widget>
-   <widget class="QMenu" name="menu_Edit">
-    <property name="title">
-     <string>&amp;Edit</string>
-    </property>
-    <addaction name="actionUndo"/>
-    <addaction name="actionRedo"/>
-    <addaction name="separator"/>
-   </widget>
    <widget class="QMenu" name="menuOptions">
     <property name="title">
      <string>Options</string>
@@ -2279,6 +2313,11 @@
     </property>
     <addaction name="actionSprite_Sheet_Auto_Importer"/>
     <addaction name="actionSprite_Validator"/>
+   </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
@@ -2419,6 +2458,9 @@
    </property>
   </action>
   <action name="actionRedo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-curve.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-curve.png</iconset>
@@ -2431,6 +2473,9 @@
    </property>
   </action>
   <action name="action_Settings">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/gear--pencil.png</normaloff>:/resources/fugue-icons-3.5.6/icons/gear--pencil.png</iconset>
@@ -2480,6 +2525,9 @@
    </property>
   </action>
   <action name="actionSprite_Sheet_Auto_Importer">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/slide--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/slide--arrow.png</iconset>
@@ -2492,6 +2540,9 @@
    </property>
   </action>
   <action name="actionSprite_Validator">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="../../appres.qrc">
      <normaloff>:/resources/fugue-icons-3.5.6/icons/magnifier--exclamation.png</normaloff>:/resources/fugue-icons-3.5.6/icons/magnifier--exclamation.png</iconset>

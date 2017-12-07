@@ -1280,7 +1280,7 @@ bool AnimGroupModel::insertRows(int row, int count, const QModelIndex &parent)
 
     beginInsertRows(parent, row, row + (row + count));
     for( int cntins = 0; cntins < count; ++cntins )
-        m_pOwner->seqSlots().insert(row, -1);
+        m_pOwner->InsertRow(row,-1);
     endInsertRows();
     return true;
 }
@@ -1295,7 +1295,7 @@ bool AnimGroupModel::removeRows(int row, int count, const QModelIndex &parent)
 
     beginRemoveRows(parent, row, row + (count - 1));
     for( int cnt = 0; cnt < count; ++cnt )
-        m_pOwner->seqSlots().removeOne(row);
+        m_pOwner->RemoveRow(row);
     endRemoveRows();
     return true;
 }

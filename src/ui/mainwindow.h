@@ -166,6 +166,24 @@ private slots:
 
     void on_tvAnimTbl_activated(const QModelIndex &index);
     void OnAnimTableItemActivate(const QModelIndex &index);
+    void OnAmimTableGroupListItemActivate(const QModelIndex &index);
+    void OnAmimTableSequenceListItemActivate(const QModelIndex &index);
+
+    void on_btnAnimTblExportTemplate_pressed();
+
+    void on_btnAnimTblReplaceSeq_pressed();
+
+    void on_btnAnimTblImportTemplate_pressed();
+
+    void on_btnAnimTblAddSeq_pressed();
+
+    void on_btnAnimTblRemSeq_pressed();
+
+    void on_btnAnimTblMoveSeq_pressed();
+
+    void on_btnAnimTblAddAnim_pressed();
+
+    void on_btnAnimTblRemAnim_pressed();
 
 signals:
 
