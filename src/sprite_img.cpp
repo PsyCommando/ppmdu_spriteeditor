@@ -181,26 +181,83 @@ Sprite *PaletteContainer::parentSprite()
 QVariant Image::imgData(int column, int role)const
 {
     QVariant res;
-    switch(column)
+    switch(static_cast<eColumnType>(column))
     {
-    case 0: //preview
-        if( role == Qt::DecorationRole )
-            res.setValue(makeImage(parentSprite()->getPalette()));
-        else if( role == Qt::SizeHintRole )
-            res.setValue( QSize(m_img.size().width() *2, m_img.size().height() *2) );
-    break;
-    case 1:
-        if( role == Qt::DisplayRole || role == Qt::EditRole )
-            res.setValue(getImageUID());
-    break;
-    case 2: //depth
-        res.setValue(QString("%1bpp").arg(m_depth));
-    break;
-    case 3: //resolution
-        res.setValue(QString("%1x%2").arg(m_img.width()).arg(m_img.height()));
-    break;
+        case eColumnType::Preview: //preview
+        {
+            if( role == Qt::DecorationRole )
+                res.setValue(makeImage(parentSprite()->getPalette()));
+            else if( role == Qt::SizeHintRole )
+                res.setValue( QSize(m_img.size().width() *2, m_img.size().height() *2) );
+            break;
+        }
+        case eColumnType::UID:
+        {
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                res.setValue(getImageUID());
+            break;
+        }
+        case eColumnType::Depth: //depth
+        {
+            if( role == Qt::DisplayRole )
+                res.setValue(QString("%1bpp").arg(m_depth));
+            break;
+        }
+        case eColumnType::Resolution: //resolution
+        {
+            if( role == Qt::DisplayRole )
+                res.setValue(QString("%1x%2").arg(m_img.width()).arg(m_img.height()));
+            break;
+        }
+        case eColumnType::direct_Unk2:
+        {
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                res.setValue(m_unk2);
+            break;
+        }
+        case eColumnType::direct_Unk14:
+        {
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                res.setValue(m_unk14);
+            break;
+        }
     };
     return std::move(res);
+}
+
+bool Image::setImgData(int column, const QVariant &value, int role)
+{
+
+    if(role != Qt::EditRole)
+        return false;
+
+    bool succ = false;
+    switch(static_cast<eColumnType>(column))
+    {
+        case eColumnType::Preview: //preview
+        case eColumnType::UID:
+        case eColumnType::Depth: //depth
+        case eColumnType::Resolution: //resolution
+        {
+            succ = false;
+            break;
+        }
+        case eColumnType::direct_Unk2:
+        {
+            decltype(m_unk2) res = static_cast<decltype(m_unk2)>(value.toUInt(&succ));
+            if(succ)
+                m_unk2 = res;
+            break;
+        }
+        case eColumnType::direct_Unk14:
+        {
+            decltype(m_unk14) res = static_cast<decltype(m_unk14)>(value.toUInt(&succ));
+            if(succ)
+                m_unk14 = res;
+            break;
+        }
+    };
+    return succ;
 }
 
 QVariant Image::imgDataCondensed(int role) const
@@ -297,6 +354,20 @@ QVariant ImagesManager::data(const QModelIndex &index, int role) const
 
     Image *img = static_cast<Image*>( const_cast<ImagesManager*>(this)->getItem(index));
     return img->imgData(index.column(), role);
+}
+
+
+bool ImagesManager::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    Q_ASSERT(hasChildren(QModelIndex()));
+    if (!index.isValid())
+        return false;
+
+    if (role != Qt::EditRole)
+        return false;
+
+    Image *img = static_cast<Image*>( const_cast<ImagesManager*>(this)->getItem(index));
+    return img->setImgData(index.column(), value, role);
 }
 
 QVariant ImagesManager::headerData(int section, Qt::Orientation orientation, int role) const
@@ -456,3 +527,4 @@ TreeElement *ImagesManager::getItem(const QModelIndex &index)
 //    }
 //    return m_parentcnt;
 //}
+

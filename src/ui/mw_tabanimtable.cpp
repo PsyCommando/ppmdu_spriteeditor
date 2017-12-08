@@ -92,10 +92,6 @@ void MainWindow::OnAmimTableGroupListItemActivate(const QModelIndex &index)
     if( lst.length() > 1 )
         return;
 
-    //Don't do anything if the option isn't checked!
-    if( !ui->chkAnimTblAutoSelectSeq->isChecked() )
-        return;
-
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
     AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(ui->tvAnimTbl->currentIndex())));
@@ -105,15 +101,14 @@ void MainWindow::OnAmimTableGroupListItemActivate(const QModelIndex &index)
     {
         fmt::AnimDB::animseqid_t seqid = grp->seqSlots()[index.row()];
         if( ui->lvAnimTblAnimSeqList->model()->hasIndex(seqid,0) )
-            ui->lvAnimTblAnimSeqList->setCurrentIndex( ui->lvAnimTblAnimSeqList->model()->index(seqid,0) );
+        {
+            if( ui->chkAnimTblAutoSelectSeq->isChecked() )
+                ui->lvAnimTblAnimSeqList->setCurrentIndex( ui->lvAnimTblAnimSeqList->model()->index(seqid,0) );
+            UpdateAnimTblPreview(seqid);
+        }
         else
             qDebug() << "MainWindow::OnAmimTableGroupListItemActivate(): There are no animation sequences with the ID " << (int)seqid <<"!! Can't select from available animation sequences!\n";
     }
-//    if( ui->chkAnimTblAutoPlay->isChecked() )
-//    {
-//        AnimSequence * seq = spr->getAnimSequence( grp->seqSlots()[index.row()] );
-//        InstallAnimPreview(ui->gvAnimTablePreview, spr, seq);
-//    }
 }
 
 //When selecting a sequence from the available sequences list
@@ -124,14 +119,29 @@ void MainWindow::OnAmimTableSequenceListItemActivate(const QModelIndex &index)
     if( lst.length() > 1 )
         return;
 
+    UpdateAnimTblPreview(index.row());
+}
+
+void MainWindow::UpdateAnimTblPreview( fmt::AnimDB::animseqid_t seqid )
+{
+    if( !ui->chkAnimTblAutoPlay->isChecked() )
+        return;
+
+
+
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
+    m_previewrender.stopAnimUpdates();
 
-    if( ui->chkAnimTblAutoPlay->isChecked() )
+    AnimSequence * seq = spr->getAnimSequence(seqid);
+
+    if(seq)
     {
-        Q_ASSERT(spr);
-        InstallAnimPreview(ui->gvAnimTablePreview, spr, spr->getAnimSequence(index.row()));
+        InstallAnimPreview(ui->gvAnimTablePreview, spr, seq);
+        m_previewrender.startAnimUpdates();
     }
+    else
+        qDebug() <<"MainWindow::UpdateAnimTblPreview(): Couldn't find the sequence " <<(int)seqid <<" for preview!";
 }
 
 //
@@ -204,11 +214,21 @@ void MainWindow::on_btnAnimTblMoveSeq_clicked()
 void MainWindow::on_btnAnimTblAddAnim_pressed()
 {
     QModelIndexList lst = ui->tvAnimTbl->selectionModel()->selectedIndexes();
-    int insertpos = (lst.empty())? ui->tvAnimTbl->model()->rowCount() : lst.first().row();
+    int insertpos = (lst.empty())? 0 : lst.first().row(); //Insert at begining of list if no selection
     //Do the insertion, and set the data
     ui->tvAnimTbl->model()->insertRows( insertpos, 1 );
     ui->tvAnimTbl->model()->setData( ui->tvAnimTbl->model()->index(insertpos,0), insertpos );
     ShowStatusMessage("Inserted a new animation!");
+}
+
+void MainWindow::on_btnAnimTblAppendAnim_pressed()
+{
+    QModelIndexList lst = ui->tvAnimTbl->selectionModel()->selectedIndexes();
+    int insertpos = (lst.empty())? ui->tvAnimTbl->model()->rowCount() : lst.first().row() + 1;
+    //Do the insertion, and set the data
+    ui->tvAnimTbl->model()->insertRows( insertpos, 1 );
+    ui->tvAnimTbl->model()->setData( ui->tvAnimTbl->model()->index(insertpos,0), insertpos );
+    ShowStatusMessage("Appended a new animation!");
 }
 
 void MainWindow::on_btnAnimTblRemAnim_pressed()
@@ -220,10 +240,29 @@ void MainWindow::on_btnAnimTblRemAnim_pressed()
         return;
     }
 
+    //#FIXME: Trying to remove all selected items on this list results in the entire list being wiped out
 //    while( !ui->tvAnimTbl->selectionModel()->selectedIndexes().empty() )
         ui->tvAnimTbl->model()->removeRow( ui->tvAnimTbl->selectionModel()->selectedIndexes().first().row() );
 
     ShowStatusMessage(QString("Removed %1 animation(s)!").arg(lst.length()));
+}
+
+void MainWindow::on_btnAnimTblAnimMvUp_pressed()
+{
+    QModelIndexList lst = ui->tvAnimTbl->selectionModel()->selectedIndexes();
+
+    for(const auto & sel : lst)
+        ui->tvAnimTbl->model()->moveRow(QModelIndex(), sel.row(), QModelIndex(), qMax(0, sel.row() - 1) );
+    ShowStatusMessage(QString("Moved up %1 animations!").arg(lst.length()));
+}
+
+void MainWindow::on_btnAnimTblAnimMvDown_pressed()
+{
+    QModelIndexList lst = ui->tvAnimTbl->selectionModel()->selectedIndexes();
+
+    for(const auto & sel : lst)
+        ui->tvAnimTbl->model()->moveRow(QModelIndex(), sel.row(), QModelIndex(), qMin(ui->tvAnimTbl->model()->rowCount()-1, sel.row() + 1) );
+    ShowStatusMessage(QString("Moved down %1 animations!").arg(lst.length()));
 }
 
 void MainWindow::on_btnAnimTblImportTemplate_pressed()
@@ -262,16 +301,50 @@ void MainWindow::on_btnAnimTblRemSeq_pressed()
         return;
     }
 
+    //#FIXME: If the widget is set to a particular selection mode, this might delete all entries instead of only the selected ones..
     while( !ui->tvAnimTblAnimSeqs->selectionModel()->selectedIndexes().empty() )
         ui->tvAnimTblAnimSeqs->model()->removeRow( ui->tvAnimTblAnimSeqs->selectionModel()->selectedIndexes().first().row() );
-
-//    for( const QModelIndex & i : lst )
-//        ui->tvAnimTblAnimSeqs->model()->removeRow(i.row());
 
     ShowStatusMessage(QString("Removed %1 slots!").arg(lst.length()));
 }
 
 
+void MainWindow::on_btnAnimTblCvHeroAnims_pressed()
+{
+    Sprite * spr = currentSprite();
+    Q_ASSERT(spr);
+
+    //1. Check if we have at least 4 animations
+    if(spr->getAnimTable().nodeChildCount() < 4)
+    {
+    }
+    //2a. If we have 4 already, assume its a basic pokemon anim set, and reorganize it to fit the hero anim set, and add the missing anims each with 8 slots.
+    //2b. Otherwise, just create all the new animations, add 8 slots to each
+    //2c. If we have already all the needed animation slots, just pop-up a message and ask if the user wants to re-organize the animations in the hero set's order
+}
+
+void MainWindow::on_chkAnimTblAutoPlay_toggled(bool checked)
+{
+    //Get the selected sequences, and only preview the first one
+    QModelIndexList lstseq = ui->lvAnimTblAnimSeqList->selectionModel()->selectedIndexes();
+    if(lstseq.empty())
+        return; //Nothing to do here
+
+    Sprite * spr = currentSprite();
+    Q_ASSERT(spr);
+    QModelIndex topreview = lstseq.first();
+
+    if(checked)
+    {
+        InstallAnimPreview(ui->gvAnimTablePreview, spr, spr->getAnimSequence(topreview.row()));
+        m_previewrender.startAnimUpdates();
+    }
+    else
+    {
+        m_previewrender.stopAnimUpdates();
+        ui->gvAnimTablePreview->setScene(nullptr);
+    }
+}
 
 
 /*

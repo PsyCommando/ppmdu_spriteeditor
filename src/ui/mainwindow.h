@@ -168,6 +168,7 @@ private slots:
     void OnAnimTableItemActivate(const QModelIndex &index);
     void OnAmimTableGroupListItemActivate(const QModelIndex &index);
     void OnAmimTableSequenceListItemActivate(const QModelIndex &index);
+    void UpdateAnimTblPreview( fmt::AnimDB::animseqid_t seqid );
 
     void on_btnAnimTblExportTemplate_pressed();
 
@@ -184,6 +185,22 @@ private slots:
     void on_btnAnimTblAddAnim_pressed();
 
     void on_btnAnimTblRemAnim_pressed();
+
+    void on_btnAnimTblAppendAnim_pressed();
+
+    void on_btnAnimTblCvHeroAnims_pressed();
+
+    void on_btnAnimTblAnimMvUp_pressed();
+
+    void on_btnAnimTblAnimMvDown_pressed();
+
+    void on_chkAnimTblAutoPlay_toggled(bool checked);
+
+    void on_btnImagesImport_clicked();
+
+    void on_spbimgunk2_valueChanged(int arg1);
+
+    void on_spbimgunk14_valueChanged(int arg1);
 
 signals:
 
@@ -204,6 +221,7 @@ private:
 //    int                     m_idxCurFrame;
 //    int                     m_idxCurSprite;
     QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
+    QScopedPointer<QDataWidgetMapper> m_imgdatmapper;
     QSettings               m_settings;
 
 

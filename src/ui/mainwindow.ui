@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>PPMDU SpriteMuncher</string>
+   <string/>
   </property>
   <property name="autoFillBackground">
    <bool>false</bool>
@@ -111,7 +111,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>5</number>
+        <number>3</number>
        </property>
        <widget class="QWidget" name="tabWelcome">
         <layout class="QHBoxLayout" name="horizontalLayout_13">
@@ -1153,6 +1153,85 @@
             </widget>
            </item>
            <item>
+            <widget class="QGroupBox" name="groupBox_10">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="title">
+              <string>Image Parameters</string>
+             </property>
+             <layout class="QFormLayout" name="formLayout_7">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_20">
+                <property name="text">
+                 <string>Unk#2 (uint32)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_21">
+                <property name="text">
+                 <string>Unk#14 (uint16)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="spbimgunk2">
+                <property name="minimumSize">
+                 <size>
+                  <width>64</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="focusPolicy">
+                 <enum>Qt::StrongFocus</enum>
+                </property>
+                <property name="toolTip">
+                 <string>Possibly has to do with the image's Z/height priority.  Leave to 0 if unsure. This might make the image display over or below other sprites.</string>
+                </property>
+                <property name="buttonSymbols">
+                 <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+                <property name="maximum">
+                 <number>32000</number>
+                </property>
+                <property name="displayIntegerBase">
+                 <number>16</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="spbimgunk14">
+                <property name="minimumSize">
+                 <size>
+                  <width>32</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="focusPolicy">
+                 <enum>Qt::StrongFocus</enum>
+                </property>
+                <property name="toolTip">
+                 <string>The role of this value is currently unknown. Leave it to default, or 0 unless you know what you're doing.</string>
+                </property>
+                <property name="buttonSymbols">
+                 <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+                <property name="maximum">
+                 <number>32000</number>
+                </property>
+                <property name="displayIntegerBase">
+                 <number>16</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_2">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -1867,14 +1946,28 @@
                 <bool>true</bool>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Add an animation entry to the table.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Inserts a new animation entry &lt;span style=&quot; font-weight:600;&quot;&gt;before&lt;/span&gt; the currently selected one.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
-                <string>Add..</string>
+                <string>Insert</string>
                </property>
                <property name="icon">
                 <iconset resource="../../appres.qrc">
                  <normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/plus.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnAnimTblAppendAnim">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Appends&lt;/span&gt; a new animation entry to the currently selected one.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Append</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../appres.qrc">
+                 <normaloff>:/resources/fugue-icons-3.5.6/icons/control-stop-270.png</normaloff>:/resources/fugue-icons-3.5.6/icons/control-stop-270.png</iconset>
                </property>
               </widget>
              </item>
@@ -1892,6 +1985,35 @@
                <property name="icon">
                 <iconset resource="../../appres.qrc">
                  <normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/minus.png</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="btnAnimTblAnimMvUp">
+               <property name="text">
+                <string>Move Up</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../appres.qrc">
+                 <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-090.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-090.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnAnimTblAnimMvDown">
+               <property name="text">
+                <string>Move Down</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../appres.qrc">
+                 <normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-270.png</normaloff>:/resources/fugue-icons-3.5.6/icons/arrow-270.png</iconset>
                </property>
               </widget>
              </item>
@@ -2029,7 +2151,7 @@
               <set>QAbstractItemView::NoEditTriggers</set>
              </property>
              <property name="showDropIndicator" stdset="0">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="dragEnabled">
               <bool>true</bool>
@@ -2112,26 +2234,69 @@
             <widget class="QGraphicsView" name="gvAnimTablePreview"/>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkAnimTblAutoPlay">
-             <property name="text">
-              <string>Selected Sequence Playback</string>
+            <widget class="QGroupBox" name="groupBox_8">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
+             <property name="title">
+              <string>Options</string>
+             </property>
+             <layout class="QFormLayout" name="formLayout_3">
+              <item row="0" column="0">
+               <widget class="QCheckBox" name="chkAnimTblAutoPlay">
+                <property name="text">
+                 <string>Selected Sequence Playback</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QCheckBox" name="chkAnimTblAutoSelectSeq">
+                <property name="toolTip">
+                 <string>If this is checked, when a slot from the current animation table entry is selected, the animation sequence will be automatically selected in the list of available animations.</string>
+                </property>
+                <property name="statusTip">
+                 <string/>
+                </property>
+                <property name="text">
+                 <string>Auto Select Sequence</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkAnimTblAutoSelectSeq">
-             <property name="toolTip">
-              <string>If this is checked, when a slot from the current animation table entry is selected, the animation sequence will be automatically selected in the list of available animations.</string>
+            <widget class="QGroupBox" name="groupBox_9">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <property name="statusTip">
-              <string/>
+             <property name="title">
+              <string>Quick Edits</string>
              </property>
-             <property name="text">
-              <string>Auto Select Sequence</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
+             <layout class="QFormLayout" name="formLayout_6">
+              <item row="0" column="0">
+               <widget class="QPushButton" name="btnAnimTblCvHeroAnims">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adds missing animation slots and tweaks the current pokemon's animations so they can be used as heros(hero/partner) pokemon and have the correct animation slots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string>Convert to Hero Animations</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
            <item>

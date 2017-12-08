@@ -93,6 +93,19 @@ class Image : public BaseTreeTerminalChild<&ElemName_Image>,
               public utils::BaseSequentialIDGen< BaseTreeTerminalChild<&ElemName_Image>, unsigned int>
 {
 public:
+    enum struct eColumnType : int
+    {
+        Preview = 0,
+        UID,
+        Depth,
+        Resolution,
+        NbColumns,
+
+        direct_Unk2,    //Extra columns that don't count
+        direct_Unk14,
+    };
+
+
     Image(TreeElement * parent)
         :BaseTreeTerminalChild(parent), BaseSequentialIDGen(), m_depth(0), m_unk2(0), m_unk14(0)
     {
@@ -223,13 +236,20 @@ public:
 
     //Reimplemented nodeData method specifically for displaying images in the image list table!
     virtual QVariant imgData(int column, int role) const;
+    virtual bool     setImgData(int column, const QVariant &value, int role);
     virtual QVariant imgDataCondensed(int role) const;
 
     //Reimplemented nodeColumnCount specifically for displaying images in the image list table!
-    virtual int nbimgcolumns()const{return 3;}
+    virtual int nbimgcolumns()const{return static_cast<int>(eColumnType::NbColumns);}
 
     //Returns the session unique id for this image
     inline id_t getImageUID()const {return getID();} //Get index indepandent id!
+
+    //Unk values
+    uint32_t getUnk2()const { return m_unk2; }
+    void     setUnk2(uint32_t val) { m_unk2 = val; }
+    uint16_t getUnk14()const { return m_unk14; }
+    void     setUnk14(uint16_t val) { m_unk14 = val; }
 
     //
     //BaseTreeTerminalChild overrides
@@ -269,6 +289,7 @@ public:
     int columnCount(const QModelIndex &parent) const override;
     bool hasChildren(const QModelIndex &parent) const override;
     virtual QVariant data(const QModelIndex &index, int role) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
@@ -281,6 +302,7 @@ public:
     {
         return const_cast<ImagesManager*>(this)->getItem(index);
     }
+
 };
 
 //============================================================================================
@@ -457,6 +479,15 @@ public:
         return img->imgData(index.column(), role);
     }
 
+    bool setData(const QModelIndex & index, const QVariant & value, int role) override
+    {
+        if (!index.isValid() || role != Qt::EditRole)
+            return false;
+
+        Image *img = static_cast<Image*>(getItem(index));
+        return img->setImgData(index.column(), value, role);
+    }
+
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if( role != Qt::DisplayRole )
@@ -468,15 +499,15 @@ public:
         }
         else if( orientation == Qt::Orientation::Horizontal )
         {
-            switch(section)
+            switch(static_cast<Image::eColumnType>(section))
             {
-            case 0:
+            case Image::eColumnType::Preview:
                 return std::move(QVariant( QString("") ));
-            case 1:
+            case Image::eColumnType::UID:
                 return std::move(QVariant( QString("UID") ));
-            case 2:
+            case Image::eColumnType::Depth:
                 return std::move(QVariant( QString("Bit Depth") ));
-            case 3:
+            case Image::eColumnType::Resolution:
                 return std::move(QVariant( QString("Resolution") ));
             };
         }
@@ -485,7 +516,7 @@ public:
 
     //Whether the node should be movable
     bool        nodeIsMutable()const override           {return false;}
-    virtual int nodeColumnCount() const override        {return 4;}
+    virtual int nodeColumnCount() const override        {return static_cast<int>(Image::eColumnType::NbColumns);}
 
 private:
     //QScopedPointer<ImageSelectorModel> m_pimgselmodel;

@@ -361,6 +361,13 @@ public:
     virtual bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles) override;
     virtual Qt::DropActions supportedDropActions() const override;
     virtual Qt::DropActions supportedDragActions() const override;
+
+    // QAbstractItemModel interface
+public:
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override
+    {
+        return QAbstractItemModel::dropMimeData(data,action,row,column,parent);
+    }
 };
 
 //*******************************************************************

@@ -7,11 +7,18 @@ AnimatedSpriteItem::AnimatedSpriteItem(Sprite *pspr, fmt::AnimDB::animseqid_t se
     :QGraphicsObject(),
       m_spr(pspr),
       m_curseqid(seqid),
-      m_bshouldloop(bshouldloop)
+      m_bshouldloop(bshouldloop),
+      m_bstopping(false)
 {Init();}
+
+AnimatedSpriteItem::~AnimatedSpriteItem()
+{
+
+}
 
 void AnimatedSpriteItem::Init()
 {
+    m_bstopping     = false;
     m_curfrm        = 0;
     if(m_curfrm < m_cachedframes.size())
         m_ticksnextfrm  = m_cachedframes[m_curfrm].duration;
@@ -21,7 +28,7 @@ void AnimatedSpriteItem::Init()
 
 void AnimatedSpriteItem::UpdateFrame()
 {
-    if(m_loading)
+    if(m_loading || m_bstopping)
         return;
     QMutexLocker lk(&m_mtxcache);
     ++m_curfrm;
@@ -68,9 +75,11 @@ QFuture<QVector<QImage> > AnimatedSpriteItem::DumpSequence() const
 
 void AnimatedSpriteItem::LoadSequence()
 {
-    QMutexLocker lk(&m_mtxcache);
     Init();
-    m_cachedframes.resize(0);
+    {
+        QMutexLocker lk(&m_mtxcache);
+        m_cachedframes.resize(0);
+    }
 
     AnimSequence  * pseq = m_spr->getAnimSequence(m_curseqid);
 
@@ -130,30 +139,43 @@ void AnimatedSpriteItem::LoadSequence()
             dest.offsety  = afrm.yoffset();
             dest.duration = afrm.duration();
             dest.img      = qMove(QPixmap::fromImage(target));
-            m_cachedframes.push_back(qMove(dest));
+
+            {
+                QMutexLocker lk(&m_mtxcache);
+                m_cachedframes.push_back(qMove(dest));
+            }
         }
 
         m_biggestFrame = boundsbiggest;
 
-        for(cachedanimfrm_t & afrm : m_cachedframes )
         {
-            //try to align frames
-            if( afrm.area.x() > m_biggestFrame.x() )
-                afrm.area.setX(afrm.area.x() + (afrm.area.x() - m_biggestFrame.x()) ); //add the difference!
-            if( afrm.area.y() > m_biggestFrame.y() )
-                afrm.area.setY(afrm.area.y() + (afrm.area.y() - m_biggestFrame.y()) ); //add the difference!
+            QMutexLocker lk(&m_mtxcache);
+            for(cachedanimfrm_t & afrm : m_cachedframes )
+            {
+                //try to align frames
+                if( afrm.area.x() > m_biggestFrame.x() )
+                    afrm.area.setX(afrm.area.x() + (afrm.area.x() - m_biggestFrame.x()) ); //add the difference!
+                if( afrm.area.y() > m_biggestFrame.y() )
+                    afrm.area.setY(afrm.area.y() + (afrm.area.y() - m_biggestFrame.y()) ); //add the difference!
+            }
         }
 
     }
     else
         qCritical("AnimatedSpriteItem::LoadSequence(): Invalid sequence id %d!\n", m_curseqid);
 
-    if(!m_cachedframes.empty())
-        m_ticksnextfrm = m_cachedframes.front().duration;
+    {
+        QMutexLocker lk(&m_mtxcache);
+        if(!m_cachedframes.empty())
+            m_ticksnextfrm = m_cachedframes.front().duration;
+    }
 }
 
 void AnimatedSpriteItem::ScheduleSequenceLoad()
 {
+    if(m_bstopping)
+        return;
+
     m_seqloadupdate = QtConcurrent::run( this, &AnimatedSpriteItem::LoadSequence );
     connect(&m_seqloadwatch, SIGNAL(finished()), this, SLOT(framesCached()));
     m_seqloadwatch.setFuture(m_seqloadupdate);
@@ -165,6 +187,9 @@ void AnimatedSpriteItem::ScheduleSequenceLoad()
 
 void AnimatedSpriteItem::ScheduleFrameUpdate()
 {
+    if(m_bstopping)
+        return;
+
     if(m_frmupdatewatch.isRunning())
         m_frmupdatewatch.waitForFinished();
 
@@ -172,6 +197,16 @@ void AnimatedSpriteItem::ScheduleFrameUpdate()
     connect(&m_frmupdatewatch, SIGNAL(finished()), this, SLOT(frameupdated()));
     m_frmupdatewatch.setFuture(m_frmupdate);
     //qDebug("AnimatedSpriteItem::ScheduleFrameUpdate(): Scheduled!\n");
+}
+
+void AnimatedSpriteItem::WaitStop()
+{
+    m_bstopping = true;
+    setloop(false);
+    if(m_seqloadwatch.isRunning())
+        m_seqloadwatch.waitForFinished();
+    if(m_frmupdatewatch.isRunning())
+        m_frmupdatewatch.waitForFinished();
 }
 
 QRectF AnimatedSpriteItem::boundingRect() const
@@ -219,20 +254,20 @@ void AnimatedSpriteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
         int xdiff = (m_cachedframes[curfrm].area.x() - m_biggestFrame.x());
         int ydiff = (m_cachedframes[curfrm].area.y() - m_biggestFrame.y());
 
-        QRadialGradient radialGrad( QPointF(8,
-                                            8),
-                                    16);
-        radialGrad.setColorAt(0,    QColor(0,0,0, 200));
-        radialGrad.setColorAt(0.5,  QColor(0,0,0, 128) );
-        radialGrad.setColorAt(0.9,  QColor(0,0,0, 0) );
+//        QRadialGradient radialGrad( QPointF(8,
+//                                            8),
+//                                    16);
+//        radialGrad.setColorAt(0,    QColor(0,0,0, 200));
+//        radialGrad.setColorAt(0.5,  QColor(0,0,0, 128) );
+//        radialGrad.setColorAt(0.9,  QColor(0,0,0, 0) );
 
-        QBrush shadowbrush(radialGrad);
-        painter->setBrush(shadowbrush);
-        painter->setPen(QPen(QColor(0,0,0,0)));
-        painter->drawEllipse(m_cachedframes[curfrm].shadowx + xdiff,
-                             m_cachedframes[curfrm].shadowy + ydiff,
-                             m_cachedframes[curfrm].area.width(),
-                             m_cachedframes[curfrm].area.height());
+//        QBrush shadowbrush(radialGrad);
+//        painter->setBrush(shadowbrush);
+//        painter->setPen(QPen(QColor(0,0,0,0)));
+//        painter->drawEllipse(m_cachedframes[curfrm].shadowx + xdiff,
+//                             m_cachedframes[curfrm].shadowy + ydiff,
+//                             m_cachedframes[curfrm].area.width(),
+//                             m_cachedframes[curfrm].area.height());
 
         painter->drawPixmap( m_cachedframes[curfrm].offsetx + xdiff,
                              m_cachedframes[curfrm].offsety + ydiff,
@@ -276,6 +311,7 @@ void AnimatedSpriteItem::frameupdated()
 
 void AnimatedSpriteItem::setCurFrame(int frmid)
 {
+    QMutexLocker lk(&m_mtxcache);
     if(frmid < m_cachedframes.size())
     {
         m_curfrm       = frmid;
@@ -305,6 +341,12 @@ void SceneRenderer::clearAnimSprite()
 {
     if(m_animsprite)
     {
+        disconnect(this, &SceneRenderer::tick, m_animsprite, &AnimatedSpriteItem::tick);
+        disconnect(this, &SceneRenderer::setCurFrm, m_animsprite, &AnimatedSpriteItem::setCurFrame );
+        disconnect(m_animsprite, qOverload<int>(&AnimatedSpriteItem::framechanged), this, &SceneRenderer::OnFrameChanged );
+        disconnect(m_animsprite, &AnimatedSpriteItem::rangechanged, this, &SceneRenderer::OnRangeChanged );
+        disconnect(m_animsprite, &AnimatedSpriteItem::loopcomplete, this, &SceneRenderer::loopComplete);
+        m_animsprite->WaitStop();
         m_animScene.removeItem(m_animsprite);
         delete m_animsprite;
         m_animsprite = nullptr;
@@ -358,6 +400,13 @@ QVector<QImage> SceneRenderer::DumpSequence() const
     return qMove(fut.result());
 }
 
+QColor SceneRenderer::getSpriteBGColor() const
+{
+    if(m_spr && !m_spr->getPalette().empty())
+        return m_spr->getPalette().first();
+    return QColor(220,220,220);
+}
+
 void SceneRenderer::startAnimUpdates()
 {
     if(!m_timer)
@@ -378,7 +427,10 @@ void SceneRenderer::stopAnimUpdates()
         m_timer.reset();
         m_ticks = 0;
         if(m_animsprite)
+        {
+            m_animsprite->WaitStop();
             m_animsprite->Init();
+        }
     }
 }
 

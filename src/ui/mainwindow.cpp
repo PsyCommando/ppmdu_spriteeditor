@@ -77,6 +77,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->spbFrmPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
     ui->spbFrmPartYOffset->setRange(0, fmt::step_t::YOFFSET_MAX);
 
+    ui->spbimgunk2->setRange (0, std::numeric_limits<uint32_t>::max());
+    ui->spbimgunk14->setRange(0, std::numeric_limits<uint16_t>::max());
+
     DisplayStartScreen();
     InitAnimScene();
 }

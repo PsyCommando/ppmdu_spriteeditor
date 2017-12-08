@@ -33,6 +33,8 @@ void MainWindow::InstallAnimPreview(QGraphicsView * viewport, Sprite *spr, AnimS
     connect( aniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
     {
         m_previewrender.reloadAnim();
+        viewport->setAutoFillBackground(true);
+        viewport->setBackgroundBrush(QBrush(m_previewrender.getSpriteBGColor()));
         viewport->update();
     });
 }

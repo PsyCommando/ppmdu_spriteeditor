@@ -45,6 +45,7 @@ public:
     };
 
     AnimatedSpriteItem(Sprite * pspr, fmt::AnimDB::animseqid_t seqid, bool bshouldloop);
+    ~AnimatedSpriteItem();
 
     void Init();
     void UpdateFrame();
@@ -56,6 +57,9 @@ public:
     void ScheduleSequenceLoad();
     //This starts the updating of the current frame on another thread without blocking the caller
     void ScheduleFrameUpdate();
+
+    //This is meant to be used by anything that wants to delete the object, so its not deleted while loading on another thread
+    void WaitStop();
 
     // QGraphicsItem interface
 public:
@@ -78,6 +82,7 @@ private:
 
     int              m_curfrm;
     unsigned int     m_ticksnextfrm;
+    bool             m_bstopping;
     bool             m_bshouldloop;
     std::atomic_bool m_loading;
     QRect            m_biggestFrame;
@@ -122,6 +127,8 @@ public:
     inline const QGraphicsScene & getAnimScene()const   {return m_animScene;}
 
     QVector<QImage> DumpSequence()const;
+
+    QColor getSpriteBGColor()const;
 
 private:
     bool                   m_shouldLoop;
