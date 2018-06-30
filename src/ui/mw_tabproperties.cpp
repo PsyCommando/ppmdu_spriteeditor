@@ -42,7 +42,13 @@ void MainWindow::DisplayPropertiesPage(Sprite * spr)
     ShowATab(ui->tabProperties);
 }
 
-
+QString MainWindow::GetPaletteImportFiterString()
+{
+    using namespace spr_manager;
+    static const QString pimportstr = QString("%1;;%2").arg( PaletteFilterString(),
+                                      GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL)); //allow loading a PNG for its palette!
+    return pimportstr;
+}
 
 // *********************************
 //  Properties Tab
@@ -58,28 +64,20 @@ void MainWindow::on_btnImportPalette_clicked()
     }
 
     QString selectedfilter;
-    ePaletteDumpType type;
+    ePaletteDumpType ftype;
     QString filename = QFileDialog::getOpenFileName(this,
-                                                    tr("Import Palette File"),
+                                                    QString(tr("Import Palette File")),
                                                     QString(),
-            PaletteFilterString() + ";;" + GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL), //allow loading a PNG for its palette!
+                                                    GetPaletteImportFiterString(),
                                                     &selectedfilter );
     if(filename.isNull())
         return;
 
-    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
-        type = ePaletteDumpType::RIFF_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
-        type = ePaletteDumpType::TEXT_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
-        type = ePaletteDumpType::GIMP_PAL;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
-        type = ePaletteDumpType::PNG_PAL;
-    Q_ASSERT(type < ePaletteDumpType::INVALID);
+    ftype = FilterStringToPaletteType(selectedfilter);
 
     try
     {
-        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, type);
+        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, ftype);
     }
     catch(const std::exception & e)
     {
@@ -108,42 +106,23 @@ void MainWindow::on_btnExportPalette_clicked()
         return;
     }
 
-    QString selectedfilter;
-    ePaletteDumpType type;
-    qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
-    QString filename = QFileDialog::getSaveFileName(this,
-                        tr("Save Palette Dump As"),
-                        QString(),
-                        PaletteFilterString(),
-                        &selectedfilter);
-
-    if(filename.isNull())
-        return;
-
-    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) &&
-       !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal), Qt::CaseInsensitive))
-    {
-        //filename.append(".pal");
-        type = ePaletteDumpType::RIFF_Pal;
-    }
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) &&
-            !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal), Qt::CaseInsensitive))
-    {
-        //filename.append(".txt");
-        type = ePaletteDumpType::TEXT_Pal;
-    }
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL) &&
-            !filename.endsWith(GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL), Qt::CaseInsensitive))
-    {
-        //filename.append(".gpl");
-        type = ePaletteDumpType::GIMP_PAL;
-    }
-
-    Q_ASSERT(type < ePaletteDumpType::INVALID);
-
     try
     {
-        spr_manager::SpriteManager::Instance().DumpPalette(spr, filename, type);
+        QString selectedfilter = GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal);
+        qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
+        QString filename = QFileDialog::getSaveFileName(this,
+                            QString(tr("Save Palette Dump As")),
+                            QString(),
+                            PaletteFilterString(),
+                            &selectedfilter);
+
+        if(filename.isNull())
+            return;
+
+        qDebug() << QString("Palette Length to export is %1").arg(spr->getPalette().size());
+
+        ePaletteDumpType ftype = FilterStringToPaletteType(selectedfilter);
+        SpriteManager::Instance().DumpPalette(spr, filename, ftype);
     }
     catch(const std::exception & e)
     {

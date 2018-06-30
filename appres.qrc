@@ -1,13 +1,10 @@
 <RCC>
     <qresource prefix="/imgs">
-        <file alias="test.png">resources/imgs/test.png</file>
         <file>resources/imgs/kofi2.png</file>
         <file>resources/imgs/noimg.svg</file>
         <file>resources/imgs/noimg.png</file>
     </qresource>
-    <qresource prefix="/" lang="en">
-        <file alias="test.txt">resources/test.txt</file>
-    </qresource>
+    <qresource prefix="/" lang="en"/>
     <qresource prefix="/templates"/>
     <qresource prefix="/">
         <file>resources/imgs/wtfpl-badge-1.png</file>

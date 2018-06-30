@@ -26,6 +26,7 @@ namespace spr_manager
 
     void SpriteManager::CloseContainer()
     {
+        qInfo("SpriteManager::CloseContainer(): Close container called!");
         Reset();
     }
 
@@ -161,28 +162,36 @@ namespace spr_manager
             throw std::range_error("SpriteManager::DumpPalette(): Invalid sprite index!!");
 
         std::vector<uint8_t> fdata;
+        std::vector<uint32_t> pal;
+        for(const QRgb & col : spr->getPalette())
+        {
+            pal.push_back(static_cast<uint32_t>(col));
+        }
 
         switch(type)
         {
         case ePaletteDumpType::RIFF_Pal:
             {
-                fdata = qMove(utils::ExportTo_RIFF_Palette(spr->getPalette().toStdVector(), utils::ARGBToComponents)); //since QRgb is ARGB, we use this decoder!
+                qDebug("Exporting RIFF Palette\n");
+                fdata = qMove(utils::ExportTo_RIFF_Palette(pal, utils::ARGBToComponents)); //sice QRgb is ARGB, we use this decoder!
+                qDebug("Exporting RIFF Palette, conversion complete!\n");
                 break;
             }
         case ePaletteDumpType::TEXT_Pal:
             {
-                fdata = qMove(utils::ExportPaletteAsTextPalette(spr->getPalette().toStdVector(), utils::ARGBToComponents));
+                fdata = qMove(utils::ExportPaletteAsTextPalette(pal, utils::ARGBToComponents));
                 break;
             }
         case ePaletteDumpType::GIMP_PAL:
             {
-                fdata = qMove(utils::ExportGimpPalette(spr->getPalette().toStdVector(), utils::ARGBToComponents));
+                fdata = qMove(utils::ExportGimpPalette(pal, utils::ARGBToComponents));
                 break;
             }
         default:
             throw std::invalid_argument("SpriteManager::DumpPalette(): Invalid palette destination type!");
         };
 
+        qDebug("Exporting RIFF Palette, Writing to file!\n");
         QSaveFile sf(path);
         if(!sf.open( QSaveFile::WriteOnly ))
             throw std::runtime_error(QString("SpriteManager::DumpPalette(): Couldn't open file \"%1\" for writing!\n").arg(path).toStdString());
@@ -190,8 +199,11 @@ namespace spr_manager
         if( sf.write( (char*)fdata.data(), fdata.size() ) < fdata.size() )
             qWarning("SpriteManager::DumpPalette(): The amount of bytes written to file differs from the expected filesize!\n");
 
+        qDebug("Exporting RIFF Palette, written! Now commiting\n");
+
         if(!sf.commit())
             throw std::runtime_error(QString("SpriteManager::DumpPalette(): Commit to \"%1\" failed!\n").arg(path).toStdString());
+        qDebug("Exporting RIFF Palette, commited!\n");
     }
 
     void SpriteManager::DumpPalette(const QModelIndex &sprite, const QString &path, ePaletteDumpType type)

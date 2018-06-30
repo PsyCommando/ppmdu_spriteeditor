@@ -21,7 +21,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_aboutdiag(this),
     m_imgNoImg(":/imgs/resources/imgs/noimg.png"),
     m_progress(this),
-    m_settings("./settings.ini",QSettings::Format::IniFormat)
+    m_settings("./settings.ini",QSettings::Format::IniFormat)/*,
+    m_cursprite(nullptr)*/
 {
     //Resources alloc
     m_pStatusFileType.reset(new QLabel("     "));
@@ -181,7 +182,10 @@ void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
 
     //Display!
     if(sprcnt && sprcnt->hasChildren())
+    {
+        m_cursprite = /*QPersistentModelIndex(*/sprcnt->modelIndexOfNode(&sprcnt->GetSprite(0))/*)*/;
         DisplayPropertiesPage(&sprcnt->GetSprite(0));
+    }
     ui->tv_sprcontent->repaint();
     setWindowFilePath(sprcnt->GetContainerSrcPath());
 }
@@ -543,11 +547,34 @@ void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
 {
-    TreeElement * pcur = static_cast<TreeElement*>(index.internalPointer());
+    TreeElement * pcur = spr_manager::SpriteManager::Instance().getItem(index);
     if(!pcur)
         return;
 
+    //Handle the clicking
     pcur->OnClicked();
+
+    //Check if the parent sprite loaded
+    Sprite * pspr = pcur->parentSprite();
+    if(!pspr)
+    {
+        qFatal("MainWindow::on_tv_sprcontent_clicked() : Something very wrong is going on with the sprite");
+        return;
+    }
+    if(!pspr->wasParsed())
+    {
+        qInfo("MainWindow::on_tv_sprcontent_clicked(): Parent sprite was not parsed for some reasons.. Parsing..");
+        pspr->ParseSpriteData();
+    }
+
+    if(pcur->getNodeDataTy() < eTreeElemDataType::INVALID &&
+            pcur->getNodeDataTy() != eTreeElemDataType::None &&
+            pcur->parentSprite())
+    {
+        m_cursprite = spr_manager::SpriteManager::Instance().modelIndexOf(pcur->parentSprite());
+    }
+    else
+        m_cursprite = QModelIndex();
 
     switch( pcur->getNodeDataTy() )
     {
@@ -641,15 +668,23 @@ QMenu *MainWindow::makeSpriteContextMenu(QModelIndex entry)
 
 Sprite * MainWindow::currentSprite()
 {
-    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
-    if(!elem)
-        return nullptr;
-    return elem->parentSprite();
+    return reinterpret_cast<Sprite *>(m_cursprite.internalPointer());
+//    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
+//    if(!elem)
+//        return nullptr;
+
+//    Sprite * spr = elem->parentSprite();
+//    if(!spr)
+//    {
+//        //This mean, we've selected the sprite itself, so return that!
+//        spr = static_cast<Sprite*>(elem);
+//    }
+//    return spr;
 }
 
 MFrame *MainWindow::currentFrame()
 {
-    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    TreeElement * elem = reinterpret_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
 
     //In cases where we're in the treeview on a child entry, get the parent!
     if(elem && elem->getNodeDataTy() == eTreeElemDataType::framepart)
@@ -660,19 +695,19 @@ MFrame *MainWindow::currentFrame()
 
 Image *MainWindow::currentImage()
 {
-    Image * elem = static_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    Image * elem = reinterpret_cast<Image*>(ui->tv_sprcontent->currentIndex().internalPointer());
     return elem;
 }
 
 AnimSequence *MainWindow::currentAnimSequence()
 {
-    AnimSequence * elem = static_cast<AnimSequence*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    AnimSequence * elem = reinterpret_cast<AnimSequence*>(ui->tv_sprcontent->currentIndex().internalPointer());
     return elem;
 }
 
 eTreeElemDataType MainWindow::currentEntryType()
 {
-    TreeElement * elem = static_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    TreeElement * elem = reinterpret_cast<TreeElement*>(ui->tv_sprcontent->currentIndex().internalPointer());
     if(elem)
         return elem->getNodeDataTy();
     return eTreeElemDataType::None;
@@ -680,13 +715,13 @@ eTreeElemDataType MainWindow::currentEntryType()
 
 MFramePart * MainWindow::currentTblFrameParts()
 {
-    MFramePart * elem = static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer());
+    MFramePart * elem = reinterpret_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer());
     return elem;
 }
 
 Image * MainWindow::currentTblImages()
 {
-    Image * elem = static_cast<Image*>(ui->tblviewImages->currentIndex().internalPointer());
+    Image * elem = reinterpret_cast<Image*>(ui->tblviewImages->currentIndex().internalPointer());
     return elem;
 }
 

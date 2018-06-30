@@ -9,11 +9,15 @@ QT       += core gui concurrent svg
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 GIT_VERSION = $$system(GitVersion -output json -showvariable SemVer) ##(git --git-dir $$PWD/.git --work-tree $$PWD describe --always --tags)
 GIT_MAJORMINOR_VERSION = $$system(GitVersion -output json -showvariable MajorMinorPatch)
+TARGET_FILENAME = ppmdu_spriteeditor
+
 
 TARGET = ppmdu_spriteeditor
 TEMPLATE = app
 
 CONFIG += c++14
+
+RC_FILE = resources.rc
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -93,7 +97,8 @@ HEADERS  += src/ui/mainwindow.h \
     src/ppmdu/utils/color_utils.hpp \
     src/ui/paletteeditor.hpp \
     src/sprite_frames.hpp \
-    src/sprite_palette.hpp
+    src/sprite_palette.hpp \
+    version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
     src/ui/processingconsole.ui \
@@ -109,4 +114,6 @@ RESOURCES += \
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
 QMAKE_CXXFLAGS_WARN_OFF +=
 
-DISTFILES +=
+DISTFILES += \
+    resources.rc \
+    resources/app.ico

@@ -105,6 +105,7 @@ private:
     MFramePart  * currentTblFrameParts();
     Image       * currentTblImages();
 
+    static QString GetPaletteImportFiterString();
 
     // QWidget interface
 protected:
@@ -202,6 +203,8 @@ private slots:
 
     void on_spbimgunk14_valueChanged(int arg1);
 
+    void on_tblseqfrmlst_activated(const QModelIndex &index);
+
 signals:
 
 private:
@@ -217,9 +220,7 @@ private:
 
     SceneRenderer           m_previewrender;
     QString                 m_lastSavePath;
-//    int                     m_idxCurFrmPart;
-//    int                     m_idxCurFrame;
-//    int                     m_idxCurSprite;
+    QPersistentModelIndex   m_cursprite;
     QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
     QScopedPointer<QDataWidgetMapper> m_imgdatmapper;
     QSettings               m_settings;

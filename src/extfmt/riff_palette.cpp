@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/utils/gfileio.hpp>
+#include <QDebug>
 
 using namespace std;
 using namespace utils;
@@ -59,6 +60,7 @@ namespace utils
     //Exports a palette to a Microsoft RIFF ".pal" file
     std::vector<uint8_t> ExportTo_RIFF_Palette(const std::vector<uint32_t> &in_palette, funcoldec_t decoder)
     {
+        qDebug("ExportTo_RIFF_Palette\n");
         const uint16_t nbColorEntries   = in_palette.size();  //nb of colors in the palette
         const uint32_t dataChunkSize    = (nbColorEntries * 4) + 4;          //Length of the actual data / list of colors. Add 4 because the version number and nb of colors are counted as part of it, and are 2bytes each
         const uint32_t fileLengthTotal  = RIFF_PAL_HEADER_AND_DATA_CHUNK_HEADER_TOTAL_LEN + dataChunkSize; //Length of the riff file starting after the file length field
@@ -93,6 +95,7 @@ namespace utils
             writeBytesFrom( nbColorEntries, itbackins );
         }
 
+        qDebug("ExportTo_RIFF_Palette: Writing colors\n");
         //#3 - Write the colors into the output vector
         for( auto & col : in_palette )
         {
@@ -108,6 +111,7 @@ namespace utils
 //            out_riffpalette.push_back( static_cast<uint8_t>(col)       );
         }
         
+        qDebug("ExportTo_RIFF_Palette: Moving vector\n");
         //#4 - Profits!
         return std::move(out_riffpalette);
     }

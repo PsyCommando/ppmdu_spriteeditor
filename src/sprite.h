@@ -275,7 +275,7 @@ public:
     QPixmap & MakePreviewPalette();
 
     QPixmap & MakePreviewFrame(bool transparency = false);
-    static Sprite * ParentSprite( TreeElement * parentspr );
+    //static Sprite * ParentSprite( TreeElement * parentspr );
 
     const QVector<QRgb> & getPalette()const     { return m_palcnt.getPalette(); }
     QVector<QRgb>       & getPalette()          { return m_palcnt.getPalette(); }

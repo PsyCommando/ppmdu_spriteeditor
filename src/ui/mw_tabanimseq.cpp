@@ -194,3 +194,8 @@ void MainWindow::on_btnSeqExport_clicked()
     ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
 }
 
+void MainWindow::on_tblseqfrmlst_activated(const QModelIndex &index)
+{
+    //When clicking on a frame in the frame list, stop the anim preview
+    m_previewrender.stopAnimUpdates();
+}

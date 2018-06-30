@@ -266,7 +266,7 @@ namespace spr_manager
     {
         if (index.isValid())
         {
-            TreeElement *item = static_cast<TreeElement*>(index.internalPointer());
+            TreeElement *item = reinterpret_cast<TreeElement*>(index.internalPointer());
             if (item)
                 return item;
         }
@@ -285,7 +285,7 @@ namespace spr_manager
     {
         QMutexLocker lk(&getMutex());
         Sprite * spritem = nullptr;
-        spritem = static_cast<Sprite*>(item);
+        spritem = dynamic_cast<Sprite*>(item);
 
         if(spritem)
             m_spr.append(*spritem);
@@ -309,11 +309,34 @@ namespace spr_manager
     int SpriteContainer::indexOfNode(TreeElement *ptr) const
     {
         QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
-        Sprite * ptrspr = static_cast<Sprite *>(ptr);
+        Sprite * ptrspr = dynamic_cast<Sprite *>(ptr);
 
         if( ptrspr )
             return m_spr.indexOf(*ptrspr);
         return 0;
+    }
+
+    QModelIndex SpriteContainer::modelIndexOfNode(TreeElement *ptr) const
+    {
+        QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
+
+        if(ptr->getNodeDataTy() != eTreeElemDataType::sprite)
+        {
+            qFatal(QString("SpriteContainer::modelIndexOfNode(): Got non-sprite node! Type is %1").arg(static_cast<int>(ptr->getNodeDataTy())).toStdString().c_str());
+            return QModelIndex();
+        }
+
+        Sprite * ptrspr = dynamic_cast<Sprite *>(ptr);
+        Q_ASSERT(ptrspr);
+
+        int idx = m_spr.indexOf(*ptrspr);
+        if(idx == -1)
+        {
+            Q_ASSERT(false);
+            throw std::runtime_error("SpriteContainer::modelIndexOfNode(): Couldn't find node in table! Node is possibly not a sprite!");
+        }
+
+        return spr_manager::SpriteManager::Instance().index(idx, 0);
     }
 
     int SpriteContainer::nodeColumnCount() const

@@ -32,6 +32,8 @@ enum struct eTreeElemDataType
     animTable,
     animGroup,
     animFrame,
+
+    INVALID,
 };
 
 //**************************************************************************************

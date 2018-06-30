@@ -162,6 +162,7 @@ namespace spr_manager
         int nodeChildCount() const override;
         int nodeIndex() const override;
         int indexOfNode( TreeElement * ptr )const override;
+        QModelIndex modelIndexOfNode(TreeElement *ptr) const;
         int nodeColumnCount() const override;
         TreeElement *parentNode() override;
         Sprite *parentSprite()override;

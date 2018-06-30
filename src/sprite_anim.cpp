@@ -157,7 +157,12 @@ bool AnimSequence::setData(const QModelIndex &index, const QVariant &value, int 
 
     if(bok && index.model())
     {
-        const_cast<QAbstractItemModel*>(index.model())->dataChanged(index, index, QVector<int>{role});
+        QVector<int> roles{role};
+        QAbstractItemModel* pmod = const_cast<QAbstractItemModel*>(index.model());
+        if(!pmod)
+            qFatal("Model is null!");
+
+        pmod->dataChanged(index, index, roles);
     }
     return bok;
 }

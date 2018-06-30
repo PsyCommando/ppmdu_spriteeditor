@@ -277,10 +277,10 @@ QPixmap &Sprite::MakePreviewFrame(bool transparency)
     return m_previewImg;
 }
 
-Sprite *Sprite::ParentSprite(TreeElement *parentspr)
-{
-    return static_cast<Sprite*>(parentspr);
-}
+//Sprite *Sprite::ParentSprite(TreeElement *parentspr)
+//{
+//    return static_cast<Sprite*>(parentspr);
+//}
 
 Image *Sprite::getImage(fmt::frmid_t idx)
 {

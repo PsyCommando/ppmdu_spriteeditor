@@ -32,6 +32,20 @@ namespace spr_manager
         return PaletteFileFilter[static_cast<int>(ty)];
     }
 
+    inline ePaletteDumpType FilterStringToPaletteType( const QString & selectedfilter )
+    {
+        ePaletteDumpType fty = ePaletteDumpType::INVALID;
+        if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
+            fty = ePaletteDumpType::RIFF_Pal;
+        else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
+            fty = ePaletteDumpType::TEXT_Pal;
+        else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
+            fty = ePaletteDumpType::GIMP_PAL;
+        else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
+            fty = ePaletteDumpType::PNG_PAL;
+        Q_ASSERT(fty < ePaletteDumpType::INVALID);
+        return fty;
+    }
 
     /*
      * SpriteManager
@@ -86,6 +100,13 @@ namespace spr_manager
             if (!IsContainerLoaded())
                 return nullptr;
             return m_container->getItem(index);
+        }
+
+        QModelIndex modelIndexOf(TreeElement *ptr) const
+        {
+            if (!IsContainerLoaded())
+                return QModelIndex();
+            return m_container->modelIndexOfNode(ptr);
         }
 
         QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override
