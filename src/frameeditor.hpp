@@ -23,7 +23,7 @@ Helper for managing the QGraphicsScene used for displaying and editing the parts
 #include <QMenu>
 
 #include <src/sprite_img.hpp>
-#include <src/sprite.h>
+#include <src/sprite.hpp>
 
 class FrameEditor;
 
@@ -115,9 +115,9 @@ signals:
 
 private:
     QColor  m_overlayColor; //color for drawing the bounding box and text for this part!
-    int     m_partid;
-    bool    m_bshowoutline;
-    bool    m_bTransparency;
+    int     m_partid{0};
+    bool    m_bshowoutline{true};
+    bool    m_bTransparency{false};
     QPointer<FrameEditor> m_frmedit;
     QPointer<QGraphicsTextItem> m_tooltip;
     QGraphicsLineItem* m_xAxisGuide;
@@ -165,16 +165,16 @@ signals:
     void zoom(int);
 
 private:
-    MFrame *                            m_pfrm;
+    MFrame *                            m_pfrm{nullptr};
     QGraphicsScene                      m_scene;
     QList<QPointer<FramePart>>          m_parts;
     //QScopedPointer<QGraphicsLineItem>   m_middleMarker;
-    int                                 m_midmarkZ;
-    int                                 m_gridsz;
+    int                                 m_midmarkZ{99};
+    int                                 m_gridsz{8};
     QRectF                              m_bgarea;
-    bool                                m_bDrawMiddleMarker;
-    bool                                m_bTransparency;
-    bool                                m_bDrawOutline;
+    bool                                m_bDrawMiddleMarker{true};
+    bool                                m_bTransparency{false};
+    bool                                m_bDrawOutline{true};
 };
 
 #endif // FRAMEEDITOR_HPP

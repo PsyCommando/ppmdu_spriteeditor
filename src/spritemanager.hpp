@@ -2,7 +2,7 @@
 #define SPRITEMANAGER_H
 /*
 */
-#include "spritecontainer.h"
+#include "spritecontainer.hpp"
 #include <QScopedPointer>
 //#include <memory>
 #include <cstdint>
@@ -47,14 +47,21 @@ namespace spr_manager
         return fty;
     }
 
+
+    //
+    class ExNoContainer : public BaseException {public:using BaseException::BaseException;}; //No container loaded
+
+
     /*
      * SpriteManager
+     *
+     * Model containing the list of sprites loaded. Used by the QTreeView in the main window!
     */
 
     class SpriteManager : public QAbstractItemModel
     {
     public:
-        Qt::ItemFlags flags(const QModelIndex &index  = QModelIndex()) const
+        Qt::ItemFlags flags(const QModelIndex &index  = QModelIndex()) const override
         {
             if (!index.isValid() || !IsContainerLoaded())
                 return QAbstractItemModel::flags(index);
@@ -73,8 +80,11 @@ namespace spr_manager
             return m_container->data(index, role);
         }
 
-        QVariant headerData(int /*section*/, Qt::Orientation /*orientation*/, int role = Qt::DisplayRole) const override
+        QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override
         {
+            Q_UNUSED(section);
+            Q_UNUSED(orientation);
+            Q_UNUSED(role);
             //nothing really
             return QVariant();
         }
@@ -126,22 +136,27 @@ namespace spr_manager
 
         int columnCount(const QModelIndex &parent = QModelIndex()) const override
         {
+            Q_UNUSED(parent);
             return 1;
         }
 
-        bool removeRows(int position, int rows, const QModelIndex &parent)
+        bool removeRows(int position, int rows, const QModelIndex &parent)override
         {
             if (!IsContainerLoaded())
                 return false;
             return m_container->removeRows(position, rows, parent, this);
         }
 
-        bool insertRows(int position, int rows, const QModelIndex &parent)
+        bool insertRows(int position, int rows, const QModelIndex &parent)override
         {
             if (!IsContainerLoaded())
                 return false;
             return m_container->insertRows(position, rows, parent, this);
         }
+
+        //Incremental load
+        void fetchMore(const QModelIndex &parent) override;
+        bool canFetchMore(const QModelIndex &parent) const override;
 
     public:
         using QAbstractItemModel::createIndex;
@@ -218,7 +233,6 @@ namespace spr_manager
     private:
         QScopedPointer<SpriteContainer> m_container; //<-- MAKE THIS A QPOINTER And destroy manually or via the item model!!!!!
         QStringList m_animslotnames;
-
     };
 
 

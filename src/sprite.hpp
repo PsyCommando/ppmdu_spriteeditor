@@ -21,6 +21,7 @@
 #include <functional>
 
 #include <src/treeelem.hpp>
+#include <src/baseqtexception.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 #include <src/ppmdu/utils/imgutils.hpp>
 
@@ -32,14 +33,15 @@
 #include <src/sprite_img.hpp>
 #include <src/sprite_frames.hpp>
 #include <src/sprite_palette.hpp>
-#include <src/sprite_anim.hpp>
+#include <src/data/animsequences.hpp>
+#include <src/data/animtable.hpp>
 
 extern const char * ElemName_SpriteProperty;
 enum struct eSpritePropColumns : int
 {
     Value= 0,
     Description,
-    NbColumns,
+    NbColumns [[maybe_unused]],
 };
 extern const int         SpritePropertiesNbCols;
 extern const QStringList SpritePropertiesColNames;
@@ -59,7 +61,7 @@ enum struct eSpriteProperties : int
     Unk12,
     Unk13,
 
-    NbProperties,
+    NbProperties [[maybe_unused]],
 };
 extern const QStringList SpritePropertiesNames;
 extern const QStringList SpritePropertiesDescriptions;
@@ -83,9 +85,14 @@ enum struct eSpriteColorModes : int
     _16Colors = 0,
     _256Colors,
     _Bitmap,
-    INVALID,
+    INVALID [[maybe_unused]],
 };
 extern const QStringList SpriteColorModes;
+
+
+//Exceptions
+class ExBadSpriteData :public BaseException {public: using BaseException::BaseException;};
+
 
 //Forward declare Sprite
 class Sprite;
@@ -93,6 +100,7 @@ class Sprite;
 //*******************************************************************
 //  SpriteOverviewModel
 //*******************************************************************
+//Model for displaying general statistics on the sprite in the property tab!
 class SpriteOverviewModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -140,6 +148,7 @@ public:
 //*******************************************************************
 //  SpritePropertiesModel
 //*******************************************************************
+//Model for displaying the editable sprite properties on the property tab
 class SpritePropertiesModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -237,7 +246,7 @@ public:
     Sprite & operator=(const Sprite & cp);
     Sprite & operator=(Sprite       && mv);
     ~Sprite();
-    void clone(const TreeElement * other);
+    void clone(const TreeElement * other)override;
 
     inline bool operator==( const Sprite & other)const  {return this == &other;}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
@@ -251,6 +260,8 @@ public:
     TreeElement     *parentNode() override;
     QVariant        nodeData(int column, int role) const override;
     virtual Sprite  *parentSprite()override;
+    bool            canFetchMore(const QModelIndex &parent) const override;
+    void            fetchMore(const QModelIndex &parent) override;
 
     //Don't allow that, since we have static childs
     inline bool insertChildrenNodes(int, int)override {return false;}
@@ -262,8 +273,13 @@ public:
     void OnExpanded() override;
 
 public:
+
+    //Returns whether the sprite can be parsed, or not if there is something wrong with the raw data
+    bool canParse()const;
+
     //Parse the data from the internal raw container
     void ParseSpriteData();
+
     //Turns the data from the data structure to its native format into the m_raw container!
     void CommitSpriteData();
 
@@ -273,9 +289,12 @@ public:
     inline bool hasAnimGrps()const  {return type() == fmt::eSpriteType::Character;}
 
     QPixmap & MakePreviewPalette();
+    QPixmap MakePreviewPalette()const; //Ignores cached palette, and makes one from scratch
+    const QPixmap & getCachedPreviewPalette()const;
 
     QPixmap & MakePreviewFrame(bool transparency = false);
-    //static Sprite * ParentSprite( TreeElement * parentspr );
+    QPixmap MakePreviewFrame(bool transparency = false)const; //Ignores cached image, and makes one from scratch
+    const QPixmap & getCachedPreviewFrame()const;
 
     const QVector<QRgb> & getPalette()const     { return m_palcnt.getPalette(); }
     QVector<QRgb>       & getPalette()          { return m_palcnt.getPalette(); }
@@ -287,6 +306,7 @@ public:
     inline AnimSequences        & getAnimSequences()                            {return m_seqcnt;}
     inline const AnimSequences  & getAnimSequences()const                       {return m_seqcnt;}
     inline AnimSequence         * getAnimSequence(fmt::AnimDB::animseqid_t id)  {return m_seqcnt.getSequenceByID(id);}
+    inline const AnimSequence   * getAnimSequence(fmt::AnimDB::animseqid_t id)const  {return m_seqcnt.getSequenceByID(id);}
 
     inline AnimTable                & getAnimTable()                    {return m_anmtbl;}
     inline const AnimTable          & getAnimTable()const               {return m_anmtbl;}
@@ -309,6 +329,9 @@ public:
     //SPRITE PROPERTIES
     SpritePropertiesHandler         * propHandler();
     const SpritePropertiesHandler   * propHandler()const;
+
+    SpritePropertiesModel           * model();
+    const SpritePropertiesModel     * model()const;
 
     SpriteOverviewModel             * overviewModel();
     const SpriteOverviewModel       * overviewModel()const;
@@ -346,8 +369,6 @@ public:
     inline uint16_t unk13()const        {return m_sprhndl.getImageFmtInfo().unk13;}
     inline void     unk13(uint16_t v)   {m_sprhndl.getImageFmtInfo().unk13 = v;}
 
-
-
 private:
     bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const;
     void DecompressRawData();
@@ -382,6 +403,7 @@ private:
     //UI data
     QPixmap m_previewImg;       //Cached image preview
     QPixmap m_previewPal;       //Cached palette preview
+
 };
 
 #endif // SPRITE_H

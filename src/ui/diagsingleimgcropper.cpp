@@ -1,6 +1,6 @@
 #include "diagsingleimgcropper.hpp"
 #include "ui_diagsingleimgcropper.h"
-#include <src/sprite.h>
+#include <src/sprite.hpp>
 
 DiagSingleImgCropper::DiagSingleImgCropper(QWidget *parent, Image * pimg) :
     QDialog(parent),

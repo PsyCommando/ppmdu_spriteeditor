@@ -1,6 +1,6 @@
 #include "sprite_img.hpp"
 #include <src/sprite_frames.hpp>
-#include <src/sprite.h>
+#include <src/sprite.hpp>
 
 
 const QString MinusOneImgRes(":/resources/imgs/minus_one.png");
@@ -164,9 +164,9 @@ QImage MFramePart::drawPart(bool transparencyenabled) const
         imgo = pimg->makeImage(spr->getPalette());
     }
 
-    imgo = qMove(imgo.convertToFormat(QImage::Format::Format_ARGB32_Premultiplied));
+    imgo = imgo.convertToFormat(QImage::Format::Format_ARGB32_Premultiplied);
     applyTransforms(imgo);
-    return qMove(imgo);
+    return imgo;
 }
 
 void MFramePart::importPart(const fmt::step_t &part)
@@ -192,13 +192,13 @@ const fmt::step_t &MFramePart::getPartData() const
 QSize MFramePart::calcTextSize(const QString &str)
 {
     static QFontMetrics fm(QFont("Sergoe UI", 9));
-    return QSize(fm.width(str), fm.height());
+    return QSize(fm.horizontalAdvance(str), fm.height());
 }
 
 void MFramePart::applyTransforms(QImage &srcimg) const
 {
-    srcimg = qMove( srcimg.transformed( QTransform().scale( m_data.isHFlip()? -1 : 1,
-                                                            m_data.isVFlip()? -1 : 1) ) );
+    srcimg = srcimg.transformed( QTransform().scale( m_data.isHFlip()? -1 : 1,
+                                                    m_data.isVFlip()? -1 : 1) ) ;
 }
 
 QVariant MFramePart::dataImgPreview(int role) const
@@ -518,8 +518,9 @@ MFrameDelegate & MFrameDelegate::operator=(MFrameDelegate && mv)
 }
 
 MFrameDelegate::MFrameDelegate(MFrame *frm, QObject *parent)
-    :m_pfrm(frm), QStyledItemDelegate(parent), m_minusone(MinusOneImgRes)
+    :QStyledItemDelegate(parent), m_minusone(MinusOneImgRes)
 {
+    m_pfrm = frm;
 }
 
 QSize MFrameDelegate::sizeHint( const QStyleOptionViewItem & /*option*/, const QModelIndex & index ) const
@@ -978,14 +979,14 @@ MFrame::MFrame(MFrame &&mv)
 MFrame &MFrame::operator=(const MFrame &cp)
 {
     paren_t::operator=(cp);
-    m_delegate = qMove(MFrameDelegate(this));
+    m_delegate = MFrameDelegate(this);
     return *this;
 }
 
 MFrame &MFrame::operator=(MFrame &&mv)
 {
     paren_t::operator=(mv);
-    m_delegate = qMove(MFrameDelegate(this));
+    m_delegate = MFrameDelegate(this);
     return *this;
 }
 
@@ -1083,20 +1084,20 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
         if(!pimg && plast) //check for -1 frames
         {
             Image* plastimg = pspr->getImage(plast->getFrameIndex());
-            pix = qMove(plastimg->makeImage(pal));
+            pix = plastimg->makeImage(pal);
         }
         else if(pimg)
         {
-            pix = qMove(pimg->makeImage(pal));
+            pix = pimg->makeImage(pal);
             plast = &part;
         }
 
         //pix.setMask(pix.createMaskFromColor( QColor(pspr->getPalette().front()), Qt::MaskMode::MaskInColor ));
 
         if(part.isHFlip())
-            pix = qMove( pix.transformed( QTransform().scale(-1, 1) ) );
+            pix = pix.transformed( QTransform().scale(-1, 1) );
         if(part.isVFlip())
-            pix = qMove( pix.transformed( QTransform().scale(1, -1) ) );
+            pix = pix.transformed( QTransform().scale(1, -1) );
 
         int finalx = (part.getXOffset());
         int finaly = (part.getYOffset() < 128)? part.getYOffset() + 255 : part.getYOffset(); //simulate wrap-around past 256 Y
@@ -1169,7 +1170,7 @@ QVariant MFrame::nodeData(int column, int role) const
                 return QString("frame#%1").arg(nodeIndex());
             if(role != Qt::DecorationRole)
                 break;
-            return qMove(QVariant(AssembleFrame(0,0, QRect())));
+            return QVariant(AssembleFrame(0,0, QRect()));
         }
 //    case eFramesColumnsType::TotalSize:
 //        {
@@ -1222,7 +1223,7 @@ QVariant MFrame::frameDataCondensed(int role) const
     else if(role == Qt::SizeHintRole)
     {
         QFontMetrics fm(QFont("Sergoe UI",9));
-        return QSize(fm.width(frameDataCondensed(role == Qt::DisplayRole).toInt()+32),
+        return QSize(fm.horizontalAdvance(frameDataCondensed(role == Qt::DisplayRole).toInt()+32),
                      qMax(fm.height() + 32, calcFrameBounds().height()) );
     }
     return QVariant();
@@ -1243,7 +1244,7 @@ QVariant MFrame::headerData(int section, Qt::Orientation orientation, int role) 
         if( orientation == Qt::Orientation::Horizontal)
         {
             QFontMetrics fm(QFont("Sergoe UI",9));
-            return QSize(fm.width(FramesHeaderColumnNames[section])+4, fm.height()+4);
+            return QSize(fm.horizontalAdvance(FramesHeaderColumnNames[section])+4, fm.height()+4);
         }
     }
     return QVariant();
@@ -1356,5 +1357,7 @@ bool MFrame::setData(const QModelIndex &index, const QVariant &value, int role)
 
 int MFrame::columnCount(const QModelIndex &parent) const
 {
+    if(!parent.isValid())
+        return 0;
     return static_cast<int>(eFramesColumnsType::NBColumns);
 }

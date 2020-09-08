@@ -1,5 +1,5 @@
 #include "sprite_palette.hpp"
-#include <src/sprite.h>
+#include <src/sprite.hpp>
 
 //============================================================================================
 //  PaletteModel

@@ -18,15 +18,17 @@
 #include <QMenu>
 #include <QPersistentModelIndex>
 #include <QSettings>
+#include <QCloseEvent>
 
-#include "src/spritemanager.h"
-#include <src/scenerenderer.hpp>
+#include "src/spritemanager.hpp"
+#include <src/ui/rendering/sprite_scene.hpp>
 #include <src/ui/dialogabout.hpp>
 #include <src/ui/dialogprogressbar.hpp>
 #include <atomic>
 
 #include <src/frameeditor.hpp>
 
+class BaseSpriteTab;
 namespace Ui {
 class MainWindow;
 }
@@ -35,6 +37,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
     friend class TVSpritesContextMenu;
+    friend class BaseSpriteTab;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -47,14 +50,21 @@ public:
     //Internal processing stuff
     void HideAllTabs();
     void ShowATab(QWidget * ptab);
+    void ShowATab(BaseSpriteTab *ptab);
+
     void DisplayStartScreen();
     void DisplayPropertiesPage(Sprite * spr);
     void DisplayMFramePage(Sprite * spr, MFrame *frm);
-    void DisplayAnimSequencePage(Sprite * spr, AnimSequence *aniseq);
-    void DisplayAnimTablePage(Sprite * spr);
+//    void DisplayAnimSequencePage(Sprite * spr, AnimSequence *aniseq);
+//    void DisplayAnimSequencePage(QPersistentModelIndex spr, QPersistentModelIndex aniseq);
+//    void DisplayAnimTablePage(Sprite * spr);
     void DisplayEffectsPage(Sprite * spr);
     void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs, Image * img = nullptr );
 
+    //Hiding stuff
+    void HideAnimSequencePage();
+
+    //Basically do house keeping stuff when we load something new in the app
     void PrepareForNewContainer();
 
     void LoadContainer( const QString & path );
@@ -66,11 +76,19 @@ public:
     void OnActionAddSprite();
     void OnActionRemSprite();
 
+    //Show a warning message box with the specified content
+    void Warn(const QString & title, const QString & text);
+
+    void ShowStatusMessage(const QString & msg);
+    void ShowStatusErrorMessage(const QString & msg);
+
+
+    void HandleItemRemoval(QModelIndex spriteidx);
+
 private:
     QPixmap RenderNoImageSvg();
 
     void updateActions();
-    void InstallAnimPreview(QGraphicsView * viewport, Sprite *spr, AnimSequence * aniseq);
 
     spr_manager::SpriteContainer * getContainer();
     spr_manager::SpriteManager & getManager();
@@ -85,18 +103,14 @@ private:
 
     //Show a message box asking if we should save the changes, and return the button pressed!
     int AskSaveChanges();
-
-    //Show a warning message box with the specified content
-    void Warn(const QString & title, const QString & text);
-
-    void InitAnimScene();
-
-    void ShowStatusMessage(const QString & msg);
-    void ShowStatusErrorMessage(const QString & msg);
+//    void InitAnimScene();
+//    void ConnectSceneRenderer();
+//    void DisconnectSceneRenderer();
 
     QMenu *makeSpriteContextMenu(QModelIndex entry);
 
     Sprite      * currentSprite();
+    QModelIndex currentSpriteModelIndex();
     MFrame      * currentFrame();
     Image       * currentImage();
     AnimSequence* currentAnimSequence();
@@ -125,7 +139,10 @@ private slots:
     void on_tv_sprcontent_expanded(const QModelIndex &index);
     void on_tv_sprcontent_clicked(const QModelIndex &index);
     void on_tv_sprcontent_customContextMenuRequested(const QPoint &pos);
+    void on_tv_sprcontent_activated(const QModelIndex &index);
 
+    void on_actionNewSprite_triggered();
+    void on_actionNewSprite_Pack_File_triggered();
     void on_action_Save_triggered();
     void on_actionSave_As_triggered();
     void on_action_About_triggered();
@@ -152,50 +169,16 @@ private slots:
     void on_btnExportPalette_clicked();
     void on_btnImportPalette_clicked();
 
-    void on_btnSeqExport_clicked();
-    void on_btnSeqAddFrm_clicked();
-    void on_btnSeqRemFrm_clicked();
-    void on_btnSeqMvUp_clicked();
-    void on_btnSeqMvDown_clicked();
-    void on_btnSeqDup_clicked();
+//    void on_btnSeqExport_clicked();
+//    void on_btnSeqAddFrm_clicked();
+//    void on_btnSeqRemFrm_clicked();
+//    void on_btnSeqMvUp_clicked();
+//    void on_btnSeqMvDown_clicked();
+//    void on_btnSeqDup_clicked();
 
-    void on_actionNewSprite_triggered();
-    void on_actionNewSprite_Pack_File_triggered();
-    void on_btnAnimTblMoveSeq_clicked();
 
-    void on_tv_sprcontent_activated(const QModelIndex &index);
 
-    void on_tvAnimTbl_activated(const QModelIndex &index);
-    void OnAnimTableItemActivate(const QModelIndex &index);
-    void OnAmimTableGroupListItemActivate(const QModelIndex &index);
-    void OnAmimTableSequenceListItemActivate(const QModelIndex &index);
-    void UpdateAnimTblPreview( fmt::AnimDB::animseqid_t seqid );
 
-    void on_btnAnimTblExportTemplate_pressed();
-
-    void on_btnAnimTblReplaceSeq_pressed();
-
-    void on_btnAnimTblImportTemplate_pressed();
-
-    void on_btnAnimTblAddSeq_pressed();
-
-    void on_btnAnimTblRemSeq_pressed();
-
-    void on_btnAnimTblMoveSeq_pressed();
-
-    void on_btnAnimTblAddAnim_pressed();
-
-    void on_btnAnimTblRemAnim_pressed();
-
-    void on_btnAnimTblAppendAnim_pressed();
-
-    void on_btnAnimTblCvHeroAnims_pressed();
-
-    void on_btnAnimTblAnimMvUp_pressed();
-
-    void on_btnAnimTblAnimMvDown_pressed();
-
-    void on_chkAnimTblAutoPlay_toggled(bool checked);
 
     void on_btnImagesImport_clicked();
 
@@ -203,7 +186,11 @@ private slots:
 
     void on_spbimgunk14_valueChanged(int arg1);
 
-    void on_tblseqfrmlst_activated(const QModelIndex &index);
+    //void on_tblseqfrmlst_activated(const QModelIndex &index);
+
+    //Animation Preview stuff
+//    void OnPreviewRangeChanged(int length);
+//    void OnPreviewFrameChanged(int curfrm, QRectF area);
 
 signals:
 
@@ -218,7 +205,7 @@ private:
     DialogProgressBar       m_progress;
     QScopedPointer<FrameEditor> m_frmeditor;
 
-    SceneRenderer           m_previewrender;
+    //SpriteScene             m_previewrender;
     QString                 m_lastSavePath;
     QPersistentModelIndex   m_cursprite;
     QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
@@ -259,39 +246,5 @@ private:
     }
 };
 
-//======================================================================================
-//  TVSpritesContextMenu
-//======================================================================================
-class TVSpritesContextMenu : public QMenu
-{
-    Q_OBJECT
-
-    QPersistentModelIndex m_itemidx;
-    TreeElement * m_pitem;
-    QPointer<MainWindow> m_pmainwindow;
-
-public:
-    TVSpritesContextMenu( MainWindow * mainwindow, const QModelIndex & item, QWidget * parent = nullptr );
-
-    void BuildMenu();
-
-public:
-    void ShowProperties();
-
-    void SaveDump();
-
-    void RemoveEntry();
-
-signals:
-    void afterclosed();
-
-    // QWidget interface
-protected:
-    virtual void closeEvent(QCloseEvent *event) override
-    {
-        QWidget::closeEvent(event);
-        emit afterclosed();
-    }
-};
 
 #endif // MAINWINDOW_H

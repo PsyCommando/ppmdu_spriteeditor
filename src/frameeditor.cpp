@@ -1,5 +1,5 @@
 #include "frameeditor.hpp"
-
+#include <src/randomgenhelper.hpp>
 
 const int FrameEditorSceneWidth  = 512;
 const int FrameEditorSceneHeight = 256;
@@ -11,16 +11,15 @@ const int FrameEditorSceneYPos   = 0;
 //=======================================================================================================
 FramePart::FramePart(const QPixmap &framepart, int framepartid, FrameEditor *pfrmedit, QGraphicsItem *parent)
     :QObject(nullptr),
-      QGraphicsPixmapItem(framepart,parent),
-      m_partid(framepartid),
-      m_frmedit(pfrmedit),
-      m_bshowoutline(true)
+      QGraphicsPixmapItem(framepart,parent)
 {
+    m_partid = framepartid;
+    m_frmedit = pfrmedit;
     //        int h = 0, s = 0, v= 0;
     //        m_overlayColor.getHsv(&h, &s, &v);
     //        m_overlayColor.setHsv(h,s/2,v/2,200);
-    m_overlayColor= QColor::fromHsv(qrand() % 255, 200, 128, 200);
-    m_overlayColor = m_overlayColor.light(100);
+    m_overlayColor= QColor::fromHsv(GetRandomGenerator().generate() % 255, 200, 128, 200);
+    m_overlayColor = m_overlayColor.lighter(100);
     setCursor(Qt::OpenHandCursor);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton);
     setAcceptHoverEvents(true);
@@ -240,12 +239,7 @@ void FramePart::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 //=======================================================================================================
 FrameEditor::FrameEditor(MFrame *frm, QObject *parent)
     :QGraphicsScene(parent),
-      m_pfrm(frm),
-      m_gridsz(8),
-      m_midmarkZ(99),
-      m_bDrawMiddleMarker(true),
-      m_bTransparency(false),
-      m_bDrawOutline(true)
+      m_pfrm(frm)
 {
     //setBackgroundBrush(QBrush(QColor::fromHsv(195, 6, 25)));
 }
@@ -307,7 +301,7 @@ void FrameEditor::initScene()
 
     QGraphicsSimpleTextItem* txt = addSimpleText(QString(tr("CNTR X:%1")).arg(FrameEditorSceneWidth/2));
     txt->setPos((FrameEditorSceneWidth/2), 128);
-    txt->setBrush( QBrush(midcolor.light(200)) );
+    txt->setBrush( QBrush(midcolor.lighter(200)) );
     txt->setParentItem(ln);
 }
 
@@ -441,7 +435,7 @@ void FrameEditor::drawBackground(QPainter *painter, const QRectF &rect)
     painter->drawLine( 0, FrameEditorSceneHeight, FrameEditorSceneWidth, FrameEditorSceneHeight);
     painter->drawLine( FrameEditorSceneWidth, 0, FrameEditorSceneWidth, FrameEditorSceneHeight);
 
-    painter->setPen(QPen(QBrush(limitcolor.light(200)), 2));
+    painter->setPen(QPen(QBrush(limitcolor.lighter(200)), 2));
     painter->drawText(FrameEditorSceneWidth - 48, 12, QString(tr("MAX X:%1")).arg(FrameEditorSceneWidth));
     painter->drawText(0, FrameEditorSceneHeight, QString(tr("MAX Y(V Wrap):%1")).arg(FrameEditorSceneHeight));
 
@@ -460,14 +454,14 @@ Most mouse types work in steps of 15 degrees, in which case the delta value is a
     invalidate();
 }
 
-void FrameEditor::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+void FrameEditor::contextMenuEvent(QGraphicsSceneContextMenuEvent */*event*/)
 {
 }
 
-void FrameEditor::keyPressEvent(QKeyEvent *event)
+void FrameEditor::keyPressEvent(QKeyEvent */*event*/)
 {
 }
 
-void FrameEditor::keyReleaseEvent(QKeyEvent *event)
+void FrameEditor::keyReleaseEvent(QKeyEvent */*event*/)
 {
 }

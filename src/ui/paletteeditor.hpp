@@ -15,7 +15,7 @@
 #include <QGraphicsRectItem>
 
 #include <src/sprite_img.hpp>
-#include <src/spritemanager.h>
+#include <src/spritemanager.hpp>
 #include <src/ppmdu/utils/color_utils.hpp>
 
 namespace Ui {

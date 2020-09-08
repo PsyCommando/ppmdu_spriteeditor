@@ -1,4 +1,4 @@
-#include "spritemanager.h"
+#include "spritemanager.hpp"
 #include <src/extfmt/riff_palette.hpp>
 #include <src/extfmt/text_palette.hpp>
 #include <src/extfmt/gpl_palette.hpp>
@@ -32,33 +32,24 @@ namespace spr_manager
 
     int SpriteManager::SaveContainer()
     {
-        if(!m_container)
-        {
-            qWarning("No container loaded!");
-            return 0;
-        }
-        return m_container->WriteContainer();
+        if(!IsContainerLoaded())
+            throw ExNoContainer("SpriteManager::ExportContainer(): No container loaded!");
+        return SaveContainer(m_container->GetContainerSrcPath());
     }
 
     int SpriteManager::SaveContainer(const QString &fname)
     {
-        if(!m_container)
-        {
-            qWarning("No container loaded!");
-            return 0;
-        }
+        if(!IsContainerLoaded())
+            throw ExNoContainer("SpriteManager::ExportContainer(): No container loaded!");
         m_container->SetContainerSrcPath(fname);
         return m_container->WriteContainer();
     }
 
     void SpriteManager::ExportContainer(const QString &fname)
     {
-        if(!m_container)
-        {
-            qWarning("No container loaded!");
-            return;
-        }
-        fname;
+        if(!IsContainerLoaded())
+            throw ExNoContainer("SpriteManager::ExportContainer(): No container loaded!");
+        m_container->ExportContainer(fname);
     }
 
     SpriteContainer * SpriteManager::ImportContainer(const QString &fname)
@@ -173,18 +164,18 @@ namespace spr_manager
         case ePaletteDumpType::RIFF_Pal:
             {
                 qDebug("Exporting RIFF Palette\n");
-                fdata = qMove(utils::ExportTo_RIFF_Palette(pal, utils::ARGBToComponents)); //sice QRgb is ARGB, we use this decoder!
+                fdata = utils::ExportTo_RIFF_Palette(pal, utils::ARGBToComponents); //sice QRgb is ARGB, we use this decoder!
                 qDebug("Exporting RIFF Palette, conversion complete!\n");
                 break;
             }
         case ePaletteDumpType::TEXT_Pal:
             {
-                fdata = qMove(utils::ExportPaletteAsTextPalette(pal, utils::ARGBToComponents));
+                fdata = utils::ExportPaletteAsTextPalette(pal, utils::ARGBToComponents);
                 break;
             }
         case ePaletteDumpType::GIMP_PAL:
             {
-                fdata = qMove(utils::ExportGimpPalette(pal, utils::ARGBToComponents));
+                fdata = utils::ExportGimpPalette(pal, utils::ARGBToComponents);
                 break;
             }
         default:
@@ -196,7 +187,7 @@ namespace spr_manager
         if(!sf.open( QSaveFile::WriteOnly ))
             throw std::runtime_error(QString("SpriteManager::DumpPalette(): Couldn't open file \"%1\" for writing!\n").arg(path).toStdString());
 
-        if( sf.write( (char*)fdata.data(), fdata.size() ) < fdata.size() )
+        if( sf.write( (char*)fdata.data(), fdata.size() ) < static_cast<qint64>(fdata.size()) )
             qWarning("SpriteManager::DumpPalette(): The amount of bytes written to file differs from the expected filesize!\n");
 
         qDebug("Exporting RIFF Palette, written! Now commiting\n");
@@ -227,19 +218,22 @@ namespace spr_manager
         case ePaletteDumpType::RIFF_Pal:
             {
                 //can't use move here since we need the implicit convertion on copy
-                spr->setPalette( QVector<QRgb>::fromStdVector( utils::ImportFrom_RIFF_Palette(fdata, utils::RGBToARGB) ) ); //since QRgb is ARGB, we use this encoder!
+                std::vector<uint32_t> imported = utils::ImportFrom_RIFF_Palette(fdata, utils::RGBToARGB);
+                spr->setPalette(QVector<QRgb>(imported.begin(), imported.end())); //since QRgb is ARGB, we use this encoder!
                 break;
             }
         case ePaletteDumpType::TEXT_Pal:
             {
                 //can't use move here since we need the implicit convertion on copy
-                spr->setPalette( QVector<QRgb>::fromStdVector( utils::ImportPaletteAsTextPalette(fdata, utils::RGBToARGB) ) );
+                std::vector<uint32_t> imported = utils::ImportPaletteAsTextPalette(fdata, utils::RGBToARGB);
+                spr->setPalette( QVector<QRgb>(imported.begin(), imported.end()) );
                 break;
             }
         case ePaletteDumpType::GIMP_PAL:
             {
                 //can't use move here since we need the implicit convertion on copy
-                spr->setPalette( QVector<QRgb>::fromStdVector( utils::ImportGimpPalette(fdata, utils::RGBToARGB) ) );
+                std::vector<uint32_t> imported = utils::ImportGimpPalette(fdata, utils::RGBToARGB);
+                spr->setPalette( QVector<QRgb>(imported.begin(), imported.end()) );
                 break;
             }
         case ePaletteDumpType::PNG_PAL:
@@ -288,4 +282,20 @@ namespace spr_manager
         return tr("NONE");
     }
 
+    //Incremental load
+    void SpriteManager::fetchMore(const QModelIndex &parent)
+    {
+        if(m_container)
+            m_container->fetchMore(parent);
+    }
+
+    bool SpriteManager::canFetchMore(const QModelIndex &parent) const
+    {
+        if(m_container)
+            return m_container->canFetchMore(parent);
+        return false;
+    }
+
 };
+
+

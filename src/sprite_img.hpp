@@ -99,10 +99,10 @@ public:
         UID,
         Depth,
         Resolution,
-        NbColumns,
+        NbColumns [[maybe_unused]],
 
-        direct_Unk2,    //Extra columns that don't count
-        direct_Unk14,
+        direct_Unk2 [[maybe_unused]],    //Extra columns that don't count
+        direct_Unk14 [[maybe_unused]],
     };
 
 
@@ -165,10 +165,10 @@ public:
         m_depth = 4;
         QVector<QRgb> dummy(16);
         if(isTiled)
-            m_raw = qMove( utils::Untile( w, h, utils::Expand4BppTo8Bpp(img.data) ) );
+            m_raw = utils::Untile( w, h, utils::Expand4BppTo8Bpp(img.data) );
         else
             m_raw = img.data;
-        m_img = qMove( utils::RawToImg(w, h, m_raw, dummy) );
+        m_img = utils::RawToImg(w, h, m_raw, dummy);
         m_unk2 = img.unk2;
         m_unk14 = img.unk14;
     }
@@ -180,13 +180,13 @@ public:
         fmt::ImageDB::img_t img;
 
         if(tiled)
-            img.data = qMove(utils::Reduce8bppTo4bpp(utils::TileFromImg(m_img)));
+            img.data = utils::Reduce8bppTo4bpp(utils::TileFromImg(m_img));
         else
-            img.data = std::move(utils::Reduce8bppTo4bpp(m_img));
+            img.data = utils::Reduce8bppTo4bpp(m_img);
 
         img.unk2 = m_unk2;
         img.unk14 = m_unk14;
-        return qMove(img);
+        return img;
     }
 
     void importImage8bpp(const fmt::ImageDB::img_t & img, int w, int h, bool isTiled)
@@ -195,11 +195,11 @@ public:
         QVector<QRgb> dummy(256);
 
         if(isTiled)
-            m_raw = qMove( utils::Untile(w, h, img.data) );
+            m_raw = utils::Untile(w, h, img.data);
         else
             m_raw = img.data;
 
-        m_img = qMove( utils::RawToImg(w, h, m_raw, dummy) );
+        m_img = utils::RawToImg(w, h, m_raw, dummy);
         m_unk2 = img.unk2;
         m_unk14 = img.unk14;
     }
@@ -211,12 +211,12 @@ public:
         fmt::ImageDB::img_t img;
 
         if(tiled)
-            img.data = qMove(utils::TileFromImg(m_img));
+            img.data = utils::TileFromImg(m_img);
         else
-            img.data = qMove(utils::ImgToRaw(m_img));
+            img.data = utils::ImgToRaw(m_img);
         img.unk2 = m_unk2;
         img.unk14 = m_unk14;
-        return qMove(img);
+        return img;
     }
 
     /*
@@ -495,20 +495,22 @@ public:
 
         if( orientation == Qt::Orientation::Vertical )
         {
-            return std::move(QVariant( QString("%1").arg(section) ));
+            return QVariant( QString("%1").arg(section) );
         }
         else if( orientation == Qt::Orientation::Horizontal )
         {
             switch(static_cast<Image::eColumnType>(section))
             {
             case Image::eColumnType::Preview:
-                return std::move(QVariant( QString("") ));
+                return QVariant( QString("") );
             case Image::eColumnType::UID:
-                return std::move(QVariant( QString("UID") ));
+                return QVariant( QString("UID") );
             case Image::eColumnType::Depth:
-                return std::move(QVariant( QString("Bit Depth") ));
+                return QVariant( QString("Bit Depth") );
             case Image::eColumnType::Resolution:
-                return std::move(QVariant( QString("Resolution") ));
+                return QVariant( QString("Resolution") );
+            default:
+                return QVariant(); //Avoid warning for unhandled enum values
             };
         }
         return QVariant();

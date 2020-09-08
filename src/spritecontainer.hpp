@@ -10,7 +10,7 @@
 #include <QDebug>
 #include <cstdint>
 #include <QtConcurrent/QtConcurrent>
-#include "sprite.h"
+#include "sprite.hpp"
 #include <src/treeelem.hpp>
 /*
 */
@@ -46,7 +46,7 @@ namespace spr_manager
         SpriteContainer & operator=(const SpriteContainer&) = delete;
         SpriteContainer & operator=(SpriteContainer&&) = delete;
         virtual ~SpriteContainer();
-        void clone(const TreeElement */*other*/);
+        void clone(const TreeElement */*other*/)override;
 
         //
         bool ContainerLoaded()const;
@@ -171,6 +171,8 @@ namespace spr_manager
         bool removeChildrenNodes(int position, int count)override;
         bool moveChildrenNodes  (int srcrow, int count, int destrow)override;
         bool nodeIsMutable()const override;
+        bool canFetchMore(const QModelIndex & parent)const override;
+        void fetchMore(const QModelIndex & parent)override;
 
     private:
         void FetchToC( QDataStream & fdat );

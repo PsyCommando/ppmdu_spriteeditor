@@ -1,4 +1,4 @@
-#include "processingconsole.h"
+#include "processingconsole.hpp"
 #include "ui_processingconsole.h"
 
 ProcessingConsole::ProcessingConsole(QWidget *parent) :

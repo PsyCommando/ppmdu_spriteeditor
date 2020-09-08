@@ -7,6 +7,7 @@
 #include <QAbstractItemModel>
 #include <QMutex>
 #include <QMutexLocker>
+#include <src/treeelemtypes.hpp>
 
 //enum struct eTreeElemType
 //{
@@ -16,25 +17,7 @@
 
 class Sprite; //forward declaration
 
-enum struct eTreeElemDataType
-{
-    None,
-    sprite,
-    effectOffsets,
-    palette,
-    images,
-    image,
-    frames,
-    frame,
-    framepart,
-    animSequences,
-    animSequence,
-    animTable,
-    animGroup,
-    animFrame,
 
-    INVALID,
-};
 
 //**************************************************************************************
 //  TreeElement
@@ -44,11 +27,6 @@ class TreeElement
 {
     friend class BaseTreeNodeModel;
 public:
-//    static constexpr Qt::ItemFlags DEFFlags()
-//    {
-//        return Qt::ItemFlags(Qt::ItemFlag::ItemIsSelectable | Qt::ItemFlag::ItemIsEnabled);
-//    }
-
     static constexpr const Qt::ItemFlags DEFFlags()
     {
         return Qt::ItemFlags{Qt::ItemFlag::ItemIsSelectable, Qt::ItemFlag::ItemIsEnabled};
@@ -108,6 +86,9 @@ public:
     virtual bool            removeChildrenNodes(int position, int count)=0;
     virtual bool            moveChildrenNodes(int srcrow, int count, int destrow)=0;
     virtual int             indexOfNode( TreeElement * ptr )const = 0;
+
+    virtual bool            canFetchMore(const QModelIndex & parent)const{return false;}
+    virtual void            fetchMore(const QModelIndex & parent){}
 
 //    eTreeElemType           getElemTy()const { return m_elemty; }
 //    void                    setElemTy( eTreeElemType ty ) { m_elemty = ty; }
@@ -340,7 +321,7 @@ public:
                           int destinationChild) override
     {
         TreeElement *srcparentItem = getItem(sourceParent);
-        TreeElement *destparentItem = getItem(destinationParent);
+        //TreeElement *destparentItem = getItem(destinationParent);
 
         if( destinationParent == sourceParent && sourceRow == destinationChild )
             return true;

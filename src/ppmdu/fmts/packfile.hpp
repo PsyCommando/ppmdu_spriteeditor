@@ -113,7 +113,7 @@ namespace fmt
             if( sz > std::numeric_limits<uint32_t>::max() )
                 throw std::overflow_error("PackFileWriter::AppendSubFile(): File is longer than a 32 bit unsigned integer can contain!");
 
-            packfile_hdr::fentry curentry{ m_data.size(), static_cast<uint32_t>(sz) };
+            packfile_hdr::fentry curentry{ static_cast<uint32_t>(m_data.size()), static_cast<uint32_t>(sz) };
 
             itput = std::copy( beg, end, itput );
 
@@ -130,7 +130,7 @@ namespace fmt
             std::lock_guard<std::mutex> lk(m_mtx);
             //Calculate Header + toc + padding len
             size_t hdrlen       = 8 + ((m_hdr.tocentries.size() + 1) * packfile_hdr::SzFEntry);
-            size_t hdrandpadlen = utils::CalculatePaddedLengthTotal(hdrlen, AlignHeaderOn);
+            size_t hdrandpadlen = utils::CalculatePaddedLengthTotal(hdrlen, static_cast<size_t>(AlignHeaderOn));
 
             //Write Leading 0
             where = utils::writeBytesFrom( static_cast<uint32_t>(0), where );

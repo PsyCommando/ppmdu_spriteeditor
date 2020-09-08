@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 #include "ui_mainwindow.h"
 #include <QApplication>
 #include <QFileDialog>
@@ -11,67 +11,36 @@
 #include <src/ui/diagsingleimgcropper.hpp>
 #include <src/ui/dialogabout.hpp>
 #include <src/ui/paletteeditor.hpp>
+#include <src/ui/tvspritescontextmenu.hpp>
+#include <src/ui/errorhelper.hpp>
 
-
+static const QString MAIN_WINDOW_TITLE = "PMD2 Sprite Muncher v%1";
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    m_previewrender(true),
-    m_aboutdiag(this),
     m_imgNoImg(":/imgs/resources/imgs/noimg.png"),
+    m_aboutdiag(this),
     m_progress(this),
-    m_settings("./settings.ini",QSettings::Format::IniFormat)/*,
-    m_cursprite(nullptr)*/
+    m_settings("./settings.ini",QSettings::Format::IniFormat)
 {
     //Resources alloc
     m_pStatusFileType.reset(new QLabel("     "));
-    setWindowTitle(QString("PMD2 Sprite Muncher v%1").arg(QString(GIT_MAJORMINOR_VERSION)));
+    setWindowTitle(MAIN_WINDOW_TITLE.arg(QString(GIT_MAJORMINOR_VERSION)));
+
+    //Setup error helper
+    ErrorHelper::getInstance().setMainWindow(this);
 
     //UI init
     ui->setupUi(this);
 
+    //Setup references to main window in tabs
+    ui->tabAnimTable->setMainWindow(this);
+    ui->tabSequence->setMainWindow(this);
+
     //Parse settings!
     readSettings();
 
-    //Connect stuff
-    connect( ui->chkAnimSeqLoop,&QCheckBox::toggled,    &m_previewrender, &SceneRenderer::loopChanged );
-    connect( ui->btnSeqPlay,    &QPushButton::clicked,  &m_previewrender, &SceneRenderer::startAnimUpdates );
-    connect( ui->btnSeqStop,    &QPushButton::clicked,  &m_previewrender, &SceneRenderer::stopAnimUpdates );
-
-    connect( &m_previewrender, &SceneRenderer::rangechanged, [&](int min, int max)
-    {
-        //Set this so we don't end up with messed up logic!
-        ui->spinCurFrm->blockSignals(true);
-        ui->spinCurFrm->setRange(min, max);
-        ui->spinCurFrm->blockSignals(false);
-
-        ui->sldrAnimSeq->blockSignals(true);
-        ui->sldrAnimSeq->setRange(min, max);
-        ui->sldrAnimSeq->blockSignals(false);
-    });
-
-    connect( &m_previewrender, &SceneRenderer::framechanged, [&](int frm)
-    {
-        //Set this so we don't end up with messed up logic!
-        ui->spinCurFrm->blockSignals(true);
-        ui->spinCurFrm->setValue(frm);
-        ui->spinCurFrm->blockSignals(false);
-
-        ui->sldrAnimSeq->blockSignals(true);
-        ui->sldrAnimSeq->setValue(frm);
-        ui->sldrAnimSeq->blockSignals(false);
-    });
-
-    connect(ui->sldrAnimSeq, &QSlider::sliderMoved, [&](int val)
-    {
-        ui->spinCurFrm->blockSignals(true);
-        ui->spinCurFrm->setValue(val);
-        ui->spinCurFrm->blockSignals(false);
-        m_previewrender.setCurrentFrame(val);
-    });
-
-    ui->gvAnimSeqViewport->setScene(&m_previewrender.getAnimScene());
     ui->tv_sprcontent->setModel( &spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
 
@@ -82,16 +51,24 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->spbimgunk14->setRange(0, std::numeric_limits<uint16_t>::max());
 
     DisplayStartScreen();
-    InitAnimScene();
 }
 
 MainWindow::~MainWindow()
 {
     qDebug("MainWindow::~MainWindow()\n");
+
+    //Gotta do some special handling to avoid things accessing sprites from breaking things
+    ui->tabAnimTable->OnDestruction();
+    ui->tabSequence->OnDestruction();
+
+    //Get rid of the ui
     delete ui;
 
     //Delete the sprite container before the Qt framework is unloaded!
     spr_manager::SpriteManager::Instance().CloseContainer();
+
+    //Clear error helper
+    ErrorHelper::getInstance().setMainWindow(nullptr);
 }
 
 //
@@ -117,45 +94,57 @@ void MainWindow::readSettings()
 void MainWindow::HideAllTabs()
 {
     //Disable updates temporarily
-    ui->tabMain->setUpdatesEnabled(false);
+    //ui->stkEditor->setUpdatesEnabled(false);
 
     //Stop any animations
-    InitAnimScene();
+//    HideAnimSequencePage();
 
     //Remove tabs from the widget
-    ui->tabMain->removeWidget(ui->tabAnimTable);
-    ui->tabMain->removeWidget(ui->tabEfx);
-    ui->tabMain->removeWidget(ui->tabFrame);
-    ui->tabMain->removeWidget(ui->tabSequence);
-    ui->tabMain->removeWidget(ui->tabProperties);
-    ui->tabMain->removeWidget(ui->tabWelcome);
-    ui->tabMain->removeWidget(ui->tabImages);
+//    ui->stkEditor->removeWidget(ui->tabAnimTable);
+//    ui->stkEditor->removeWidget(ui->tabEfx);
+//    ui->stkEditor->removeWidget(ui->tabFrame);
+//    ui->stkEditor->removeWidget(ui->tabSequence);
+//    ui->stkEditor->removeWidget(ui->tabProperties);
+//    ui->stkEditor->removeWidget(ui->tabWelcome);
+//    ui->stkEditor->removeWidget(ui->tabImages);
 
     //Hide all removed tabs
-    ui->tabAnimTable->hide();
-    ui->tabEfx->hide();
-    ui->tabFrame->hide();
-    ui->tabSequence->hide();
-    ui->tabProperties->hide();
-    ui->tabWelcome->hide();
-    ui->tabImages->hide();
+    //ui->tabEfx->hide();
+    //ui->tabFrame->hide();
+    //ui->tabProperties->hide();
+    //ui->tabWelcome->hide();
+    //ui->tabImages->hide();
+
+    //New tabs
+    if(ui->stkEditor->currentWidget() == ui->tabSequence)
+        ui->tabSequence->OnHideTab();
+    if(ui->stkEditor->currentWidget() == ui->tabAnimTable)
+        ui->tabAnimTable->OnHideTab();
 
     //Clear the property tab's preview
     ui->lbl_imgpreview->clear();
     ui->lbl_imgpreview->setPixmap(m_imgNoImg);
 
-    ui->tabMain->setUpdatesEnabled(true);
+    ui->stkEditor->setCurrentWidget(ui->tabEmpty);
+    //ui->stkEditor->setUpdatesEnabled(true);
 }
 
 void MainWindow::ShowATab(QWidget *ptab)
 {
     Q_ASSERT(ptab);
-    HideAllTabs();
     qDebug() << "MainWindow::ShowATab(): Hiding tabs!\n";
-    ui->tabMain->insertWidget(0, ptab );
-    qDebug() << "MainWindow::ShowATab(): Adding tab to be displayed!\n";
-    ptab->show();
+    HideAllTabs();
+    qDebug() << "MainWindow::ShowATab(): Displaying tab!\n";
+    ui->stkEditor->setCurrentWidget(ptab);
     qDebug() << "MainWindow::ShowATab(): Tab displayed!\n";
+    ui->stkEditor->update(ui->stkEditor->rect());
+}
+
+void MainWindow::ShowATab(BaseSpriteTab *ptab)
+{
+    //#TODO: Placeholder for the refactor!!!
+    Q_ASSERT(ptab);
+    ShowATab(ptab);
 }
 
 void MainWindow::DisplayStartScreen()
@@ -171,8 +160,6 @@ void MainWindow::DisplayEffectsPage(Sprite *spr)
     ShowATab(ui->tabEfx);
 }
 
-
-
 void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
 {
     ui->tv_sprcontent->setModel( & spr_manager::SpriteManager::Instance() );
@@ -183,14 +170,14 @@ void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
     //Display!
     if(sprcnt && sprcnt->hasChildren())
     {
-        m_cursprite = /*QPersistentModelIndex(*/sprcnt->modelIndexOfNode(&sprcnt->GetSprite(0))/*)*/;
+        m_cursprite = sprcnt->modelIndexOfNode(&sprcnt->GetSprite(0));
         DisplayPropertiesPage(&sprcnt->GetSprite(0));
     }
     ui->tv_sprcontent->repaint();
     setWindowFilePath(sprcnt->GetContainerSrcPath());
 }
 
-void MainWindow::setupFrameEditPageForPart(MFrame *frm, MFramePart *part)
+void MainWindow::setupFrameEditPageForPart(MFrame */*frm*/, MFramePart */*part*/)
 {
 //    if(!frm || !part)
 //    {
@@ -216,20 +203,31 @@ void MainWindow::PrepareForNewContainer()
     lambdaClearModel(ui->tv_sprcontent);
     lambdaClearModel(ui->tblframeparts);
     lambdaClearModel(ui->tblProperties);
-    lambdaClearModel(ui->tblseqfrmlst);
+    //lambdaClearModel(ui->tblseqfrmlst);
     lambdaClearModel(ui->tblviewImages);
+
+    ui->tabSequence->PrepareForNewContainer();
+    ui->tabAnimTable->PrepareForNewContainer();
 }
 
 void MainWindow::LoadContainer(const QString &path)
 {
     PrepareForNewContainer();
-    //Open
-    qInfo() <<"MainWindow::LoadContainer() : " <<path <<"!\n";
-    spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().OpenContainer(path);
-    qInfo() <<"\nLoaded!\n";
-    m_lastSavePath = path;
 
-    SetupUIForNewContainer(sprcnt);
+    //Pre-check if file exists
+    if(QFile::exists(path))
+    {
+        //Open
+        qInfo() <<"MainWindow::LoadContainer() : " <<path <<"!\n";
+        spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().OpenContainer(path);
+        qInfo() <<"\nLoaded!\n";
+        m_lastSavePath = path;
+        SetupUIForNewContainer(sprcnt);
+    }
+    else
+    {
+        qInfo() << "Failed to open file \"" <<path <<"\"!";
+    }
 }
 
 void MainWindow::SaveContainer(const QString &path)
@@ -303,8 +301,7 @@ void MainWindow::OnActionAddSprite()
 void MainWindow::OnActionRemSprite()
 {
     qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
-    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
-    Q_ASSERT(false);
+    spr_manager::SpriteManager::Instance().RemSpriteFromContainer(m_cursprite);
 }
 
 QPixmap MainWindow::RenderNoImageSvg()
@@ -326,7 +323,7 @@ void MainWindow::on_action_Open_triggered()
     if(fileName.isNull())
         return;
 
-    //Check if a sprite was open and ask to save changes!
+    //Check if a sprite was opened and ask to save changes!
     //DO OPEN FILE HERE!
     if( sprman.IsContainerLoaded() )
     {
@@ -361,10 +358,15 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
         return;
 
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Expanding! Disabling updates!\n";
-    ui->tv_sprcontent->setUpdatesEnabled(false);
+    //ui->tv_sprcontent->setUpdatesEnabled(false);
     pcur->OnExpanded();
+    //ui->tv_sprcontent->dataChanged(index, index); //Make sure we display expandable items properly if we just loaded them!
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Changing current index!\n";
-    ui->tv_sprcontent->setCurrentIndex(index);
+    //ui->tv_sprcontent->setCurrentIndex(index);
+
+//    ui->tv_sprcontent->setUpdatesEnabled(false);
+//    ui->tv_sprcontent->expand(index);
+//    ui->tv_sprcontent->setUpdatesEnabled(true);
 
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Opening proper tab!\n";
     switch( pcur->getNodeDataTy() )
@@ -380,7 +382,7 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
         break;
     };
     qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Enabling updates!\n";
-    ui->tv_sprcontent->setUpdatesEnabled(true);
+    //ui->tv_sprcontent->setUpdatesEnabled(true);
     ui->tv_sprcontent->viewport()->update();
 }
 
@@ -448,8 +450,8 @@ void MainWindow::on_actionNewSprite_triggered()
 
 void MainWindow::on_actionNewSprite_Pack_File_triggered()
 {
-    spr_manager::SpriteManager   & sprman = spr_manager::SpriteManager::Instance();
-    spr_manager::SpriteContainer * sprcnt = sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::PACK );
+    //spr_manager::SpriteManager   & sprman = spr_manager::SpriteManager::Instance();
+    //spr_manager::SpriteContainer * sprcnt = sprman.NewContainer( spr_manager::SpriteContainer::eContainerType::PACK );
 
     //Display!
     updateActions();
@@ -513,11 +515,6 @@ void MainWindow::Warn(const QString &title, const QString &text)
     msgBox.exec();
 }
 
-void MainWindow::InitAnimScene()
-{
-    m_previewrender.Reset();
-}
-
 void MainWindow::ShowStatusMessage(const QString &msg)
 {
     ui->statusBar->showMessage( msg, 8000);
@@ -540,6 +537,22 @@ void MainWindow::ShowStatusErrorMessage(const QString &msg)
     QTimer::singleShot( 8000, m_pStatusError.data(), &QLabel::hide );
 }
 
+void MainWindow::HandleItemRemoval(QModelIndex spriteidx)
+{
+    if(currentSpriteModelIndex() == spriteidx)
+    {
+        HideAllTabs(); //Deselect everything if we're deleting the current entry
+        ui->tblframeparts->setModel(nullptr);
+        QModelIndex parentidx = ui->tv_sprcontent->currentIndex().parent();
+        if(parentidx.isValid())
+            ui->tv_sprcontent->setCurrentIndex(parentidx);
+        else
+            ui->tv_sprcontent->setCurrentIndex(QModelIndex());
+    }
+    ui->tv_sprcontent->model()->removeRow( spriteidx.row(), spriteidx.parent() );
+    ShowStatusMessage( QString(tr("Entry removed!")) );
+}
+
 void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
 {
     this->on_tv_sprcontent_clicked(index);
@@ -550,6 +563,8 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
     TreeElement * pcur = spr_manager::SpriteManager::Instance().getItem(index);
     if(!pcur)
         return;
+
+    ui->tv_sprcontent->update();
 
     //Handle the clicking
     pcur->OnClicked();
@@ -562,10 +577,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         return;
     }
     if(!pspr->wasParsed())
-    {
-        qInfo("MainWindow::on_tv_sprcontent_clicked(): Parent sprite was not parsed for some reasons.. Parsing..");
-        pspr->ParseSpriteData();
-    }
+        pspr->ParseSpriteData(); //Make sure its parsed before displaying!!
 
     if(pcur->getNodeDataTy() < eTreeElemDataType::INVALID &&
             pcur->getNodeDataTy() != eTreeElemDataType::None &&
@@ -596,7 +608,8 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             AnimTable   * tbl = static_cast<AnimTable*>(pcur);
             Sprite      * spr = tbl->parentSprite();
-            DisplayAnimTablePage(spr);
+            ui->stkEditor->setCurrentWidget(ui->tabAnimTable);
+            ui->tabAnimTable->OnShowTab(spr, index);
             break;
         }
     case eTreeElemDataType::frame:
@@ -625,7 +638,8 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         {
             AnimSequence    * seq   = static_cast<AnimSequence*>(pcur);
             Sprite          * spr   = seq->parentSprite();
-            DisplayAnimSequencePage(spr,seq);
+            ui->stkEditor->setCurrentWidget(ui->tabSequence);
+            ui->tabSequence->OnShowTab(spr, index);
             break;
         }
     case eTreeElemDataType::palette:
@@ -633,7 +647,7 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
     default:
         HideAllTabs();
     };
-    ui->tv_sprcontent->viewport()->update();
+    //ui->tv_sprcontent->viewport()->update();
 }
 
 void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
@@ -679,7 +693,12 @@ Sprite * MainWindow::currentSprite()
 //        //This mean, we've selected the sprite itself, so return that!
 //        spr = static_cast<Sprite*>(elem);
 //    }
-//    return spr;
+    //    return spr;
+}
+
+QModelIndex MainWindow::currentSpriteModelIndex()
+{
+    return m_cursprite;
 }
 
 MFrame *MainWindow::currentFrame()
@@ -734,108 +753,7 @@ void MainWindow::ShowProgressDiag(QFuture<void> &task)
 }
 
 
-//===================================================================================================================
-// TVSpritesContextMenu
-//===================================================================================================================
-TVSpritesContextMenu::TVSpritesContextMenu( MainWindow * mainwindow,
-                                            const QModelIndex & item,
-                                            QWidget * parent)
-    :QMenu(parent),
-      m_pitem(static_cast<TreeElement*>(item.internalPointer())),
-      m_itemidx(item),
-      m_pmainwindow(mainwindow)
-{
-    BuildMenu();
-}
-
-void TVSpritesContextMenu::BuildMenu()
-{
-
-    //Common default actions:
-    switch(m_pitem->getNodeDataTy())
-    {
-    case eTreeElemDataType::sprite:
-        {
-            addAction(tr("properties"),   this, &TVSpritesContextMenu::ShowProperties);
-            addAction(tr("dump.."),       this, &TVSpritesContextMenu::SaveDump);
-            break;
-        }
-    default:
-        break;
-    };
-
-    if(m_pitem->nodeIsMutable())
-    {
-        addAction(tr("remove"), this, &TVSpritesContextMenu::RemoveEntry);
-    }
-
-}
-
-void TVSpritesContextMenu::ShowProperties()
-{
-    Q_ASSERT(m_pitem && m_pmainwindow && m_pitem->getNodeDataTy() == eTreeElemDataType::sprite);
-    m_pmainwindow->DisplayPropertiesPage(static_cast<Sprite*>(m_pitem));
-    close();
-}
-
-void TVSpritesContextMenu::SaveDump()
-{
-    Q_ASSERT(m_pitem && m_pmainwindow && m_itemidx.isValid());
-    spr_manager::SpriteManager & sprman = spr_manager::SpriteManager::Instance();
-    QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
-                                                    tr("Save Sprite Dump As"),
-                                                    QString(),
-                                                    QString("%1;;%2")
-                                                    .arg(m_pmainwindow->WanFileFilter())
-                                                    .arg(m_pmainwindow->WatFileFilter()) );
-
-    if(filename.isNull())
-    {
-        close();
-        return;
-    }
-
-    sprman.DumpSprite(m_itemidx, filename);
-    m_pmainwindow->ShowStatusMessage( QString(tr("Sprite dumped!")) );
-    close();
-}
-
-void TVSpritesContextMenu::RemoveEntry()
-{
-    Q_ASSERT(m_pitem && m_pmainwindow && m_itemidx.isValid());
-    TreeElement * pparent = m_pitem->parentNode();
-    if(!pparent)
-    {
-        m_pmainwindow->ShowStatusErrorMessage( QString(tr("Entry to remove is invalid!")) );
-        close();
-        return;
-    }
-    if(m_pitem->getNodeDataTy() == eTreeElemDataType::sprite &&
-       !spr_manager::SpriteManager::Instance().ContainerIsPackFile())
-    {
-        m_pmainwindow->ShowStatusErrorMessage( QString(tr("Cannot delete the main sprite!")) );
-        close();
-        return;
-    }
-
-
-    if(m_pmainwindow->ui->tv_sprcontent->currentIndex() == m_itemidx)
-    {
-        m_pmainwindow->HideAllTabs(); //Deselect everything if we're deleting the current entry
-        m_pmainwindow->ui->tblframeparts->setModel(nullptr);
-        QModelIndex parentidx = m_pmainwindow->ui->tv_sprcontent->currentIndex().parent();
-        if(parentidx.isValid())
-            m_pmainwindow->ui->tv_sprcontent->setCurrentIndex(parentidx);
-        else
-            m_pmainwindow->ui->tv_sprcontent->setCurrentIndex(QModelIndex());
-    }
-    m_pmainwindow->ui->tv_sprcontent->model()->removeRow( m_itemidx.row(), m_itemidx.parent() );
-
-    m_pmainwindow->ShowStatusMessage( QString(tr("Entry removed!")) );
-    close();
-}
-
-void MainWindow::on_tblframeparts_clicked(const QModelIndex &index)
+void MainWindow::on_tblframeparts_clicked(const QModelIndex &/*index*/)
 {
 
 }

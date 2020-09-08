@@ -1,4 +1,4 @@
-#include "sprite.h"
+#include "sprite.hpp"
 #include <QGraphicsScene>
 #include <QBitmap>
 #include <QPainter>
@@ -197,22 +197,30 @@ QVariant Sprite::nodeData(int column, int role) const
 
 Sprite *Sprite::parentSprite(){return this;}
 
+bool Sprite::canParse()const
+{
+    return m_raw.size() != 0;
+}
+
 void Sprite::OnClicked()
 {
     //Only parse sprites that were loaded from file! Not newly created ones, or already parsed ones!
-    if( m_raw.size() != 0 && !m_bparsed )
-        ParseSpriteData();
+//    if(!m_bparsed )
+//        ParseSpriteData();
 }
 
 void Sprite::OnExpanded()
 {
-    OnClicked();
+    //OnClicked();
 }
 
 void Sprite::ParseSpriteData()
 {
+    if(!canParse())
+        throw ExBadSpriteData(QString("Sprite::ParseSpriteData(): Tried to parse invalid raw data!"));
     if(IsRawDataCompressed(&m_targetgompression))
         DecompressRawData();
+
 
     m_sprhndl.Parse( m_raw.begin(), m_raw.end() );
     m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
@@ -261,7 +269,16 @@ void Sprite::CommitSpriteData()
 
 QPixmap &Sprite::MakePreviewPalette()
 {
-    m_previewPal = utils::PaintPaletteToPixmap(getPalette()); // utils::ConvertSpritePalette(m_sprhndl.getPalette()) );
+    return (m_previewPal = utils::PaintPaletteToPixmap(getPalette()));
+}
+
+QPixmap Sprite::MakePreviewPalette()const
+{
+    return utils::PaintPaletteToPixmap(getPalette());
+}
+
+const QPixmap & Sprite::getCachedPreviewPalette()const
+{
     return m_previewPal;
 }
 
@@ -277,10 +294,22 @@ QPixmap &Sprite::MakePreviewFrame(bool transparency)
     return m_previewImg;
 }
 
-//Sprite *Sprite::ParentSprite(TreeElement *parentspr)
-//{
-//    return static_cast<Sprite*>(parentspr);
-//}
+QPixmap Sprite::MakePreviewFrame(bool transparency)const
+{
+    if(wasParsed() && hasImageData())
+    {
+        if(m_frmcnt.hasChildren())
+            return std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency)) );
+        else
+            return std::move(QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette())) );
+    }
+    return QPixmap();
+}
+
+const QPixmap & Sprite::getCachedPreviewFrame()const
+{
+    return m_previewImg;
+}
 
 Image *Sprite::getImage(fmt::frmid_t idx)
 {
@@ -329,6 +358,20 @@ SpritePropertiesHandler *Sprite::propHandler()
 const SpritePropertiesHandler *Sprite::propHandler() const
 {
     return m_propshndlr.data();
+}
+
+SpritePropertiesModel *Sprite::model()
+{
+    if(!m_propshndlr)
+        return nullptr;
+    return m_propshndlr->model();
+}
+
+const SpritePropertiesModel *Sprite::model() const
+{
+    if(!m_propshndlr)
+        return nullptr;
+    return m_propshndlr->model();
 }
 
 SpriteOverviewModel *Sprite::overviewModel()
@@ -431,4 +474,24 @@ int Sprite::nbChildCat() const
         return 4;
     else
         return 5;
+}
+
+bool Sprite::canFetchMore(const QModelIndex & parent)const
+{
+    if(!parent.isValid())
+        return false;
+    Sprite * spr = static_cast<Sprite *>(parent.internalPointer());
+    if(!spr || spr != this)
+        return false;
+    return !wasParsed();
+}
+
+void Sprite::fetchMore(const QModelIndex & parent)
+{
+    if(!parent.isValid())
+        return;
+    Sprite * spr = static_cast<Sprite *>(parent.internalPointer());
+    if(!spr || spr != this)
+        return;
+    ParseSpriteData();
 }

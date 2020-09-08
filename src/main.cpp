@@ -1,5 +1,5 @@
-#include <src/ui/mainwindow.h>
-#include <src/ui/processingconsole.h>
+#include <src/ui/mainwindow.hpp>
+#include <src/ui/processingconsole.hpp>
 #include <QApplication>
 #include <QList>
 #include <QString>
@@ -7,6 +7,7 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QTime>
+#include <src/randomgenhelper.hpp>
 
 //#include <iostream>
 
@@ -32,12 +33,12 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("PPMDU");
     QCoreApplication::setApplicationName("Sprite Muncher");
     QCommandLineParser  parser;
-    qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+    //random generator
+    GetRandomGenerator().seed(QTime(0,0,0).secsTo(QTime::currentTime()));
 
     parser.addOptions(PGRM_Options);
     parser.addPositionalArgument("filepath", "File to open with the program!");
     parser.process(a);
-
 
     QString openFilePath;
     const QStringList positionalArguments = parser.positionalArguments();

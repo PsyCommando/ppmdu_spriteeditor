@@ -1,3 +1,4 @@
+#if 0
 #include "scenerenderer.hpp"
 
 //*****************************************************************
@@ -13,7 +14,7 @@ AnimatedSpriteItem::AnimatedSpriteItem(Sprite *pspr, fmt::AnimDB::animseqid_t se
 
 AnimatedSpriteItem::~AnimatedSpriteItem()
 {
-
+    qDebug("AnimatedSpriteItem::~AnimatedSpriteItem(): Destroying..");
 }
 
 void AnimatedSpriteItem::Init()
@@ -173,9 +174,12 @@ void AnimatedSpriteItem::LoadSequence()
 
 void AnimatedSpriteItem::ScheduleSequenceLoad()
 {
-    if(m_bstopping)
+    if(m_bstopping) //If we're trying to stop and destroy, don't bother loading
         return;
+    WaitForUpdate();
+    WaitForLoad();
 
+    QMutexLocker lk(&m_mtxseqload); //Make sure we're not currently already loading..
     m_seqloadupdate = QtConcurrent::run( this, &AnimatedSpriteItem::LoadSequence );
     connect(&m_seqloadwatch, SIGNAL(finished()), this, SLOT(framesCached()));
     m_seqloadwatch.setFuture(m_seqloadupdate);
@@ -189,9 +193,7 @@ void AnimatedSpriteItem::ScheduleFrameUpdate()
 {
     if(m_bstopping)
         return;
-
-    if(m_frmupdatewatch.isRunning())
-        m_frmupdatewatch.waitForFinished();
+    WaitForUpdate();
 
     m_frmupdate = QtConcurrent::run( this, &AnimatedSpriteItem::UpdateFrame );
     connect(&m_frmupdatewatch, SIGNAL(finished()), this, SLOT(frameupdated()));
@@ -203,9 +205,19 @@ void AnimatedSpriteItem::WaitStop()
 {
     m_bstopping = true;
     setloop(false);
-    if(m_seqloadwatch.isRunning())
+    WaitForLoad();
+    WaitForUpdate();
+}
+
+void AnimatedSpriteItem::WaitForLoad()
+{
+    if(!m_seqloadwatch.isFinished() && m_seqloadwatch.isRunning())
         m_seqloadwatch.waitForFinished();
-    if(m_frmupdatewatch.isRunning())
+}
+
+void AnimatedSpriteItem::WaitForUpdate()
+{
+    if(!m_frmupdatewatch.isFinished() && m_frmupdatewatch.isRunning())
         m_frmupdatewatch.waitForFinished();
 }
 
@@ -334,11 +346,12 @@ SceneRenderer::SceneRenderer(bool bshouldloop, QObject *parent)
 
 SceneRenderer::~SceneRenderer()
 {
-    clearAnimSprite();
+    clearScene();
 }
 
-void SceneRenderer::clearAnimSprite()
+void SceneRenderer::clearScene()
 {
+    stopAnimUpdates();
     if(m_animsprite)
     {
         disconnect(this, &SceneRenderer::tick, m_animsprite, &AnimatedSpriteItem::tick);
@@ -355,7 +368,7 @@ void SceneRenderer::clearAnimSprite()
 
 void SceneRenderer::setScene(Sprite *spr, fmt::AnimDB::animseqid_t id)
 {
-    clearAnimSprite();
+    clearScene();
     m_animsprite = new AnimatedSpriteItem(spr, id, m_shouldLoop);
     connect(this, &SceneRenderer::tick, m_animsprite, &AnimatedSpriteItem::tick);
     connect(this, &SceneRenderer::setCurFrm, m_animsprite, &AnimatedSpriteItem::setCurFrame );
@@ -377,7 +390,7 @@ void SceneRenderer::Reset()
 {
     stopAnimUpdates();
     m_timer.reset();
-    clearAnimSprite();
+    clearScene();
     m_animScene.clear();
     //m_animScene.setSceneRect( -256, -128, 512, 256 );
 
@@ -405,6 +418,58 @@ QColor SceneRenderer::getSpriteBGColor() const
     if(m_spr && !m_spr->getPalette().empty())
         return m_spr->getPalette().first();
     return QColor(220,220,220);
+}
+
+void SceneRenderer::InstallAnimPreview(QGraphicsView *pview, Sprite *pspr, AnimSequence *paniseq)
+{
+    qDebug() << "SceneRenderer::InstallAnimPreview(): Displaying animation..\n";
+    stopAnimUpdates();
+    setScene(pspr, paniseq->nodeIndex());
+    pview->setScene(&getAnimScene());
+    pview->centerOn(getAnimSprite());
+    getAnimSprite()->setScale(2.0);
+
+    connect( paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SceneRenderer::OnAnimDataChaged);
+
+    //#FIXME: This needs to be tracked and disconnected when data changes!! Should be a member function of the anim sequence, not an anonymous lambda!!
+//    connect( paniseq->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
+//    {
+//        reloadAnim();
+//        pview->setAutoFillBackground(true);
+//        pview->setBackgroundBrush(QBrush(getSpriteBGColor()));
+//        pview->update();
+//    });
+}
+
+void SceneRenderer::UninstallAnimPreview(QGraphicsView *pview)
+{
+    qDebug() << "SceneRenderer::UninstallAnimPreview(): Clearing animation..\n";
+    stopAnimUpdates();
+    if(m_animsprite)
+    {
+        const Sprite * pspr = m_animsprite->getSprite();
+        if(pspr)
+        {
+            const AnimSequence * pseq = pspr->getAnimSequence(m_animsprite->getAnimationSequenceID());
+            disconnect(pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SceneRenderer::OnAnimDataChaged);
+        }
+    }
+    Reset();
+    pview->setScene(nullptr);
+    pview->invalidateScene();
+}
+
+void SceneRenderer::OnAnimDataChaged()
+{
+    qDebug() << "SceneRenderer::OnAnimDataChaged(): Data changed, clearing scene and reloading anim..\n";
+    //reloadAnim();
+    m_animScene.setBackgroundBrush(QBrush(getSpriteBGColor()));
+    m_animScene.clear();
+    m_animScene.update();
+
+//    viewport->setAutoFillBackground(true);
+//    viewport->setBackgroundBrush(QBrush(getSpriteBGColor()));
+//    viewport->update();
 }
 
 void SceneRenderer::startAnimUpdates()
@@ -473,3 +538,4 @@ void SceneRenderer::setCurrentFrame(int frmid)
 {
     emit setCurFrm(frmid);
 }
+#endif

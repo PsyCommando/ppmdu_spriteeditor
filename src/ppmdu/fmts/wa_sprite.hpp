@@ -708,7 +708,7 @@ namespace fmt
 
             //grab colors!
             auto itpalcolor = next(itsrcbeg, ptrbegpal);
-            size_t pallen = std::abs(paloff - ptrbegpal) / sizeof(uint32_t);
+            size_t pallen = (paloff - ptrbegpal) / sizeof(uint32_t);
             for( size_t cntcol = 0; cntcol < pallen; ++cntcol )
             {
                 rgbx_t curcol;
@@ -1001,7 +1001,7 @@ namespace fmt
                                                      grp.second.seqs.size())); //add to the list of group array pointers + sizes
                 for( const auto & seq : grp.second.seqs )
                 {
-                    if(seq >= ptrseqs.size())
+                    if(seq >= static_cast<int>(ptrseqs.size()))
                         throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
                     sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
                 }
@@ -1020,7 +1020,7 @@ namespace fmt
                 uint16_t unk16  = 0;
                 if(anim != -1)
                 {
-                    if( (ptrgrps.size() <= anim || m_animgrps.size() <= anim) )
+                    if( (static_cast<int>(ptrgrps.size()) <= anim || static_cast<int>(m_animgrps.size()) <= anim) )
                     {
                         std::stringstream sstr;
                         sstr << "AnimDB::WriteAnimTbl(): Group ID " <<anim <<" is out of bound!!";
@@ -1147,7 +1147,7 @@ namespace fmt
         }
 
         template<class _init>
-            void ParseEfxOffsets(_init itsrcbeg, _init itsrcend, const animfmtinfo & animinf, uint32_t & offsbegefx, uint32_t & offsbeganimseqtbl)
+            void ParseEfxOffsets(_init itsrcbeg, _init /*itsrcend*/, const animfmtinfo & /*animinf*/, uint32_t & offsbegefx, uint32_t & offsbeganimseqtbl)
         {
             if(offsbegefx == 0)
                 return;

@@ -1,3 +1,4 @@
+#if 0
 #ifndef SCENERENDERER_HPP
 #define SCENERENDERER_HPP
 /*
@@ -23,8 +24,8 @@ description: Manages scenes used by the main interface for displaying sprite ani
 #include <QGradient>
 #include <QBitmap>
 
-#include <src/sprite.h>
-#include <src/spritemanager.h>
+#include <src/sprite.hpp>
+#include <src/spritemanager.hpp>
 
 //=============================================================================
 //  AnimatedSpriteItem
@@ -61,6 +62,15 @@ public:
     //This is meant to be used by anything that wants to delete the object, so its not deleted while loading on another thread
     void WaitStop();
 
+    fmt::AnimDB::animseqid_t getAnimationSequenceID()const{return m_curseqid; }
+    const Sprite * getSprite()const{return m_spr; }
+    Sprite * getSprite(){return m_spr; }
+
+private:
+    //Helper for waiting on async processes to complete
+    void WaitForLoad();
+    void WaitForUpdate();
+
     // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
@@ -79,6 +89,8 @@ private:
 
     QMutex           m_mtxcache; //mutex for the cached frames
     QVector<cachedanimfrm_t> m_cachedframes;
+
+    QMutex          m_mtxseqload; //Mutex for setting up loading a new sequence
 
     int              m_curfrm;
     unsigned int     m_ticksnextfrm;
@@ -116,7 +128,7 @@ public:
     explicit SceneRenderer(bool bshouldloop, QObject *parent = 0);
     virtual ~SceneRenderer();
 
-    void clearAnimSprite();
+    void clearScene();
     void setScene( Sprite * spr, fmt::AnimDB::animseqid_t id );
     void Reset();
 
@@ -129,6 +141,10 @@ public:
     QVector<QImage> DumpSequence()const;
 
     QColor getSpriteBGColor()const;
+
+    //Those should be used to set/unset a scene's data
+    void InstallAnimPreview(QGraphicsView * pview, Sprite * pspr, AnimSequence * paniseq);
+    void UninstallAnimPreview(QGraphicsView * pview);
 
 private:
     bool                   m_shouldLoop;
@@ -163,7 +179,12 @@ public slots:
     void OnFrameChanged( int curfrm );
     void OnRangeChanged( int min, int max );
     void setCurrentFrame(int frmid);
+    /***
+     * This is called when the current animation's data changes.
+    */
+    void OnAnimDataChaged();
 
 };
 
 #endif // SCENERENDERER_HPP
+#endif

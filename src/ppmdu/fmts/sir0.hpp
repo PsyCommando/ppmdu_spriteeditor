@@ -106,7 +106,7 @@ namespace fmt
             ++itcurbyte;
         }
 
-        return std::move(decodedptroffsets);
+        return decodedptroffsets;
     }
 
 
@@ -118,15 +118,10 @@ namespace fmt
     {
     public:
         static const size_t     HDRLEN = 16;
-        std::array<char,4>      magic;
-        uint32_t                ptrsub;
-        uint32_t                ptrtranslatetbl;
+        std::array<char,4>      magic{0,0,0,0};
+        uint32_t                ptrsub{0};
+        uint32_t                ptrtranslatetbl{0};
         std::vector<uint32_t>   ptroffsetslist;
-
-        SIR0hdr()
-            :ptrtranslatetbl(0),ptrsub(0)
-        {
-        }
 
 
         template<class _init>
@@ -194,7 +189,7 @@ namespace fmt
         typedef _outit iterout_t;
 
         SIR0_WriterHelper(_outit itout, SIR0hdr  &hdr)
-            :m_curoffset(SIR0hdr::HDRLEN), m_out(itout), m_sir0(hdr)
+            :m_out(itout), m_sir0(hdr)
         {
         }
 
@@ -226,7 +221,7 @@ namespace fmt
     private:
         iterout_t m_out;
         SIR0hdr  &m_sir0;
-        uint32_t  m_curoffset;
+        uint32_t  m_curoffset{SIR0hdr::HDRLEN};
     };
 
 }

@@ -117,9 +117,9 @@ void PaletteEditorScene::redrawPalette()
     m_curindex = m_model->index(0,0, QModelIndex());
 
     const int NbColors = m_model->rowCount(QModelIndex());
-    const size_t NbRows = (NbColors % NbColorsPerRow == 0)?
-                              (NbColors / NbColorsPerRow) :
-                              ((NbColors / NbColorsPerRow) + 1);
+//    const size_t NbRows = (NbColors % NbColorsPerRow == 0)?
+//                              (NbColors / NbColorsPerRow) :
+//                              ((NbColors / NbColorsPerRow) + 1);
     int curY = 0;
     for( int cntcolr = 0; cntcolr < NbColors; )
     {

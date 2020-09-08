@@ -15,7 +15,7 @@ TARGET_FILENAME = ppmdu_spriteeditor
 TARGET = ppmdu_spriteeditor
 TEMPLATE = app
 
-CONFIG += c++14
+CONFIG += c++17
 
 RC_FILE = resources.rc
 
@@ -34,6 +34,13 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\" \
 
 
 SOURCES += src/main.cpp\
+    src/data/animframe.cpp \
+    src/data/animgroup.cpp \
+    src/data/animsequence.cpp \
+    src/data/animsequences.cpp \
+    src/data/animtable.cpp \
+    src/randomgenhelper.cpp \
+    src/ui/errorhelper.cpp \
         src/ui/mainwindow.cpp \
     src/spritecontainer.cpp \
     src/ui/processingconsole.cpp \
@@ -64,13 +71,27 @@ SOURCES += src/main.cpp\
     src/ui/mw_tabframe.cpp \
     src/ui/mw_tabanimtable.cpp \
     src/ui/mw_tabanimseq.cpp \
-    src/ui/mw_tabimages.cpp
+    src/ui/mw_tabimages.cpp \
+    src/ui/rendering/animated_sprite_item.cpp \
+    src/ui/rendering/sprite_renderer.cpp \
+    src/ui/rendering/sprite_scene.cpp \
+    src/ui/tabs/basespritetab.cpp \
+    src/ui/tabs/form.cpp \
+    src/ui/tabs/tabanimsequence.cpp \
+    src/ui/tabs/tabanimtable.cpp \
+    src/ui/tvspritescontextmenu.cpp
 
-HEADERS  += src/ui/mainwindow.h \
-    src/spritemanager.h \
-    src/spritecontainer.h \
-    src/ui/processingconsole.h \
-    src/sprite.h \
+HEADERS  += \
+    src/baseqtexception.hpp \
+    src/data/animframe.hpp \
+    src/data/animgroup.hpp \
+    src/data/animsequence.hpp \
+    src/data/animsequences.hpp \
+    src/data/animtable.hpp \
+    src/randomgenhelper.hpp \
+    src/sprite.hpp \
+    src/spritecontainer.hpp \
+    src/spritemanager.hpp \
     src/ppmdu/fmts/sir0.hpp \
     src/ppmdu/utils/byteutils.hpp \
     src/ppmdu/fmts/packfile.hpp \
@@ -82,6 +103,7 @@ HEADERS  += src/ui/mainwindow.h \
     src/ppmdu/fmts/wa_sprite.hpp \
     src/ppmdu/utils/algo.hpp \
     src/ppmdu/utils/imgutils.hpp \
+    src/treeelemtypes.hpp \
     src/ui/diagsingleimgcropper.hpp \
     src/ui/dialognewsprite.hpp \
     src/sprite_img.hpp \
@@ -95,9 +117,20 @@ HEADERS  += src/ui/mainwindow.h \
     src/extfmt/text_palette.hpp \
     src/extfmt/gpl_palette.hpp \
     src/ppmdu/utils/color_utils.hpp \
+    src/ui/errorhelper.hpp \
+    src/ui/mainwindow.hpp \
     src/ui/paletteeditor.hpp \
     src/sprite_frames.hpp \
     src/sprite_palette.hpp \
+    src/ui/processingconsole.hpp \
+    src/ui/rendering/animated_sprite_item.hpp \
+    src/ui/rendering/sprite_renderer.hpp \
+    src/ui/rendering/sprite_scene.hpp \
+    src/ui/tabs/basespritetab.hpp \
+    src/ui/tabs/form.h \
+    src/ui/tabs/tabanimsequence.hpp \
+    src/ui/tabs/tabanimtable.hpp \
+    src/ui/tvspritescontextmenu.hpp \
     version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
@@ -106,7 +139,10 @@ FORMS    += src/ui/mainwindow.ui \
     src/ui/dialognewsprite.ui \
     src/ui/dialogabout.ui \
     src/ui/dialogprogressbar.ui \
-    src/ui/paletteeditor.ui
+    src/ui/paletteeditor.ui \
+    src/ui/tabs/form.ui \
+    src/ui/tabs/tabanimsequence.ui \
+    src/ui/tabs/tabanimtable.ui
 
 RESOURCES += \
     appres.qrc

@@ -1,4 +1,4 @@
-#include "spritecontainer.h"
+#include "spritecontainer.hpp"
 #include <QMessageBox>
 #include <QString>
 #include <QSaveFile>
@@ -8,8 +8,8 @@
 #include <QFutureWatcher>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
-#include <src/spritemanager.h>
-#include <src/sprite.h>
+#include <src/spritemanager.hpp>
+#include <src/sprite.hpp>
 #include <src/ui/dialogprogressbar.hpp>
 
 namespace spr_manager
@@ -44,9 +44,12 @@ namespace spr_manager
     {
         //m_rootelem = nullptr;
         qDebug("SpriteContainer::~SpriteContainer(): Deleting sprite container!\n");
-        m_workthread.terminate();
-        qDebug("SpriteContainer::~SpriteContainer(): Waiting on thread..\n");
-        m_workthread.wait();
+        if(m_workthread.isRunning())
+        {
+            m_workthread.terminate();
+            qDebug("SpriteContainer::~SpriteContainer(): Waiting on thread..\n");
+            m_workthread.wait();
+        }
         qDebug("SpriteContainer::~SpriteContainer(): Done!\n");
     }
 
@@ -183,12 +186,12 @@ namespace spr_manager
         return 0;
     }
 
-    void SpriteContainer::ImportContainer(const QString &path)
+    void SpriteContainer::ImportContainer(const QString &/*path*/)
     {
         Q_ASSERT(false); //Need to be done!
     }
 
-    void SpriteContainer::ExportContainer(const QString &path) const
+    void SpriteContainer::ExportContainer(const QString &/*path*/) const
     {
         Q_ASSERT(false); //Need to be done!
     }
@@ -411,12 +414,12 @@ namespace spr_manager
 
     bool SpriteContainer::nodeIsMutable() const {return false;}
 
-    void SpriteContainer::FetchToC(QDataStream &fdat)
+    void SpriteContainer::FetchToC(QDataStream &/*fdat*/)
     {
 
     }
 
-    void SpriteContainer::LoadEntry(SpriteContainer::sprid_t idx)
+    void SpriteContainer::LoadEntry(SpriteContainer::sprid_t /*idx*/)
     {
 
     }
@@ -424,6 +427,27 @@ namespace spr_manager
     QString SpriteContainer::getSrcFnameOnly() const
     {
         return m_srcpath.mid( m_srcpath.lastIndexOf('/') );
+    }
+
+    //Incremental load
+    void SpriteContainer::fetchMore(const QModelIndex &parent)
+    {
+        if (!parent.isValid() || !ContainerLoaded())
+            return;
+        TreeElement * pte = getItem(parent);
+        if(!pte || (pte && pte == this))
+            return;
+        pte->fetchMore(parent);
+    }
+
+    bool SpriteContainer::canFetchMore(const QModelIndex &parent) const
+    {
+        if (!parent.isValid() || !ContainerLoaded())
+            return false;
+        TreeElement * pte = const_cast<SpriteContainer*>(this)->getItem(parent);
+        if(!pte || (pte && pte == this))
+            return false;
+        return pte->canFetchMore(parent);
     }
 
     //=================================================================================================

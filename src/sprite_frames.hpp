@@ -150,7 +150,7 @@ private:
     QWidget * makeModeSelect     (QWidget * parent, int row)const;
 
 private:
-    MFrame *m_pfrm;
+    MFrame *m_pfrm{nullptr};
     QImage  m_minusone;
 };
 

@@ -1,4 +1,4 @@
-#include "sprite.h"
+#include "sprite.hpp"
 #include <QGraphicsScene>
 #include <QBitmap>
 #include <QPainter>
@@ -218,8 +218,9 @@ QVariant SpritePropertiesModel::dataDisplay(int propid, int column) const
         return getDataForProperty(propid, Qt::DisplayRole);
     case eSpritePropColumns::Description:
         return getDescForProperty(propid);
+    default:
+        return QVariant();
     };
-    return QVariant();
 }
 
 QVariant SpritePropertiesModel::getNameForProperty(int propid) const
@@ -469,14 +470,14 @@ QWidget *SpritePropertiesDelegate::createEditor(QWidget *parent, const QStyleOpt
                 pcolmode->addItem(s);
             return pcolmode;
         }
-    case eSpriteProperties::Unk6:
-    case eSpriteProperties::Unk7:
-    case eSpriteProperties::Unk8:
-    case eSpriteProperties::Unk9:
-    case eSpriteProperties::Unk10:
-    case eSpriteProperties::Unk11:
-    case eSpriteProperties::Unk12:
-    case eSpriteProperties::Unk13:
+    case eSpriteProperties::Unk6:   [[fallthrough]];
+    case eSpriteProperties::Unk7:   [[fallthrough]];
+    case eSpriteProperties::Unk8:   [[fallthrough]];
+    case eSpriteProperties::Unk9:   [[fallthrough]];
+    case eSpriteProperties::Unk10:  [[fallthrough]];
+    case eSpriteProperties::Unk11:  [[fallthrough]];
+    case eSpriteProperties::Unk12:  [[fallthrough]];
+    case eSpriteProperties::Unk13:  [[fallthrough]];
     default:
         {
             //nothing here
@@ -518,14 +519,14 @@ void SpritePropertiesDelegate::setEditorData(QWidget *editor, const QModelIndex 
             pcolmode->setCurrentIndex((m_spr->is256Colors())? 1 : 0);
             return;
         }
-    case eSpriteProperties::Unk6:
-    case eSpriteProperties::Unk7:
-    case eSpriteProperties::Unk8:
-    case eSpriteProperties::Unk9:
-    case eSpriteProperties::Unk10:
-    case eSpriteProperties::Unk11:
-    case eSpriteProperties::Unk12:
-    case eSpriteProperties::Unk13:
+    case eSpriteProperties::Unk6:   [[fallthrough]];
+    case eSpriteProperties::Unk7:   [[fallthrough]];
+    case eSpriteProperties::Unk8:   [[fallthrough]];
+    case eSpriteProperties::Unk9:   [[fallthrough]];
+    case eSpriteProperties::Unk10:  [[fallthrough]];
+    case eSpriteProperties::Unk11:  [[fallthrough]];
+    case eSpriteProperties::Unk12:  [[fallthrough]];
+    case eSpriteProperties::Unk13:  [[fallthrough]];
     default:
         {
             //nothing here
@@ -565,14 +566,14 @@ void SpritePropertiesDelegate::setModelData(QWidget *editor, QAbstractItemModel 
             model->setData(index, pcolmode->currentIndex());
             return;
         }
-    case eSpriteProperties::Unk6:
-    case eSpriteProperties::Unk7:
-    case eSpriteProperties::Unk8:
-    case eSpriteProperties::Unk9:
-    case eSpriteProperties::Unk10:
-    case eSpriteProperties::Unk11:
-    case eSpriteProperties::Unk12:
-    case eSpriteProperties::Unk13:
+    case eSpriteProperties::Unk6:   [[fallthrough]];
+    case eSpriteProperties::Unk7:   [[fallthrough]];
+    case eSpriteProperties::Unk8:   [[fallthrough]];
+    case eSpriteProperties::Unk9:   [[fallthrough]];
+    case eSpriteProperties::Unk10:  [[fallthrough]];
+    case eSpriteProperties::Unk11:  [[fallthrough]];
+    case eSpriteProperties::Unk12:  [[fallthrough]];
+    case eSpriteProperties::Unk13:  [[fallthrough]];
     default:
         {
             //nothing here
@@ -610,7 +611,7 @@ SpriteOverviewModel::SpriteOverviewModel(Sprite *spr)
     :QAbstractItemModel(nullptr), m_spr(spr)
 {}
 
-QModelIndex SpriteOverviewModel::index(int row, int, const QModelIndex &parent) const
+QModelIndex SpriteOverviewModel::index(int row, int, const QModelIndex &/*parent*/) const
 {
     //if( !parent.isValid() )
     //    return QModelIndex();
@@ -618,7 +619,7 @@ QModelIndex SpriteOverviewModel::index(int row, int, const QModelIndex &parent) 
     return createIndex( row, 0 );
 }
 
-QModelIndex SpriteOverviewModel::parent(const QModelIndex &child) const
+QModelIndex SpriteOverviewModel::parent(const QModelIndex &/*child*/) const
 {
     return QModelIndex();
 }
@@ -631,9 +632,9 @@ int SpriteOverviewModel::rowCount(const QModelIndex &parent) const
         return 0;
 }
 
-int SpriteOverviewModel::columnCount(const QModelIndex &parent) const
+int SpriteOverviewModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return 2;
+    return 1;
 }
 
 QVariant SpriteOverviewModel::data(const QModelIndex &index, int role) const
@@ -657,3 +658,4 @@ QVariant SpriteOverviewModel::headerData(int section, Qt::Orientation orientatio
 
     return QVariant();
 }
+

@@ -1,5 +1,6 @@
 workdir/*
 build/*
+build64/*
 step0_res.png
 step0.png
 ppmdu_spriteeditor.pro.user

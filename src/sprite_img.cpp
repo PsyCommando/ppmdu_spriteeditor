@@ -8,7 +8,7 @@
 #include <QPixmap>
 #include <QFontMetrics>
 
-#include <src/sprite.h>
+#include <src/sprite.hpp>
 
 //
 //
@@ -66,7 +66,7 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
         {
             //bool foundres   = false;
             auto itstep     = frms[frmid].begin();
-            int  curTileNum = 0; //We count the tileids so we can use the tile id in case of -1 frame
+            //int  curTileNum = 0; //We count the tileids so we can use the tile id in case of -1 frame
 
             //Look through all the frame's parts
             for( size_t stepid= 0; stepid < frms[frmid].size(); ++stepid, ++itstep )
@@ -87,7 +87,7 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
                 //                        h = res.second;
                 //                        //foundres = true;
                 //                    }
-                curTileNum = itstep->getTileNum(); //add up tile index
+                //curTileNum = itstep->getTileNum(); //add up tile index
             }
 
             //                if(!foundres)
@@ -131,7 +131,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages()
     {
         images[cntid] = std::move(m_container[cntid].exportImage4bpp(w, h, parentSprite()->isTiled()));
     }
-    return std::move(images);
+    return images;
 }
 
 fmt::ImageDB::imgtbl_t ImageContainer::exportImages4bpp()
@@ -143,7 +143,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages4bpp()
     {
         images[cntid] = std::move(m_container[cntid].exportImage4bpp(w, h, parentSprite()->isTiled()));
     }
-    return std::move(images);
+    return images;
 }
 
 fmt::ImageDB::imgtbl_t ImageContainer::exportImages8bpp()
@@ -155,7 +155,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages8bpp()
     {
         images[cntid] = std::move(m_container[cntid].exportImage8bpp(w, h, parentSprite()->isTiled()));
     }
-    return std::move(images);
+    return images;
 }
 
 Sprite *ImageContainer::parentSprite()
@@ -221,8 +221,10 @@ QVariant Image::imgData(int column, int role)const
                 res.setValue(m_unk14);
             break;
         }
+        default:
+            break; //Get rid of warnings
     };
-    return std::move(res);
+    return res;
 }
 
 bool Image::setImgData(int column, const QVariant &value, int role)
@@ -234,9 +236,9 @@ bool Image::setImgData(int column, const QVariant &value, int role)
     bool succ = false;
     switch(static_cast<eColumnType>(column))
     {
-        case eColumnType::Preview: //preview
-        case eColumnType::UID:
-        case eColumnType::Depth: //depth
+        case eColumnType::Preview:  [[fallthrough]]; //preview
+        case eColumnType::UID:      [[fallthrough]];
+        case eColumnType::Depth:    [[fallthrough]]; //depth
         case eColumnType::Resolution: //resolution
         {
             succ = false;
@@ -256,6 +258,8 @@ bool Image::setImgData(int column, const QVariant &value, int role)
                 m_unk14 = res;
             break;
         }
+        default:
+            break; //To get rid of warnings
     };
     return succ;
 }
@@ -269,7 +273,7 @@ QVariant Image::imgDataCondensed(int role) const
         res.setValue(QString("ID:%1 %2bpp %3x%4").arg(nodeIndex()).arg(m_depth).arg(m_img.width()).arg(m_img.height()));
     else if(role == Qt::EditRole)
         res.setValue(nodeIndex());
-    return std::move(res);
+    return res;
 }
 
 Sprite *FramesContainer::parentSprite()
@@ -377,18 +381,18 @@ QVariant ImagesManager::headerData(int section, Qt::Orientation orientation, int
 
     if( orientation == Qt::Orientation::Vertical )
     {
-        return std::move(QVariant( QString("%1").arg(section) ));
+        return QVariant( QString("%1").arg(section) );
     }
     else if( orientation == Qt::Orientation::Horizontal )
     {
         switch(section)
         {
         case 0:
-            return std::move(QVariant( QString("") ));
+            return QVariant( QString("") );
         case 1:
-            return std::move(QVariant( QString("Bit Depth") ));
+            return QVariant( QString("Bit Depth") );
         case 2:
-            return std::move(QVariant( QString("Resolution") ));
+            return QVariant( QString("Resolution") );
         };
     }
     return QVariant();
@@ -418,7 +422,7 @@ bool ImagesManager::removeRows(int row, int count, const QModelIndex &parent)
     return success;
 }
 
-bool ImagesManager::moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild)
+bool ImagesManager::moveRows(const QModelIndex &/*sourceParent*/, int /*sourceRow*/, int /*count*/, const QModelIndex &/*destinationParent*/, int /*destinationChild*/)
 {
     Q_ASSERT(false);
     return false;
