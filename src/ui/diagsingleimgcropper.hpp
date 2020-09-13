@@ -2,8 +2,8 @@
 #define DIAGSINGLEIMGCROPPER_HPP
 
 #include <QDialog>
-#include <src/sprite.hpp>
-#include <src/sprite_img.hpp>
+#include <src/data/sprite/sprite.hpp>
+#include <src/data/sprite/image.hpp>
 
 namespace Ui
 {

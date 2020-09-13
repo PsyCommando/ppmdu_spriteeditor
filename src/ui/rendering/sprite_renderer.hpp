@@ -3,8 +3,8 @@
 #include <QObject>
 #include <QPixmap>
 #include <src/ui/rendering/animated_sprite_item.hpp>
-#include <src/spritemanager.hpp>
-#include <src/baseqtexception.hpp>
+#include <src/data/sprite/spritemanager.hpp>
+#include <src/utility/baseqtexception.hpp>
 
 
 //------------ Exceptions ------------

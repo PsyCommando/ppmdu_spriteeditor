@@ -81,6 +81,17 @@ public:
 
     //Gets the current index of the frame in the animation being rendered!
     int getCurrentFrame()const;
+
+
+    /*
+     * Returns the duration in ticks of the currently loaded sequence
+    */
+    unsigned int getSequenceLengthInTicks()const;
+
+    /*
+     * Returns how many ticks of the duration of the sequence have elapsed
+    */
+    unsigned int getTimeElapsed()const;
 //Interactions
 
     /*
@@ -142,6 +153,7 @@ private:
     const Sprite *         m_spr{nullptr};              //Current sprite object
     QScopedPointer<AnimatedSpriteItem> m_animsprite;    //Temporary object containing the currently displayed animated sequence
     unsigned int           m_ticks{0};                  //Animation ticks counter
+    unsigned int           m_tickselapsed{0};           //The amount of ticks that are elapsed since the start of the animation sequence. Aka, the time between the first frame and the current frame plus the time spent on the current frame in ticks.
     fmt::AnimDB::animseqid_t m_seqid{fmt::AnimDB::animseqid_t()}; //Currently displayed animation sequence id
     SpriteRenderer           m_renderer;                //Renderer for sprites
 

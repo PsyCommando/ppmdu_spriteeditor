@@ -27,11 +27,11 @@
     <enum>QLayout::SetMinimumSize</enum>
    </property>
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_16">
+    <layout class="QVBoxLayout" name="vlPreview">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_7">
+      <layout class="QVBoxLayout" name="vlViewer">
        <item>
-        <widget class="QLabel" name="label_3">
+        <widget class="QLabel" name="lblSequencePreview">
          <property name="text">
           <string>Sequence/Frame Preview:</string>
          </property>
@@ -108,25 +108,63 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <widget class="QLabel" name="lblAnimTime">
+         <property name="text">
+          <string>---- t</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="hlFrameSlider">
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
+          <layout class="QHBoxLayout" name="hlFrameCounter">
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QLabel" name="lblFrame">
              <property name="text">
               <string>frame:</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinCurFrm"/>
+            <widget class="QSpinBox" name="spinCurFrm">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>32</width>
+               <height>20</height>
+              </size>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
          <item>
           <widget class="QSlider" name="sldrAnimSeq">
+           <property name="maximum">
+            <number>1</number>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="invertedAppearance">
+            <bool>false</bool>
+           </property>
+           <property name="invertedControls">
+            <bool>false</bool>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TicksBelow</enum>
+           </property>
+           <property name="tickInterval">
+            <number>1</number>
            </property>
           </widget>
          </item>
@@ -135,12 +173,12 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_11">
+      <layout class="QHBoxLayout" name="hlPreviewControl">
        <property name="spacing">
         <number>2</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupBox_4">
+        <widget class="QGroupBox" name="grpControls">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -161,7 +199,7 @@
            <number>9</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_18">
+           <layout class="QHBoxLayout" name="hlPlayStop">
             <item>
              <widget class="QPushButton" name="btnSeqPlay">
               <property name="sizePolicy">
@@ -199,7 +237,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_19">
+           <layout class="QHBoxLayout" name="hlImportExport">
             <item>
              <widget class="QPushButton" name="btnSeqImport">
               <property name="text">
@@ -220,7 +258,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox">
+        <widget class="QGroupBox" name="grpOptions">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -254,7 +292,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer">
+        <spacer name="hspcPreviewControl">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -271,11 +309,11 @@
     </layout>
    </item>
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_17">
+    <layout class="QVBoxLayout" name="vlFrames">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_6">
+      <layout class="QVBoxLayout" name="vlFrameList">
        <item>
-        <widget class="QLabel" name="label_4">
+        <widget class="QLabel" name="lblFrameList">
          <property name="text">
           <string>Frames List:</string>
          </property>
@@ -333,7 +371,7 @@
       </layout>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_6">
+      <widget class="QGroupBox" name="grpEditControls">
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
          <horstretch>0</horstretch>

@@ -1,7 +1,7 @@
 #include "tabanimtable.hpp"
 #include "ui_tabanimtable.h"
-#include <src/data/animgroup.hpp>
-#include <src/data/animtable.hpp>
+#include <src/data/sprite/animgroup.hpp>
+#include <src/data/sprite/animtable.hpp>
 
 TabAnimTable::TabAnimTable(QWidget *parent) :
     BaseSpriteTab(parent),
@@ -23,8 +23,9 @@ void TabAnimTable::OnShowTab(Sprite *spr, QPersistentModelIndex element)
     ui->tvAnimTbl->setModel(ptable->getModel());
     ui->tvAnimTblAnimSeqs->setModel(nullptr);
     ui->lvAnimTblAnimSeqList->setModel(spr->getAnimSequences().getPickerModel());
-    ConnectControls();
+
     m_previewrender.reset(new SpriteScene);
+    ConnectControls();
 
 //    connect(ui->tvAnimTbl, &QTableView::activated, [spr,this](const QModelIndex &index)
 //    {
@@ -69,6 +70,8 @@ void TabAnimTable::OnShowTab(Sprite *spr, QPersistentModelIndex element)
 
 void TabAnimTable::OnHideTab()
 {
+    if(m_previewrender)
+        m_previewrender->UninstallAnimPreview(ui->gvAnimTablePreview);
     m_previewrender.reset();
     DisconnectControls();
     m_animTable = QModelIndex();
@@ -82,6 +85,7 @@ void TabAnimTable::OnDestruction()
         m_previewrender->UninstallAnimPreview(ui->gvAnimTablePreview);
     m_previewrender.reset();
     m_animTable = QModelIndex();
+    BaseSpriteTab::OnDestruction();
 }
 
 void TabAnimTable::ConnectControls()
@@ -115,10 +119,7 @@ void TabAnimTable::DisconnectControls()
 
 void TabAnimTable::PrepareForNewContainer()
 {
-    if(m_previewrender)
-        m_previewrender->UninstallAnimPreview(ui->gvAnimTablePreview);
-    m_previewrender.reset();
-    m_animTable = QModelIndex();
+    OnHideTab();
 }
 
 
@@ -174,13 +175,13 @@ void TabAnimTable::OnAmimTableSequenceListItemActivate(const QModelIndex &index)
 
 void TabAnimTable::UpdateAnimTblPreview( fmt::AnimDB::animseqid_t seqid )
 {
+    if(m_previewrender)
+        m_previewrender->Reset();
     if( !ui->chkAnimTblAutoPlay->isChecked() )
         return;
 
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
-    m_previewrender->endAnimationPlayback();
-
     AnimSequence * seq = spr->getAnimSequence(seqid);
 
     if(seq)

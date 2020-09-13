@@ -1,5 +1,5 @@
 #include "basespritetab.hpp"
-#include <src/sprite.hpp>
+#include <src/data/sprite/sprite.hpp>
 #include <src/ui/mainwindow.hpp>
 
 BaseSpriteTab::BaseSpriteTab(QWidget *parent): QWidget(parent), m_pmainwindow(nullptr){}
@@ -26,6 +26,11 @@ void BaseSpriteTab::OnHideTab()
 
 void BaseSpriteTab::OnDestruction()
 {
+}
+
+void BaseSpriteTab::OnItemRemoval(const QModelIndex &)
+{
+
 }
 
 void BaseSpriteTab::ShowStatusErrorMessage(QString msg)
@@ -89,18 +94,23 @@ eTreeElemDataType BaseSpriteTab::currentEntryType()
     return eTreeElemDataType::None;
 }
 
-MFramePart *BaseSpriteTab::currentTblFrameParts()
-{
-    Q_ASSERT(m_pmainwindow);
-    if(m_pmainwindow)
-        return m_pmainwindow->currentTblFrameParts();
-    return nullptr;
-}
+//MFramePart *BaseSpriteTab::currentTblFrameParts()
+//{
+//    Q_ASSERT(m_pmainwindow);
+//    if(m_pmainwindow)
+//        return m_pmainwindow->currentTblFrameParts();
+//    return nullptr;
+//}
 
-Image *BaseSpriteTab::currentTblImages()
+//Image *BaseSpriteTab::currentTblImages()
+//{
+//    Q_ASSERT(m_pmainwindow);
+//    if(m_pmainwindow)
+//        return m_pmainwindow->currentTblImages();
+//    return nullptr;
+//}
+
+void BaseSpriteTab::PushUndoCommand(QUndoCommand * cmd)
 {
-    Q_ASSERT(m_pmainwindow);
-    if(m_pmainwindow)
-        return m_pmainwindow->currentTblImages();
-    return nullptr;
+
 }

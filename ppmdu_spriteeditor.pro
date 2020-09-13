@@ -34,18 +34,31 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\" \
 
 
 SOURCES += src/main.cpp\
-    src/data/animframe.cpp \
-    src/data/animgroup.cpp \
-    src/data/animsequence.cpp \
-    src/data/animsequences.cpp \
-    src/data/animtable.cpp \
-    src/randomgenhelper.cpp \
+    src/data/sprite/animframe.cpp \
+    src/data/sprite/animgroup.cpp \
+    src/data/sprite/animsequence.cpp \
+    src/data/sprite/animsequences.cpp \
+    src/data/sprite/animtable.cpp \
+    src/data/sprite/effectoffsetcontainer.cpp \
+    src/data/sprite/frame.cpp \
+    src/data/sprite/framepart.cpp \
+    src/data/sprite/framescontainer.cpp \
+    src/data/sprite/framesdelegate.cpp \
+    src/data/sprite/image.cpp \
+    src/data/sprite/imagescontainer.cpp \
+    src/data/sprite/imagesmanagermodel.cpp \
+    src/data/sprite/palettecontainer.cpp \
+    src/data/sprite/palettemodel.cpp \
+    src/utility/randomgenhelper.cpp \
+    src/ui/editor/frame/frame_editor.cpp \
+    src/ui/editor/frame/frame_editor_part.cpp \
+    src/ui/editor/palette/paletteeditor.cpp \
     src/ui/errorhelper.cpp \
-        src/ui/mainwindow.cpp \
-    src/spritecontainer.cpp \
+    src/ui/mainwindow.cpp \
+    src/data/sprite/spritecontainer.cpp \
     src/ui/processingconsole.cpp \
-    src/sprite.cpp \
-    src/spritemanager.cpp \
+    src/data/sprite/sprite.cpp \
+    src/data/sprite/spritemanager.cpp \
     src/ppmdu/fmts/sir0.cpp \
     src/ppmdu/fmts/packfile.cpp \
     src/ppmdu/fmts/px_compression.cpp \
@@ -54,48 +67,50 @@ SOURCES += src/main.cpp\
     src/ppmdu/utils/imgutils.cpp \
     src/ui/diagsingleimgcropper.cpp \
     src/ui/dialognewsprite.cpp \
-    src/sprite_anim.cpp \
     src/scenerenderer.cpp \
-    src/sprite_img.cpp \
     src/ui/dialogabout.cpp \
     src/ui/dialogprogressbar.cpp \
     src/ppmdu/fmts/compression_handler.cpp \
-    src/frameeditor.cpp \
     src/extfmt/riff_palette.cpp \
     src/ppmdu/utils/gfileio.cpp \
-    src/ui/paletteeditor.cpp \
-    src/sprite_util_impl.cpp \
-    src/sprite_palette.cpp \
-    src/sprite_frames.cpp \
-    src/ui/mw_tabproperties.cpp \
-    src/ui/mw_tabframe.cpp \
-    src/ui/mw_tabanimtable.cpp \
-    src/ui/mw_tabanimseq.cpp \
-    src/ui/mw_tabimages.cpp \
+    src/data/sprite/sprite_util_impl.cpp \
     src/ui/rendering/animated_sprite_item.cpp \
     src/ui/rendering/sprite_renderer.cpp \
     src/ui/rendering/sprite_scene.cpp \
     src/ui/tabs/basespritetab.cpp \
-    src/ui/tabs/form.cpp \
     src/ui/tabs/tabanimsequence.cpp \
     src/ui/tabs/tabanimtable.cpp \
+    src/ui/tabs/tabeffects.cpp \
+    src/ui/tabs/tabframes.cpp \
+    src/ui/tabs/tabimages.cpp \
+    src/ui/tabs/tabproperties.cpp \
     src/ui/tvspritescontextmenu.cpp
 
 HEADERS  += \
-    src/baseqtexception.hpp \
-    src/data/animframe.hpp \
-    src/data/animgroup.hpp \
-    src/data/animsequence.hpp \
-    src/data/animsequences.hpp \
-    src/data/animtable.hpp \
-    src/randomgenhelper.hpp \
-    src/sprite.hpp \
-    src/spritecontainer.hpp \
-    src/spritemanager.hpp \
+    src/utility/baseqtexception.hpp \
+    src/data/sprite/animframe.hpp \
+    src/data/sprite/animgroup.hpp \
+    src/data/sprite/animsequence.hpp \
+    src/data/sprite/animsequences.hpp \
+    src/data/sprite/animtable.hpp \
+    src/data/sprite/effectoffsetcontainer.hpp \
+    src/data/sprite/frame.hpp \
+    src/data/sprite/framepart.hpp \
+    src/data/sprite/framescontainer.hpp \
+    src/data/sprite/framesdelegate.hpp \
+    src/data/sprite/image.hpp \
+    src/data/sprite/imagescontainer.hpp \
+    src/data/sprite/imagesmanagermodel.hpp \
+    src/data/sprite/palettecontainer.hpp \
+    src/data/sprite/palettemodel.hpp \
+    src/utility/randomgenhelper.hpp \
+    src/data/sprite/sprite.hpp \
+    src/data/sprite/spritecontainer.hpp \
+    src/data/sprite/spritemanager.hpp \
     src/ppmdu/fmts/sir0.hpp \
     src/ppmdu/utils/byteutils.hpp \
     src/ppmdu/fmts/packfile.hpp \
-    src/treeelem.hpp \
+    src/data/treeelem.hpp \
     src/ppmdu/utils/sequentialgenerator.hpp \
     src/ppmdu/fmts/integer_encoding.hpp \
     src/ppmdu/fmts/px_compression.hpp \
@@ -103,46 +118,49 @@ HEADERS  += \
     src/ppmdu/fmts/wa_sprite.hpp \
     src/ppmdu/utils/algo.hpp \
     src/ppmdu/utils/imgutils.hpp \
-    src/treeelemtypes.hpp \
+    src/data/treeelemtypes.hpp \
     src/ui/diagsingleimgcropper.hpp \
     src/ui/dialognewsprite.hpp \
-    src/sprite_img.hpp \
-    src/sprite_anim.hpp \
     src/scenerenderer.hpp \
     src/ui/dialogabout.hpp \
     src/ui/dialogprogressbar.hpp \
-    src/frameeditor.hpp \
     src/extfmt/riff_palette.hpp \
     src/ppmdu/utils/gfileio.hpp \
     src/extfmt/text_palette.hpp \
     src/extfmt/gpl_palette.hpp \
     src/ppmdu/utils/color_utils.hpp \
+    src/ui/editor/frame/frame_editor.hpp \
+    src/ui/editor/frame/frame_editor_part.hpp \
+    src/ui/editor/palette/paletteeditor.hpp \
     src/ui/errorhelper.hpp \
     src/ui/mainwindow.hpp \
-    src/ui/paletteeditor.hpp \
-    src/sprite_frames.hpp \
-    src/sprite_palette.hpp \
     src/ui/processingconsole.hpp \
     src/ui/rendering/animated_sprite_item.hpp \
     src/ui/rendering/sprite_renderer.hpp \
     src/ui/rendering/sprite_scene.hpp \
     src/ui/tabs/basespritetab.hpp \
-    src/ui/tabs/form.h \
     src/ui/tabs/tabanimsequence.hpp \
     src/ui/tabs/tabanimtable.hpp \
+    src/ui/tabs/tabeffects.hpp \
+    src/ui/tabs/tabframes.hpp \
+    src/ui/tabs/tabimages.hpp \
+    src/ui/tabs/tabproperties.hpp \
     src/ui/tvspritescontextmenu.hpp \
     version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
+    src/ui/editor/palette/paletteeditor.ui \
     src/ui/processingconsole.ui \
     src/ui/diagsingleimgcropper.ui \
     src/ui/dialognewsprite.ui \
     src/ui/dialogabout.ui \
     src/ui/dialogprogressbar.ui \
-    src/ui/paletteeditor.ui \
-    src/ui/tabs/form.ui \
     src/ui/tabs/tabanimsequence.ui \
-    src/ui/tabs/tabanimtable.ui
+    src/ui/tabs/tabanimtable.ui \
+    src/ui/tabs/tabeffects.ui \
+    src/ui/tabs/tabframes.ui \
+    src/ui/tabs/tabimages.ui \
+    src/ui/tabs/tabproperties.ui
 
 RESOURCES += \
     appres.qrc

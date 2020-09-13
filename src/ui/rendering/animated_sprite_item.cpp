@@ -12,6 +12,9 @@ AnimatedSpriteItem::AnimatedSpriteItem()
 AnimatedSpriteItem::AnimatedSpriteItem(QVector<cachedframe> &&cachedframes, QVector<QColor> && palette)
     : m_cachedframes(cachedframes), m_cachedpal(palette)
 {
+    //compute the duration
+    for(const cachedframe & c : cachedframes )
+        m_cachedDuration += c.duration;
 }
 
 AnimatedSpriteItem::~AnimatedSpriteItem()
@@ -25,6 +28,7 @@ void AnimatedSpriteItem::Reset()
         m_ticksnextfrm  = m_cachedframes[m_curfrm].duration;
     else
         m_ticksnextfrm = 0;
+    m_tickselapsed = 0;
     emit playback_complete(); //Don't forget to notify we're back to the first frame!
 }
 
@@ -95,6 +99,7 @@ void AnimatedSpriteItem::tick(unsigned int /*curticks*/)
         --m_ticksnextfrm;
     else
         UpdateFrame();
+    ++m_tickselapsed;
 }
 
 void AnimatedSpriteItem::UpdateFrame()
@@ -102,6 +107,7 @@ void AnimatedSpriteItem::UpdateFrame()
     ++m_curfrm;
     if( m_curfrm >= m_cachedframes.size() )
     {
+        m_tickselapsed = 0;
         m_curfrm = 0;
         emit playback_complete(); //When we got through all our frames notify the scene!
     }
@@ -116,6 +122,9 @@ void AnimatedSpriteItem::setCurFrame(int frmid)
     {
         m_curfrm       = frmid;
         m_ticksnextfrm = m_cachedframes[m_curfrm].duration;
+        m_tickselapsed = 0;
+        for(int i = 0; i < m_curfrm; ++i)
+            m_tickselapsed += m_cachedframes[i].duration;
         emit frame_changed(m_curfrm, boundingRect());
     }
 }

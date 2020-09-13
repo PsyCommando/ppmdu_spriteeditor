@@ -22,11 +22,14 @@ public:
     void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
     void OnHideTab() override;
     void OnDestruction()override;
+    void OnItemRemoval(const QModelIndex & item)override;
     void PrepareForNewContainer()override;
 
+    void SetCurrentFrame(int frameidx, bool bupdatescene = true);
 private:
     void ConnectSceneRenderer();
     void DisconnectSceneRenderer();
+    void UpdateTickCounter();
 
 private slots:
     //Elements callbacks
@@ -41,6 +44,7 @@ private slots:
     //Scene Renderer callbacks
     void OnPreviewRangeChanged(int beg, int length);
     void OnPreviewFrameChanged(int curfrm, QRectF area);
+    void OnPreviewTick(int curtick);
 
     void on_btnSeqPlay_clicked();
 
@@ -54,9 +58,12 @@ private slots:
 
     void on_spinCurFrm_editingFinished();
 
+    void on_tblseqfrmlst_clicked(const QModelIndex &index);
+
 private:
     Ui::tabAnimSequence *ui;
     SpriteScene m_previewrender;
+
 };
 
 #endif // TABANIMSEQUENCE_HPP

@@ -282,7 +282,7 @@ namespace compression
                       m_itInCur,
                       m_itInEnd;
         //Input file length
-        vector<uint8_t>::size_type       m_inputSize;
+        vector<uint8_t>::size_type       m_inputSize{0};
 
         //Reference on the output vector
         vector<uint8_t>                * m_pCompressedData;
@@ -291,7 +291,7 @@ namespace compression
           //m_itOutBeg,
         outIter_t   m_itOutCur;
                        //m_itOutEnd;
-        unsigned int m_nbCompressedByteWritten;
+        unsigned int m_nbCompressedByteWritten{0};
 
         //This contains the 7 possible high nybble values we can use for copying a sequence over
         vector<uint8_t>                  m_highNybbleLenghtsPossible;
@@ -663,9 +663,10 @@ namespace compression
                                                              _inRandit         itinend,
                                                              bool              blogenabled )
         :m_pCompressedData(&out_compresseddata), m_itInBeg(itinbeg), m_itInCur(itinbeg), m_itInEnd(itinend),
-        m_highNybbleLenghtsPossible(PX_NB_POSSIBLE_SEQ_LEN,0), m_inputSize(0), m_bLoggingEnabled(blogenabled),
-        m_nbCompressedByteWritten(0), m_itOutCur(std::back_inserter(out_compresseddata))
+        m_highNybbleLenghtsPossible(PX_NB_POSSIBLE_SEQ_LEN,0),
+        m_itOutCur(std::back_inserter(out_compresseddata))
     {
+        m_bLoggingEnabled = blogenabled;
         m_inputSize = std::distance(itinbeg, itinend);
 
         //Pre-emptive resize

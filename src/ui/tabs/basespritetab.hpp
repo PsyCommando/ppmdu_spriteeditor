@@ -4,8 +4,9 @@
 BaseSpriteTab
     Base class for tabs meant to be used for editing sprites data
 */
+#include <QUndoCommand>
 #include <QWidget>
-#include <src/treeelemtypes.hpp>
+#include <src/data/treeelemtypes.hpp>
 
 class Sprite;
 class MFrame;
@@ -47,7 +48,12 @@ public:
     virtual void OnDestruction();
 
     /*
-    *
+     * Called when an item is removed from the data.
+    */
+    virtual void OnItemRemoval(const QModelIndex & item);
+
+    /*
+    * Called when we're about to load a new container
     */
     virtual void PrepareForNewContainer()=0;
 
@@ -59,6 +65,11 @@ public:
     void Warn(const QString & title, const QString & text);
 
     /*
+     * Helper to push things onto the main undo stack!
+    */
+    void PushUndoCommand(QUndoCommand *cmd);
+
+    /*
      * Helper Data access
     */
     Sprite * currentSprite();
@@ -66,8 +77,8 @@ public:
     Image * currentImage();
     AnimSequence * currentAnimSequence();
     eTreeElemDataType currentEntryType();
-    MFramePart * currentTblFrameParts();
-    Image * currentTblImages();
+//    MFramePart * currentTblFrameParts();
+//    Image * currentTblImages();
 
 signals:
 protected:

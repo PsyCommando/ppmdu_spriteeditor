@@ -7,7 +7,7 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QTime>
-#include <src/randomgenhelper.hpp>
+#include <src/utility/randomgenhelper.hpp>
 
 //#include <iostream>
 

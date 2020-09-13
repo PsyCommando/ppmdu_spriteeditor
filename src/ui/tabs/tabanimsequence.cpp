@@ -2,6 +2,8 @@
 #include "ui_tabanimsequence.h"
 #include <QFileDialog>
 
+const QString DEFAULT_PLAYTIME_VALUE = "----- t";
+
 TabAnimSequence::TabAnimSequence(QWidget *parent) :
     BaseSpriteTab(parent),
     ui(new Ui::tabAnimSequence)
@@ -33,6 +35,7 @@ void TabAnimSequence::OnShowTab(Sprite * pspr, QPersistentModelIndex element)
 
 void TabAnimSequence::OnHideTab()
 {
+    m_previewrender.endAnimationPlayback();
     DisconnectSceneRenderer();
     m_previewrender.UninstallAnimPreview(ui->gvAnimSeqViewport);
 
@@ -41,6 +44,8 @@ void TabAnimSequence::OnHideTab()
     ui->tblseqfrmlst->setModel(nullptr);
     ui->tblseqfrmlst->setItemDelegate(nullptr);
     ui->tblseqfrmlst->reset();
+
+    ui->lblAnimTime->setText(DEFAULT_PLAYTIME_VALUE);
     qDebug() << "TabAnimSequence::HideTab(): Unset scene!\n";
     BaseSpriteTab::OnHideTab();
 }
@@ -49,7 +54,23 @@ void TabAnimSequence::OnHideTab()
 void TabAnimSequence::OnDestruction()
 {
     DisconnectSceneRenderer();
+    m_previewrender.endAnimationPlayback();
+    m_previewrender.Reset();
     m_previewrender.UninstallAnimPreview(ui->gvAnimSeqViewport);
+    BaseSpriteTab::OnDestruction();
+}
+
+void TabAnimSequence::OnItemRemoval(const QModelIndex &item)
+{
+    if(!item.isValid())
+        return;
+
+    //Removing our parent sprite! Or our animation sequence!
+    if( item.internalPointer() == currentSprite() ||
+        item.internalPointer() == currentAnimSequence())
+        PrepareForNewContainer(); //Clear everything!
+
+    BaseSpriteTab::OnItemRemoval(item);
 }
 
 void TabAnimSequence::PrepareForNewContainer()
@@ -72,6 +93,7 @@ void TabAnimSequence::ConnectSceneRenderer()
     //Connect scene signals to UI
     connect( &m_previewrender, &SpriteScene::rangechanged, this, &TabAnimSequence::OnPreviewRangeChanged);
     connect( &m_previewrender, &SpriteScene::framechanged, this, &TabAnimSequence::OnPreviewFrameChanged);
+    connect( &m_previewrender, &SpriteScene::tick,         this, &TabAnimSequence::OnPreviewTick);
 }
 
 void TabAnimSequence::DisconnectSceneRenderer()
@@ -85,6 +107,7 @@ void TabAnimSequence::DisconnectSceneRenderer()
     //Connect scene signals to UI
     disconnect( &m_previewrender, &SpriteScene::rangechanged, this, &TabAnimSequence::OnPreviewRangeChanged);
     disconnect( &m_previewrender, &SpriteScene::framechanged, this, &TabAnimSequence::OnPreviewFrameChanged);
+    disconnect( &m_previewrender, &SpriteScene::tick,         this, &TabAnimSequence::OnPreviewTick);
 }
 
 void TabAnimSequence::OnPreviewRangeChanged(int beg, int length)
@@ -97,18 +120,57 @@ void TabAnimSequence::OnPreviewRangeChanged(int beg, int length)
     ui->sldrAnimSeq->blockSignals(true);
     ui->sldrAnimSeq->setRange(0, length - 1); //since we start at 0, subtract 1
     ui->sldrAnimSeq->blockSignals(false);
+    UpdateTickCounter();
+    ui->gvAnimSeqViewport->updateScene(QList{ui->gvAnimSeqViewport->sceneRect()});
 }
 
 void TabAnimSequence::OnPreviewFrameChanged(int curfrm, QRectF /*area*/)
 {
     //Block signals so we don't end up with infinite recursion and stuff!
+//    ui->spinCurFrm->blockSignals(true);
+//    ui->spinCurFrm->setValue(curfrm);
+//    ui->spinCurFrm->blockSignals(false);
+
+//    ui->sldrAnimSeq->blockSignals(true);
+//    ui->sldrAnimSeq->setValue(curfrm);
+//    ui->sldrAnimSeq->blockSignals(false);
+//    UpdateTickCounter();
+
+    SetCurrentFrame(curfrm, false);
+}
+
+void TabAnimSequence::OnPreviewTick(int /*curtick*/)
+{
+    UpdateTickCounter();
+}
+
+void TabAnimSequence::UpdateTickCounter()
+{
+    ui->lblAnimTime->setText(QString("%05d t").arg(m_previewrender.getTimeElapsed()));
+}
+
+void TabAnimSequence::SetCurrentFrame(int frameidx, bool bupdatescene)
+{
+    if(bupdatescene)
+        m_previewrender.setCurrentFrame(frameidx);
+
+    //Update the spinner
     ui->spinCurFrm->blockSignals(true);
-    ui->spinCurFrm->setValue(curfrm);
+    ui->spinCurFrm->setValue(frameidx);
     ui->spinCurFrm->blockSignals(false);
 
+    //Update the slider
     ui->sldrAnimSeq->blockSignals(true);
-    ui->sldrAnimSeq->setValue(curfrm);
+    ui->sldrAnimSeq->setValue(frameidx);
     ui->sldrAnimSeq->blockSignals(false);
+
+    //Select the frame in the table view
+    AnimSequence * curseq = currentAnimSequence();
+    if(curseq)
+        ui->tblseqfrmlst->setCurrentIndex(curseq->modelIndex());
+
+    //Update the tick counter
+    UpdateTickCounter();
 }
 
 //-------------------------------------------------------------------------
@@ -151,14 +213,19 @@ void TabAnimSequence::on_btnSeqRemFrm_clicked()
     AnimSequence    * pseq  = static_cast<AnimSequence*>(pafrm->parentNode());
     Q_ASSERT(pseq && pafrm);
 
-    ui->tblseqfrmlst->setCurrentIndex(QModelIndex());
-    if(pseq->removeChildrenNodes(ind.row(), 1))
+    QItemSelectionModel* sel = ui->tblseqfrmlst->selectionModel();
+    QModelIndexList selectedindex = sel->selectedRows();
+
+    //ui->tblseqfrmlst->setCurrentIndex(QModelIndex());
+    if(pseq->removeChildrenNodes(selectedindex))
         ShowStatusMessage(tr("Removed animation frame!"));
     else
         ShowStatusErrorMessage(tr("Removal failed!"));
 
+    sel->clearSelection();
     m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
+    ui->tblseqfrmlst->update(ui->tblseqfrmlst->rect());
+    //ui->tblseqfrmlst->update();
 }
 
 void TabAnimSequence::on_btnSeqMvUp_clicked()
@@ -264,18 +331,22 @@ void TabAnimSequence::on_chkAnimSeqLoop_toggled(bool checked)
 
 void TabAnimSequence::on_sldrAnimSeq_sliderMoved(int position)
 {
-    m_previewrender.setCurrentFrame(position);
-    ui->spinCurFrm->blockSignals(true);
-    ui->spinCurFrm->setValue(position);
-    ui->spinCurFrm->blockSignals(false);
+//    m_previewrender.setCurrentFrame(position);
+//    ui->spinCurFrm->blockSignals(true);
+//    ui->spinCurFrm->setValue(position);
+//    ui->spinCurFrm->blockSignals(false);
+
+    SetCurrentFrame(position);
 }
 
 void TabAnimSequence::on_spinCurFrm_editingFinished()
 {
-    m_previewrender.setCurrentFrame(ui->spinCurFrm->value());
-    ui->sldrAnimSeq->blockSignals(true);
-    ui->sldrAnimSeq->setValue(ui->spinCurFrm->value());
-    ui->sldrAnimSeq->blockSignals(false);
+//    m_previewrender.setCurrentFrame(ui->spinCurFrm->value());
+//    ui->sldrAnimSeq->blockSignals(true);
+//    ui->sldrAnimSeq->setValue(ui->spinCurFrm->value());
+//    ui->sldrAnimSeq->blockSignals(false);
+
+    SetCurrentFrame(ui->spinCurFrm->value());
 }
 
 void TabAnimSequence::on_tblseqfrmlst_activated(const QModelIndex &/*index*/)
@@ -319,4 +390,9 @@ void TabAnimSequence::on_btnSeqExport_clicked()
     ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
 }
 
-
+void TabAnimSequence::on_tblseqfrmlst_clicked(const QModelIndex &index)
+{
+    if(!index.isValid())
+        return;
+    SetCurrentFrame(index.row());
+}

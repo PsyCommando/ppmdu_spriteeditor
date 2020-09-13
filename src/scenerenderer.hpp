@@ -24,8 +24,8 @@ description: Manages scenes used by the main interface for displaying sprite ani
 #include <QGradient>
 #include <QBitmap>
 
-#include <src/sprite.hpp>
-#include <src/spritemanager.hpp>
+#include <src/data/sprite/sprite.hpp>
+#include <src/data/sprite/spritemanager.hpp>
 
 //=============================================================================
 //  AnimatedSpriteItem

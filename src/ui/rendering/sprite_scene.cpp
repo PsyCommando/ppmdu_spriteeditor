@@ -28,10 +28,10 @@ void SpriteScene::ConnectSpriteSignals()
     const SpritePropertiesModel * pmod = m_spr->model();
     connect(pmod, &SpritePropertiesModel::dataChanged, this, &SpriteScene::OnSpriteDataChanged);
 
-    const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
-    if(!pseq)
-        Q_ASSERT(false);
-    connect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+//    const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
+//    if(!pseq)
+//        Q_ASSERT(false);
+//    connect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
 }
 
 void SpriteScene::DisconnectSpriteSignals()
@@ -49,10 +49,10 @@ void SpriteScene::DisconnectSpriteSignals()
     const SpritePropertiesModel * pmod = m_spr->model();
     disconnect(pmod, &SpritePropertiesModel::dataChanged, this, &SpriteScene::OnSpriteDataChanged);
 
-    const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
-    if(!pseq)
-        Q_ASSERT(false);
-    disconnect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+//    const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
+//    if(!pseq)
+//        Q_ASSERT(false);
+//    disconnect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
 }
 
 void SpriteScene::SetupSceneBackground()
@@ -73,6 +73,12 @@ void SpriteScene::Clear()
         DisconnectSpriteSignals();
         m_animScene.removeItem(m_animsprite.get());
         m_animsprite.reset();
+    }
+    if(m_spr)
+    {
+        const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
+        if(pseq)
+            disconnect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
     }
 }
 
@@ -120,6 +126,8 @@ void SpriteScene::setSprite(const Sprite *pspr, const AnimSequence *paniseq)
         m_seqid = paniseq->nodeIndex();
     else
         m_seqid = 0;
+    if(m_spr)
+        connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
     loadAnimation();
 }
 
@@ -128,6 +136,12 @@ void SpriteScene::setSprite(const Sprite *pspr, fmt::AnimDB::animseqid_t seqid)
     Reset();
     m_spr = pspr;
     m_seqid = seqid;
+    if(m_spr)
+    {
+        const AnimSequence *paniseq = pspr->getAnimSequence(seqid);
+        if(paniseq)
+            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+    }
     loadAnimation();
 }
 
@@ -135,6 +149,8 @@ void SpriteScene::setSequence(const AnimSequence *paniseq)
 {
     Reset();
     m_seqid = paniseq->nodeIndex();
+    if(m_spr)
+        connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
     loadAnimation();
 }
 
@@ -142,6 +158,12 @@ void SpriteScene::setSequence(fmt::AnimDB::animseqid_t seqid)
 {
     Reset();
     m_seqid = seqid;
+    if(m_spr)
+    {
+        const AnimSequence *paniseq = m_spr->getAnimSequence(seqid);
+        if(paniseq)
+            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+    }
     loadAnimation();
 }
 
@@ -223,7 +245,6 @@ void SpriteScene::loadAnimation()
 void SpriteScene::loopComplete()
 {
     //Tell the UI we completed a loop of the full animation
-
 }
 
 void SpriteScene::OnAnimDataChaged()
@@ -262,3 +283,12 @@ int SpriteScene::getCurrentFrame()const
     return m_animsprite->getCurrentFrame();
 }
 
+unsigned int SpriteScene::getSequenceLengthInTicks() const
+{
+    return m_animsprite? m_animsprite->getDuration() : 0;
+}
+
+unsigned int SpriteScene::getTimeElapsed()const
+{
+    return m_animsprite? m_animsprite->getTimeElapsed() : 0;
+}

@@ -4,7 +4,7 @@
 #include <QGraphicsItem>
 #include <QObject>
 #include <QWidget>
-#include <src/sprite.hpp>
+#include <src/data/sprite/sprite.hpp>
 
 /*
  * Struct to store a cached animation frame.
@@ -55,6 +55,10 @@ public:
 
     inline int getCurrentFrame()const{return m_curfrm;}
 
+    inline unsigned int getDuration()const{return m_cachedDuration;}
+
+    inline unsigned int getTimeElapsed()const{return m_tickselapsed;}
+
 // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
@@ -74,6 +78,8 @@ private:
     QRect                   m_biggestFrame;     //The largest frame of all the cached frames. Used to calculate the center and etc
     int                     m_curfrm{0};        //The frame the sprite is currently set to paint
     unsigned int            m_ticksnextfrm{0};  //Amount of ticks to wait for before changing the frame again!
+    unsigned int            m_cachedDuration{0};//Amount of ticks the animation lasts for
+    unsigned int            m_tickselapsed{0};  //Ticks elapsed from the first frame of the animation sequence, to the end of the animation sequence. Used to track playback
 
 signals:
     void frame_changed(int /*frmid*/, QRectF /*boundingbox*/); //Emited when the sprite's current painted frame changed

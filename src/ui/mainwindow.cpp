@@ -8,21 +8,36 @@
 #include <QSvgRenderer>
 #include <QSpinBox>
 #include <QTimer>
+#include <QStackedLayout>
 #include <src/ui/diagsingleimgcropper.hpp>
 #include <src/ui/dialogabout.hpp>
-#include <src/ui/paletteeditor.hpp>
+#include <src/ui/editor/palette/paletteeditor.hpp>
 #include <src/ui/tvspritescontextmenu.hpp>
 #include <src/ui/errorhelper.hpp>
 
 static const QString MAIN_WINDOW_TITLE = "PMD2 Sprite Muncher v%1";
 
+
+//Utiliy method to run a lambda on all BaseSpriteTab in the main stacked widget!
+void MainWindow::forEachTab(std::function<void(BaseSpriteTab*)> fun)
+{
+    QStackedLayout * sl = static_cast<QStackedLayout*>(ui->stkEditor->layout());
+    for(int i = 0; i < sl->count(); ++i)
+    {
+        BaseSpriteTab* curtab = dynamic_cast<BaseSpriteTab*>(sl->itemAt(i)->widget());
+        if(curtab)
+            fun(curtab);
+    }
+}
+
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    m_imgNoImg(":/imgs/resources/imgs/noimg.png"),
     m_aboutdiag(this),
     m_progress(this),
-    m_settings("./settings.ini",QSettings::Format::IniFormat)
+    m_settings("./settings.ini",QSettings::Format::IniFormat),
+    m_imgNoImg(":/imgs/resources/imgs/noimg.png")
 {
     //Resources alloc
     m_pStatusFileType.reset(new QLabel("     "));
@@ -35,21 +50,27 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     //Setup references to main window in tabs
-    ui->tabAnimTable->setMainWindow(this);
-    ui->tabSequence->setMainWindow(this);
+    forEachTab([this](BaseSpriteTab * ptab){ptab->setMainWindow(this);});
+//    ui->tabAnimTable->  setMainWindow(this);
+//    ui->tabEfx->        setMainWindow(this);
+//    ui->tabFrame->      setMainWindow(this);
+//    ui->tabImages->     setMainWindow(this);
+//    ui->tabProperties-> setMainWindow(this);
+//    ui->tabSequence->   setMainWindow(this);
 
     //Parse settings!
     readSettings();
 
+    //Undo-Redo
+    ui->actionUndo = m_undoStack.createUndoAction(this, tr("&Undo"));
+    ui->actionUndo->setShortcuts(QKeySequence::Undo);
+
+    ui->actionRedo = m_undoStack.createRedoAction(this, tr("&Redo"));
+    ui->actionRedo->setShortcuts(QKeySequence::Redo);
+
+    //Main treeview
     ui->tv_sprcontent->setModel( &spr_manager::SpriteManager::Instance() );
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
-
-    ui->spbFrmPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
-    ui->spbFrmPartYOffset->setRange(0, fmt::step_t::YOFFSET_MAX);
-
-    ui->spbimgunk2->setRange (0, std::numeric_limits<uint32_t>::max());
-    ui->spbimgunk14->setRange(0, std::numeric_limits<uint16_t>::max());
-
     DisplayStartScreen();
 }
 
@@ -58,8 +79,13 @@ MainWindow::~MainWindow()
     qDebug("MainWindow::~MainWindow()\n");
 
     //Gotta do some special handling to avoid things accessing sprites from breaking things
-    ui->tabAnimTable->OnDestruction();
-    ui->tabSequence->OnDestruction();
+    forEachTab([](BaseSpriteTab * ptab){ptab->OnDestruction();});
+//    ui->tabAnimTable->  OnDestruction();
+//    ui->tabEfx->        OnDestruction();
+//    ui->tabFrame->      OnDestruction();
+//    ui->tabImages->     OnDestruction();
+//    ui->tabProperties-> OnDestruction();
+//    ui->tabSequence->   OnDestruction();
 
     //Get rid of the ui
     delete ui;
@@ -96,37 +122,32 @@ void MainWindow::HideAllTabs()
     //Disable updates temporarily
     //ui->stkEditor->setUpdatesEnabled(false);
 
-    //Stop any animations
-//    HideAnimSequencePage();
-
-    //Remove tabs from the widget
-//    ui->stkEditor->removeWidget(ui->tabAnimTable);
-//    ui->stkEditor->removeWidget(ui->tabEfx);
-//    ui->stkEditor->removeWidget(ui->tabFrame);
-//    ui->stkEditor->removeWidget(ui->tabSequence);
-//    ui->stkEditor->removeWidget(ui->tabProperties);
-//    ui->stkEditor->removeWidget(ui->tabWelcome);
-//    ui->stkEditor->removeWidget(ui->tabImages);
-
-    //Hide all removed tabs
-    //ui->tabEfx->hide();
-    //ui->tabFrame->hide();
-    //ui->tabProperties->hide();
-    //ui->tabWelcome->hide();
-    //ui->tabImages->hide();
-
     //New tabs
-    if(ui->stkEditor->currentWidget() == ui->tabSequence)
-        ui->tabSequence->OnHideTab();
-    if(ui->stkEditor->currentWidget() == ui->tabAnimTable)
-        ui->tabAnimTable->OnHideTab();
+    QWidget * pcurtab = ui->stkEditor->currentWidget();
+    forEachTab([pcurtab](BaseSpriteTab * ptab){ if(pcurtab == ptab){ptab->OnHideTab();}});
 
-    //Clear the property tab's preview
-    ui->lbl_imgpreview->clear();
-    ui->lbl_imgpreview->setPixmap(m_imgNoImg);
+//    if(ui->stkEditor->currentWidget() == ui->tabAnimTable)
+//        ui->tabAnimTable->OnHideTab();
+//    if(ui->stkEditor->currentWidget() == ui->tabEfx)
+//        ui->tabEfx->OnHideTab();
+//    if(ui->stkEditor->currentWidget() == ui->tabFrame)
+//        ui->tabFrame->OnHideTab();
+//    if(ui->stkEditor->currentWidget() == ui->tabImages)
+//        ui->tabImages->OnHideTab();
+//    if(ui->stkEditor->currentWidget() == ui->tabProperties)
+//        ui->tabProperties->OnHideTab();
+//    if(ui->stkEditor->currentWidget() == ui->tabSequence)
+//        ui->tabSequence->OnHideTab();
 
     ui->stkEditor->setCurrentWidget(ui->tabEmpty);
     //ui->stkEditor->setUpdatesEnabled(true);
+}
+
+void MainWindow::ShowATab(BaseSpriteTab *ptab, Sprite *pspr, const QModelIndex &element)
+{
+    Q_ASSERT(ptab);
+    ShowATab(ptab);
+    ptab->OnShowTab(pspr, element);
 }
 
 void MainWindow::ShowATab(QWidget *ptab)
@@ -140,24 +161,11 @@ void MainWindow::ShowATab(QWidget *ptab)
     ui->stkEditor->update(ui->stkEditor->rect());
 }
 
-void MainWindow::ShowATab(BaseSpriteTab *ptab)
-{
-    //#TODO: Placeholder for the refactor!!!
-    Q_ASSERT(ptab);
-    ShowATab(ptab);
-}
-
 void MainWindow::DisplayStartScreen()
 {
     qDebug() << "MainWindow::DisplayStartScreen(): Showing start screen!\n";
     ShowATab(ui->tabWelcome);
     ShowStatusMessage(tr("Welcome! May you encounter no bugs today!"));
-}
-
-void MainWindow::DisplayEffectsPage(Sprite *spr)
-{
-    Q_ASSERT(spr);
-    ShowATab(ui->tabEfx);
 }
 
 void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
@@ -177,17 +185,7 @@ void MainWindow::SetupUIForNewContainer(spr_manager::SpriteContainer * sprcnt)
     setWindowFilePath(sprcnt->GetContainerSrcPath());
 }
 
-void MainWindow::setupFrameEditPageForPart(MFrame */*frm*/, MFramePart */*part*/)
-{
-//    if(!frm || !part)
-//    {
-//        qWarning("MainWindow::setupFrameEditPageForPart(): Got null frame or part! Skipping!");
-//        HideAllTabs(); //Reset UI to try to avoid further issues
-//        ui->tv_sprcontent->setCurrentIndex(QModelIndex()); //Reset currently selected sprite
-//        ShowStatusErrorMessage("An error occured. UI reset! Please notify devs!");
-//        return;
-//    }
-}
+
 
 //Clear all selections to avoid warnings and  etc..
 void MainWindow::PrepareForNewContainer()
@@ -201,13 +199,15 @@ void MainWindow::PrepareForNewContainer()
     };
 
     lambdaClearModel(ui->tv_sprcontent);
-    lambdaClearModel(ui->tblframeparts);
-    lambdaClearModel(ui->tblProperties);
-    //lambdaClearModel(ui->tblseqfrmlst);
-    lambdaClearModel(ui->tblviewImages);
 
-    ui->tabSequence->PrepareForNewContainer();
-    ui->tabAnimTable->PrepareForNewContainer();
+    forEachTab([](BaseSpriteTab * ptab){ptab->PrepareForNewContainer();});
+
+//    ui->tabSequence->   PrepareForNewContainer();
+//    ui->tabAnimTable->  PrepareForNewContainer();
+//    ui->tabFrame->      PrepareForNewContainer();
+//    ui->tabEfx->        PrepareForNewContainer();
+//    ui->tabImages->     PrepareForNewContainer();
+//    ui->tabProperties-> PrepareForNewContainer();
 }
 
 void MainWindow::LoadContainer(const QString &path)
@@ -247,7 +247,6 @@ void MainWindow::ExportContainer(const QString &path)
 void MainWindow::ImportContainer(const QString &path)
 {
     spr_manager::SpriteContainer * sprcnt = spr_manager::SpriteManager::Instance().ImportContainer(path);
-
     SetupUIForNewContainer(sprcnt);
 }
 
@@ -504,6 +503,12 @@ int MainWindow::AskSaveChanges()
     return msgBox.exec();
 }
 
+void MainWindow::PushUndoAction(QUndoCommand *cmd)
+{
+    Q_ASSERT(cmd);
+    m_undoStack.push(cmd);
+}
+
 void MainWindow::Warn(const QString &title, const QString &text)
 {
     QMessageBox msgBox(this);
@@ -542,7 +547,16 @@ void MainWindow::HandleItemRemoval(QModelIndex spriteidx)
     if(currentSpriteModelIndex() == spriteidx)
     {
         HideAllTabs(); //Deselect everything if we're deleting the current entry
-        ui->tblframeparts->setModel(nullptr);
+
+        forEachTab([spriteidx](BaseSpriteTab * ptab){ptab->OnItemRemoval(spriteidx);});
+//        ui->tabAnimTable->    OnItemRemoval(spriteidx);
+//        ui->tabEfx->          OnItemRemoval(spriteidx);
+//        ui->tabFrame->        OnItemRemoval(spriteidx);
+//        ui->tabImages->       OnItemRemoval(spriteidx);
+//        ui->tabProperties->   OnItemRemoval(spriteidx);
+//        ui->tabSequence->     OnItemRemoval(spriteidx);
+
+        //ui->tblframeparts->setModel(nullptr);
         QModelIndex parentidx = ui->tv_sprcontent->currentIndex().parent();
         if(parentidx.isValid())
             ui->tv_sprcontent->setCurrentIndex(parentidx);
@@ -557,6 +571,50 @@ void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
 {
     this->on_tv_sprcontent_clicked(index);
 }
+
+void MainWindow::DisplayPropertiesPage(Sprite * spr)
+{
+    ShowATab(ui->tabProperties, spr, QModelIndex());
+//    ui->stkEditor->setCurrentWidget(ui->tabProperties);
+//    ui->tabProperties->OnShowTab(spr, QModelIndex());
+}
+
+void MainWindow::DisplayEffectsPage(Sprite *spr, const QModelIndex & index)
+{
+    ShowATab(ui->tabEfx, spr, index);
+//    ui->stkEditor->setCurrentWidget(ui->tabEfx);
+//    ui->tabEfx->OnShowTab(spr, index);
+}
+
+void MainWindow::DisplayAnimTablePage(Sprite *spr, const QModelIndex & index)
+{
+    ShowATab(ui->tabAnimTable, spr, index);
+//    ui->stkEditor->setCurrentWidget(ui->tabAnimTable);
+//    ui->tabAnimTable->OnShowTab(spr, index);
+}
+
+void MainWindow::DisplayMFramePage(Sprite *spr, const QModelIndex &index)
+{
+    ShowATab(ui->tabFrame, spr, index);
+//    ui->stkEditor->setCurrentWidget(ui->tabFrame);
+//    ui->tabFrame->OnShowTab(spr, index);
+}
+
+void MainWindow::DisplayImageListPage(Sprite *spr, const QModelIndex & index)
+{
+    ShowATab(ui->tabImages, spr, index);
+//    ui->stkEditor->setCurrentWidget(ui->tabImages);
+//    ui->tabImages->OnShowTab(spr, index);
+}
+
+void MainWindow::DisplayAnimSequencePage(Sprite * spr, const QModelIndex & index)
+{
+    ShowATab(ui->tabSequence, spr, index);
+//    ui->stkEditor->setCurrentWidget(ui->tabSequence);
+//    ui->tabSequence->OnShowTab(spr, index);
+}
+
+
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
 {
@@ -599,51 +657,36 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         }
     case eTreeElemDataType::effectOffsets:
         {
-            EffectOffsetContainer * efx = static_cast<EffectOffsetContainer*>(pcur);
-            Sprite * spr = efx->parentSprite();
-            DisplayEffectsPage(spr);
+            DisplayEffectsPage(pspr, index);
             break;
         }
     case eTreeElemDataType::animTable:
         {
-            AnimTable   * tbl = static_cast<AnimTable*>(pcur);
-            Sprite      * spr = tbl->parentSprite();
-            ui->stkEditor->setCurrentWidget(ui->tabAnimTable);
-            ui->tabAnimTable->OnShowTab(spr, index);
+            DisplayAnimTablePage(pspr, index);
             break;
         }
     case eTreeElemDataType::frame:
         {
-            MFrame * frm = static_cast<MFrame*>(pcur);
-            Sprite * spr = frm->parentSprite();
-            DisplayMFramePage(spr, frm);
+            DisplayMFramePage(pspr, index);
             break;
         }
     case eTreeElemDataType::image:
         {
-            Image           * img   = static_cast<Image*>(pcur);
-            ImageContainer  * imgs  = static_cast<ImageContainer*>(img->parentNode());
-            Sprite          * spr   = img->parentSprite();
-            DisplayImageListPage(spr, imgs, img);
+            DisplayImageListPage(pspr, index);
             break;
         }
     case eTreeElemDataType::images:
         {
-            ImageContainer  * imgs  = static_cast<ImageContainer*>(pcur);
-            Sprite          * spr   = imgs->parentSprite();
-            DisplayImageListPage(spr,imgs);
+            DisplayImageListPage(pspr, QModelIndex());
             break;
         }
     case eTreeElemDataType::animSequence:
         {
-            AnimSequence    * seq   = static_cast<AnimSequence*>(pcur);
-            Sprite          * spr   = seq->parentSprite();
-            ui->stkEditor->setCurrentWidget(ui->tabSequence);
-            ui->tabSequence->OnShowTab(spr, index);
+            DisplayAnimSequencePage(pspr, index);
             break;
         }
-    case eTreeElemDataType::palette:
-    case eTreeElemDataType::animGroup:
+    case eTreeElemDataType::palette:    [[fallthrough]];
+    case eTreeElemDataType::animGroup:  [[fallthrough]];
     default:
         HideAllTabs();
     };
@@ -732,17 +775,17 @@ eTreeElemDataType MainWindow::currentEntryType()
     return eTreeElemDataType::None;
 }
 
-MFramePart * MainWindow::currentTblFrameParts()
-{
-    MFramePart * elem = reinterpret_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer());
-    return elem;
-}
+//MFramePart * MainWindow::currentTblFrameParts()
+//{
+//    MFramePart * elem = reinterpret_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer());
+//    return elem;
+//}
 
-Image * MainWindow::currentTblImages()
-{
-    Image * elem = reinterpret_cast<Image*>(ui->tblviewImages->currentIndex().internalPointer());
-    return elem;
-}
+//Image * MainWindow::currentTblImages()
+//{
+//    Image * elem = reinterpret_cast<Image*>(ui->tblviewImages->currentIndex().internalPointer());
+//    return elem;
+//}
 
 
 void MainWindow::ShowProgressDiag(QFuture<void> &task)
@@ -752,8 +795,7 @@ void MainWindow::ShowProgressDiag(QFuture<void> &task)
     m_progress.show();
 }
 
-
-void MainWindow::on_tblframeparts_clicked(const QModelIndex &/*index*/)
+void MainWindow::setSelectedTreeViewIndex(const QModelIndex & index)
 {
-
+    ui->tv_sprcontent->setCurrentIndex(index);
 }

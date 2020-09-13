@@ -19,14 +19,15 @@
 #include <QPersistentModelIndex>
 #include <QSettings>
 #include <QCloseEvent>
+#include <QUndoStack>
 
-#include "src/spritemanager.hpp"
+#include "src/data/sprite/spritemanager.hpp"
 #include <src/ui/rendering/sprite_scene.hpp>
 #include <src/ui/dialogabout.hpp>
 #include <src/ui/dialogprogressbar.hpp>
 #include <atomic>
 
-#include <src/frameeditor.hpp>
+#include <src/ui/editor/frame/frame_editor.hpp>
 
 class BaseSpriteTab;
 namespace Ui {
@@ -50,16 +51,16 @@ public:
     //Internal processing stuff
     void HideAllTabs();
     void ShowATab(QWidget * ptab);
-    void ShowATab(BaseSpriteTab *ptab);
+    void ShowATab(BaseSpriteTab *ptab, Sprite * pspr, const QModelIndex & element);
 
     void DisplayStartScreen();
     void DisplayPropertiesPage(Sprite * spr);
-    void DisplayMFramePage(Sprite * spr, MFrame *frm);
-//    void DisplayAnimSequencePage(Sprite * spr, AnimSequence *aniseq);
+    void DisplayMFramePage(Sprite * spr, const QModelIndex & index);
+    void DisplayAnimSequencePage(Sprite * spr, const QModelIndex & index);
 //    void DisplayAnimSequencePage(QPersistentModelIndex spr, QPersistentModelIndex aniseq);
-//    void DisplayAnimTablePage(Sprite * spr);
-    void DisplayEffectsPage(Sprite * spr);
-    void DisplayImageListPage(Sprite * spr, ImageContainer *pimgs, Image * img = nullptr );
+    void DisplayAnimTablePage(Sprite * spr, const QModelIndex & index);
+    void DisplayEffectsPage(Sprite * spr, const QModelIndex & index);
+    void DisplayImageListPage(Sprite * spr, const QModelIndex & index);
 
     //Hiding stuff
     void HideAnimSequencePage();
@@ -85,6 +86,8 @@ public:
 
     void HandleItemRemoval(QModelIndex spriteidx);
 
+    void setSelectedTreeViewIndex(const QModelIndex &index);
+    const QPixmap & getDefaultImage()const {return m_imgNoImg;}
 private:
     QPixmap RenderNoImageSvg();
 
@@ -103,6 +106,8 @@ private:
 
     //Show a message box asking if we should save the changes, and return the button pressed!
     int AskSaveChanges();
+
+    void PushUndoAction(QUndoCommand * cmd);
 //    void InitAnimScene();
 //    void ConnectSceneRenderer();
 //    void DisconnectSceneRenderer();
@@ -116,10 +121,10 @@ private:
     AnimSequence* currentAnimSequence();
     eTreeElemDataType currentEntryType();
     //For specific sub-tables
-    MFramePart  * currentTblFrameParts();
-    Image       * currentTblImages();
+//    MFramePart  * currentTblFrameParts();
+//    Image       * currentTblImages();
 
-    static QString GetPaletteImportFiterString();
+//    static QString GetPaletteImportFiterString();
 
     // QWidget interface
 protected:
@@ -149,48 +154,31 @@ private slots:
     void on_action_Quit_triggered();
     void on_action_Open_triggered();
 
-    void on_btnImageCrop_clicked();
+
 
     void ShowProgressDiag(QFuture<void> & task);
 
-    void on_tblviewImages_clicked(const QModelIndex &index);
-    void on_btnImagesExport_clicked();
+//    void on_tblviewImages_clicked(const QModelIndex &index);
+//    void on_btnImagesExport_clicked();
+//    void on_btnImagesImport_clicked();
+//    void on_spbimgunk2_valueChanged(int arg1);
+//    void on_spbimgunk14_valueChanged(int arg1);
+//    void on_btnImageCrop_clicked();
 
-    void on_tblframeparts_clicked(const QModelIndex &index);
-    void on_btnFrmExport_clicked();
-    void on_btnFrmRmPart_clicked();
-    void on_btnFrmAdPart_clicked();
-    void on_btnFrmMvUp_clicked();
-    void on_btnFrmMvDown_clicked();
-    void on_btnFrmDup_clicked();
-    void on_cmbFrmQuickPrio_currentIndexChanged(int index);
-
-
-    void on_btnExportPalette_clicked();
-    void on_btnImportPalette_clicked();
-
-//    void on_btnSeqExport_clicked();
-//    void on_btnSeqAddFrm_clicked();
-//    void on_btnSeqRemFrm_clicked();
-//    void on_btnSeqMvUp_clicked();
-//    void on_btnSeqMvDown_clicked();
-//    void on_btnSeqDup_clicked();
+//    void on_tblframeparts_clicked(const QModelIndex &index);
+//    void on_btnFrmExport_clicked();
+//    void on_btnFrmRmPart_clicked();
+//    void on_btnFrmAdPart_clicked();
+//    void on_btnFrmMvUp_clicked();
+//    void on_btnFrmMvDown_clicked();
+//    void on_btnFrmDup_clicked();
+//    void on_cmbFrmQuickPrio_currentIndexChanged(int index);
 
 
+//    void on_btnExportPalette_clicked();
+//    void on_btnImportPalette_clicked();
 
 
-
-    void on_btnImagesImport_clicked();
-
-    void on_spbimgunk2_valueChanged(int arg1);
-
-    void on_spbimgunk14_valueChanged(int arg1);
-
-    //void on_tblseqfrmlst_activated(const QModelIndex &index);
-
-    //Animation Preview stuff
-//    void OnPreviewRangeChanged(int length);
-//    void OnPreviewFrameChanged(int curfrm, QRectF area);
 
 signals:
 
@@ -203,25 +191,12 @@ private:
     QPixmap                 m_imgNoImg;             //Image displayed when no image can be displayed in a view!
     DialogAbout             m_aboutdiag;
     DialogProgressBar       m_progress;
-    QScopedPointer<FrameEditor> m_frmeditor;
-
-    //SpriteScene             m_previewrender;
     QString                 m_lastSavePath;
     QPersistentModelIndex   m_cursprite;
-    QScopedPointer<QDataWidgetMapper> m_frmdatmapper;
-    QScopedPointer<QDataWidgetMapper> m_imgdatmapper;
     QSettings               m_settings;
+    QUndoStack              m_undoStack;
 
 
-    static const QString PaletteFilterString()
-    {
-        static const QString filter = spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::RIFF_Pal) +
-                                      ";;" +
-                                      spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::TEXT_Pal) +
-                                      ";;" +
-                                      spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::GIMP_PAL);
-        return filter;
-    }
 
     static const QString & WanFileFilter()
     {
@@ -244,6 +219,7 @@ private:
         static const QString filter(tr("All supported formats (*.bin *.wan *.wat *.pkdpx)"));
         return filter;
     }
+    void forEachTab(std::function<void (BaseSpriteTab *)> fun);
 };
 
 
