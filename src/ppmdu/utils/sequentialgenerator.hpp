@@ -70,9 +70,6 @@ namespace utils
         }
 
         BaseSequentialIDGen(const my_t & cp )= delete;
-//        {
-//            operator=(cp);
-//        }
 
         BaseSequentialIDGen(my_t && mv)
         {
@@ -80,10 +77,6 @@ namespace utils
         }
 
         BaseSequentialIDGen & operator=(const my_t & cp )= delete;
-//        {
-//            m_id = cp.m_id;
-//            return *this;
-//        }
 
         BaseSequentialIDGen & operator=(my_t && mv)
         {

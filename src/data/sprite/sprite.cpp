@@ -3,15 +3,16 @@
 #include <QBitmap>
 #include <QPainter>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
-#include <src/data/sprite/spritecontainer.hpp>
+#include <src/data/sprite/sprite_container.hpp>
 #include <src/data/sprite/spritemanager.hpp>
+
+const QString ElemName_Sprite = "Sprite";
 
 //=================================================================================================================
 //  Sprite
 //=================================================================================================================
 void Sprite::_ctor()
 {
-    setNodeDataTy(eTreeElemDataType::sprite);
     m_bparsed             = false;
     m_bhasimagedata       = false;
     m_targetgompression   = filetypes::eCompressionFormats::INVALID;
@@ -21,12 +22,10 @@ void Sprite::_ctor()
     m_frmcnt.setParentNode(this);
     m_seqcnt.setParentNode(this);
     m_anmtbl.setParentNode(this);
-    m_propshndlr.reset(new SpritePropertiesHandler(this));
-    m_overmodel .reset(new SpriteOverviewModel(this));
 }
 
-Sprite::Sprite(TreeElement *parent)
-    :TreeElement(parent),
+Sprite::Sprite(TreeNode *parent)
+    :TreeNode(parent),
       m_efxcnt(this),
       m_palcnt(this),
       m_imgcnt(this),
@@ -38,8 +37,8 @@ Sprite::Sprite(TreeElement *parent)
     _ctor();
 }
 
-Sprite::Sprite(TreeElement *parent, Sprite::rawdat_t &&raw)
-    :TreeElement(parent),
+Sprite::Sprite(TreeNode *parent, Sprite::rawdat_t &&raw)
+    :TreeNode(parent),
       m_raw(raw),
       m_efxcnt(this),
       m_palcnt(this),
@@ -52,7 +51,7 @@ Sprite::Sprite(TreeElement *parent, Sprite::rawdat_t &&raw)
 }
 
 Sprite::Sprite(const Sprite &cp)
-    :TreeElement(cp),
+    :TreeNode(cp),
       m_efxcnt(this),
       m_palcnt(this),
       m_imgcnt(this),
@@ -89,7 +88,7 @@ Sprite &Sprite::operator=(const Sprite &cp)
 }
 
 Sprite::Sprite(Sprite && mv)
-    :TreeElement(mv),
+    :TreeNode(mv),
       m_efxcnt(this),
       m_palcnt(this),
       m_imgcnt(this),
@@ -127,20 +126,40 @@ Sprite &Sprite::operator=(Sprite && mv)
 
 Sprite::~Sprite()
 {
-    qDebug("Sprite::~Sprite(): Sprite ID: %d\n", nodeIndex());
+    //qDebug("Sprite::~Sprite(): Sprite ID: %d\n", nodeIndex());
 }
 
-void Sprite::clone(const TreeElement *other)
+TreeNode* Sprite::clone()const
 {
-    const Sprite * spr = static_cast<const Sprite*>(other);
-    if(!spr)
-        throw std::runtime_error("Sprite::clone(): other is not a Sprite!");
-    (*this) = *spr;
+    return new Sprite(*this);
 }
 
-TreeElement *Sprite::nodeChild(int row)
+TreeNode *Sprite::nodeChild(int row)
 {
     return ElemPtr(row);
+}
+
+eTreeElemDataType Sprite::nodeDataTy()const
+{
+    return eTreeElemDataType::sprite;
+}
+const QString& Sprite::nodeDataTypeName()const
+{
+    return ElemName_Sprite;
+}
+
+int Sprite::indexOfChild(const TreeNode * ptr)const
+{
+    if(ptr)
+    {
+        for(int idx = 0; idx < nbChildCat(); ++idx)
+        {
+            if(ElemPtr(idx) == ptr)
+                return idx;
+        }
+    }
+    throw std::runtime_error("Invalid child!");
+    return -1;
 }
 
 int Sprite::nodeChildCount() const
@@ -161,83 +180,83 @@ int Sprite::nodeChildCount() const
     return nbChildCat();
 }
 
-int Sprite::nodeIndex() const
-{
-    Q_ASSERT(m_parentItem);
-    return m_parentItem->indexOfNode(this);
-}
+//int Sprite::nodeIndex() const
+//{
+//    Q_ASSERT(parentNode());
+//    return parentNode()->indexOfNode(this);
+//}
 
-int Sprite::indexOfNode(const TreeElement *ptr) const
-{
-    //Search a matching child in the list!
-    for( int idx = 0; idx < nbChildCat(); ++idx )
-    {
-        if(ElemPtr(idx) == ptr)
-            return idx;
-    }
-    qWarning("Sprite::indexOfNode(): Couldn't find node!!\n");
-    Q_ASSERT(false);
-    return -1;
-}
+//int Sprite::indexOfNode(const TreeNode *ptr) const
+//{
+//    //Search a matching child in the list!
+//    for( int idx = 0; idx < nbChildCat(); ++idx )
+//    {
+//        if(ElemPtr(idx) == ptr)
+//            return idx;
+//    }
+//    qWarning("Sprite::indexOfNode(): Couldn't find node!!\n");
+//    Q_ASSERT(false);
+//    return -1;
+//}
 
-QModelIndex Sprite::modelIndex() const
-{
-    spr_manager::SpriteContainer * pcont = static_cast<spr_manager::SpriteContainer*>(m_parentItem);
-    if(pcont)
-        pcont->modelIndexOfNode(this);
-    return QModelIndex();
-}
+//QModelIndex Sprite::modelIndex() const
+//{
+//    spr_manager::SpriteContainer * pcont = static_cast<spr_manager::SpriteContainer*>(m_parentItem);
+//    if(pcont)
+//        pcont->modelIndexOfNode(this);
+//    return QModelIndex();
+//}
 
-QModelIndex Sprite::modelChildIndex(int row, int column) const
-{
-    spr_manager::SpriteContainer * pcont = static_cast<spr_manager::SpriteContainer*>(m_parentItem);
-    if(pcont)
-        pcont->index(row, column, modelIndex(), &spr_manager::SpriteManager::Instance());
-    return QModelIndex();
-}
+//QModelIndex Sprite::modelChildIndex(int row, int column) const
+//{
+//    spr_manager::SpriteContainer * pcont = static_cast<spr_manager::SpriteContainer*>(m_parentItem);
+//    if(pcont)
+//        pcont->index(row, column, modelIndex(), &spr_manager::SpriteManager::Instance());
+//    return QModelIndex();
+//}
 
-QModelIndex Sprite::modelParentIndex() const
-{
-    if (m_parentItem)
-        return m_parentItem->modelIndex();
-    return QModelIndex();
-}
+//QModelIndex Sprite::modelParentIndex() const
+//{
+//    if (m_parentItem)
+//        return m_parentItem->modelIndex();
+//    return QModelIndex();
+//}
 
-int Sprite::nodeColumnCount() const
-{
-    return 1; //Always just 1 column
-}
+//int Sprite::nodeColumnCount() const
+//{
+//    return 1; //Always just 1 column
+//}
 
-TreeElement *Sprite::parentNode()
-{
-    return m_parentItem;
-}
+//TreeNode *Sprite::parentNode()
+//{
+//    return m_parentItem;
+//}
 
-QVariant Sprite::nodeData(int column, int role) const
-{
-    if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
-        return QVariant(QString("Sprite#%1").arg(nodeIndex()));
-    return QVariant();
-}
+//QVariant Sprite::nodeData(int column, int role) const
+//{
+//    if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
+//        return QVariant(QString("Sprite#%1").arg(nodeIndex()));
+//    return QVariant();
+//}
 
-Sprite *Sprite::parentSprite(){return this;}
+//Sprite *Sprite::parentSprite(){return this;}
 
 bool Sprite::canParse()const
 {
     return m_raw.size() != 0;
 }
 
-void Sprite::OnClicked()
-{
-    //Only parse sprites that were loaded from file! Not newly created ones, or already parsed ones!
-//    if(!m_bparsed )
-//        ParseSpriteData();
-}
+//void Sprite::OnClicked()
+//{
+//    //Only parse sprites that were loaded from file! Not newly created ones, or already parsed ones!
+////    if(!m_bparsed )
+////        ParseSpriteData();
+//}
 
-void Sprite::OnExpanded()
-{
-    //OnClicked();
-}
+//void Sprite::OnExpanded()
+//{
+//    //OnClicked();
+//}
 
 void Sprite::ParseSpriteData()
 {
@@ -251,7 +270,7 @@ void Sprite::ParseSpriteData()
     m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
     m_anmtbl.importAnimationGroups( m_sprhndl.getAnimGroups() );
 
-    m_palcnt.setPalette(std::move(utils::ConvertSpritePalette(m_sprhndl.getPalette()))); //convert the palette once, so we don't do it constantly
+    m_palcnt.setPalette(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //convert the palette once, so we don't do it constantly
 
     m_seqcnt.importSequences( m_sprhndl.getAnimSeqs());
     m_frmcnt.importFrames(m_sprhndl.getFrames());
@@ -311,10 +330,10 @@ QPixmap &Sprite::MakePreviewFrame(bool transparency)
 {
     if(wasParsed() && hasImageData())
     {
-        if(m_frmcnt.hasChildren())
-            return m_previewImg = std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency)) );
+        if(m_frmcnt.nodeHasChildren())
+            return m_previewImg = QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
         else
-            return m_previewImg = std::move(QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette())) );
+            return m_previewImg = QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette()));
     }
     return m_previewImg;
 }
@@ -323,10 +342,10 @@ QPixmap Sprite::MakePreviewFrame(bool transparency)const
 {
     if(wasParsed() && hasImageData())
     {
-        if(m_frmcnt.hasChildren())
-            return std::move(QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency)) );
+        if(m_frmcnt.nodeHasChildren())
+            return QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
         else
-            return std::move(QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette())) );
+            return QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette()));
     }
     return QPixmap();
 }
@@ -375,44 +394,6 @@ void Sprite::convertSpriteToType(fmt::eSpriteType newty)
     Q_ASSERT(false);
 }
 
-SpritePropertiesHandler *Sprite::propHandler()
-{
-    return m_propshndlr.data();
-}
-
-const SpritePropertiesHandler *Sprite::propHandler() const
-{
-    return m_propshndlr.data();
-}
-
-SpritePropertiesModel *Sprite::model()
-{
-    if(!m_propshndlr)
-        return nullptr;
-    return m_propshndlr->model();
-}
-
-const SpritePropertiesModel *Sprite::model() const
-{
-    if(!m_propshndlr)
-        return nullptr;
-    return m_propshndlr->model();
-}
-
-SpriteOverviewModel *Sprite::overviewModel()
-{
-    return m_overmodel.data();
-}
-
-const SpriteOverviewModel *Sprite::overviewModel() const
-{
-    return m_overmodel.data();
-}
-
-
-
-
-
 bool Sprite::IsRawDataCompressed(filetypes::eCompressionFormats *outfmt) const
 {
     filetypes::eCompressionFormats fmt = filetypes::IndentifyCompression( m_raw.begin(), m_raw.end() );
@@ -423,26 +404,21 @@ bool Sprite::IsRawDataCompressed(filetypes::eCompressionFormats *outfmt) const
 
 void Sprite::DecompressRawData()
 {
-    filetypes::eCompressionFormats fmt =filetypes::IndentifyCompression(m_raw.begin(), m_raw.end());
-
     rawdat_t buffer;
-    auto                 itback = std::back_inserter(buffer);
-    if(fmt == filetypes::eCompressionFormats::PKDPX)
-        filetypes::DecompressPKDPX(m_raw.begin(), m_raw.end(), itback);
-    //        else if(fmt == filetypes::eCompressionFormats::AT4PX)
-    //            filetypes::DecompressAT4PX(m_raw.begin(), m_raw.end(), itback);
+    auto     itback = std::back_inserter(buffer);
+    filetypes::Decompress(m_raw.begin(), m_raw.end(), itback);
     m_raw = std::move(buffer);
 }
 
 void Sprite::CompressRawData(filetypes::eCompressionFormats cpfmt)
 {
     rawdat_t buffer;
-    auto                 itback = std::back_inserter(buffer);
+    auto     itback = std::back_inserter(buffer);
     filetypes::Compress( cpfmt, m_raw.begin(), m_raw.end(), itback);
     m_raw = std::move(buffer);
 }
 
-TreeElement *Sprite::ElemPtr(int idx)
+TreeNode *Sprite::ElemPtr(int idx)
 {
     if( !hasEfxOffsets() )
         return ElemPtrNoEfx(idx);
@@ -465,7 +441,7 @@ TreeElement *Sprite::ElemPtr(int idx)
     return nullptr;
 }
 
-TreeElement *Sprite::ElemPtrNoEfx(int idx)
+TreeNode *Sprite::ElemPtrNoEfx(int idx)
 {
     switch(idx)
     {
@@ -491,32 +467,42 @@ int Sprite::nbChildCat() const
         return 5;
 }
 
-const TreeElement *Sprite::ElemPtr(int idx) const
+const TreeNode *Sprite::ElemPtr(int idx) const
 {
     return const_cast<Sprite*>(this)->ElemPtr(idx);
 }
 
-const TreeElement *Sprite::ElemPtrNoEfx(int idx) const
+const TreeNode *Sprite::ElemPtrNoEfx(int idx) const
 {
     return const_cast<Sprite*>(this)->ElemPtrNoEfx(idx);
 }
 
-bool Sprite::canFetchMore(const QModelIndex & parent)const
+//bool Sprite::canFetchMore(const QModelIndex & parent)const
+//{
+//    if(!parent.isValid())
+//        return false;
+//    Sprite * spr = static_cast<Sprite *>(parent.internalPointer());
+//    if(!spr || spr != this)
+//        return false;
+//    return !wasParsed();
+//}
+
+//void Sprite::fetchMore(const QModelIndex & parent)
+//{
+//    if(!parent.isValid())
+//        return;
+//    Sprite * spr = static_cast<Sprite *>(parent.internalPointer());
+//    if(!spr || spr != this)
+//        return;
+//    ParseSpriteData();
+//}
+
+bool Sprite::nodeCanFetchMore()const
 {
-    if(!parent.isValid())
-        return false;
-    Sprite * spr = static_cast<Sprite *>(parent.internalPointer());
-    if(!spr || spr != this)
-        return false;
     return !wasParsed();
 }
 
-void Sprite::fetchMore(const QModelIndex & parent)
+void Sprite::nodeFetchMore()
 {
-    if(!parent.isValid())
-        return;
-    Sprite * spr = static_cast<Sprite *>(parent.internalPointer());
-    if(!spr || spr != this)
-        return;
     ParseSpriteData();
 }

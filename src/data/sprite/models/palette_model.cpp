@@ -1,11 +1,17 @@
-#include "palettemodel.hpp"
+#include "palette_model.hpp"
 #include <QImage>
+#include <src/data/sprite/palettecontainer.hpp>
 
 //============================================================================================
 //  PaletteModel
 //============================================================================================
-PaletteModel::PaletteModel(QVector<QRgb> *pal, QObject *parent)
-    :QAbstractItemModel(parent), m_pal(pal)
+PaletteModel::PaletteModel(PaletteContainer * pal, QObject * parent)
+    :QAbstractItemModel(parent), m_root(pal)
+{
+
+}
+
+PaletteModel::~PaletteModel()
 {
 
 }
@@ -17,11 +23,11 @@ QModelIndex PaletteModel::index(int row, int column, const QModelIndex &parent) 
         //            if(row < 0)
         //                return createIndex(row, 0, nullptr ); //Always col 0
         //            else
-        return createIndex(row, 0, &((*m_pal)[row]) ); //Always col 0
+        return createIndex(row, 0, &m_root->getPalette()[row] ); //Always col 0
     }
     else //Access color component 0 to 3, pointer is set to color itself
     {
-        return createIndex(0, column, &((*m_pal)[row]) );
+        return createIndex(0, column, &m_root->getPalette()[row] );
     }
 }
 
@@ -47,7 +53,7 @@ int PaletteModel::rowCount(const QModelIndex &parent) const
 {
     if(parent.isValid())
         return 1; //color entries have only one "row"
-    return m_pal->size()/* / PaletteDisplayNBColorsPerRow*/;
+    return m_root->getPalette().size()/* / PaletteDisplayNBColorsPerRow*/;
 }
 
 int PaletteModel::columnCount(const QModelIndex &parent) const
@@ -75,7 +81,7 @@ QVariant PaletteModel::data(const QModelIndex &index, int role) const
         {
             QVariant var;
             var.setValue<QRgb>( *static_cast<QRgb*>(index.internalPointer()) );
-            return qMove(var);
+            return var;
         }
     }
     else if( (role == Qt::EditRole || role == Qt::DisplayRole) &&
@@ -99,7 +105,7 @@ bool PaletteModel::setData(const QModelIndex &index, const QVariant &value, int 
         //If the parent is the root, aka the palette we print the color/return the color value
         if(role == Qt::EditRole)
         {
-            ((*m_pal)[index.row()]) = value.toUInt();
+            (m_root->getPalette()[index.row()]) = value.toUInt();
             return true;
         }
     }
@@ -143,7 +149,7 @@ bool PaletteModel::insertRows(int row, int count, const QModelIndex &parent)
         return false;
 
     beginInsertRows(parent, row, row + (count -1) );
-    m_pal->insert(row, count, QRgb());
+    m_root->getPalette().insert(row, count, QRgb());
     endInsertRows();
     return true;
 }
@@ -154,7 +160,7 @@ bool PaletteModel::removeRows(int row, int count, const QModelIndex &parent)
         return false;
 
     beginRemoveRows(parent, row, (row + (count - 1)));
-    m_pal->remove(row, count);
+    m_root->getPalette().remove(row, count);
     endRemoveRows();
     return true;
 }
@@ -172,7 +178,7 @@ bool PaletteModel::moveRows(const QModelIndex &sourceParent, int sourceRow, int 
                   destinationParent,
                   destinationChild);
     for(int cntr = sourceRow; cntr < sourceRow + count; ++cntr)
-        m_pal->move(sourceRow, (destinationChild - 1) );
+        m_root->getPalette().move(sourceRow, (destinationChild - 1) );
     endMoveRows();
     return true;
 }

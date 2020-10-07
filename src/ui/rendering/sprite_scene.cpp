@@ -23,10 +23,11 @@ void SpriteScene::ConnectSpriteSignals()
     connect(cursprite, &AnimatedSpriteItem::playback_complete, this, &SpriteScene::loopComplete);
     connect(cursprite, &AnimatedSpriteItem::frame_changed, this, &SpriteScene::OnFrameChanged);     //Install scene redraw signal
 
-    if(!m_spr)
-        Q_ASSERT(false); //Crash or something
-    const SpritePropertiesModel * pmod = m_spr->model();
-    connect(pmod, &SpritePropertiesModel::dataChanged, this, &SpriteScene::OnSpriteDataChanged);
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(!m_spr)
+//        Q_ASSERT(false); //Crash or something
+//    const SpritePropertiesModel * pmod = m_spr->model();
+//    connect(pmod, &SpritePropertiesModel::dataChanged, this, &SpriteScene::OnSpriteDataChanged);
 
 //    const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
 //    if(!pseq)
@@ -44,10 +45,11 @@ void SpriteScene::DisconnectSpriteSignals()
     disconnect(cursprite, &AnimatedSpriteItem::playback_complete, this, &SpriteScene::loopComplete);
     disconnect(cursprite, &AnimatedSpriteItem::frame_changed, this, &SpriteScene::OnFrameChanged);
 
-    if(!m_spr)
-        return;
-    const SpritePropertiesModel * pmod = m_spr->model();
-    disconnect(pmod, &SpritePropertiesModel::dataChanged, this, &SpriteScene::OnSpriteDataChanged);
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(!m_spr)
+//        return;
+//    const SpritePropertiesModel * pmod = m_spr->model();
+//    disconnect(pmod, &SpritePropertiesModel::dataChanged, this, &SpriteScene::OnSpriteDataChanged);
 
 //    const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
 //    if(!pseq)
@@ -74,12 +76,13 @@ void SpriteScene::Clear()
         m_animScene.removeItem(m_animsprite.get());
         m_animsprite.reset();
     }
-    if(m_spr)
-    {
-        const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
-        if(pseq)
-            disconnect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
-    }
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(m_spr)
+//    {
+//        const AnimSequence * pseq = m_spr->getAnimSequence(m_seqid);
+//        if(pseq)
+//            disconnect( pseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+//    }
 }
 
 void SpriteScene::Reset()
@@ -126,8 +129,9 @@ void SpriteScene::setSprite(const Sprite *pspr, const AnimSequence *paniseq)
         m_seqid = paniseq->nodeIndex();
     else
         m_seqid = 0;
-    if(m_spr)
-        connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(m_spr)
+//        connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
     loadAnimation();
 }
 
@@ -136,12 +140,13 @@ void SpriteScene::setSprite(const Sprite *pspr, fmt::AnimDB::animseqid_t seqid)
     Reset();
     m_spr = pspr;
     m_seqid = seqid;
-    if(m_spr)
-    {
-        const AnimSequence *paniseq = pspr->getAnimSequence(seqid);
-        if(paniseq)
-            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
-    }
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(m_spr)
+//    {
+//        const AnimSequence *paniseq = pspr->getAnimSequence(seqid);
+//        if(paniseq)
+//            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+//    }
     loadAnimation();
 }
 
@@ -149,8 +154,9 @@ void SpriteScene::setSequence(const AnimSequence *paniseq)
 {
     Reset();
     m_seqid = paniseq->nodeIndex();
-    if(m_spr)
-        connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(m_spr)
+//        connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
     loadAnimation();
 }
 
@@ -158,12 +164,13 @@ void SpriteScene::setSequence(fmt::AnimDB::animseqid_t seqid)
 {
     Reset();
     m_seqid = seqid;
-    if(m_spr)
-    {
-        const AnimSequence *paniseq = m_spr->getAnimSequence(seqid);
-        if(paniseq)
-            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
-    }
+    //SHOULD BE DONE OUTSIDE THE CLASS!!
+//    if(m_spr)
+//    {
+//        const AnimSequence *paniseq = m_spr->getAnimSequence(seqid);
+//        if(paniseq)
+//            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
+//    }
     loadAnimation();
 }
 

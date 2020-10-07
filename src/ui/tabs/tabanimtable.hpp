@@ -5,6 +5,10 @@
 #include <src/ui/mainwindow.hpp>
 #include <src/ui/tabs/basespritetab.hpp>
 #include <src/ui/rendering/sprite_scene.hpp>
+#include <src/data/sprite/models/animtable_model.hpp>
+#include <src/data/sprite/models/animtable_delegate.hpp>
+#include <src/data/sprite/models/animsequences_list_picker_model.hpp>
+#include <src/data/sprite/models/animgroup_model.hpp>
 
 namespace Ui {
 class TabAnimTable;
@@ -19,7 +23,7 @@ public:
     ~TabAnimTable();
 
     // BaseSpriteTab interface
-    void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
+    void OnShowTab(QPersistentModelIndex element)override;
     void OnHideTab() override;
     void OnDestruction()override;
     void PrepareForNewContainer() override;
@@ -27,6 +31,8 @@ public:
 private:
     void ConnectControls();
     void DisconnectControls();
+    bool setAnimTable(QPersistentModelIndex table, Sprite* spr);
+    void clearAnimTable();
 
 private slots:
     void OnAnimTableItemActivate(const QModelIndex &index);
@@ -53,7 +59,17 @@ private slots:
 private:
     Ui::TabAnimTable *ui;
     QScopedPointer<SpriteScene> m_previewrender;
-    QPersistentModelIndex m_animTable;
+
+    //Model, delegate, and index of the anim table
+    QPersistentModelIndex               m_animTable;
+    QScopedPointer<AnimTableModel>      m_animTableModel;
+    QScopedPointer<AnimTableDelegate>   m_animTableDelegate;
+
+    //model for the content of the selected anim group
+    QScopedPointer<AnimGroupModel>      m_selAnimGroupModel;
+
+    //Less verbose picker model for the list of available animation sequences
+    QScopedPointer<AnimSequencesListPickerModel> m_animSeqPickerMdl;
 };
 
 #endif // TABANIMTABLE_HPP

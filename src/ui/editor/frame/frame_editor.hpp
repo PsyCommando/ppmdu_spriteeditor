@@ -7,6 +7,7 @@ Helper for managing the QGraphicsScene used for displaying and editing the parts
 */
 #include <QGraphicsScene>
 #include <src/data/sprite/frame.hpp>
+#include <src/data/sprite/models/framepart_model.hpp>
 #include <src/ui/editor/frame/frame_editor_part.hpp>
 
 //===================================================================
@@ -18,7 +19,7 @@ class FrameEditor : public QGraphicsScene
     Q_OBJECT
 public:
 
-    explicit FrameEditor(MFrame * frm, QObject *parent = nullptr);
+    explicit FrameEditor(MFrame * frm, Sprite * pspr, QObject *parent = nullptr);
     void initScene();
     void initScene(bool bdrawoutline, bool bdrawmarker, bool btransparency);
     void deInitScene();
@@ -61,7 +62,9 @@ private:
     QGraphicsScene                      m_scene;
     QList<QPointer<FramePart>>          m_parts;
     QRectF                              m_bgarea;
+    QPointer<MFramePartModel>           m_model;
     MFrame *                            m_pfrm              {nullptr};
+    Sprite *                            m_psprite           {nullptr};
     int                                 m_midmarkZ          {99};
     int                                 m_gridsz            {8};
     bool                                m_bDrawMiddleMarker {true};

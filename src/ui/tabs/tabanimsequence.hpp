@@ -5,6 +5,8 @@
 #include <src/ui/mainwindow.hpp>
 #include <src/ui/tabs/basespritetab.hpp>
 #include <src/ui/rendering/sprite_scene.hpp>
+#include <src/data/sprite/models/animframe_model.hpp>
+#include <src/data/sprite/models/animframe_delegate.hpp>
 
 namespace Ui {
 class tabAnimSequence;
@@ -19,7 +21,7 @@ public:
     ~TabAnimSequence();
 
 // BaseSpriteTab interface
-    void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
+    void OnShowTab(QPersistentModelIndex element)override;
     void OnHideTab() override;
     void OnDestruction()override;
     void OnItemRemoval(const QModelIndex & item)override;
@@ -30,6 +32,9 @@ private:
     void ConnectSceneRenderer();
     void DisconnectSceneRenderer();
     void UpdateTickCounter();
+
+    void setupAnimSeq(QPersistentModelIndex seq, Sprite * spr);
+    void clearAnimSeq();
 
 private slots:
     //Elements callbacks
@@ -47,23 +52,24 @@ private slots:
     void OnPreviewTick(int curtick);
 
     void on_btnSeqPlay_clicked();
-
     void on_btnSeqStop_clicked();
 
     void on_chkAnimSeqLoop_toggled(bool checked);
-
     void on_sldrAnimSeq_sliderMoved(int position);
 
     void on_btnSeqImport_clicked();
-
     void on_spinCurFrm_editingFinished();
-
     void on_tblseqfrmlst_clicked(const QModelIndex &index);
+
+    //From main window
 
 private:
     Ui::tabAnimSequence *ui;
     SpriteScene m_previewrender;
 
+    QPersistentModelIndex               m_curAnimSeq;
+    QScopedPointer<AnimFramesModel>     m_curSeqFramesModel;
+    QScopedPointer<AnimFrameDelegate>   m_curSeqFramesDelegate;
 };
 
 #endif // TABANIMSEQUENCE_HPP

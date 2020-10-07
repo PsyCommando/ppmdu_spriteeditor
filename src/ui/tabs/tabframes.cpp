@@ -5,7 +5,9 @@
 #include <src/ui/dialogabout.hpp>
 #include <src/ui/editor/palette/paletteeditor.hpp>
 #include <src/data/sprite/frame.hpp>
-#include <src/data/sprite/framesdelegate.hpp>
+#include <src/data/sprite/framepart.hpp>
+#include <src/data/sprite/models/framepart_delegate.hpp>
+
 
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
@@ -28,7 +30,7 @@ void TabFrames::ConnectSignals()
     MFrame * frm = static_cast<MFrame*>(m_frame.internalPointer());
     Q_ASSERT(frm);
     //Setup the callbacks
-    connect(frm->getModel(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
+    connect(m_frmModel.data(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
     connect(ui->spbFrmZoom, qOverload<int>(&QSpinBox::valueChanged), this, &TabFrames::On_spbFrmZoom_ValueChanged );
     connect(m_frmeditor.data(), &FrameEditor::zoom, this, &TabFrames::OnFrameEditorZoom);
     connect(m_frmeditor.data(), &FrameEditor::selectionChanged, this, &TabFrames::OnSelectionChanged);
@@ -48,7 +50,7 @@ void TabFrames::DisconnectSignals()
 
     MFrame * frm = static_cast<MFrame*>(m_frame.internalPointer());
     if(frm)
-        disconnect(frm->getModel(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
+        disconnect(m_frmModel.data(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
 
     if(m_frmeditor)
     {
@@ -60,6 +62,28 @@ void TabFrames::DisconnectSignals()
 
     if(m_frmdatmapper)
         disconnect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
+}
+
+bool TabFrames::setFrame(QPersistentModelIndex element, Sprite *spr)
+{
+    if(!element.isValid())
+        return false;
+    MFrame * frm = reinterpret_cast<MFrame*>(element.internalPointer());
+    if(!frm)
+        return false;
+    Q_ASSERT(spr && frm);
+
+    m_frame = element;
+    m_frmModel      .reset(new MFramePartModel(frm, spr));
+    m_frmDelegate   .reset(new MFramePartDelegate(frm));
+    return true;
+}
+
+void TabFrames::clearFrame()
+{
+    m_frame = QModelIndex();
+    m_frmModel.reset();
+    m_frmDelegate.reset();
 }
 
 void TabFrames::OnFrameEditorZoom(int diff)
@@ -80,24 +104,33 @@ void TabFrames::OnDataChanged(const QModelIndex &,const QModelIndex &, const QVe
     ui->gvFrame->update();
 }
 
-void TabFrames::OnShowTab(Sprite *spr, QPersistentModelIndex element)
+void TabFrames::OnShowTab(QPersistentModelIndex element)
 {
-    if(!element.isValid())
+    Sprite * spr = currentSprite();
+    if(!setFrame(element, spr))
+    {
         throw ExBadFrame("TabFrames::OnShowTab(): Bad frame index!");
+    }
     MFrame * frm = static_cast<MFrame*>(element.internalPointer());
-    if(!frm)
-        throw ExBadFrame("TabFrames::OnShowTab(): Couldn't cast to frame!!");
-    Q_ASSERT(spr && frm);
 
-    //Keep track of our displayed frame
-    m_frame = element;
+//    if(!element.isValid())
+//        throw ExBadFrame("TabFrames::OnShowTab(): Bad frame index!");
+//    MFrame * frm = static_cast<MFrame*>(element.internalPointer());
+//    if(!frm)
+//        throw ExBadFrame("TabFrames::OnShowTab(): Couldn't cast to frame!!");
+//    Q_ASSERT(spr && frm);
+
+//    //Keep track of our displayed frame
+//    m_frame = element;
+//    m_frmModel.reset(new MFramePartModel(frm, spr)); //setup model
+//    m_frmDelegate.reset(new MFramePartDelegate(frm));
 
     ui->spbFrmPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
     ui->spbFrmPartYOffset->setRange(0, fmt::step_t::YOFFSET_MAX);
 
     qDebug() << "MainWindow::DisplayMFramePage(): Showing frame page!\n";
-    ui->tblframeparts->setModel(frm->getModel());
-    ui->tblframeparts->setItemDelegate(&(frm->itemDelegate()));
+    ui->tblframeparts->setModel(m_frmModel.data());
+    ui->tblframeparts->setItemDelegate(m_frmDelegate.data());
     ui->tblframeparts->setEditTriggers(QTableView::EditTrigger::AllEditTriggers);
     ui->tblframeparts->setSizeAdjustPolicy(QTableView::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
     ui->tblframeparts->resizeRowsToContents();
@@ -105,7 +138,7 @@ void TabFrames::OnShowTab(Sprite *spr, QPersistentModelIndex element)
     ui->tblframeparts->setCurrentIndex( ui->tblframeparts->model()->index(0, 0, QModelIndex()) );
 
     //Setup the frame editor in the viewport!
-    m_frmeditor.reset( new FrameEditor(frm) );
+    m_frmeditor.reset( new FrameEditor(frm, spr) );
     ui->gvFrame->setScene( &m_frmeditor->getScene() );
     m_frmeditor->initScene(ui->chkColorPartOutlines->isChecked(),
                            ui->chkFrmMiddleMarker->isChecked(),
@@ -117,15 +150,15 @@ void TabFrames::OnShowTab(Sprite *spr, QPersistentModelIndex element)
 
     //Map model's columns to some of the controls
     m_frmdatmapper.reset(new QDataWidgetMapper);
-    m_frmdatmapper->setModel(frm->getModel());
-    m_frmdatmapper->addMapping(ui->spbFrmPartXOffset,  static_cast<int>(eFramesColumnsType::direct_XOffset) );
-    m_frmdatmapper->addMapping(ui->spbFrmPartYOffset,  static_cast<int>(eFramesColumnsType::direct_YOffset) );
-    m_frmdatmapper->addMapping(ui->btnFrmVFlip,        static_cast<int>(eFramesColumnsType::direct_VFlip) );
-    m_frmdatmapper->addMapping(ui->btnFrmHFlip,        static_cast<int>(eFramesColumnsType::direct_HFlip) );
+    m_frmdatmapper->setModel(m_frmModel.data());
+    m_frmdatmapper->addMapping(ui->spbFrmPartXOffset,  static_cast<int>(eFramePartColumnsType::direct_XOffset) );
+    m_frmdatmapper->addMapping(ui->spbFrmPartYOffset,  static_cast<int>(eFramePartColumnsType::direct_YOffset) );
+    m_frmdatmapper->addMapping(ui->btnFrmVFlip,        static_cast<int>(eFramePartColumnsType::direct_VFlip) );
+    m_frmdatmapper->addMapping(ui->btnFrmHFlip,        static_cast<int>(eFramePartColumnsType::direct_HFlip) );
     m_frmdatmapper->toFirst();
 
     ConnectSignals();
-    BaseSpriteTab::OnShowTab(spr, element);
+    BaseSpriteTab::OnShowTab(element);
 }
 
 void TabFrames::OnHideTab()
@@ -148,7 +181,7 @@ void TabFrames::OnHideTab()
     m_frmdatmapper.reset();
 
     //Clear current frame
-    m_frame = QModelIndex();
+    clearFrame();
 
     BaseSpriteTab::OnHideTab();
 }
@@ -207,7 +240,7 @@ void TabFrames::on_btnFrmRmPart_clicked()
     Q_ASSERT(ppart && pfrm);
 
     ui->tblframeparts->setCurrentIndex(QModelIndex());
-    if(pfrm->removeChildrenNodes(ind.row(), 1))
+    if(m_frmModel->removeRow(ind.row()))
         ShowStatusMessage(tr("Removed part!"));
     else
         ShowStatusErrorMessage(tr("Removal failed!"));
@@ -231,7 +264,7 @@ void TabFrames::on_btnFrmAdPart_clicked()
     else
         insertpos = (curframe->nodeChildCount() > 0)? (curframe->nodeChildCount() - 1) : 0;
 
-    if(curframe->getModel()->insertRow(insertpos))
+    if(m_frmModel->insertRow(insertpos))
     {
         ShowStatusMessage(tr("Appended part!"));
     }
@@ -258,7 +291,7 @@ void TabFrames::on_btnFrmMvUp_clicked()
     int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
     if(destrow != ind.row())
     {
-        if(curframe->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+        if(m_frmModel->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
             ShowStatusMessage(tr("Part moved up!"));
         else
             ShowStatusErrorMessage(tr("Failed to move part!"));
@@ -284,7 +317,7 @@ void TabFrames::on_btnFrmMvDown_clicked()
     int destrow = (ind.row() < curframe->nodeChildCount()-2 )? ind.row() + 1 : ind.row();
     if(destrow != ind.row())
     {
-        if(curframe->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+        if(m_frmModel->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
             ShowStatusMessage(tr("Part moved down!"));
         else
             ShowStatusErrorMessage(tr("Failed to move part!"));
@@ -310,9 +343,9 @@ void TabFrames::on_btnFrmDup_clicked()
     MFramePart tmppart = *(static_cast<MFramePart*>(ind.internalPointer()));
 
     int insertpos = ind.row();
-    if(curframe->getModel()->insertRow(insertpos))
+    if(m_frmModel->insertRow(insertpos))
     {
-        MFramePart * pnewfrm = static_cast<MFramePart *>(curframe->getItem( curframe->getModel()->index(insertpos, 0, QModelIndex()) ));
+        MFramePart * pnewfrm = static_cast<MFramePart *>(m_frmModel->getItem( m_frmModel->index(insertpos, 0, QModelIndex()) ));
         Q_ASSERT(pnewfrm);
         (*pnewfrm) = tmppart;
         ShowStatusMessage(tr("Duplicated part!"));
@@ -355,7 +388,7 @@ void TabFrames::on_btnFrmExport_clicked()
         return;
 
 
-    QImage img(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds()));
+    QImage img(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds(), nullptr, true, currentSprite()));
     if(img.save( filename, "PNG" ))
         ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
     else

@@ -16,7 +16,7 @@ MainWindow *BaseSpriteTab::getMainWindow()
     return m_pmainwindow;
 }
 
-void BaseSpriteTab::OnShowTab(Sprite *, QPersistentModelIndex)
+void BaseSpriteTab::OnShowTab(QPersistentModelIndex)
 {
 }
 
@@ -113,4 +113,9 @@ eTreeElemDataType BaseSpriteTab::currentEntryType()
 void BaseSpriteTab::PushUndoCommand(QUndoCommand * cmd)
 {
 
+}
+
+bool BaseSpriteTab::canAcceptContentType(const QString &/*contenttype*/) const
+{
+    return false;
 }

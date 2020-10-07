@@ -1,12 +1,23 @@
 #include "tabproperties.hpp"
 #include "ui_tabproperties.h"
-
 #include <src/ui/mainwindow.hpp>
 #include <src/ui/diagsingleimgcropper.hpp>
 #include <src/ui/dialogabout.hpp>
 #include <src/ui/editor/palette/paletteeditor.hpp>
+#include <src/data/sprite/models/sprite_props_model.hpp>
+#include <src/data/sprite/models/sprite_props_delegate.hpp>
+#include <src/utility/file_support.hpp>
 
 #include <QFileDialog>
+
+
+const QVector<QString> PaletteFileFilter
+{
+    "Microsoft RIFF palette (*.pal)",
+    "Text file hex color list (*.txt)",
+    "GIMP GPL palette (*.gpl)",
+    "Palette from a PNG image (*.png)",
+};
 
 TabProperties::TabProperties(QWidget *parent) :
     BaseSpriteTab(parent),
@@ -22,7 +33,6 @@ TabProperties::~TabProperties()
 
 QString TabProperties::GetPaletteImportFiterString()
 {
-    using namespace spr_manager;
     static const QString pimportstr = QString("%1;;%2").arg( PaletteFilterString(),
                                       GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL)); //allow loading a PNG for its palette!
     return pimportstr;
@@ -30,34 +40,38 @@ QString TabProperties::GetPaletteImportFiterString()
 
 const QString TabProperties::PaletteFilterString()
 {
-    static const QString filter = spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::RIFF_Pal) +
+    static const QString filter = GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) +
                                   ";;" +
-                                  spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::TEXT_Pal) +
+                                  GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) +
                                   ";;" +
-                                  spr_manager::GetPaletteFileFilterString(spr_manager::ePaletteDumpType::GIMP_PAL);
+                                  GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL);
     return filter;
 }
 
-void TabProperties::OnShowTab(Sprite *pspr, QPersistentModelIndex element)
+void TabProperties::OnShowTab(QPersistentModelIndex element)
 {
-    Q_ASSERT(pspr);
     qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
+    ContentManager & manager = ContentManager::Instance();
+    Sprite * pspr = dynamic_cast<Sprite*>(manager.getOwnerNode(element));
+    Q_ASSERT(pspr);
 
-    spr_manager::SpriteContainer * pcnt = spr_manager::SpriteManager::Instance().getContainer();
-    m_pmainwindow->setSelectedTreeViewIndex(pcnt->index(pcnt->indexOfNode(pspr), 0, QModelIndex(), &spr_manager::SpriteManager::Instance()));
+    //display properties
+    m_propHandler.reset(new SpritePropertiesHandler(pspr));
+    ui->tblProperties->setModel(m_propHandler->model());
+    ui->tblProperties->setItemDelegate(m_propHandler->delegate());
+
+    //Setup stats
+    m_overviewModel.reset(new SpriteOverviewModel(pspr));
+    ui->tblOverview->setModel(m_overviewModel.data());
+
+    m_pmainwindow->setSelectedTreeViewIndex(manager.modelIndexOf(pspr));
     if( !pspr->wasParsed() )
         pspr->ParseSpriteData();
 
     //display preview image and palette only if we have image data!
     UpdatePreview();
 
-    //display properties
-    ui->tblProperties->setModel(pspr->propHandler()->model());
-    ui->tblProperties->setItemDelegate(pspr->propHandler()->delegate());
-
-    //Setup stats
-    ui->tblOverview->setModel(pspr->overviewModel());
-    BaseSpriteTab::OnShowTab(pspr, element);
+    BaseSpriteTab::OnShowTab(element);
 }
 
 void TabProperties::OnHideTab()
@@ -73,6 +87,9 @@ void TabProperties::OnHideTab()
     ui->tblProperties->setItemDelegate(nullptr);
     ui->tblProperties->clearSelection();
     ui->tblProperties->setModel(nullptr);
+
+    m_propHandler.reset();
+    m_overviewModel.reset();
 
     BaseSpriteTab::OnHideTab();
 }
@@ -91,13 +108,13 @@ void TabProperties::PrepareForNewContainer()
 
 void TabProperties::OnItemRemoval(const QModelIndex &item)
 {
-    TreeElement * te = static_cast<TreeElement*>(item.internalPointer());
+    TreeNode * te = reinterpret_cast<TreeNode*>(item.internalPointer());
     if(te == currentSprite())
     {
         //Removing the sprite, so we clear everything
         PrepareForNewContainer();
     }
-    else if(te && (te->getNodeDataTy() == eTreeElemDataType::image || te->getNodeDataTy() == eTreeElemDataType::frame || te->getNodeDataTy() == eTreeElemDataType::framepart))
+    else if(te && (te->nodeDataTy() == eTreeElemDataType::image || te->nodeDataTy() == eTreeElemDataType::frame || te->nodeDataTy() == eTreeElemDataType::framepart))
     {
         //Regenerate the previews if we changed the images, in case the image used in the preview was modified!
         UpdatePreview();
@@ -110,7 +127,6 @@ void TabProperties::OnItemRemoval(const QModelIndex &item)
 // *********************************
 void TabProperties::on_btnImportPalette_clicked()
 {
-    using namespace spr_manager;
     Sprite * spr = currentSprite();
     if( !spr )
     {
@@ -132,7 +148,7 @@ void TabProperties::on_btnImportPalette_clicked()
 
     try
     {
-        spr_manager::SpriteManager::Instance().ImportPalette(spr, filename, ftype);
+        ImportPalette(spr, filename, ftype);
     }
     catch(const std::exception & e)
     {
@@ -153,7 +169,6 @@ void TabProperties::on_btnImportPalette_clicked()
 
 void TabProperties::on_btnExportPalette_clicked()
 {
-    using namespace spr_manager;
     Sprite * spr = currentSprite();
     if( !spr )
     {
@@ -177,7 +192,7 @@ void TabProperties::on_btnExportPalette_clicked()
         qDebug() << QString("Palette Length to export is %1").arg(spr->getPalette().size());
 
         ePaletteDumpType ftype = FilterStringToPaletteType(selectedfilter);
-        SpriteManager::Instance().DumpPalette(spr, filename, ftype);
+        DumpPalette(spr, filename, ftype);
     }
     catch(const std::exception & e)
     {

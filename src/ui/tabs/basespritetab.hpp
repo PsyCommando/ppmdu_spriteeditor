@@ -6,7 +6,7 @@ BaseSpriteTab
 */
 #include <QUndoCommand>
 #include <QWidget>
-#include <src/data/treeelemtypes.hpp>
+#include <src/data/treeenodetypes.hpp>
 
 class Sprite;
 class MFrame;
@@ -34,7 +34,7 @@ public:
      * When the tab is about to be displayed, pass the current sprite and
      * the currently selected element's modelindex.
     */
-    virtual void OnShowTab(Sprite * pspr, QPersistentModelIndex element);
+    virtual void OnShowTab(QPersistentModelIndex element);
 
     /*
      * Called when the tab is about to be hidden
@@ -56,6 +56,11 @@ public:
     * Called when we're about to load a new container
     */
     virtual void PrepareForNewContainer()=0;
+
+    /*
+     * Whether this tab should be displayed for a given element type
+    */
+    virtual bool canAcceptContentType(const QString & contenttype)const;
 
     /*
      * Helpers Main Window procs

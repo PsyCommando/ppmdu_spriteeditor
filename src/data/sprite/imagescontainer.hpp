@@ -1,48 +1,50 @@
 #ifndef IMAGESCONTAINER_HPP
 #define IMAGESCONTAINER_HPP
-#include <src/data/treeelem.hpp>
+#include <src/data/treenodewithchilds.hpp>
 #include <src/data/sprite/image.hpp>
 
-extern const char * ElemName_Images;
+extern const QString ElemName_Images;
 //*******************************************************************
 //  ImageContainer
 //*******************************************************************
-//Contains all the loaded images, and displays them in the appropriate view
-class ImageContainer : public BaseTreeContainerChild<&ElemName_Images, Image>
+//Contains all the loaded images, also act as a category node for images
+class ImageContainer : public TreeNodeWithChilds<Image>
 {
 public:
-    ImageContainer(TreeElement *parent)
-        :BaseTreeContainerChild(parent)
-    {
-        setNodeDataTy(eTreeElemDataType::images);
-    }
-
-    ImageContainer(const ImageContainer &cp)
-        :BaseTreeContainerChild(cp)
+//    ImageContainer(Sprite* sprite);
+//    ImageContainer(const ImageContainer & cp);
+//    ImageContainer(ImageContainer && mv);
+//    ImageContainer &operator=(const ImageContainer & cp);
+//    ImageContainer &operator=(ImageContainer && mv);
+    ImageContainer(TreeNode* sprite)
+        :TreeNodeWithChilds(sprite)
     {}
 
-    ImageContainer(ImageContainer &&mv)
-        :BaseTreeContainerChild(mv)
+    ImageContainer(const ImageContainer & cp)
+        :TreeNodeWithChilds<Image>(cp)
     {}
 
-    ~ImageContainer()
-    {
-        qDebug("ImageContainer::~ImageContainer()\n");
-    }
+    ImageContainer(ImageContainer && mv)
+        :TreeNodeWithChilds<Image>(mv)
+    {}
+
+    ~ImageContainer();
 
     ImageContainer &operator=(const ImageContainer &cp)
     {
-        BaseTreeContainerChild::operator=(cp);
+        TreeNodeWithChilds<Image>::operator=(cp);
         return *this;
     }
 
     ImageContainer &operator=(ImageContainer &&mv)
     {
-        BaseTreeContainerChild::operator=(mv);
+        TreeNodeWithChilds<Image>::operator=(mv);
         return *this;
     }
 
-    void clone(const TreeElement *other);
+    TreeNode *clone() const override;
+    eTreeElemDataType nodeDataTy() const override;
+    const QString &nodeDataTypeName() const override;
 
 //
 //Image container stuff
@@ -78,24 +80,8 @@ public:
     inline Image        * getImage(fmt::frmid_t id)     { return static_cast<Image*>(nodeChild(id)); }
     inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
 
-    //ImageSelectorModel * getImageSelectModel() {return m_pimgselmodel.data();}
-
-//
-//BaseContainerChild overrides
-//
-public:
-    QVariant nodeData(int column, int role) const override;
-    Sprite * parentSprite();
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex & index, const QVariant & value, int role) override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-
     //Whether the node should be movable
-    bool        nodeIsMutable()const override           {return false;}
-    virtual int nodeColumnCount() const override        {return static_cast<int>(Image::eColumnType::NbColumns);}
-
-private:
-    //QScopedPointer<ImageSelectorModel> m_pimgselmodel;
+    bool    nodeIsMutable()const override {return false;}
 };
 
 #endif // IMAGESCONTAINER_HPP

@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QPixmap>
 #include <src/ui/rendering/animated_sprite_item.hpp>
-#include <src/data/sprite/spritemanager.hpp>
+#include <src/data/sprite/sprite_container.hpp>
 #include <src/utility/baseqtexception.hpp>
 
 
@@ -25,7 +25,7 @@ class SpriteRenderer : public QObject
     Q_OBJECT
 public:
     using animseqid_t   = fmt::AnimDB::animseqid_t;
-    using sprid_t       = spr_manager::SpriteContainer::sprid_t;
+    using sprid_t       = SpriteContainer::sprid_t;
     virtual ~SpriteRenderer();
 
     //Sprite rendering

@@ -6,6 +6,8 @@
 #include <src/ui/tabs/basespritetab.hpp>
 #include <src/ui/editor/frame/frame_editor.hpp>
 #include <src/utility/baseqtexception.hpp>
+#include <src/data/sprite/models/framepart_model.hpp>
+#include <src/data/sprite/models/framepart_delegate.hpp>
 
 namespace Ui {
 class TabFrames;
@@ -23,7 +25,7 @@ public:
 
     // BaseSpriteTab interface
 public:
-    void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
+    void OnShowTab(QPersistentModelIndex element)override;
     void OnHideTab() override;
     void OnDestruction() override;
     void PrepareForNewContainer() override;
@@ -44,6 +46,9 @@ private:
     void ConnectSignals();
     void DisconnectSignals();
 
+    bool setFrame(QPersistentModelIndex element, Sprite* spr);
+    void clearFrame();
+
 private slots:
     void OnFrameEditorZoom(int diff);
     void On_spbFrmZoom_ValueChanged(int val);
@@ -54,8 +59,10 @@ private:
     Ui::TabFrames *ui;
     QScopedPointer<FrameEditor>         m_frmeditor;
     QScopedPointer<QDataWidgetMapper>   m_frmdatmapper;
-    QPersistentModelIndex               m_frame;
 
+    QPersistentModelIndex               m_frame;
+    QScopedPointer<MFramePartModel>     m_frmModel;
+    QScopedPointer<MFramePartDelegate>  m_frmDelegate;
 };
 
 #endif // TABFRAMES_HPP

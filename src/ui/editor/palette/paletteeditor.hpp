@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QPointer>
 #include <QDataWidgetMapper>
-#include <src/data/sprite/palettemodel.hpp>
+#include <src/data/sprite/models/palette_model.hpp>
 
 namespace Ui {
     class PaletteEditor;

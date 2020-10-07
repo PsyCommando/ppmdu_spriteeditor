@@ -46,18 +46,21 @@ TabImages::~TabImages()
 }
 
 
-void TabImages::OnShowTab(Sprite *pspr, QPersistentModelIndex element)
+void TabImages::OnShowTab(QPersistentModelIndex element)
 {
+    Sprite * pspr = currentSprite();
     Q_ASSERT(pspr);
 
-    ImageContainer * pimgs = &(pspr->getImages());
+    //ImageContainer * pimgs = &(pspr->getImages());
 
     qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
-    ui->tblviewImages->setModel(pimgs->getModel());
+
     qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
 
     if(element.isValid())
-        m_currentImage = element;
+    {
+        SetupImage(element, pspr);
+    }
     else
     {
         //When we open the tab with an invalid model index, we just pick the first avaialable image
@@ -66,7 +69,7 @@ void TabImages::OnShowTab(Sprite *pspr, QPersistentModelIndex element)
 //        if(pimg)
 //            m_currentImage = pimg;
 //        else
-        m_currentImage = QModelIndex();
+        SetupImage(QModelIndex(), pspr);
     }
 
     ui->spbimgunk2->setRange (0, std::numeric_limits<uint32_t>::max());
@@ -77,7 +80,7 @@ void TabImages::OnShowTab(Sprite *pspr, QPersistentModelIndex element)
 
     //Map model's columns to some of the controls
     m_imgdatmapper.reset(new QDataWidgetMapper);
-    m_imgdatmapper->setModel(pimgs->getModel());
+    m_imgdatmapper->setModel(m_imgListModel.data());
     m_imgdatmapper->addMapping(ui->spbimgunk2,  static_cast<int>(Image::eColumnType::direct_Unk2) );
     m_imgdatmapper->addMapping(ui->spbimgunk14,  static_cast<int>(Image::eColumnType::direct_Unk14) );
     //m_imgdatmapper->toFirst();
@@ -93,12 +96,12 @@ void TabImages::OnShowTab(Sprite *pspr, QPersistentModelIndex element)
             //QModelIndex ind = ui->tblviewImages->model()->index(pimgs->indexOfNode(img), 0);
             ui->tblviewImages->setCurrentIndex(m_currentImage);
             on_tblviewImages_clicked(m_currentImage);
-            ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
+            ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(m_imgListModel->getOwnerSprite()->getPalette()), ui->lbl_imgpreview->size()));
         }
         else
             ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
     }
-    BaseSpriteTab::OnShowTab(pspr, element);
+    BaseSpriteTab::OnShowTab(element);
 }
 
 void TabImages::OnHideTab()
@@ -114,7 +117,7 @@ void TabImages::OnHideTab()
     ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
 
     //Clear current image
-    m_currentImage = QModelIndex();
+    ClearImage();
 
     BaseSpriteTab::OnHideTab();
 }
@@ -127,6 +130,18 @@ void TabImages::ClearMappings()
         m_imgdatmapper->clearMapping();
     }
     m_imgdatmapper.reset();
+}
+
+void TabImages::SetupImage(QPersistentModelIndex img, Sprite *spr)
+{
+    m_currentImage = img;
+    m_imgListModel.reset(new ImageListModel(&spr->getImages(), spr));
+}
+
+void TabImages::ClearImage()
+{
+    m_currentImage = QModelIndex();
+    m_imgListModel.reset();
 }
 
 void TabImages::OnDestruction()
@@ -151,7 +166,7 @@ void TabImages::OnItemRemoval(const QModelIndex &item)
         ui->tblviewImages->clearSelection();
         ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
         ClearMappings();
-        m_currentImage = QModelIndex();
+        ClearImage();
     }
     BaseSpriteTab::OnItemRemoval(item);
 }
@@ -182,25 +197,26 @@ void TabImages::on_tblviewImages_clicked(const QModelIndex &index)
     if(!index.internalPointer() || !img)
     {
         ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
-        m_currentImage = QModelIndex();
+        ClearImage();
         return;
     }
-    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(img->parentSprite()->getPalette()), ui->lbl_imgpreview->size()));
-    m_currentImage = index;
+    ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(m_imgListModel->getOwnerSprite()->getPalette()), ui->lbl_imgpreview->size()));
+    SetupImage(index, currentSprite());
 }
 
 void TabImages::on_btnImagesExport_clicked()
 {
-    Image * pimg = nullptr;
-    if(m_currentImage.isValid())
-        pimg = static_cast<Image*>(m_currentImage.internalPointer());
 
-    if(!pimg)
+//    if(m_currentImage.isValid())
+//        pimg = static_cast<Image*>(m_currentImage.internalPointer());
+
+    if(!m_currentImage.isValid())
     {
         ShowStatusErrorMessage(tr("Error: No image selected for export!"));
         return;
     }
-
+    Image * pimg = dynamic_cast<Image *>(m_imgListModel->getItem(m_currentImage));
+    Q_ASSERT(pimg);
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image"),
                         QString(),
@@ -209,7 +225,7 @@ void TabImages::on_btnImagesExport_clicked()
     if(filename.isNull())
         return;
 
-    QImage img = pimg->makeImage(pimg->parentSprite()->getPalette());
+    QImage img = pimg->makeImage(m_imgListModel->getOwnerSprite()->getPalette());
 
     if(img.save( filename, "PNG" ))
         ShowStatusMessage(QString(tr("Exported image to %1!")).arg(filename));

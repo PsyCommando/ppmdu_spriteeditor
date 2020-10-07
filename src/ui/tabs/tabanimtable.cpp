@@ -15,14 +15,20 @@ TabAnimTable::~TabAnimTable()
     delete ui;
 }
 
-void TabAnimTable::OnShowTab(Sprite *spr, QPersistentModelIndex element)
+void TabAnimTable::OnShowTab(QPersistentModelIndex element)
 {
+    Sprite * spr = currentSprite();
     Q_ASSERT(spr);
-    AnimTable * ptable = static_cast<AnimTable*>(element.internalPointer());
-    m_animTable = element;
-    ui->tvAnimTbl->setModel(ptable->getModel());
+    if(!setAnimTable(element, spr))
+    {
+        Q_ASSERT(false);
+    }
+    //AnimTable * ptable = static_cast<AnimTable*>(element.internalPointer());
+    m_animSeqPickerMdl.reset(new AnimSequencesListPickerModel(&spr->getAnimSequences(), spr));
+    //m_animTable = element;
+    ui->tvAnimTbl->setModel(m_animTableModel.data());
     ui->tvAnimTblAnimSeqs->setModel(nullptr);
-    ui->lvAnimTblAnimSeqList->setModel(spr->getAnimSequences().getPickerModel());
+    ui->lvAnimTblAnimSeqList->setModel(m_animSeqPickerMdl.data());
 
     m_previewrender.reset(new SpriteScene);
     ConnectControls();
@@ -65,7 +71,7 @@ void TabAnimTable::OnShowTab(Sprite *spr, QPersistentModelIndex element)
 //            InstallAnimPreview(ui->gvAnimTablePreview, spr, spr->getAnimSequence(index.row()));
 //        }
 //    });
-    BaseSpriteTab::OnShowTab(spr, element);
+    BaseSpriteTab::OnShowTab(element);
 }
 
 void TabAnimTable::OnHideTab()
@@ -74,7 +80,9 @@ void TabAnimTable::OnHideTab()
         m_previewrender->UninstallAnimPreview(ui->gvAnimTablePreview);
     m_previewrender.reset();
     DisconnectControls();
-    m_animTable = QModelIndex();
+    clearAnimTable();
+    m_animSeqPickerMdl.reset();
+    m_selAnimGroupModel.reset();
     BaseSpriteTab::OnHideTab();
 }
 
@@ -84,14 +92,16 @@ void TabAnimTable::OnDestruction()
     if(m_previewrender)
         m_previewrender->UninstallAnimPreview(ui->gvAnimTablePreview);
     m_previewrender.reset();
-    m_animTable = QModelIndex();
+    clearAnimTable();
+    m_animSeqPickerMdl.reset();
+    m_selAnimGroupModel.reset();
     BaseSpriteTab::OnDestruction();
 }
 
 void TabAnimTable::ConnectControls()
 {
-    AnimTable * ptable = static_cast<AnimTable*>(m_animTable.internalPointer());
-    connect(ptable->getModel(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
+    //AnimTable * ptable = static_cast<AnimTable*>(m_animTable.internalPointer());
+    connect(m_animTableModel.data(), &QAbstractItemModel::dataChanged, [&](const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
     {
         ui->tvAnimTbl->repaint();
         ui->tvAnimTblAnimSeqs->repaint();
@@ -107,14 +117,32 @@ void TabAnimTable::DisconnectControls()
 {
     if(m_animTable.isValid())
     {
-        AnimTable * ptable = static_cast<AnimTable *>(m_animTable.internalPointer());
-        disconnect(ptable->getModel(),      &QAbstractItemModel::dataChanged, nullptr, nullptr);
+        //AnimTable * ptable = static_cast<AnimTable *>(m_animTable.internalPointer());
+        disconnect(m_animTableModel.data(),      &QAbstractItemModel::dataChanged, nullptr, nullptr);
     }
     disconnect(ui->tvAnimTbl,           &QTableView::clicked,   this, &TabAnimTable::OnAnimTableItemActivate);
     disconnect(ui->tvAnimTbl,           &QTableView::activated, this, &TabAnimTable::OnAnimTableItemActivate);
     disconnect(ui->tvAnimTblAnimSeqs,   &QTableView::clicked,   this, &TabAnimTable::OnAmimTableGroupListItemActivate);
     disconnect(ui->tvAnimTblAnimSeqs,   &QTableView::activated, this, &TabAnimTable::OnAmimTableGroupListItemActivate);
     disconnect(ui->lvAnimTblAnimSeqList,&QTreeView::activated,  this, &TabAnimTable::OnAmimTableSequenceListItemActivate);
+}
+
+bool TabAnimTable::setAnimTable(QPersistentModelIndex table, Sprite *spr)
+{
+    if(!table.isValid())
+        return false;
+    AnimTable * ptable = static_cast<AnimTable*>(table.internalPointer());
+    m_animTable = table;
+    m_animTableModel.reset(new AnimTableModel(ptable, spr));
+    m_animTableDelegate.reset(new AnimTableDelegate(ptable));
+    return true;
+}
+
+void TabAnimTable::clearAnimTable()
+{
+    m_animTable = QModelIndex();
+    m_animTableModel.reset();
+    m_animTableDelegate.reset();
 }
 
 void TabAnimTable::PrepareForNewContainer()
@@ -127,10 +155,11 @@ void TabAnimTable::OnAnimTableItemActivate(const QModelIndex &index)
 {
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
-    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(index)));
+    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(m_animTableModel->getItem(index)));
     Q_ASSERT(grp);
 
-    ui->tvAnimTblAnimSeqs->setModel(grp->getModel());
+    m_selAnimGroupModel.reset(new AnimGroupModel(grp, spr));
+    ui->tvAnimTblAnimSeqs->setModel(m_selAnimGroupModel.data());
     ui->tvAnimTblAnimSeqs->repaint();
     ui->tvAnimTblAnimSeqs->scrollToTop();
 }
@@ -145,7 +174,7 @@ void TabAnimTable::OnAmimTableGroupListItemActivate(const QModelIndex &index)
 
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
-    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(ui->tvAnimTbl->currentIndex())));
+    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(m_animTableModel->getItem(ui->tvAnimTbl->currentIndex())));
     Q_ASSERT(grp);
 
     if(index.row() >= 0 && index.row() < grp->seqSlots().size())
@@ -214,12 +243,12 @@ void TabAnimTable::on_btnAnimTblReplaceSeq_pressed()
 
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
-    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(ui->tvAnimTbl->currentIndex())));
+    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(m_selAnimGroupModel->getItem(ui->tvAnimTbl->currentIndex())));
     Q_ASSERT(grp);
 
     //Put the sequence IDs in order from the source to the group's slots
     for( int cnt = 0; cnt < lstdest.length(); ++cnt )
-         grp->getModel()->setData(lstdest.at(cnt), lstsrc.at(cnt).row(), Qt::EditRole);
+         m_selAnimGroupModel->setData(lstdest.at(cnt), lstsrc.at(cnt).row(), Qt::EditRole);
 
     ShowStatusMessage(QString("Replaced %1 sequences!").arg(lstdest.length()));
 }
@@ -235,19 +264,19 @@ void TabAnimTable::on_btnAnimTblMoveSeq_pressed()
 
     Sprite * spr = currentSprite();
     Q_ASSERT(spr);
-    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(spr->getAnimTable().getItem(ui->tvAnimTbl->currentIndex())));
+    AnimGroup * grp = const_cast<AnimGroup *>(static_cast<const AnimGroup *>(m_selAnimGroupModel->getItem(ui->tvAnimTbl->currentIndex())));
     Q_ASSERT(grp);
 
     //Get insert position
     int insertpos = (lstdest.empty())? grp->seqSlots().size() : lstdest.first().row();
 
     //Insert rows
-    grp->getModel()->insertRows( insertpos, lstsrc.size(), QModelIndex() );
+    m_selAnimGroupModel->insertRows( insertpos, lstsrc.size(), QModelIndex() );
 
     //Put the sequence IDs in order from the source to the group's slots
     for( int cnt = 0; cnt < lstsrc.size(); ++cnt )
     {
-         grp->getModel()->setData( grp->getModel()->index(insertpos + cnt,0, QModelIndex()),
+         m_selAnimGroupModel->setData( m_selAnimGroupModel->index(insertpos + cnt,0, QModelIndex()),
                                    lstsrc.at(cnt).row(),
                                    Qt::EditRole);
     }

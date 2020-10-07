@@ -7,6 +7,7 @@
 enum struct [[maybe_unused]] eTreeElemDataType
 {
     None,
+    spritecontainer,
     sprite,
     effectOffsets,
     palette,

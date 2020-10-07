@@ -1,49 +1,23 @@
-#ifndef FRAMESDELEGATE_HPP
-#define FRAMESDELEGATE_HPP
-#include <src/data/treeelem.hpp>
+#ifndef FRAME_PART_DELEGATE_HPP
+#define FRAME_PART_DELEGATE_HPP
+#include <src/data/treenode.hpp>
 #include <QStyledItemDelegate>
 
 //*******************************************************************
-//  MFrameDelegate
+//  MFramePartDelegate
 //*******************************************************************
-// Delegate for handling editing data from the frame in the frame editor!
+// Delegate for handling editing data for mframe parts
 class MFrame;
-class MFrameDelegate : public QStyledItemDelegate
+class MFramePartDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    //Can't define in cpp, because of "tr", so to make things simpler, I just put it in a static function..
-    static const QStringList & prioritiesNames()
-    {
-        static const QStringList PRIO
-        {
-            QString(tr("0- Highest")),
-            QString(tr("1- High")),
-            QString(tr("2- Low")),
-            QString(tr("3- Lowest")),
-        };
-        return PRIO;
-    }
-
-    static const QStringList & modeNames()
-    {
-        static const QStringList Modes
-        {
-            QString(tr("Normal")),
-            QString(tr("Blended")),
-            QString(tr("Windowed")),
-            QString(tr("Bitmap")),
-        };
-        return Modes;
-    }
-
-public:
-    MFrameDelegate(MFrame * frm, QObject *parent = nullptr);
-    MFrameDelegate(const MFrameDelegate & cp);
-    MFrameDelegate(MFrameDelegate       && mv);
-    MFrameDelegate & operator=(const MFrameDelegate & cp);
-    MFrameDelegate & operator=(MFrameDelegate       && mv);
-    virtual ~MFrameDelegate();
+    MFramePartDelegate(MFrame * frm, QObject *parent = nullptr);
+    MFramePartDelegate(const MFramePartDelegate & cp);
+    MFramePartDelegate(MFramePartDelegate       && mv);
+    MFramePartDelegate & operator=(const MFramePartDelegate & cp);
+    MFramePartDelegate & operator=(MFramePartDelegate       && mv);
+    virtual ~MFramePartDelegate();
 
     /*
         createEditor
@@ -74,7 +48,7 @@ private:
     static constexpr const char * ImgSelCmbBoxName(){return "cmbImgSelect";}
     static constexpr const char * ImgSelBtnName()      {return "btnImgSelect";}
     //Make the selector for picking the image id for a given row!
-    QWidget * makeImgSelect(QWidget *parent, int row)const;
+    QWidget * makeImgSelect(QWidget *parent, const QModelIndex & index)const;
 
     static constexpr const char * VFlipChkBoxName() {return "chkVflip";}
     static constexpr const char * HFlipChkBoxName() {return "chkHflip";}
@@ -99,4 +73,4 @@ private:
     QImage  m_minusone;
 };
 
-#endif // FRAMESDELEGATE_HPP
+#endif // FRAME_PART_DELEGATE_HPP

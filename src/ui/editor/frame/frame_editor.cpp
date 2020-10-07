@@ -1,5 +1,7 @@
 #include "frame_editor.hpp"
-#include "src/ui/editor/frame/frame_editor_part.hpp"
+#include <src/data/sprite/framepart.hpp>
+#include <src/data/sprite/models/framepart_model.hpp>
+#include <src/ui/editor/frame/frame_editor_part.hpp>
 #include <src/utility/randomgenhelper.hpp>
 #include <QKeyEvent>
 #include <QPointer>
@@ -18,10 +20,12 @@ const int FrameEditorSceneYPos   = 0;
 //=======================================================================================================
 //  FrameEditor
 //=======================================================================================================
-FrameEditor::FrameEditor(MFrame *frm, QObject *parent)
-    :QGraphicsScene(parent),
-      m_pfrm(frm)
+FrameEditor::FrameEditor(MFrame *frm, Sprite * pspr, QObject *parent)
+    :QGraphicsScene(parent)
 {
+    m_pfrm = frm;
+    m_psprite = pspr;
+    m_model = new MFramePartModel(m_pfrm, pspr);
     //setBackgroundBrush(QBrush(QColor::fromHsv(195, 6, 25)));
 }
 
@@ -46,7 +50,7 @@ void FrameEditor::initScene()
     for( int i = 0; i < m_pfrm->nodeChildCount(); ++i )
     {
         MFramePart * ppart = static_cast<MFramePart*>(m_pfrm->nodeChild(i));
-        FramePart  * gfx = new FramePart( QPixmap::fromImage(ppart->drawPart(m_bTransparency)), i, this );
+        FramePart  * gfx = new FramePart( QPixmap::fromImage(ppart->drawPart(m_psprite, m_bTransparency)), i, this );
         gfx->setShowOutline(m_bDrawOutline);
         m_parts.push_back(gfx);
         addItem(gfx);
@@ -100,11 +104,13 @@ void FrameEditor::onPartMoved()
         QVariant offset;
         offset.setValue<QPair<int,int>>( QPair<int,int>(qRound(pp->pos().x()),
                                                         qRound(pp->pos().y())) );
-        m_pfrm->setData(
-            m_pfrm->getModel()->index( m_parts.indexOf(pp),
-                static_cast<int>(eFramesColumnsType::Offset),
-                QModelIndex() ),
-            offset );
+
+        m_model->setData(m_model->indexOfChildNode(m_pfrm, static_cast<int>(eFramePartColumnsType::Offset)), offset, Qt::EditRole);
+//        m_pfrm->setData(
+//            m_pfrm->getModel()->index( m_parts.indexOf(pp),
+//                static_cast<int>(eFramePartColumnsType::Offset),
+//                QModelIndex() ),
+//            offset );
         emit partMoved();
     }
 }

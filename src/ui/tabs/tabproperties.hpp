@@ -3,10 +3,15 @@
 
 #include <src/ui/tabs/basespritetab.hpp>
 #include <QWidget>
+#include <src/data/sprite/models/sprite_props_handler.hpp>
+#include <src/data/sprite/models/sprite_overview_model.hpp>
+#include <src/utility/file_support.hpp>
 
 namespace Ui {
 class TabProperties;
 }
+
+
 
 class TabProperties : public BaseSpriteTab
 {
@@ -18,7 +23,7 @@ public:
 
     // BaseSpriteTab interface
 public:
-    void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
+    void OnShowTab(QPersistentModelIndex element)override;
     void OnHideTab() override;
     void OnDestruction() override;
     void PrepareForNewContainer() override;
@@ -35,8 +40,8 @@ private:
     void UpdatePreview();
 private:
     Ui::TabProperties *ui;
-
-
+    QScopedPointer<SpritePropertiesHandler> m_propHandler;
+    QScopedPointer<SpriteOverviewModel>     m_overviewModel;
 };
 
 #endif // TABPROPERTIES_HPP

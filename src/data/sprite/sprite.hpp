@@ -20,7 +20,7 @@
 #include <list>
 #include <functional>
 
-#include <src/data/treeelem.hpp>
+#include <src/data/treenode.hpp>
 #include <src/utility/baseqtexception.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 #include <src/ppmdu/utils/imgutils.hpp>
@@ -37,36 +37,6 @@
 #include <src/data/sprite/animsequences.hpp>
 #include <src/data/sprite/animtable.hpp>
 
-extern const char * ElemName_SpriteProperty;
-enum struct eSpritePropColumns : int
-{
-    Value= 0,
-    Description,
-    NbColumns [[maybe_unused]],
-};
-extern const int         SpritePropertiesNbCols;
-extern const QStringList SpritePropertiesColNames;
-
-enum struct eSpriteProperties : int
-{
-    SpriteType = 0,
-    Compression,
-
-    ColorMode,
-    Unk6,
-    Unk7,
-    Unk8,
-    Unk9,
-    Unk10,
-    Unk11,
-    Unk12,
-    Unk13,
-
-    NbProperties [[maybe_unused]],
-};
-extern const QStringList SpritePropertiesNames;
-extern const QStringList SpritePropertiesDescriptions;
-extern const int         SpriteNbProperties;
 
 //Since we have our own compression settings that differs
 // from those in the compression_handler.hpp file, put them here!
@@ -80,7 +50,6 @@ extern const QStringList CompressionFmtOptions; //names for the above options
 filetypes::eCompressionFormats  CompOptionToCompFmt( eCompressionFmtOptions opt );
 eCompressionFmtOptions          CompFmtToCompOption( filetypes::eCompressionFormats fmt );
 
-
 enum struct eSpriteColorModes : int
 {
     _16Colors = 0,
@@ -89,196 +58,45 @@ enum struct eSpriteColorModes : int
     INVALID [[maybe_unused]],
 };
 extern const QStringList SpriteColorModes;
-
+extern const QString ElemName_Sprite;
 
 //Exceptions
 class ExBadSpriteData :public BaseException {public: using BaseException::BaseException;};
 
-
-//Forward declare Sprite
-class Sprite;
-
-//*******************************************************************
-//  SpriteOverviewModel
-//*******************************************************************
-//Model for displaying general statistics on the sprite in the property tab!
-class SpriteOverviewModel : public QAbstractItemModel
-{
-    Q_OBJECT
-    typedef QPair<QString,std::function<QVariant(Sprite*)>> stats_t;
-    static const QVector<stats_t>                           StatEntries;
-    Sprite                                                  *m_spr;
-public:
-    SpriteOverviewModel(Sprite * spr);
-
-    // QAbstractItemModel interface
-public:
-    virtual QModelIndex index(int row, int /*column*/, const QModelIndex &parent) const override;
-    virtual QModelIndex parent(const QModelIndex &child) const override;
-
-    virtual int rowCount(const QModelIndex &parent) const override;
-    virtual int columnCount(const QModelIndex &parent) const override;
-
-    virtual QVariant data(const QModelIndex &index, int role) const override;
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-};
-
-
-//*******************************************************************
-//  SpritePropertiesDelegate
-//*******************************************************************
-class SpritePropertiesDelegate : public QStyledItemDelegate
-{
-    Q_OBJECT
-    Sprite          *m_spr;
-    static const int PropValueColLen = 128;
-public:
-
-    SpritePropertiesDelegate(Sprite * parentspr, QObject * parent = nullptr);
-    virtual ~SpritePropertiesDelegate();
-
-    // QAbstractItemDelegate interface
-public:
-    virtual QSize   sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-    virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-    virtual void    setEditorData(QWidget *editor, const QModelIndex &index) const override;
-    virtual void    setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
-    virtual void    updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &/*index*/) const override;
-};
-
-//*******************************************************************
-//  SpritePropertiesModel
-//*******************************************************************
-//Model for displaying the editable sprite properties on the property tab
-class SpritePropertiesModel : public QAbstractItemModel
-{
-    Q_OBJECT
-    Sprite * m_spr;
-public:
-
-    SpritePropertiesModel(Sprite * parentspr, QObject * parent = nullptr);
-    virtual ~SpritePropertiesModel();
-
-    int getNbProperties()const;
-
-    // QAbstractItemModel interface
-public:
-    virtual Qt::ItemFlags   flags(const QModelIndex &index) const override;
-    virtual QModelIndex     index(int row, int column, const QModelIndex &parent) const override;
-    virtual QModelIndex     parent(const QModelIndex &/*child*/) const override;
-
-    virtual int     rowCount(const QModelIndex &parent) const override;
-    virtual int     columnCount(const QModelIndex &/*parent*/) const override;
-    virtual bool    hasChildren(const QModelIndex &parent) const override;
-
-    virtual QVariant    data(const QModelIndex &index, int role) const override;
-    virtual bool        setData(const QModelIndex &index, const QVariant &value, int role) override;
-    virtual QVariant    headerData(int section, Qt::Orientation orientation, int role) const override;
-
-private:
-    QVariant dataDisplay(int propid, int column)const;
-    QVariant getNameForProperty(int propid)const;
-    QVariant getDataForProperty(int propid, int role)const;
-    QVariant getDescForProperty(int propid)const;
-    void     setDataForProperty( eSpriteProperties propid, const QVariant & data );
-
-signals:
-    void spriteTypeSet(fmt::eSpriteType);
-};
-
-//*******************************************************************
-//  SpritePropertiesHandler
-//      Links the Sprite's properties and its Model and Delegate!
-//*******************************************************************
-class SpritePropertiesHandler : public QObject
-{
-    Q_OBJECT
-    Sprite * m_powner;
-    QPointer<SpritePropertiesDelegate> m_pDelegate; //QPointer because the hierachy handles deleting those!
-    QPointer<SpritePropertiesModel>    m_pModel;
-
-public:
-    SpritePropertiesHandler( Sprite * owner, QObject * parent = nullptr )
-        :QObject(parent),
-          m_powner(owner),
-          m_pDelegate(new SpritePropertiesDelegate(m_powner, this)),
-          m_pModel(new SpritePropertiesModel(m_powner, this))
-    {}
-
-    virtual ~SpritePropertiesHandler()
-    {
-        qDebug("SpritePropertiesHandler::~SpritePropertiesHandler()\n");
-    }
-
-    void setOwner( Sprite * own )
-    {
-        m_powner = own;
-    }
-
-    SpritePropertiesDelegate * delegate() {return m_pDelegate.data();}
-    SpritePropertiesModel    * model()    {return m_pModel.data();}
-
-public slots:
-    void setSpriteType( fmt::eSpriteType ty )
-    {
-        //Convert Sprite Type as neccessary!
-        qDebug("SpritePropertiesHandler::setSpriteType(): Sprite type changed to %d!", static_cast<int>(ty));
-    }
-
-signals:
-
-};
-
-
 //*******************************************************************
 //  Sprite
 //*******************************************************************
-class Sprite : public TreeElement
+class Sprite : public TreeNode
 {
     friend class SpritePropertiesHandler;
     void _ctor();
 public:
     typedef std::vector<uint8_t> rawdat_t;
 
-    Sprite( TreeElement * parent );
-    Sprite( TreeElement * parent, rawdat_t && raw );
-    Sprite( const Sprite & cp );
-    Sprite( Sprite       && mv );
+    Sprite(TreeNode * parent);
+    Sprite(TreeNode * parent, rawdat_t && raw);
+    Sprite(const Sprite & cp);
+    Sprite(Sprite       && mv);
     Sprite & operator=(const Sprite & cp);
     Sprite & operator=(Sprite       && mv);
     ~Sprite();
-    void clone(const TreeElement * other)override;
+    TreeNode* clone()const override;
 
     inline bool operator==( const Sprite & other)const  {return this == &other;}
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
 
 public:
-    TreeElement     *nodeChild(int row) override;
-    int             nodeChildCount() const override;
-    int             nodeIndex() const override;
-    int             indexOfNode(const TreeElement * ptr )const override;
-    int             nodeColumnCount() const override;
-    TreeElement     *parentNode() override;
-    QVariant        nodeData(int column, int role) const override;
-    virtual Sprite  *parentSprite()override;
-
-    QModelIndex modelIndex() const override;
-    QModelIndex modelChildIndex(int row, int column) const override;
-    QModelIndex modelParentIndex() const override;
-
-    bool            canFetchMore(const QModelIndex &parent) const override;
-    void            fetchMore(const QModelIndex &parent) override;
-
-    //Don't allow that, since we have static childs
-    inline bool insertChildrenNodes(int, int)override {return false;}
-    inline bool removeChildrenNodes(int, int)override {return false;}
-    inline bool removeChildrenNodes(QModelIndexList)override {return false;}
-    inline bool moveChildrenNodes  (int, int, int)override {return false;}
-
-public:
-    void OnClicked() override;
-    void OnExpanded() override;
-
+    TreeNode *  nodeChild(int row) override;
+    int         nodeChildCount() const override;
+    bool        nodeCanFetchMore()const override;
+    void        nodeFetchMore()override;
+//    bool        canFetchMore(const QModelIndex &parent) const override;
+//    void        fetchMore(const QModelIndex &parent) override;
+    eTreeElemDataType nodeDataTy()const override;
+    const QString&  nodeDataTypeName()const override;
+    int indexOfChild(const TreeNode * ptr)const override;
+    bool nodeShouldAutoExpand()const override {return true;}
+    bool nodeAllowFetchMore()const override {return true;}
 public:
 
     //Returns whether the sprite can be parsed, or not if there is something wrong with the raw data
@@ -291,7 +109,7 @@ public:
     void CommitSpriteData();
 
     inline bool wasParsed()const    {return m_bparsed;}
-    inline bool hasImageData()const {return m_imgcnt.hasChildren();}
+    inline bool hasImageData()const {return m_imgcnt.nodeHasChildren();}
     inline bool hasEfxOffsets()const{return type() == fmt::eSpriteType::Character;}
     inline bool hasAnimGrps()const  {return type() == fmt::eSpriteType::Character;}
 
@@ -305,8 +123,8 @@ public:
 
     const QVector<QRgb> & getPalette()const     { return m_palcnt.getPalette(); }
     QVector<QRgb>       & getPalette()          { return m_palcnt.getPalette(); }
-    const PaletteModel * getPaletteModel()const { return m_palcnt.getModel(); }
-    PaletteModel       * getPaletteModel()      { return m_palcnt.getModel(); }
+//    const PaletteModel * getPaletteModel()const { return m_palcnt.getModel(); }
+//    PaletteModel       * getPaletteModel()      { return m_palcnt.getModel(); }
 
     inline void setPalette(const QVector<QRgb> & pal)   {m_palcnt.setPalette(pal);}
 
@@ -334,14 +152,14 @@ public:
     void                    convertSpriteToType(fmt::eSpriteType newty);
 
     //SPRITE PROPERTIES
-    SpritePropertiesHandler         * propHandler();
-    const SpritePropertiesHandler   * propHandler()const;
+//    SpritePropertiesHandler         * propHandler();
+//    const SpritePropertiesHandler   * propHandler()const;
 
-    SpritePropertiesModel           * model();
-    const SpritePropertiesModel     * model()const;
+//    SpritePropertiesModel           * model();
+//    const SpritePropertiesModel     * model()const;
 
-    SpriteOverviewModel             * overviewModel();
-    const SpriteOverviewModel       * overviewModel()const;
+//    SpriteOverviewModel             * overviewModel();
+//    const SpriteOverviewModel       * overviewModel()const;
 
     inline bool is256Colors()const
     {
@@ -381,10 +199,10 @@ private:
     void DecompressRawData();
     void CompressRawData(filetypes::eCompressionFormats cpfmt);
 
-    TreeElement       * ElemPtr(int idx);
-    TreeElement       * ElemPtrNoEfx(int idx);
-    const TreeElement * ElemPtr(int idx)const;
-    const TreeElement * ElemPtrNoEfx(int idx)const;
+    TreeNode       * ElemPtr(int idx);
+    TreeNode       * ElemPtrNoEfx(int idx);
+    const TreeNode * ElemPtr(int idx)const;
+    const TreeNode * ElemPtrNoEfx(int idx)const;
     int                 nbChildCat()const;
 
 private:
@@ -399,13 +217,13 @@ private:
     FramesContainer                         m_frmcnt;
     AnimSequences                           m_seqcnt;
     AnimTable                               m_anmtbl;
-    QScopedPointer<SpritePropertiesHandler> m_propshndlr;
+//    QScopedPointer<SpritePropertiesHandler> m_propshndlr;
 
     //Status / statistics
     bool                                    m_bparsed;          //Whether the sprite's raw has been parsed to be displayed yet or not!
     bool                                    m_bhasimagedata;    //Whether the sprite can be displayed or not!
     filetypes::eCompressionFormats          m_targetgompression;
-    QScopedPointer<SpriteOverviewModel>     m_overmodel;
+//    QScopedPointer<SpriteOverviewModel>     m_overmodel;
 
     //UI data
     QPixmap m_previewImg;       //Cached image preview

@@ -27,9 +27,35 @@ inline bool ShouldDisplayUI(const QCommandLineParser & parser)
     return !(parser.isSet(OPT_Import) || parser.isSet(OPT_Export));
 }
 
+class ApplicationNoExcept : public QApplication
+{
+public:
+    using QApplication::QApplication;
+
+    // QCoreApplication interface
+public:
+    bool notify(QObject *receiver, QEvent *event) override
+    {
+        try
+        {
+            return QApplication::notify(receiver, event);
+        }
+        catch(const std::exception & e)
+        {
+            qWarning() << "<!>-Exception: " <<e.what();
+            return false;
+        }
+        catch(...)
+        {
+            qWarning() << "<!>-Caught unknown exception type!";
+            return false;
+        }
+    }
+};
+
 int main(int argc, char *argv[])
 {
-    QApplication        a(argc, argv);
+    ApplicationNoExcept a(argc, argv);
     QCoreApplication::setOrganizationName("PPMDU");
     QCoreApplication::setApplicationName("Sprite Muncher");
     QCommandLineParser  parser;

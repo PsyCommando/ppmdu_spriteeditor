@@ -17,7 +17,7 @@ public:
 
     // BaseSpriteTab interface
 public:
-    void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
+    void OnShowTab(QPersistentModelIndex element)override;
     void OnHideTab() override;
     void OnDestruction() override;
     void PrepareForNewContainer() override;

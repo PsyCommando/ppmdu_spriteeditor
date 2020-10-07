@@ -17,20 +17,27 @@ TabAnimSequence::~TabAnimSequence()
     delete ui;
 }
 
-void TabAnimSequence::OnShowTab(Sprite * pspr, QPersistentModelIndex element)
+void TabAnimSequence::OnShowTab(QPersistentModelIndex element)
 {
-    Q_ASSERT(pspr && element.isValid());
-    AnimSequence * aniseq = static_cast<AnimSequence*>(element.internalPointer());
-    ui->tblseqfrmlst->setModel(aniseq->getModel());
-    ui->tblseqfrmlst->setItemDelegate(aniseq->getDelegate());
-    ui->tblseqfrmlst->resizeRowsToContents();
-    ui->tblseqfrmlst->resizeColumnsToContents();
+    if(element.isValid())
+    {
+        Sprite * pspr = currentSprite();
+        if(pspr)
+        {
+            AnimSequence * aniseq = static_cast<AnimSequence*>(element.internalPointer());
+            setupAnimSeq(element, pspr);
+            ui->tblseqfrmlst->setModel(m_curSeqFramesModel.data());
+            ui->tblseqfrmlst->setItemDelegate(m_curSeqFramesDelegate.data());
+            ui->tblseqfrmlst->resizeRowsToContents();
+            ui->tblseqfrmlst->resizeColumnsToContents();
 
-    m_previewrender.InstallAnimPreview(ui->gvAnimSeqViewport, pspr, aniseq);
-    ConnectSceneRenderer();
-    OnPreviewRangeChanged(0, m_previewrender.getAnimationLength()); //Force set the preview range
-    qDebug() << "TabAnimSequence::ShowTab(): Scene set!\n";
-    BaseSpriteTab::OnShowTab(pspr, element);
+            m_previewrender.InstallAnimPreview(ui->gvAnimSeqViewport, pspr, aniseq);
+            ConnectSceneRenderer();
+            OnPreviewRangeChanged(0, m_previewrender.getAnimationLength()); //Force set the preview range
+            qDebug() << "TabAnimSequence::ShowTab(): Scene set!\n";
+        }
+    }
+    BaseSpriteTab::OnShowTab(element);
 }
 
 void TabAnimSequence::OnHideTab()
@@ -46,6 +53,7 @@ void TabAnimSequence::OnHideTab()
     ui->tblseqfrmlst->reset();
 
     ui->lblAnimTime->setText(DEFAULT_PLAYTIME_VALUE);
+    clearAnimSeq();
     qDebug() << "TabAnimSequence::HideTab(): Unset scene!\n";
     BaseSpriteTab::OnHideTab();
 }
@@ -57,6 +65,7 @@ void TabAnimSequence::OnDestruction()
     m_previewrender.endAnimationPlayback();
     m_previewrender.Reset();
     m_previewrender.UninstallAnimPreview(ui->gvAnimSeqViewport);
+    clearAnimSeq();
     BaseSpriteTab::OnDestruction();
 }
 
@@ -82,6 +91,29 @@ void TabAnimSequence::PrepareForNewContainer()
     ui->tblseqfrmlst->reset();
 }
 
+void TabAnimSequence::setupAnimSeq(QPersistentModelIndex seq, Sprite *spr)
+{
+    if(!seq.isValid())
+    {
+        Q_ASSERT(false);
+    }
+    AnimSequence * pseq = reinterpret_cast<AnimSequence*>(seq.internalPointer());
+    if(!pseq)
+    {
+        Q_ASSERT(false);
+    }
+    m_curAnimSeq = seq;
+    m_curSeqFramesModel.reset(new AnimFramesModel(pseq, spr));
+    m_curSeqFramesDelegate.reset(new AnimFrameDelegate(pseq));
+}
+
+void TabAnimSequence::clearAnimSeq()
+{
+    m_curAnimSeq = QModelIndex();
+    m_curSeqFramesModel.reset();
+    m_curSeqFramesDelegate.reset();
+}
+
 void TabAnimSequence::ConnectSceneRenderer()
 {
     //Connect UI to scene
@@ -94,6 +126,9 @@ void TabAnimSequence::ConnectSceneRenderer()
     connect( &m_previewrender, &SpriteScene::rangechanged, this, &TabAnimSequence::OnPreviewRangeChanged);
     connect( &m_previewrender, &SpriteScene::framechanged, this, &TabAnimSequence::OnPreviewFrameChanged);
     connect( &m_previewrender, &SpriteScene::tick,         this, &TabAnimSequence::OnPreviewTick);
+
+    //Connect data update signals
+    connect( m_curSeqFramesModel.data(), &AnimFramesModel::dataChanged, &m_previewrender, &SpriteScene::OnAnimDataChaged);
 }
 
 void TabAnimSequence::DisconnectSceneRenderer()
@@ -104,10 +139,14 @@ void TabAnimSequence::DisconnectSceneRenderer()
     //disconnect( ui->btnSeqStop,    &QPushButton::clicked,  &m_previewrender, &SpriteScene::endAnimationPlayback );
     //disconnect( ui->sldrAnimSeq,   &QSlider::sliderMoved,  &m_previewrender, &SpriteScene::setCurrentFrame);
 
-    //Connect scene signals to UI
+    //Disconnect scene signals to UI
     disconnect( &m_previewrender, &SpriteScene::rangechanged, this, &TabAnimSequence::OnPreviewRangeChanged);
     disconnect( &m_previewrender, &SpriteScene::framechanged, this, &TabAnimSequence::OnPreviewFrameChanged);
     disconnect( &m_previewrender, &SpriteScene::tick,         this, &TabAnimSequence::OnPreviewTick);
+
+    //Disconnect data update signals
+    if(m_curSeqFramesModel)
+        disconnect( m_curSeqFramesModel.data(), &AnimFramesModel::dataChanged, &m_previewrender, &SpriteScene::OnAnimDataChaged);
 }
 
 void TabAnimSequence::OnPreviewRangeChanged(int beg, int length)
@@ -165,9 +204,9 @@ void TabAnimSequence::SetCurrentFrame(int frameidx, bool bupdatescene)
     ui->sldrAnimSeq->blockSignals(false);
 
     //Select the frame in the table view
-    AnimSequence * curseq = currentAnimSequence();
-    if(curseq)
-        ui->tblseqfrmlst->setCurrentIndex(curseq->modelIndex());
+//    AnimSequence * curseq = currentAnimSequence();
+//    if(curseq)
+//        ui->tblseqfrmlst->setCurrentIndex(curseq->modelIndex());
 
     //Update the tick counter
     UpdateTickCounter();
@@ -180,7 +219,7 @@ void TabAnimSequence::on_btnSeqAddFrm_clicked()
 {
     //#TODO: Separate this from ui code if possible!
     QModelIndex     ind       = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
+    AnimSequence    *curseq = static_cast<AnimSequence*>(m_curAnimSeq.internalPointer());
     Q_ASSERT(curseq);
     int insertpos = 0;
 
@@ -189,7 +228,7 @@ void TabAnimSequence::on_btnSeqAddFrm_clicked()
     else
         insertpos = (curseq->nodeChildCount() > 0)? (curseq->nodeChildCount() - 1) : 0;
 
-    if(curseq->getModel()->insertRow(insertpos))
+    if(m_curSeqFramesModel->insertRow(insertpos))
     {
         ShowStatusMessage(tr("Appended animation frame!"));
     }
@@ -214,10 +253,10 @@ void TabAnimSequence::on_btnSeqRemFrm_clicked()
     Q_ASSERT(pseq && pafrm);
 
     QItemSelectionModel* sel = ui->tblseqfrmlst->selectionModel();
-    QModelIndexList selectedindex = sel->selectedRows();
+    QModelIndexList selectedindices = sel->selectedRows();
 
     //ui->tblseqfrmlst->setCurrentIndex(QModelIndex());
-    if(pseq->removeChildrenNodes(selectedindex))
+    if(m_curSeqFramesModel->removeRows(selectedindices))// pseq->removeChildrenNodes(selectedindex))
         ShowStatusMessage(tr("Removed animation frame!"));
     else
         ShowStatusErrorMessage(tr("Removal failed!"));
@@ -232,7 +271,7 @@ void TabAnimSequence::on_btnSeqMvUp_clicked()
 {
     //#TODO: Separate this from ui code if possible!
     QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
+    AnimSequence    *curseq = static_cast<AnimSequence*>(m_curAnimSeq.internalPointer());
     Q_ASSERT(curseq);
     if(!ind.isValid())
     {
@@ -243,7 +282,7 @@ void TabAnimSequence::on_btnSeqMvUp_clicked()
     int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
     if(destrow != ind.row())
     {
-        if(curseq->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+        if(m_curSeqFramesModel->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
             ShowStatusMessage(tr("Animation frame moved down!"));
         else
             ShowStatusErrorMessage(tr("Failed to move frame!"));
@@ -257,7 +296,7 @@ void TabAnimSequence::on_btnSeqMvDown_clicked()
 {
     //#TODO: Separate this from ui code if possible!
     QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
+    AnimSequence    *curseq = static_cast<AnimSequence*>(m_curAnimSeq.internalPointer());
     Q_ASSERT(curseq);
     if(!ind.isValid())
     {
@@ -268,7 +307,7 @@ void TabAnimSequence::on_btnSeqMvDown_clicked()
     int destrow = (ind.row() < curseq->nodeChildCount()-1 )? ind.row() + 1 : ind.row();
     if(destrow != ind.row())
     {
-        if(curseq->getModel()->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
+        if(m_curSeqFramesModel->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
             ShowStatusMessage(tr("Animation frame moved down!"));
         else
             ShowStatusErrorMessage(tr("Failed to move frame!"));
@@ -282,7 +321,7 @@ void TabAnimSequence::on_btnSeqDup_clicked()
 {
     //#TODO: Separate this from ui code if possible!
     QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = currentAnimSequence();
+    AnimSequence    *curseq = static_cast<AnimSequence*>(m_curAnimSeq.internalPointer());
     Q_ASSERT(curseq);
     if(!ind.isValid())
     {
@@ -293,9 +332,9 @@ void TabAnimSequence::on_btnSeqDup_clicked()
     AnimFrame tmpfrm = *(static_cast<AnimFrame*>(ind.internalPointer()));
 
     int insertpos = ind.row();
-    if(curseq->getModel()->insertRow(insertpos))
+    if(m_curSeqFramesModel->insertRow(insertpos))
     {
-        AnimFrame * pnewfrm = static_cast<AnimFrame *>(curseq->getItem( curseq->getModel()->index(insertpos, 0, QModelIndex()) ));
+        AnimFrame * pnewfrm = static_cast<AnimFrame *>(m_curSeqFramesModel->getItem( m_curSeqFramesModel->index(insertpos, 0, QModelIndex()) ));
         Q_ASSERT(pnewfrm);
         (*pnewfrm) = tmpfrm;
         ShowStatusMessage(tr("Duplicated animation frame!"));

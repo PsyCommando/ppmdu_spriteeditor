@@ -8,57 +8,59 @@
 #include <QStyledItemDelegate>
 #include <QStandardItemModel>
 
-#include <src/data/treeelem.hpp>
+#include <src/data/treenodeterminal.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/ppmdu/utils/imgutils.hpp>
 
 
 class Sprite;
 class MFrame;
-extern const char * ElemName_AnimFrame;
+extern const QString ElemName_AnimFrame;
 
 //*******************************************************************
 //  AnimFrame
 //*******************************************************************
-class AnimFrame :  public BaseTreeTerminalChild<&ElemName_AnimFrame>
+class AnimFrame : public TreeNodeTerminal
 {
-    static QSize calcTextSize(const QString &str);
+    friend class AnimFramesModel;
 public:
-    static const char *         UProp_AnimFrameID;  //UserProp name used for storing the id of this frame!
-    static const QStringList    ColumnNames;        //Name displayed in the column header for each properties of the frame! Is tied to eColumnsType
-
-    //NOTE: Be sure to update ColumnNames when changing this!
-    enum struct eColumnsType : int
+    AnimFrame(TreeNode * parent)
+        :TreeNodeTerminal(parent)
     {
-        Frame = 0,
-        Duration,
-        Offset,
-        ShadowOffset,
-        Flags,
-        NBColumns,
-        //Everything below this is not displayed as header column
-
-        //To acces some of the merged data individually via model data! Since we merged both x/y param entry into a single one for each categories
-        Direct_XOffset,
-        Direct_YOffset,
-        Direct_ShadowXOffset,
-        Direct_ShadowYOffset,
-    };
-
-
-public:
-    AnimFrame( TreeElement * parent )
-        :BaseTreeTerminalChild(parent, Qt::ItemFlag::ItemIsEditable | DEFFlags())
-    {
-        setNodeDataTy(eTreeElemDataType::animFrame);
+        m_flags |= Qt::ItemFlag::ItemIsEditable;
     }
-
-    void clone(const TreeElement *other)
+    AnimFrame(const AnimFrame& cp)
+        :TreeNodeTerminal(cp)
     {
-        const AnimFrame * ptr = static_cast<const AnimFrame*>(other);
-        if(!ptr)
-            throw std::runtime_error("AnimFrame::clone(): other is not a AnimFrame!");
-        (*this) = *ptr;
+        m_data = cp.m_data;
+    }
+    AnimFrame(AnimFrame&& mv)
+        : TreeNodeTerminal(mv)
+    {
+        m_data = qMove(mv.m_data);
+    }
+    AnimFrame& operator=(const AnimFrame& cp)
+    {
+        m_data = cp.m_data;
+        TreeNodeTerminal::operator=(cp);
+        return *this;
+    }
+    AnimFrame& operator=(AnimFrame&& mv)
+    {
+        m_data = qMove(mv.m_data);
+        TreeNodeTerminal::operator=(mv);
+        return *this;
+    }
+    ~AnimFrame(){}
+
+    eTreeElemDataType   nodeDataTy()const override      {return eTreeElemDataType::animFrame;}
+    const QString&      nodeDataTypeName()const override{return ElemName_AnimFrame;}
+
+    TreeNode * clone()const override
+    {
+        AnimFrame * ptr = new AnimFrame(m_parentItem);
+        (*ptr) = (*this);
+        return ptr;
     }
 
     inline bool operator==( const AnimFrame & other)const  {return this == &other;}
@@ -90,16 +92,9 @@ public:
     inline void setShadowx (int16_t val) {m_data.shadowxoffs = val;}
     inline void setShadowy (int16_t val) {m_data.shadowyoffs = val;}
 
-    Sprite * parentSprite() override;
-    const Sprite * parentSprite() const override
-    {
-        return const_cast<AnimFrame*>(this)->parentSprite();
-    }
-
-    virtual QVariant nodeData(int column, int role) const override;
     bool nodeIsMutable()const override    {return true;}
 
-    QImage makePreview()const;
+    QImage makePreview(const Sprite* owner)const;
 
 private:
     fmt::animfrm_t  m_data;

@@ -34,6 +34,8 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\" \
 
 
 SOURCES += src/main.cpp\
+    src/data/content_factory.cpp \
+    src/data/content_manager.cpp \
     src/data/sprite/animframe.cpp \
     src/data/sprite/animgroup.cpp \
     src/data/sprite/animsequence.cpp \
@@ -43,19 +45,35 @@ SOURCES += src/main.cpp\
     src/data/sprite/frame.cpp \
     src/data/sprite/framepart.cpp \
     src/data/sprite/framescontainer.cpp \
-    src/data/sprite/framesdelegate.cpp \
     src/data/sprite/image.cpp \
     src/data/sprite/imagescontainer.cpp \
-    src/data/sprite/imagesmanagermodel.cpp \
+    src/data/sprite/models/animframe_delegate.cpp \
+    src/data/sprite/models/animframe_model.cpp \
+    src/data/sprite/models/animgroup_delegate.cpp \
+    src/data/sprite/models/animgroup_model.cpp \
+    src/data/sprite/models/animsequences_list_model.cpp \
+    src/data/sprite/models/animsequences_list_picker_model.cpp \
+    src/data/sprite/models/animtable_delegate.cpp \
+    src/data/sprite/models/animtable_model.cpp \
+    src/data/sprite/models/effect_container_model.cpp \
+    src/data/sprite/models/framepart_delegate.cpp \
+    src/data/sprite/models/framepart_model.cpp \
+    src/data/sprite/models/frames_list_model.cpp \
+    src/data/sprite/models/images_list_model.cpp \
+    src/data/sprite/models/palette_model.cpp \
+    src/data/sprite/models/sprite_overview_model.cpp \
+    src/data/sprite/models/sprite_props_delegate.cpp \
+    src/data/sprite/models/sprite_props_handler.cpp \
+    src/data/sprite/models/sprite_props_model.cpp \
     src/data/sprite/palettecontainer.cpp \
-    src/data/sprite/palettemodel.cpp \
+    src/data/sprite/sprite_container.cpp \
+    src/utility/file_support.cpp \
     src/utility/randomgenhelper.cpp \
     src/ui/editor/frame/frame_editor.cpp \
     src/ui/editor/frame/frame_editor_part.cpp \
     src/ui/editor/palette/paletteeditor.cpp \
     src/ui/errorhelper.cpp \
     src/ui/mainwindow.cpp \
-    src/data/sprite/spritecontainer.cpp \
     src/ui/processingconsole.cpp \
     src/data/sprite/sprite.cpp \
     src/data/sprite/spritemanager.cpp \
@@ -84,9 +102,37 @@ SOURCES += src/main.cpp\
     src/ui/tabs/tabframes.cpp \
     src/ui/tabs/tabimages.cpp \
     src/ui/tabs/tabproperties.cpp \
-    src/ui/tvspritescontextmenu.cpp
+    src/ui/tvspritescontextmenu.cpp \
+    src/utility/threadedwriter.cpp
 
 HEADERS  += \
+    src/data/base_container.hpp \
+    src/data/content_factory.hpp \
+    src/data/content_manager.hpp \
+    src/data/sprite/models/animframe_delegate.hpp \
+    src/data/sprite/models/animframe_model.hpp \
+    src/data/sprite/models/animgroup_delegate.hpp \
+    src/data/sprite/models/animgroup_model.hpp \
+    src/data/sprite/models/animsequences_list_model.hpp \
+    src/data/sprite/models/animsequences_list_picker_model.hpp \
+    src/data/sprite/models/animtable_delegate.hpp \
+    src/data/sprite/models/animtable_model.hpp \
+    src/data/sprite/models/effect_container_model.hpp \
+    src/data/sprite/models/framepart_delegate.hpp \
+    src/data/sprite/models/framepart_model.hpp \
+    src/data/sprite/models/frames_list_model.hpp \
+    src/data/sprite/models/images_list_model.hpp \
+    src/data/sprite/models/palette_model.hpp \
+    src/data/sprite/models/sprite_overview_model.hpp \
+    src/data/sprite/models/sprite_props_delegate.hpp \
+    src/data/sprite/models/sprite_props_handler.hpp \
+    src/data/sprite/models/sprite_props_model.hpp \
+    src/data/sprite/sprite_container.hpp \
+    src/data/treeenodetypes.hpp \
+    src/data/treenode.hpp \
+    src/data/treenodemodel.hpp \
+    src/data/treenodeterminal.hpp \
+    src/data/treenodewithchilds.hpp \
     src/utility/baseqtexception.hpp \
     src/data/sprite/animframe.hpp \
     src/data/sprite/animgroup.hpp \
@@ -97,20 +143,16 @@ HEADERS  += \
     src/data/sprite/frame.hpp \
     src/data/sprite/framepart.hpp \
     src/data/sprite/framescontainer.hpp \
-    src/data/sprite/framesdelegate.hpp \
     src/data/sprite/image.hpp \
     src/data/sprite/imagescontainer.hpp \
-    src/data/sprite/imagesmanagermodel.hpp \
     src/data/sprite/palettecontainer.hpp \
-    src/data/sprite/palettemodel.hpp \
+    src/utility/file_support.hpp \
     src/utility/randomgenhelper.hpp \
     src/data/sprite/sprite.hpp \
-    src/data/sprite/spritecontainer.hpp \
     src/data/sprite/spritemanager.hpp \
     src/ppmdu/fmts/sir0.hpp \
     src/ppmdu/utils/byteutils.hpp \
     src/ppmdu/fmts/packfile.hpp \
-    src/data/treeelem.hpp \
     src/ppmdu/utils/sequentialgenerator.hpp \
     src/ppmdu/fmts/integer_encoding.hpp \
     src/ppmdu/fmts/px_compression.hpp \
@@ -118,7 +160,6 @@ HEADERS  += \
     src/ppmdu/fmts/wa_sprite.hpp \
     src/ppmdu/utils/algo.hpp \
     src/ppmdu/utils/imgutils.hpp \
-    src/data/treeelemtypes.hpp \
     src/ui/diagsingleimgcropper.hpp \
     src/ui/dialognewsprite.hpp \
     src/scenerenderer.hpp \
@@ -146,6 +187,7 @@ HEADERS  += \
     src/ui/tabs/tabimages.hpp \
     src/ui/tabs/tabproperties.hpp \
     src/ui/tvspritescontextmenu.hpp \
+    src/utility/threadedwriter.hpp \
     version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
@@ -169,5 +211,6 @@ QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
 QMAKE_CXXFLAGS_WARN_OFF +=
 
 DISTFILES += \
+    readme.md \
     resources.rc \
     resources/app.ico

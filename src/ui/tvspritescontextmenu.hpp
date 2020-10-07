@@ -4,7 +4,7 @@
 #include <QPersistentModelIndex>
 #include <QPointer>
 
-class TreeElement;
+class TreeNode;
 class MainWindow;
 
 //======================================================================================
@@ -15,8 +15,8 @@ class TVSpritesContextMenu : public QMenu
     Q_OBJECT
 
     QPersistentModelIndex m_itemidx;
-    TreeElement * m_pitem{nullptr};
-    MainWindow * m_pmainwindow{nullptr};
+    TreeNode * m_pitem              {nullptr};
+    MainWindow * m_pmainwindow      {nullptr};
 
 public:
     TVSpritesContextMenu( MainWindow * mainwindow, const QModelIndex & item, QWidget * parent = nullptr );

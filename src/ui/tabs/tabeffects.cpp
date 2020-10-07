@@ -14,9 +14,9 @@ TabEffects::~TabEffects()
 }
 
 
-void TabEffects::OnShowTab(Sprite *pspr, QPersistentModelIndex element)
+void TabEffects::OnShowTab(QPersistentModelIndex element)
 {
-    BaseSpriteTab::OnShowTab(pspr, element);
+    BaseSpriteTab::OnShowTab(element);
 }
 
 void TabEffects::OnHideTab()

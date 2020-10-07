@@ -2,43 +2,33 @@
 #define PALETTE_HPP
 #include <QVector>
 #include <QRgb>
-#include <QScopedPointer>
-#include <src/data/treeelem.hpp>
-#include <src/data/sprite/palettemodel.hpp>
+#include <src/data/treenodeterminal.hpp>
 
-extern const char * ElemName_Palette;
+extern const QString ElemName_Palette;
 
 //*******************************************************************
 //  PaletteContainer
 //*******************************************************************
 //Category tree node containing all the palettes for a sprite.
-class PaletteContainer : public BaseTreeTerminalChild<&ElemName_Palette>
+class PaletteContainer : public TreeNodeTerminal
 {
+    friend class PaletteModel;
 public:
-
-    PaletteContainer( TreeElement * parent );
+    PaletteContainer( TreeNode * parent );
     PaletteContainer( PaletteContainer && mv );
     PaletteContainer( const PaletteContainer & cp );
     PaletteContainer & operator=( const PaletteContainer & cp );
     PaletteContainer & operator=( PaletteContainer && mv );
     ~PaletteContainer();
 
-    void clone(const TreeElement *other)
-    {
-        const PaletteContainer * ptr = static_cast<const PaletteContainer*>(other);
-        if(!ptr)
-            throw std::runtime_error("PaletteContainer::clone(): other is not a PaletteContainer!");
-        (*this) = *ptr;
-    }
+    // TreeNode interface
+public:
+    TreeNode *                  clone() const override;
+    eTreeElemDataType           nodeDataTy() const override;
+    const QString &             nodeDataTypeName() const override;
+    inline bool                 nodeIsMutable()const override {return false;}
 
 public:
-    QVariant nodeData(int column, int role) const override;
-
-    Sprite                      * parentSprite();
-    inline bool                   nodeIsMutable()const override {return false;}
-    inline PaletteModel         * getModel()                    {return m_model.data();}
-    inline const PaletteModel   * getModel()const               {return m_model.data();}
-
     inline QVector<QRgb>        &getPalette()                           {return m_pal;}
     inline const QVector<QRgb>  &getPalette()const                      {return m_pal;}
     inline void                 setPalette(QVector<QRgb>        & pal)  {m_pal = pal;}
@@ -46,8 +36,7 @@ public:
     inline void                 setPalette(QVector<QRgb>        && pal) {m_pal = qMove(pal);}
 
 private:
-    QScopedPointer<PaletteModel>    m_model;
-    QVector<QRgb>                   m_pal;
+    QVector<QRgb> m_pal;
 };
 
 #endif // PALETTE_HPP

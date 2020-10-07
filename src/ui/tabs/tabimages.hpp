@@ -5,6 +5,7 @@
 #include <QModelIndex>
 #include <QDataWidgetMapper>
 #include <QPixmap>
+#include <src/data/sprite/models/images_list_model.hpp>
 
 namespace Ui {
 class TabImages;
@@ -20,7 +21,7 @@ public:
 
     // BaseSpriteTab interface
 public:
-    void OnShowTab(Sprite *pspr, QPersistentModelIndex element) override;
+    void OnShowTab(QPersistentModelIndex element)override;
     void OnHideTab() override;
     void OnDestruction() override;
     void PrepareForNewContainer() override;
@@ -36,11 +37,15 @@ private slots:
 
 private:
     void ClearMappings();
+    void SetupImage(QPersistentModelIndex img, Sprite * spr);
+    void ClearImage();
 
 private:
     Ui::TabImages *ui;
     QScopedPointer<QDataWidgetMapper>   m_imgdatmapper;
+
     QPersistentModelIndex               m_currentImage;
+    QScopedPointer<ImageListModel>      m_imgListModel;
     //QPixmap                             m_imgNoImg;             //Image displayed when no image can be displayed in a view!
 };
 

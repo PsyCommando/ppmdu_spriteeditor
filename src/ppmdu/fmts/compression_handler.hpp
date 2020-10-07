@@ -151,9 +151,8 @@ namespace filetypes
         eCompressionFormats IndentifyCompression(_init beg, _init end)
     {
         //#1. Fetch magic number
-        std::vector<uint8_t> magic;
-        auto binsmagic = std::back_inserter(magic);
-        for( size_t cnt = 0; cnt < CompressionMagicNumberLen && beg != end; *binsmagic = *beg, ++cnt, ++beg );
+        std::array<uint8_t, CompressionMagicNumberLen> magic{0};
+        for( size_t cnt = 0; cnt < CompressionMagicNumberLen && beg != end; magic[cnt] = *beg, ++cnt, ++beg );
 
         //#2. Identify
         eCompressionFormats fmt = eCompressionFormats::INVALID;

@@ -2,17 +2,17 @@
 
 QRect FindLargestFrameBounds(const AnimSequence & seq, const Sprite & sprt)
 {
-    QRect boundsbiggest;
+    //QRect boundsbiggest;
 
     int x1 = 512;
     int y1 = 512;
     int x2 = 0;
     int y2 = 0;
     //First pass, find largest frame
-    for(const auto & afrm : seq )
+    for(const auto afrm : seq )
     {
         QRect  area;
-        const MFrame * pfrm = sprt.getFrame(afrm.frmidx());
+        const MFrame * pfrm = sprt.getFrame(afrm->frmidx());
         if(pfrm != nullptr )
             area = pfrm->calcFrameBounds();
 
@@ -50,24 +50,24 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
         QRect boundsbiggest = FindLargestFrameBounds(*pseq, sprt);
 
         //Second pass, assemble and crop to largest frame
-        for(const auto & afrm : (*pseq) )
+        for(const auto afrm : (*pseq) )
         {
             QImage target;
             QRect  area;
-            const MFrame * pfrm = sprt.getFrame(afrm.frmidx());
+            const MFrame * pfrm = sprt.getFrame(afrm->frmidx());
             //
             if(pfrm != nullptr )
-                target = qMove(pfrm->AssembleFrame(afrm.xoffset(), afrm.yoffset(), boundsbiggest, &area));
+                target = pfrm->AssembleFrame(afrm->xoffset(), afrm->yoffset(), boundsbiggest, &area, true, &sprt);
             else
-                qDebug("AnimatedSpriteItem::LoadSequence(): Got invalid frame index %d!\n", afrm.frmidx());
+                qDebug("AnimatedSpriteItem::LoadSequence(): Got invalid frame index %d!\n", afrm->frmidx());
 
             cachedframe dest;
             dest.area     = area;
-            dest.shadowx  = afrm.shadowx();
-            dest.shadowy  = afrm.shadowy();
-            dest.offsetx  = afrm.xoffset();
-            dest.offsety  = afrm.yoffset();
-            dest.duration = afrm.duration();
+            dest.shadowx  = afrm->shadowx();
+            dest.shadowy  = afrm->shadowy();
+            dest.offsetx  = afrm->xoffset();
+            dest.offsety  = afrm->yoffset();
+            dest.duration = afrm->duration();
             dest.img      = QPixmap::fromImage(target);
             cachedframes.push_back(qMove(dest));
         }

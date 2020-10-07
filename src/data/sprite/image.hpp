@@ -3,18 +3,18 @@
 #include <QVector>
 #include <QRgb>
 #include <QImage>
-#include <src/data/treeelem.hpp>
+#include <src/data/treenodeterminal.hpp>
 #include <src/ppmdu/utils/sequentialgenerator.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 
-extern const char * ElemName_Image;
+extern const QString ElemName_Image;
 //*******************************************************************
 //  Image
 //*******************************************************************
 //
-class Image : public BaseTreeTerminalChild<&ElemName_Image>,
-              public utils::BaseSequentialIDGen< BaseTreeTerminalChild<&ElemName_Image>, unsigned int>
+class Image : public TreeNodeTerminal, public utils::BaseSequentialIDGen<TreeNodeTerminal, unsigned int>
 {
+    friend class ImageListModel;
 public:
     enum struct eColumnType : int
     {
@@ -28,15 +28,13 @@ public:
         direct_Unk14 [[maybe_unused]],
     };
 
-
 public:
-    Image(TreeElement * parent);
+    Image(TreeNode * parent);
     Image(Image && mv);
     Image(const Image & cp);
     Image & operator=(Image && mv);
     Image & operator=(const Image & cp);
-
-    void clone(const TreeElement *other);
+    ~Image();
 
     inline bool operator==( const Image & other)const  {return this == &other;}
     inline bool operator!=( const Image & other)const  {return !operator==(other);}
@@ -52,42 +50,42 @@ public:
     /*
         Generate a displayable QImage using the specified palette and the image data currently stored.
     */
-    QImage makeImage( const QVector<QRgb> & palette )const;
+    QImage makeImage(const QVector<QRgb> & palette)const;
 
     //Return bounding rectangle for the image contained
-    inline QSize getImageSize()const{return m_img.size();}
-
+    inline QSize getImageSize()const        {return m_img.size();}
     inline int getImageOriginalDepth()const {return m_depth;}
 
+    QString getImageDescription()const;
+
     //Reimplemented nodeData method specifically for displaying images in the image list table!
-    virtual QVariant imgData(int column, int role) const;
-    virtual bool     setImgData(int column, const QVariant &value, int role);
-    virtual QVariant imgDataCondensed(int role) const;
+    //virtual QVariant imgData(int column, int role) const;
+    //virtual bool     setImgData(int column, const QVariant &value, int role);
+    //virtual QVariant imgDataCondensed(int role) const;
 
     //Reimplemented nodeColumnCount specifically for displaying images in the image list table!
-    virtual int nbimgcolumns()const{return static_cast<int>(eColumnType::NbColumns);}
+    virtual int nbimgcolumns()const {return static_cast<int>(eColumnType::NbColumns);}
 
     //Returns the session unique id for this image
     inline id_t getImageUID()const {return getID();} //Get index indepandent id!
 
     //Unk values
-    uint32_t getUnk2()const { return m_unk2; }
-    void     setUnk2(uint32_t val) { m_unk2 = val; }
-    uint16_t getUnk14()const { return m_unk14; }
-    void     setUnk14(uint16_t val) { m_unk14 = val; }
+    uint32_t getUnk2()const         {return m_unk2;}
+    void     setUnk2(uint32_t val)  {m_unk2 = val;}
+    uint16_t getUnk14()const        {return m_unk14;}
+    void     setUnk14(uint16_t val) {m_unk14 = val;}
 
-    //
-    //BaseTreeTerminalChild overrides
-    //
+// TreeNode interface
 public:
-    Sprite       * parentSprite();
-    const Sprite * parentSprite()const {return const_cast<Image*>(this)->parentSprite();}
+    TreeNode *clone() const override;
+    eTreeElemDataType nodeDataTy() const override;
+    const QString &nodeDataTypeName() const override;
 
 protected:
     QImage                  m_img;
-    std::vector<uint8_t>    m_raw; //Need this because QImage doesn't own the buffer...
-    int                     m_depth;    //Original image depth in bpp
-    uint16_t                m_unk2;
-    uint16_t                m_unk14;
+    std::vector<uint8_t>    m_raw;          //Need this because QImage doesn't own the raw img data buffer...
+    int                     m_depth {0};    //Original image depth in bpp
+    uint16_t                m_unk2  {0};
+    uint16_t                m_unk14 {0};
 };
 #endif // IMAGE_HPP
