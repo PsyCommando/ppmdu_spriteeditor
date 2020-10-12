@@ -134,7 +134,7 @@ void MainWindow::ShowATab(QWidget *ptab)
     qDebug() << "MainWindow::ShowATab(): Displaying tab!\n";
     ui->stkEditor->setCurrentWidget(ptab);
     qDebug() << "MainWindow::ShowATab(): Tab displayed!\n";
-    ui->stkEditor->update(ui->stkEditor->rect());
+    //ui->stkEditor->update(ui->stkEditor->rect());
 }
 
 void MainWindow::DisplayStartScreen()
@@ -178,22 +178,33 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
 
     if(item->nodeDataTypeName() == ElemName_Sprite)
         ShowATab(ui->tabProperties, manager.modelIndexOf(item));
+
     else if(item->nodeDataTypeName() == ElemName_AnimTable)
-        ShowATab(ui->tabAnimTable, QModelIndex());
+        ShowATab(ui->tabAnimTable, manager.modelIndexOf(item));
+
+    else if(item->nodeDataTypeName() == ElemName_AnimGroup)
+        ShowATab(ui->tabAnimGroup, manager.modelIndexOf(item));
+
     else if(item->nodeDataTypeName() == ElemName_AnimSequences)
-        ShowATab(ui->tabSequence, QModelIndex());
+        ShowATab(ui->tabEmpty, QModelIndex());
+
     else if(item->nodeDataTypeName() == ElemName_AnimSequence)
         ShowATab(ui->tabSequence, manager.modelIndexOf(item));
+
     else if(item->nodeDataTypeName() == ElemName_FrameCnt)
-        ShowATab(ui->tabFrame, QModelIndex());
+        ShowATab(ui->tabEmpty, QModelIndex());
+
     else if(item->nodeDataTypeName() == ElemName_Frame)
         ShowATab(ui->tabFrame, manager.modelIndexOf(item));
+
     else if(item->nodeDataTypeName() == ElemName_Images)
-        ShowATab(ui->tabImages, QModelIndex());
+        ShowATab(ui->tabImages, manager.modelIndexOf(item));
+
     else if(item->nodeDataTypeName() == ElemName_Image)
         ShowATab(ui->tabImages, manager.modelIndexOf(item));
+
     else if(item->nodeDataTypeName() == ElemName_EffectOffset)
-        ShowATab(ui->tabEfx, QModelIndex());
+        ShowATab(ui->tabEfx, manager.modelIndexOf(item));
     else
         HideAllTabs();
 }

@@ -27,6 +27,7 @@ public:
     eTreeElemDataType           nodeDataTy() const override;
     const QString &             nodeDataTypeName() const override;
     inline bool                 nodeIsMutable()const override {return false;}
+    QString                     nodeDisplayName() const override;
 
 public:
     inline QVector<QRgb>        &getPalette()                           {return m_pal;}

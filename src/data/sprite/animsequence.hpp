@@ -58,6 +58,7 @@ public:
     TreeNode *clone() const override;
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
+    QString nodeDisplayName() const override;
 
     //Content Accessor Stuff
 public:

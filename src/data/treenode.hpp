@@ -46,7 +46,7 @@ public:
     virtual TreeNode* clone()const = 0;
 
     //Child nodes handling
-    virtual TreeNode*    nodeChild(int row)      {Q_UNUSED(row); return nullptr;}
+    virtual TreeNode*    nodeChild(int row)=0;
     const TreeNode*      nodeChild(int row)const {return const_cast<TreeNode*>(this)->nodeChild(row);}
 
     virtual bool    nodeHasChildren()const  {return nodeChildCount() > 0;}
@@ -71,6 +71,9 @@ public:
     virtual eTreeElemDataType nodeDataTy()const=0; //Node data type id
     virtual const QString&  nodeDataTypeName()const=0; //The name to give elements of this type
 
+    //Name displayed in the main tree view for this node.
+    virtual QString nodeDisplayName()const {return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());}
+
     //Item specific flags
     virtual Qt::ItemFlags     nodeFlags(int column = 0)const    {Q_UNUSED(column); return m_flags;}
     virtual void              setNodeFlags(Qt::ItemFlags val)   {m_flags=val;}
@@ -84,19 +87,19 @@ public:
     //Helper methods for models
 //protected:
     friend class TreeNodeModel;
-    virtual bool _insertChildrenNodes(int row, int count) {Q_UNUSED(row); Q_UNUSED(count); return false;}
-    virtual bool _insertChildrenNodes(const QList<TreeNode*> & nodes, int destrow = -1) {Q_UNUSED(nodes); Q_UNUSED(destrow); return false;} //-1 means insert at the end!
+    virtual bool _insertChildrenNodes(int row, int count) = 0;
+    virtual bool _insertChildrenNodes(const QList<TreeNode*> & nodes, int destrow = -1) = 0; //-1 means insert at the end!
 
     //Remove children nodes without deleting them
-    virtual bool _removeChildrenNodes(int row, int count) {Q_UNUSED(row); Q_UNUSED(count); return false;}
-    virtual bool _removeChildrenNodes(const QList<TreeNode*> & nodes) {Q_UNUSED(nodes); return false;}
+    virtual bool _removeChildrenNodes(int row, int count) = 0;
+    virtual bool _removeChildrenNodes(const QList<TreeNode*> & nodes) = 0;
 
     //Remove and delete children nodes
-    virtual bool _deleteChildrenNodes(int row, int count) {Q_UNUSED(row); Q_UNUSED(count); return false;}
-    virtual bool _deleteChildrenNodes(const QList<TreeNode*> & nodes){Q_UNUSED(nodes); return false;}
+    virtual bool _deleteChildrenNodes(int row, int count) = 0;
+    virtual bool _deleteChildrenNodes(const QList<TreeNode*> & nodes) = 0;
 
     //Move children nodes between postions
-    virtual bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode) {Q_UNUSED(row); Q_UNUSED(count); Q_UNUSED(destrow); Q_UNUSED(destnode); return false;}
+    virtual bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode) = 0;
 
 protected:
     TreeNode*       m_parentItem  {nullptr};

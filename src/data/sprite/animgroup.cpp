@@ -200,3 +200,9 @@ const QString &AnimGroup::nodeDataTypeName() const
 {
     return ElemName_AnimGroup;
 }
+
+QString AnimGroup::nodeDisplayName() const
+{
+    //#TODO: anim groups should be named by the animation they're for maybe?
+    return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());
+}

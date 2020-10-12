@@ -97,6 +97,7 @@ public:
     int indexOfChild(const TreeNode * ptr)const override;
     bool nodeShouldAutoExpand()const override {return true;}
     bool nodeAllowFetchMore()const override {return true;}
+    QString nodeDisplayName()const override;
 public:
 
     //Returns whether the sprite can be parsed, or not if there is something wrong with the raw data
@@ -211,12 +212,13 @@ private:
     fmt::WA_SpriteHandler   m_sprhndl;
 
     //Converted data
-    EffectOffsetContainer                   m_efxcnt;
-    PaletteContainer                        m_palcnt;
-    ImageContainer                          m_imgcnt;
-    FramesContainer                         m_frmcnt;
-    AnimSequences                           m_seqcnt;
-    AnimTable                               m_anmtbl;
+    EffectOffsetContainer   m_efxcnt;
+    PaletteContainer        m_palcnt;
+    ImageContainer          m_imgcnt;
+    FramesContainer         m_frmcnt;
+    AnimSequences           m_seqcnt;
+    AnimTable               m_anmtbl;
+    AnimGroups              m_anmgrps;
 //    QScopedPointer<SpritePropertiesHandler> m_propshndlr;
 
     //Status / statistics

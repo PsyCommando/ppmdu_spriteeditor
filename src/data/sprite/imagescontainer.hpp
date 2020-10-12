@@ -82,6 +82,7 @@ public:
 
     //Whether the node should be movable
     bool    nodeIsMutable()const override {return false;}
+    QString nodeDisplayName() const override;
 };
 
 #endif // IMAGESCONTAINER_HPP

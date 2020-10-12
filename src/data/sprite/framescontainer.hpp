@@ -50,6 +50,7 @@ public:
 public:
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
+    QString nodeDisplayName() const override;
 };
 
 #endif // FRAMESCONTAINER_HPP

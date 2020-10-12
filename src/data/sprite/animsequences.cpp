@@ -80,6 +80,11 @@ const AnimSequence *AnimSequences::getSequenceByID(fmt::AnimDB::animseqid_t id) 
     return const_cast<AnimSequences*>(this)->getSequenceByID(id);
 }
 
+QString AnimSequences::nodeDisplayName() const
+{
+    return nodeDataTypeName();
+}
+
 //AnimSequencesPickerModel *AnimSequences::getPickerModel()
 //{
 //    return m_pickermodel.data();

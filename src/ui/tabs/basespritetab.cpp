@@ -110,11 +110,6 @@ eTreeElemDataType BaseSpriteTab::currentEntryType()
 //    return nullptr;
 //}
 
-void BaseSpriteTab::PushUndoCommand(QUndoCommand * cmd)
-{
-
-}
-
 bool BaseSpriteTab::canAcceptContentType(const QString &/*contenttype*/) const
 {
     return false;

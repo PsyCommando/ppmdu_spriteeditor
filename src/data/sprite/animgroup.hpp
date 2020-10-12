@@ -8,6 +8,7 @@ extern const QString ElemName_AnimGroup;
 //*******************************************************************
 //  AnimGroup
 //*******************************************************************
+//Anim group links animation slots to a set of animation sequences
 class AnimGroup : public TreeNodeTerminal
 {
 public:
@@ -54,6 +55,7 @@ public:
     TreeNode *clone() const override;
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
+    QString nodeDisplayName() const override;
 
 private:
     slots_t     m_seqlist;

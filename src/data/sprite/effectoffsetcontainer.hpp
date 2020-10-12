@@ -20,10 +20,12 @@ public:
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
     bool nodeIsMutable()const override;
+    QString nodeDisplayName() const override;
 
     //Import/export
     std::vector<fmt::effectoffset> exportEffects()const;
     void importEffects( const std::vector<fmt::effectoffset> & efx );
+
 
 private:
     std::vector<fmt::effectoffset> m_efx;

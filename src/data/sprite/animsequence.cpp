@@ -62,6 +62,11 @@ const QString &AnimSequence::nodeDataTypeName() const
     return ElemName_AnimSequence;
 }
 
+QString AnimSequence::nodeDisplayName() const
+{
+    return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());
+}
+
 TreeNode *AnimSequence::clone() const
 {
     return new AnimSequence(*this);

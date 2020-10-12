@@ -47,6 +47,14 @@ public:
         return *this;
     }
 
+public:
+    void                        importSequences( const fmt::AnimDB::animseqtbl_t & src );
+    fmt::AnimDB::animseqtbl_t   exportSequences();
+
+    //Accessors
+    AnimSequence        * getSequenceByID( fmt::AnimDB::animseqid_t id );
+    const AnimSequence  * getSequenceByID( fmt::AnimDB::animseqid_t id )const;
+
     // TreeNode interface
 public:
     TreeNode *clone() const override;
@@ -61,13 +69,10 @@ public:
 
     //
 //    void                        removeSequence( fmt::AnimDB::animseqid_t id );
-    void                        importSequences( const fmt::AnimDB::animseqtbl_t & src );
-    fmt::AnimDB::animseqtbl_t   exportSequences();
 
-    //Accessors
-    AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id );
-    const AnimSequence * getSequenceByID( fmt::AnimDB::animseqid_t id )const;
+
     bool nodeIsMutable()const override    {return false;}
+    QString nodeDisplayName()const override;
 
 };
 

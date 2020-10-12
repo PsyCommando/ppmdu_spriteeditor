@@ -721,6 +721,11 @@ bool SpriteContainer::nodeIsMutable() const
     return false;
 }
 
+QString SpriteContainer::nodeDisplayName() const
+{
+    return QString();
+}
+
 void SpriteContainer::FetchToC(QDataStream &/*fdat*/)
 {
 
@@ -784,10 +789,7 @@ QVariant SpriteContainer::GetContentData(const QModelIndex &index, int role) con
         return QVariant();
 
     const TreeNode * pnode = static_cast<TreeNode*>(index.internalPointer());
-//    if(pnode->nodeDataTy() != eTreeElemDataType::sprite)
-//        return QVariant();
-
-    return QString("%1 #%2").arg(pnode->nodeDataTypeName()).arg(index.row());
+    return pnode->nodeDisplayName();
 }
 
 QVariant SpriteContainer::GetContentHeaderData(int section, Qt::Orientation orientation, int role) const

@@ -148,6 +148,11 @@ const QString& Sprite::nodeDataTypeName()const
     return ElemName_Sprite;
 }
 
+QString Sprite::nodeDisplayName()const
+{
+    return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());
+}
+
 int Sprite::indexOfChild(const TreeNode * ptr)const
 {
     if(ptr)
@@ -265,14 +270,16 @@ void Sprite::ParseSpriteData()
     if(IsRawDataCompressed(&m_targetgompression))
         DecompressRawData();
 
+    //Run the low level parser
+    m_sprhndl.Parse(m_raw.begin(), m_raw.end());
 
-    m_sprhndl.Parse( m_raw.begin(), m_raw.end() );
+    //Fill up the nodes in our model
     m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
-    m_anmtbl.importAnimationGroups( m_sprhndl.getAnimGroups() );
+    m_anmtbl.importAnimationGroups(m_sprhndl.getAnimGroups());
 
     m_palcnt.setPalette(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //convert the palette once, so we don't do it constantly
 
-    m_seqcnt.importSequences( m_sprhndl.getAnimSeqs());
+    m_seqcnt.importSequences(m_sprhndl.getAnimSeqs());
     m_frmcnt.importFrames(m_sprhndl.getFrames());
 
     if( m_sprhndl.getImageFmtInfo().is256Colors() )

@@ -26,6 +26,11 @@ const QString &ImageContainer::nodeDataTypeName() const
     return ElemName_Images;
 }
 
+QString ImageContainer::nodeDisplayName()const
+{
+    return nodeDataTypeName();
+}
+
 const QString &ImageContainer::ComboBoxStyleSheet()
 {
     static const QString SSheet("QComboBox QAbstractItemView::item {margin-top: 2px;}");

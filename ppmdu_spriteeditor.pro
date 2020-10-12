@@ -67,6 +67,8 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/sprite_props_model.cpp \
     src/data/sprite/palettecontainer.cpp \
     src/data/sprite/sprite_container.cpp \
+    src/ui/tabs/tabempty.cpp \
+    src/ui/tabs/tabwelcome.cpp \
     src/utility/file_support.cpp \
     src/utility/randomgenhelper.cpp \
     src/ui/editor/frame/frame_editor.cpp \
@@ -133,6 +135,8 @@ HEADERS  += \
     src/data/treenodemodel.hpp \
     src/data/treenodeterminal.hpp \
     src/data/treenodewithchilds.hpp \
+    src/ui/tabs/tabempty.hpp \
+    src/ui/tabs/tabwelcome.hpp \
     src/utility/baseqtexception.hpp \
     src/data/sprite/animframe.hpp \
     src/data/sprite/animgroup.hpp \
@@ -200,9 +204,11 @@ FORMS    += src/ui/mainwindow.ui \
     src/ui/tabs/tabanimsequence.ui \
     src/ui/tabs/tabanimtable.ui \
     src/ui/tabs/tabeffects.ui \
+    src/ui/tabs/tabempty.ui \
     src/ui/tabs/tabframes.ui \
     src/ui/tabs/tabimages.ui \
-    src/ui/tabs/tabproperties.ui
+    src/ui/tabs/tabproperties.ui \
+    src/ui/tabs/tabwelcome.ui
 
 RESOURCES += \
     appres.qrc

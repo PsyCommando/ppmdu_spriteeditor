@@ -70,11 +70,6 @@ public:
     void Warn(const QString & title, const QString & text);
 
     /*
-     * Helper to push things onto the main undo stack!
-    */
-    void PushUndoCommand(QUndoCommand *cmd);
-
-    /*
      * Helper Data access
     */
     Sprite * currentSprite();

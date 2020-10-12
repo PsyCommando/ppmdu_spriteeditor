@@ -54,3 +54,8 @@ const QString &PaletteContainer::nodeDataTypeName() const
 {
     return ElemName_Palette;
 }
+
+QString PaletteContainer::nodeDisplayName()const
+{
+    return nodeDataTypeName();
+}

@@ -28,6 +28,11 @@ const QString &EffectOffsetContainer::nodeDataTypeName() const
     return ElemName_EffectOffset;
 }
 
+QString EffectOffsetContainer::nodeDisplayName() const
+{
+    return nodeDataTypeName();
+}
+
 //QVariant EffectOffsetContainer::nodeData(int column, int role) const
 //{
 //    if( column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))

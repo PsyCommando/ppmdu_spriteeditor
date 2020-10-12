@@ -204,6 +204,7 @@ public:
     int         nodeIndex() const override;
     TreeNode *  parentNode() override;
     bool        nodeIsMutable()const override;
+    QString     nodeDisplayName()const override;
 
 private:
     void FetchToC(QDataStream & fdat);

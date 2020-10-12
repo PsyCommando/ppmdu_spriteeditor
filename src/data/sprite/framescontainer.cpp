@@ -21,6 +21,11 @@ TreeNode * FramesContainer::clone()const
 //    return QVariant();
 //}
 
+QString FramesContainer::nodeDisplayName() const
+{
+    return nodeDataTypeName();
+}
+
 void FramesContainer::importFrames(const fmt::ImageDB::frmtbl_t &frms)
 {
 //    getModel()->removeRows(0, nodeChildCount());
