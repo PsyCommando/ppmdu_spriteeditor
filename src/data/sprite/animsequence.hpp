@@ -14,15 +14,10 @@ extern const QString ElemName_AnimSequence;
 class AnimSequence : public TreeNodeWithChilds<AnimFrame>
 {
 public:
-//    explicit AnimSequence(TreeNode * parent);
-//    AnimSequence(const AnimSequence & cp);
-//    AnimSequence(AnimSequence && mv);
-//    AnimSequence & operator=(const AnimSequence & cp);
-//    AnimSequence & operator=(AnimSequence && mv);
     AnimSequence(TreeNode *parent)
         :TreeNodeWithChilds(parent)
     {
-        m_flags |= Qt::ItemFlag::ItemIsEditable;
+        //m_flags |= Qt::ItemFlag::ItemIsEditable;
     }
 
     AnimSequence(const AnimSequence & cp)
@@ -49,27 +44,19 @@ public:
     bool operator!=(const AnimSequence & other)const;
 
     //import/export should be handled via model when displayed
-    void importSeq(const fmt::AnimDB::animseq_t & seq);
-    fmt::AnimDB::animseq_t exportSeq()const;
+    void                    importSeq(const fmt::AnimDB::animseq_t & seq);
+    fmt::AnimDB::animseq_t  exportSeq()const;
+
+    //Return an image of the first frame of the animation sequence
     QImage makePreview(const Sprite* owner)const;
 
     //TreeNode stuff
 public:
-    TreeNode *clone() const override;
-    eTreeElemDataType nodeDataTy() const override;
-    const QString &nodeDataTypeName() const override;
-    QString nodeDisplayName() const override;
-
-    //Content Accessor Stuff
-public:
-    typedef container_t::iterator       iterator;
-    typedef container_t::const_iterator const_iterator;
-    iterator         begin();
-    const_iterator   begin()const;
-    iterator         end();
-    const_iterator   end()const;
-    size_t           size()const;
-    bool             empty()const;
+    TreeNode *          clone() const override;
+    eTreeElemDataType   nodeDataTy() const override;
+    const QString &     nodeDataTypeName() const override;
+    QString             nodeDisplayName() const override;
+    bool                nodeShowChildrenOnTreeView()const override {return false;}
 };
 
 #endif // ANIMSEQUENCE_HPP

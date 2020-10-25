@@ -23,58 +23,26 @@ extern const QString ElemName_AnimFrame;
 class AnimFrame : public TreeNodeTerminal
 {
     friend class AnimFramesModel;
+    typedef TreeNodeTerminal parent_t;
 public:
-    AnimFrame(TreeNode * parent)
-        :TreeNodeTerminal(parent)
-    {
-        m_flags |= Qt::ItemFlag::ItemIsEditable;
-    }
-    AnimFrame(const AnimFrame& cp)
-        :TreeNodeTerminal(cp)
-    {
-        m_data = cp.m_data;
-    }
-    AnimFrame(AnimFrame&& mv)
-        : TreeNodeTerminal(mv)
-    {
-        m_data = qMove(mv.m_data);
-    }
-    AnimFrame& operator=(const AnimFrame& cp)
-    {
-        m_data = cp.m_data;
-        TreeNodeTerminal::operator=(cp);
-        return *this;
-    }
-    AnimFrame& operator=(AnimFrame&& mv)
-    {
-        m_data = qMove(mv.m_data);
-        TreeNodeTerminal::operator=(mv);
-        return *this;
-    }
-    ~AnimFrame(){}
+    AnimFrame(TreeNode * parent);
+    AnimFrame(const AnimFrame& cp);
+    AnimFrame(AnimFrame&& mv);
+    AnimFrame &operator=(const AnimFrame& cp);
+    AnimFrame &operator=(AnimFrame&& mv);
+    ~AnimFrame();
 
-    eTreeElemDataType   nodeDataTy()const override      {return eTreeElemDataType::animFrame;}
-    const QString&      nodeDataTypeName()const override{return ElemName_AnimFrame;}
+    eTreeElemDataType   nodeDataTy()const override;
+    const QString&      nodeDataTypeName()const override;
 
-    TreeNode * clone()const override
-    {
-        AnimFrame * ptr = new AnimFrame(m_parentItem);
-        (*ptr) = (*this);
-        return ptr;
-    }
+    TreeNode * clone()const override;
 
-    inline bool operator==( const AnimFrame & other)const  {return this == &other;}
-    inline bool operator!=( const AnimFrame & other)const  {return !operator==(other);}
+    inline bool operator==( const AnimFrame & other)const;
+    inline bool operator!=( const AnimFrame & other)const;
 
-    void importFrame( const fmt::animfrm_t & frm )
-    {
-        m_data = frm;
-    }
-
-    fmt::animfrm_t exportFrame()const
-    {
-        return m_data;
-    }
+    //Import/export the frame data from the parsed data/to the data to be written to the sprite
+    void            importFrame( const fmt::animfrm_t & frm )   {m_data = frm;}
+    fmt::animfrm_t  exportFrame()const                          {return m_data;}
 
     inline uint8_t duration()const {return m_data.duration;}
     inline int16_t frmidx  ()const {return m_data.frmidx;}
@@ -92,13 +60,15 @@ public:
     inline void setShadowx (int16_t val) {m_data.shadowxoffs = val;}
     inline void setShadowy (int16_t val) {m_data.shadowyoffs = val;}
 
-    bool nodeIsMutable()const override    {return true;}
+    bool nodeIsMutable()const override              {return true;}
+    bool nodeShowChildrenOnTreeView()const override {return false;}
 
+    //Render the frame into an image, or display the cached preview if available
     QImage makePreview(const Sprite* owner)const;
 
 private:
-    fmt::animfrm_t  m_data;
-    QPixmap         m_cached;
+    fmt::animfrm_t  m_data;     //Processed frame data
+    QPixmap         m_cached;   //A cached copy of the frame preview, to speed things up
 };
 
 

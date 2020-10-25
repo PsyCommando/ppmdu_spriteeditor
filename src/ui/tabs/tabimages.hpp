@@ -29,16 +29,19 @@ public:
 
 private slots:
     void on_tblviewImages_clicked(const QModelIndex &index);
-    void on_btnImagesExport_clicked();
-    void on_btnImagesImport_clicked();
     void on_spbimgunk2_valueChanged(int arg1);
     void on_spbimgunk14_valueChanged(int arg1);
-    void on_btnImageCrop_clicked();
+    void on_btnAdd_clicked();
+    void on_btnRemove_clicked();
+    void on_btnExport_clicked();
 
 private:
+    void SetupMappings(Sprite * spr);
     void ClearMappings();
-    void SetupImage(QPersistentModelIndex img, Sprite * spr);
+    void SetupImage(QPersistentModelIndex img);
     void ClearImage();
+    QModelIndexList getSelectedIndices() const;
+    void TryImportImage(const QString & path);
 
 private:
     Ui::TabImages *ui;
@@ -47,6 +50,8 @@ private:
     QPersistentModelIndex               m_currentImage;
     QScopedPointer<ImageListModel>      m_imgListModel;
     //QPixmap                             m_imgNoImg;             //Image displayed when no image can be displayed in a view!
+
+
 };
 
 #endif // TABIMAGES_HPP

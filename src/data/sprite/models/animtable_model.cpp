@@ -4,7 +4,7 @@
 
 
 AnimTableModel::AnimTableModel(AnimTable *ptable, Sprite *powner)
-    :TreeNodeModel(nullptr), m_delegate(ptable)
+    :TreeNodeModel(nullptr)
 {
     m_root = ptable;
     m_sprite = powner;
@@ -29,16 +29,6 @@ QVector<QString> &AnimTableModel::getSlotNames()
 const QVector<QString> &AnimTableModel::getSlotNames() const
 {
     return const_cast<AnimTableModel*>(this)->getSlotNames();
-}
-
-AnimTableDelegate &AnimTableModel::getDelegate()
-{
-    return m_delegate;
-}
-
-const AnimTableDelegate &AnimTableModel::getDelegate() const
-{
-    return const_cast<AnimTableModel*>(this)->getDelegate();
 }
 
 int AnimTableModel::columnCount(const QModelIndex &parent) const
@@ -79,21 +69,39 @@ QVariant AnimTableModel::data(const QModelIndex &index, int role) const
         }
     case AnimGroup::eColumns::GroupName:
         {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
+            if(role == Qt::DisplayRole)
             {
-//                auto itf = m_slotNames.find(index.row());
-//                if(itf != m_slotNames.end())
-//                    return (*itf);
                 if(index.row() < m_slotNames.size())
                     return m_slotNames[index.row()];
-                return QString("--");
+                return QString();
+            }
+            else if(role == Qt::SizeHintRole)
+            {
+                QFontMetrics fm(QFont("Sergoe UI",9));
+                if(index.row() < m_slotNames.size())
+                    return QSize(fm.horizontalAdvance(m_slotNames[index.row()])+4, fm.height()+4);
             }
             break;
         }
     case AnimGroup::eColumns::NbSlots:
         {
             if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return grp->seqSlots().size();
+                return grp->nodeChildCount();
+            else if(role == Qt::SizeHintRole)
+                return QSize(64, 32);
+            break;
+        }
+    case AnimGroup::eColumns::Preview:
+        {
+            if(role == Qt::DecorationRole)
+            {
+                QPixmap img = grp->MakeGroupPreview(getOwnerSprite(), 256, 32, 8);
+                return img;
+            }
+            else if(role == Qt::SizeHintRole)
+            {
+                return QSize(256, 32);
+            }
             break;
         }
     default:
@@ -104,23 +112,30 @@ QVariant AnimTableModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-bool AnimTableModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool AnimTableModel::setData(const QModelIndex&, const QVariant&, int)
 {
     return false;
 }
 
 QVariant AnimTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if( role != Qt::DisplayRole )
+    if( role != Qt::DisplayRole && role != Qt::SizeHintRole )
         return QVariant();
 
     if( orientation == Qt::Orientation::Vertical )
     {
+        if(role == Qt::SizeHintRole)
+            return QSize(32,32);
         return QVariant(QString("%1").arg(section));
     }
     else if( orientation == Qt::Orientation::Horizontal &&
              (section >= 0) && (section < AnimGroup::ColumnNames.size()) )
     {
+        if(role == Qt::SizeHintRole)
+        {
+            QFontMetrics fm(QFont("Sergoe UI",9));
+            return QSize(fm.horizontalAdvance(AnimGroup::ColumnNames[section])+16, fm.height()+16);
+        }
         return AnimGroup::ColumnNames[section];
     }
     return QVariant();

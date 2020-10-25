@@ -27,13 +27,18 @@ public:
 
     //No childs so no need for that
 protected:
-    bool _insertChildrenNodes(int, int) final                       {return false;}
-    bool _insertChildrenNodes(const QList<TreeNode*> &, int)final   {return false;}
-    bool _removeChildrenNodes(int, int) final                       {return false;}
-    bool _removeChildrenNodes(const QList<TreeNode*> &)             {return false;}
-    bool _deleteChildrenNodes(int, int)final                        {return false;}
-    bool _deleteChildrenNodes(const QList<TreeNode*> &)final        {return false;}
-    bool _moveChildrenNodes(int, int, int, TreeNode*)final          {return false;}
+    bool _insertChildrenNode(TreeNode*, int)final                           {return false;}
+    bool _insertChildrenNodes(int, int) final                               {return false;}
+    bool _insertChildrenNodes(const QList<TreeNode*> &, int)final           {return false;}
+    bool _removeChildrenNode(TreeNode*)final                                {return false;}
+    bool _removeChildrenNodes(int, int) final                               {return false;}
+    bool _removeChildrenNodes(const QList<TreeNode*> &)final                {return false;}
+    bool _deleteChildrenNode(TreeNode*)final                                {return false;}
+    bool _deleteChildrenNodes(int, int)final                                {return false;}
+    bool _deleteChildrenNodes(const QList<TreeNode*> &)final                {return false;}
+    bool _moveChildrenNodes(int, int, int, TreeNode*)final                  {return false;}
+    bool _moveChildrenNodes(QModelIndexList&,int,QModelIndex) final         {return false;}
+    bool _moveChildrenNodes(const QList<TreeNode *>&,int,QModelIndex) final {return false;}
 };
 
 

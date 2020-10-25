@@ -14,7 +14,7 @@ QRect FindLargestFrameBounds(const AnimSequence & seq, const Sprite & sprt)
         QRect  area;
         const MFrame * pfrm = sprt.getFrame(afrm->frmidx());
         if(pfrm != nullptr )
-            area = pfrm->calcFrameBounds();
+            area = pfrm->calcFrameBounds(); //NDS screenspace image bounds
 
         if( x2 <= area.width() + area.x() )
             x2 = area.width() + area.x();
@@ -47,7 +47,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
     if(pseq)
     {
         //Get largest frame resolution, get the diff for each smaller frames  and add half to align the imge.
-        QRect boundsbiggest = FindLargestFrameBounds(*pseq, sprt);
+        QRect boundsbiggest = FindLargestFrameBounds(*pseq, sprt); //Image relative
 
         //Second pass, assemble and crop to largest frame
         for(const auto afrm : (*pseq) )

@@ -149,10 +149,12 @@ public:
         if(indices.size() > 0)
         {
             success = true;
-            QModelIndexList origIndices = persistentIndexList();
+            QModelIndexList origIndices = persistentIndexList(); /////#FIXME!!!!: not the entire list of indices!!!
             QModelIndexList changedIndices = origIndices;
             QList<TreeNode*> toremove;
+
             layoutAboutToBeChanged();
+
             //Make a list of things to remove, and clear the index from the
             for(int i = 0; i < changedIndices.size(); ++i)
             {
@@ -162,10 +164,17 @@ public:
                 {
                     origIndices.removeAt(i);    //Remove entries that we removed from the indices to update
                     changedIndices.removeAt(i); //Remove entries that we removed from the indices to update
-                    toremove.push_back(static_cast<TreeNode*>(idx.internalPointer()));
+                    //toremove.push_back(static_cast<TreeNode*>(idx.internalPointer()));
                     if(i > 0)
                         --i; //Make sure we don't skip the entry after the one we deleted from the changed list!
                 }
+            }
+
+            //Add the indices to be removed
+            for(const QModelIndex & idx : indices)
+            {
+                TreeNode* premove = static_cast<TreeNode*>(idx.internalPointer());
+                toremove.push_back(premove);
             }
 
             //Actually let the node remove its childs
@@ -208,6 +217,32 @@ public:
             if(beginMoveRows(sourceParent, sourceRow, sourceRow + (count - 1), destinationParent, newdest))
             {
                 bool result = srcparentItem->_moveChildrenNodes(sourceRow, count, destinationChild, destparentItem);
+                endMoveRows();
+                return result;
+            }
+            else
+                return false;
+        }
+        else
+        {
+            Q_ASSERT(false); //Not implemented
+            return false;
+        }
+        return true;
+    }
+
+    virtual bool moveRows(QModelIndexList & indices, int destrow, QModelIndex destparent = QModelIndex() )
+    {
+        if(indices.empty())
+            return false;
+        QModelIndex srcparentidx = indices.first().parent();
+        node_t *srcparentItem = getItem(srcparentidx);
+        node_t *destparentItem = getItem(destparent);
+        if(srcparentItem == destparentItem)
+        {
+            if(beginMoveRows(srcparentidx, indices.first().row(), indices.last().row(), destparent, destrow))
+            {
+                bool result = srcparentItem->_moveChildrenNodes(indices, destrow, destparent);
                 endMoveRows();
                 return result;
             }

@@ -1,17 +1,34 @@
 #include "effectoffsetcontainer.hpp"
 #include <src/data/sprite/sprite.hpp>
 
-const QString ElemName_EffectOffset  = "Effect Offsets";
+const QString ElemName_EffectOffsetSets  = "Effect Offsets Sets";
 
 EffectOffsetContainer::EffectOffsetContainer(TreeNode *parent)
-    :TreeNodeTerminal(parent)
+    :parent_t(parent)
+{}
+
+EffectOffsetContainer::EffectOffsetContainer(EffectOffsetContainer && mv)
+    :parent_t(mv)
+{}
+
+EffectOffsetContainer::EffectOffsetContainer(const EffectOffsetContainer & cp)
+    :parent_t(cp)
+{}
+
+EffectOffsetContainer & EffectOffsetContainer::operator=(EffectOffsetContainer && mv)
 {
+    parent_t::operator=(mv);
+    return *this;
+}
+
+EffectOffsetContainer & EffectOffsetContainer::operator=(const EffectOffsetContainer & cp)
+{
+    parent_t::operator=(cp);
+    return *this;
 }
 
 EffectOffsetContainer::~EffectOffsetContainer()
-{
-    //qDebug("EffectOffsetContainer::~EffectOffsetContainer()\n");
-}
+{}
 
 TreeNode *EffectOffsetContainer::clone() const
 {
@@ -20,12 +37,12 @@ TreeNode *EffectOffsetContainer::clone() const
 
 eTreeElemDataType EffectOffsetContainer::nodeDataTy() const
 {
-    return eTreeElemDataType::effectOffsets;
+    return eTreeElemDataType::effectOffsetSets;
 }
 
 const QString &EffectOffsetContainer::nodeDataTypeName() const
 {
-    return ElemName_EffectOffset;
+    return ElemName_EffectOffsetSets;
 }
 
 QString EffectOffsetContainer::nodeDisplayName() const
@@ -40,14 +57,38 @@ QString EffectOffsetContainer::nodeDisplayName() const
 //    return QVariant();
 //}
 
-std::vector<fmt::effectoffset> EffectOffsetContainer::exportEffects() const
+fmt::WA_SpriteHandler::OffsetsDB EffectOffsetContainer::exportEffects() const
 {
-    return m_efx;
+    using vec_t = std::vector<fmt::effectoffset>;
+    vec_t result;
+    std::back_insert_iterator<vec_t> itin(result);
+    for(auto * set : m_container)
+    {
+        std::vector<fmt::effectoffset> exported = set->ExportOffsetSets();
+        std::copy(exported.begin(), exported.end(), itin);
+    }
+    return result;
 }
 
-void EffectOffsetContainer::importEffects(const std::vector<fmt::effectoffset> &efx)
+void EffectOffsetContainer::importEffects(const fmt::WA_SpriteHandler::OffsetsDB &efx, unsigned int nboffsetSet)
 {
-    m_efx = efx;
+    unsigned int nbsets = efx.size()/nboffsetSet;
+    _insertChildrenNodes(0, nbsets);
+    int cntset = 0;
+    std::vector<fmt::effectoffset> accumulated;
+    accumulated.reserve(nboffsetSet);
+    for(auto off : efx)
+    {
+        accumulated.push_back(off);
+        if(accumulated.size() >= nboffsetSet) //chop the offsets in sets of "nboffsetSet"
+        {
+            EffectOffsetSet * cnt = m_container[cntset];
+            cnt->ImportOffsetSets(std::move(accumulated));
+            accumulated = std::vector<fmt::effectoffset>();
+            accumulated.reserve(nboffsetSet);
+            ++cntset;
+        }
+    }
 }
 
 bool EffectOffsetContainer::nodeIsMutable() const

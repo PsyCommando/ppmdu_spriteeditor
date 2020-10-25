@@ -79,9 +79,15 @@ public:
     void setSequence(const AnimSequence * paniseq);
     void setSequence(fmt::AnimDB::animseqid_t seqid);
 
+    //For layering items over the preview
+    void addGraphicsItem(QGraphicsItem * pitem);
+    void removeGraphicsItem(QGraphicsItem * pitem);
+    int getNbGraphicsItems()const;
+    QGraphicsItem * getGraphicsItems(int idx);
+    const QGraphicsItem * getGraphicsItems(int idx)const{return const_cast<SpriteScene*>(this)->getGraphicsItems(idx);}
+
     //Gets the current index of the frame in the animation being rendered!
     int getCurrentFrame()const;
-
 
     /*
      * Returns the duration in ticks of the currently loaded sequence
@@ -161,6 +167,8 @@ private:
     QFutureWatcher<void> m_seqloadwatch;                //Watcher for obtaining when the animation sequence loading is done
     QFuture<void>        m_seqloadupdate;               //Future that will contain the resulting loaded sequence after the loading is done!
     QMutex               m_mtxScene;                    //Mutex for locking modifications to the QGraphicScene
+
+    QList<QGraphicsItem*> m_extraElements;     //Graphics item layered over the scene
 };
 
 #endif // SPRITE_SCENE_HPP

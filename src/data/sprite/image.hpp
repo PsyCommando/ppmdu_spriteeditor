@@ -67,7 +67,7 @@ public:
     virtual int nbimgcolumns()const {return static_cast<int>(eColumnType::NbColumns);}
 
     //Returns the session unique id for this image
-    inline id_t getImageUID()const {return getID();} //Get index indepandent id!
+    inline id_t getImageUID()const {return getID();}
 
     //Unk values
     uint32_t getUnk2()const         {return m_unk2;}

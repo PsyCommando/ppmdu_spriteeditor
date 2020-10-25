@@ -19,15 +19,13 @@ MFramePartModel::~MFramePartModel()
 
 int MFramePartModel::columnCount(const QModelIndex &parent) const
 {
-    if(!parent.isValid())
-        return 0;
-    return static_cast<int>(eFramePartColumnsType::NBColumns);
+    return static_cast<int>(eFramePartColumnsType::HeaderNBColumns);
 }
 
 QVariant MFramePartModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
-        return QVariant("root");
+//    if (!index.isValid())
+//        return QVariant("root");
 
     if (role != Qt::DisplayRole &&
             role != Qt::DecorationRole &&
@@ -51,7 +49,7 @@ QVariant MFramePartModel::data(const QModelIndex &index, int role) const
     case eFramePartColumnsType::Mosaic:        return dataMosaic            (part, role);
     case eFramePartColumnsType::Mode:          return dataMode              (part, role);
     case eFramePartColumnsType::Priority:      return dataPriority          (part, role);
-    //For direct access to the individual values that are grouped together
+    //For direct access to the individual values that are grouped together, not displayed by the model!!!
     case eFramePartColumnsType::direct_VFlip:   return dataDirectVFlip      (part, role);
     case eFramePartColumnsType::direct_HFlip:   return dataDirectHFlip      (part, role);
     case eFramePartColumnsType::direct_XOffset: return dataDirectXOffset    (part, role);
@@ -165,7 +163,7 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
 
     if(bok && index.model())
     {
-        const_cast<MFramePartModel*>(this)->dataChanged(index, index, QVector<int>{role});
+        emit dataChanged(index, index, QVector<int>{role});
     }
     return bok;
 }
@@ -210,7 +208,7 @@ QVariant MFramePartModel::dataImgPreview(const MFramePart * part, int role) cons
         {
             Image * pimg = m_sprite->getImage(part->getFrameIndex());
             if(!pimg)
-                qCritical("MFrame::dataImgPreview(): Invalid image at index %d!\n", part->getFrameIndex());
+                throw std::runtime_error(QString("MFrame::dataImgPreview(): Invalid image at index %1!\n").arg(part->getFrameIndex()).toStdString());
             else
                 return QVariant(pimg->makeImage(m_sprite->getPalette()));
         }

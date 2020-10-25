@@ -9,17 +9,26 @@ const QList<QString> FramesListHeaderColumnNames
     "id",
 };
 
-int FramesListModel::columnCount(const QModelIndex &parent) const
+FramesListModel::FramesListModel(FramesContainer * parent, Sprite *parentsprite)
+    :TreeNodeModel(nullptr)
 {
-    if(!parent.isValid())
-        return 0;
+    m_root = parent;
+    m_sprite = parentsprite;
+}
+
+FramesListModel::~FramesListModel()
+{
+}
+
+int FramesListModel::columnCount(const QModelIndex &/*parent*/) const
+{
     return 1;
 }
 
 QVariant FramesListModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
-        return QVariant("root");
+//    if (!index.isValid())
+//        return QVariant("root");
 
     if (role != Qt::DisplayRole &&
             role != Qt::DecorationRole &&

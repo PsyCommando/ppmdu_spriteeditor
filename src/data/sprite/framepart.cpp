@@ -59,8 +59,42 @@ MFramePart::MFramePart(TreeNode *mframe, const fmt::step_t &part)
     m_flags |= Qt::ItemFlag::ItemIsEditable;
 }
 
+MFramePart::MFramePart(const MFramePart &cp)
+    : partparent_t(cp.m_parentItem), utils::BaseSequentialIDGen<MFramePart>()
+{
+    operator=(cp);
+}
+
+MFramePart::MFramePart(MFramePart &&mv)
+    : partparent_t(mv.m_parentItem), utils::BaseSequentialIDGen<MFramePart>()
+{
+    operator=(mv);
+}
+
 MFramePart::~MFramePart()
 {
+}
+
+MFramePart &MFramePart::operator=(const MFramePart &cp)
+{
+    m_flags = cp.m_flags;
+    m_data = cp.m_data;
+    //we can't copy a unique ID, so don't do it
+    return *this;
+}
+
+MFramePart &MFramePart::operator=(MFramePart &&mv)
+{
+    m_parentItem = mv.m_parentItem;
+    mv.m_parentItem = nullptr;
+    m_flags = mv.m_flags;
+    m_data = qMove(mv.m_data);
+
+    //Swap the ids around so we can take its id without having it recycled
+    id_t oldid = m_id;
+    m_id = mv.m_id;
+    mv.m_id = oldid;
+    return *this;
 }
 
 bool MFramePart::operator==(const MFramePart &other) const

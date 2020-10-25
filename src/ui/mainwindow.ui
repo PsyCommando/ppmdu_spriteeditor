@@ -6,21 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1440</width>
-    <height>632</height>
+    <width>1280</width>
+    <height>725</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>1280</width>
-    <height>632</height>
+    <height>725</height>
    </size>
   </property>
   <property name="windowTitle">
    <string/>
   </property>
   <property name="autoFillBackground">
-   <bool>false</bool>
+   <bool>true</bool>
   </property>
   <property name="dockNestingEnabled">
    <bool>true</bool>
@@ -110,8 +110,11 @@
        <property name="autoFillBackground">
         <bool>true</bool>
        </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
        <property name="currentIndex">
-        <number>6</number>
+        <number>8</number>
        </property>
        <widget class="TabEmpty" name="tabEmpty">
         <property name="minimumSize">
@@ -148,6 +151,7 @@
          </size>
         </property>
        </widget>
+       <widget class="TabAnimGroup" name="tabAnimGroup"/>
       </widget>
      </widget>
     </item>
@@ -158,7 +162,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1440</width>
+     <width>1280</width>
      <height>21</height>
     </rect>
    </property>
@@ -255,7 +259,11 @@
    <addaction name="action_AddSprite"/>
    <addaction name="action_RemoveSprite"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="autoFillBackground">
+    <bool>true</bool>
+   </property>
+  </widget>
   <action name="action_Save">
    <property name="icon">
     <iconset resource="../../appres.qrc">
@@ -525,6 +533,12 @@
    <class>TabWelcome</class>
    <extends>QWidget</extends>
    <header location="global">src/ui/tabs/tabwelcome.hpp</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TabAnimGroup</class>
+   <extends>QWidget</extends>
+   <header location="global">src/ui/tabs/tabanimgroup.hpp</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

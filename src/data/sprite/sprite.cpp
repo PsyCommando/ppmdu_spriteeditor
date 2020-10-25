@@ -287,6 +287,10 @@ void Sprite::ParseSpriteData()
     else
         m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
 
+
+    if(m_anmtbl.getNbGroupSequenceSlots() > 0)
+        m_efxcnt.importEffects(m_sprhndl.getEffectOffset(), m_anmtbl.getNbGroupSequenceSlots());
+
     m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
     m_bparsed = true;
 }
@@ -374,8 +378,6 @@ const Image *Sprite::getImage(fmt::frmid_t idx) const
 {
     return const_cast<Sprite*>(this)->m_imgcnt.getImage(idx);
 }
-
-
 
 void Sprite::convertSpriteToType(fmt::eSpriteType newty)
 {
@@ -513,3 +515,19 @@ void Sprite::nodeFetchMore()
 {
     ParseSpriteData();
 }
+
+bool Sprite::_insertChildrenNode    (TreeNode*, int)                {return false;}
+bool Sprite::_insertChildrenNodes   (int, int)                      {return false;}
+bool Sprite::_insertChildrenNodes   (const QList<TreeNode*> &, int) {return false;}
+
+bool Sprite::_removeChildrenNode    (TreeNode*)                     {return false;}
+bool Sprite::_removeChildrenNodes   (int, int)                      {return false;}
+bool Sprite::_removeChildrenNodes   (const QList<TreeNode*> &)      {return false;}
+
+bool Sprite::_deleteChildrenNode    (TreeNode*)                     {return false;}
+bool Sprite::_deleteChildrenNodes   (int, int)                      {return false;}
+bool Sprite::_deleteChildrenNodes   (const QList<TreeNode*> &)      {return false;}
+
+bool Sprite::_moveChildrenNodes     (int, int, int, TreeNode*)      {return false;}
+bool Sprite::_moveChildrenNodes     (QModelIndexList&,int,QModelIndex) {return false;}
+bool Sprite::_moveChildrenNodes     (const QList<TreeNode *>&, int, QModelIndex){return false;}

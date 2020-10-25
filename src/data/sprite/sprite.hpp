@@ -98,6 +98,24 @@ public:
     bool nodeShouldAutoExpand()const override {return true;}
     bool nodeAllowFetchMore()const override {return true;}
     QString nodeDisplayName()const override;
+
+protected:
+    bool _insertChildrenNode(TreeNode *node, int destrow) override;
+    bool _insertChildrenNodes(int row, int count) override;
+    bool _insertChildrenNodes(const QList<TreeNode*> & nodes, int destrow = -1) override;
+
+    bool _removeChildrenNode(TreeNode *node) override;
+    bool _removeChildrenNodes(int row, int count)override;
+    bool _removeChildrenNodes(const QList<TreeNode*> & nodes)override;
+
+    bool _deleteChildrenNode(TreeNode *node) override;
+    bool _deleteChildrenNodes(int row, int count)override;
+    bool _deleteChildrenNodes(const QList<TreeNode*> & nodes)override;
+
+    bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode)override;
+    bool _moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent) override;
+    bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override;
+
 public:
 
     //Returns whether the sprite can be parsed, or not if there is something wrong with the raw data
@@ -218,7 +236,6 @@ private:
     FramesContainer         m_frmcnt;
     AnimSequences           m_seqcnt;
     AnimTable               m_anmtbl;
-    AnimGroups              m_anmgrps;
 //    QScopedPointer<SpritePropertiesHandler> m_propshndlr;
 
     //Status / statistics

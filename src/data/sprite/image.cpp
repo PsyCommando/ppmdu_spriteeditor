@@ -140,5 +140,5 @@ const QString & Image::nodeDataTypeName() const
 
 QString Image::getImageDescription()const
 {
-    return QString("ID:%i, %i x %i, %ibpp").arg(getID()).arg(m_img.width()).arg(m_img.height()).arg(m_depth);
+    return QString("ID:%1, %2 x %3, %4bpp").arg(getID()).arg(m_img.width()).arg(m_img.height()).arg(m_depth);
 }

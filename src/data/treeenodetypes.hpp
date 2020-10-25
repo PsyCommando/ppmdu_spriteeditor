@@ -9,7 +9,6 @@ enum struct [[maybe_unused]] eTreeElemDataType
     None,
     spritecontainer,
     sprite,
-    effectOffsets,
     palette,
     images,
     image,
@@ -20,7 +19,12 @@ enum struct [[maybe_unused]] eTreeElemDataType
     animSequence,
     animTable,
     animGroup,
+    animGroups,
     animFrame,
+    animSequenceRef,
+    effectOffsetSets,
+    effectOffsetSet,
+    effectOffset,
 
     INVALID,
 };

@@ -15,11 +15,10 @@ const QString AnimFrameDelegate::XOffsSpinBoxName = "XOffs";
 const QString AnimFrameDelegate::YOffsSpinBoxName = "YOffs";
 const char * AnimFrameDelegate::UProp_AnimFrameID = "AnimFrameID";
 
-AnimFrameDelegate::AnimFrameDelegate(AnimSequence *seq, QObject *parent)
+AnimFrameDelegate::AnimFrameDelegate(AnimSequence *seq, Sprite * spr, QObject *parent)
     :QStyledItemDelegate(parent), m_animseq(seq)
 {
-    m_selectModel = new FramesListModel();
-
+    m_selectModel = new FramesListModel(&spr->getFrames(), spr);
 }
 
 AnimFrameDelegate::~AnimFrameDelegate()
@@ -85,8 +84,7 @@ void AnimFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index)
     if(!pfrm)
     {
         Q_ASSERT(false);
-        qCritical("AnimSequenceDelegate::setEditorData(): Index is inavalid!\n");
-        return;
+        throw std::runtime_error("AnimSequenceDelegate::setEditorData(): Index is inavalid!\n");
     }
 
     switch(static_cast<eAnimFrameColumnsType>(index.column()))
@@ -134,8 +132,7 @@ void AnimFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     if(!pfrm)
     {
         Q_ASSERT(false);
-        qCritical("AnimSequenceDelegate::setModelData(): Index is inavalid!\n");
-        return;
+        throw std::runtime_error("AnimSequenceDelegate::setModelData(): Index is inavalid!\n");
     }
 
     switch(static_cast<eAnimFrameColumnsType>(index.column()))
@@ -170,7 +167,7 @@ void AnimFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
             break;
         }
     };
-
+    emit SlotChanged(index.row());
 }
 
 void AnimFrameDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &) const

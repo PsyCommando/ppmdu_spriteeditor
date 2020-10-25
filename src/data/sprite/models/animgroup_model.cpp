@@ -5,6 +5,13 @@
 #include <src/data/sprite/models/animsequences_list_model.hpp>
 #include <src/data/sprite/animgroup.hpp>
 
+const QStringList AnimGroupModel::ColumnNames
+{
+    {"Preview"},
+    {"Slot Name"},
+    {"Nb Frames"},
+};
+
 //******************************************************************************
 //  AnimGroupModel
 //******************************************************************************
@@ -29,51 +36,67 @@ QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
         role != Qt::DecorationRole )
         return QVariant();
 
-    if(index.row() > m_root->seqSlots().size())
+    if(index.row() > m_root->nodeChildCount())
     {
         Q_ASSERT(false);
         return QVariant();
     }
 
-    if(index.column() == 0)
+    const AnimSequenceReference * ref = static_cast<const AnimSequenceReference *>(m_root->nodeChild(index.row()));
+    Q_ASSERT(ref);
+    fmt::AnimDB::animseqid_t    id = ref->getSeqRefID();
+    const AnimSequence *        pseq = getOwnerSprite()->getAnimSequence(id);
+
+    switch(static_cast<eColumns>(index.column()))
     {
-        fmt::AnimDB::animseqid_t id = m_root->seqSlots().at(index.row());
-        if(role == Qt::DisplayRole)
+    case eColumns::Preview:
         {
-            const AnimSequence *pseq = getOwnerSprite()->getAnimSequence(id);
+            if(role == Qt::DisplayRole)
+            {
+                if(id == -1)
+                    return QString("INVALID");
+                if(!pseq)
+                    return QString("MissingID:%1").arg(id);
+                return QString("ID:%1").arg(id);
+            }
+            else if(role == Qt::DecorationRole)
+            {
+                const AnimSequence * pseq = getOwnerSprite()->getAnimSequence(id);
+                if(!pseq || id == -1)
+                    return QVariant();
+                return QVariant(pseq->makePreview(getOwnerSprite()));
+            }
+            else if(role == Qt::EditRole)
+                return id;
+            else if(role == Qt::SizeHintRole)
+            {
+                QFontMetrics fm(QFont("Sergoe UI", 9));
+                QString str = data(index, Qt::DisplayRole).toString();
+                QSize   szimg = data(index, Qt::DecorationRole).value<QImage>().size();
+                QSize   sztxt(fm.horizontalAdvance(str), fm.height());
 
-            if(id == -1)
-                return QString("INVALID");
-
-            if(!pseq)
-                return QString("MissingID:%1").arg(id);
-            return QString("SequenceID:%1, %2 frames").arg(id).arg(pseq->nodeChildCount());
+                QSize outsz = sztxt;
+                if( szimg.height() > sztxt.height() )
+                    outsz.setHeight(szimg.height());
+                outsz.setWidth( szimg.width() + sztxt.width());
+                return outsz;
+            }
+            break;
         }
-        else if(role == Qt::DecorationRole)
+    case eColumns::SlotName:
         {
-            const AnimSequence * pseq = getOwnerSprite()->getAnimSequence(id);
-            if(!pseq || id == -1)
-                return QVariant();
-            return QVariant(pseq->makePreview(getOwnerSprite()));
+            if(role == Qt::DisplayRole)
+                return getSlotName(index.row());
+            break;
         }
-        else if(role == Qt::EditRole)
+    case eColumns::NbFrames:
         {
-            return id;
-        }
-        else if(role == Qt::SizeHintRole)
-        {
-            QFontMetrics fm(QFont("Sergoe UI", 9));
-            QString str = data(index, Qt::DisplayRole).toString();
-            QSize   szimg = data(index, Qt::DecorationRole).value<QImage>().size();
-            QSize   sztxt(fm.horizontalAdvance(str), fm.height());
-
-            QSize outsz = sztxt;
-            if( szimg.height() > sztxt.height() )
-                outsz.setHeight(szimg.height());
-            outsz.setWidth( szimg.width() + sztxt.width());
-            return outsz;
+            if(role == Qt::DisplayRole)
+                return QString("%2 frames").arg(pseq->nodeChildCount());
+            break;
         }
     }
+
     return QVariant();
 }
 
@@ -87,9 +110,9 @@ QVariant AnimGroupModel::headerData(int section, Qt::Orientation orientation, in
         return section;
     }
     else if(orientation == Qt::Orientation::Horizontal &&
-            section >= 0 && section < ANIMATION_SEQUENCE_HEADER_COLUMNS.size())
+            section >= 0 && section < ColumnNames.size())
     {
-        return ANIMATION_SEQUENCE_HEADER_COLUMNS[section];
+        return ColumnNames[section];
     }
     return QVariant();
 }
@@ -99,7 +122,7 @@ bool AnimGroupModel::setData(const QModelIndex &index, const QVariant &value, in
     if(role != Qt::EditRole)
         return false;
 
-    if(index.row() > m_root->seqSlots().size())
+    if(index.row() > m_root->nodeChildCount())
     {
         Q_ASSERT(false);
         return false;
@@ -107,7 +130,10 @@ bool AnimGroupModel::setData(const QModelIndex &index, const QVariant &value, in
 
     bool bok = false;
     if(index.column() == 0)
-        m_root->seqSlots()[index.row()] = value.toInt(&bok);
+    {
+        AnimSequenceReference * ref = static_cast<AnimSequenceReference *>(m_root->nodeChild(index.row()));
+         ref->setSeqRefID(value.toInt(&bok));
+    }
 
     if(bok)
         emit dataChanged(index, index, QVector<int>{role});
@@ -163,4 +189,37 @@ TreeNodeModel::node_t *AnimGroupModel::getRootNode()
 Sprite *AnimGroupModel::getOwnerSprite()
 {
     return m_sprite;
+}
+
+void AnimGroupModel::setSlotSequenceID(int slot, fmt::AnimDB::animseqid_t id)
+{
+    if(slot > m_root->nodeChildCount() || slot < 0)
+        throw std::out_of_range("AnimGroupModel::setSlotSequenceID(): Slot out of range!");
+    AnimSequenceReference * ref = static_cast<AnimSequenceReference *>(m_root->nodeChild(slot));
+    ref->setSeqRefID(id);
+}
+
+fmt::AnimDB::animseqid_t AnimGroupModel::getSlotSequenceID(int slot) const
+{
+    if(slot > m_root->nodeChildCount() || slot < 0)
+        throw std::out_of_range("AnimGroupModel::getSlotSequenceID(): Slot out of range!");
+    const AnimSequenceReference * ref = static_cast<const AnimSequenceReference *>(m_root->nodeChild(slot));
+    return ref->getSeqRefID();
+}
+
+int AnimGroupModel::columnCount(const QModelIndex &/*parent*/) const
+{
+    return ColumnNames.size();
+}
+
+QString AnimGroupModel::getSlotName(int index)const
+{
+    if(index > m_slotNames.size())
+        return QString();
+    return m_slotNames[index];
+}
+
+void AnimGroupModel::setSlotName(const QList<QString> & slotnamesref)
+{
+    m_slotNames = slotnamesref;
 }

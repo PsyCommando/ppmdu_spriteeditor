@@ -61,6 +61,8 @@ public:
 
     inline int getSlotsTableSize()const {return m_slotNames.size();}
 
+    int getNbGroupSequenceSlots()const;
+
     //Returns the associated animation name for a slot, or an empty string if no anim is associated
     QString getSlotName (fmt::AnimDB::animgrpid_t entry)const;
     void setSlotName (fmt::AnimDB::animgrpid_t entry, const QString & name);
@@ -73,6 +75,7 @@ public:
     TreeNode *          clone() const override;
     eTreeElemDataType   nodeDataTy() const override;
     const QString &     nodeDataTypeName() const override;
+    QString             nodeDisplayName() const override;
     bool                nodeIsMutable()const override    {return true;}
 
 private:

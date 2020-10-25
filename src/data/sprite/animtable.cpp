@@ -83,6 +83,14 @@ void AnimTable::DeleteGroupChild(fmt::AnimDB::animgrpid_t id)
     //getModel()->removeRow(id);
 }
 
+int AnimTable::getNbGroupSequenceSlots() const
+{
+    const AnimGroup * grp = m_container.first();
+    if(grp->nodeHasChildren())
+        return grp->nodeChildCount();
+    return 0;
+}
+
 QString AnimTable::getSlotName(fmt::AnimDB::animgrpid_t entry) const
 {
     if(entry >= 0 && entry < m_slotNames.size() )
@@ -193,4 +201,9 @@ eTreeElemDataType AnimTable::nodeDataTy() const
 const QString &AnimTable::nodeDataTypeName() const
 {
     return ElemName_AnimTable;
+}
+
+QString AnimTable::nodeDisplayName() const
+{
+    return nodeDataTypeName();
 }

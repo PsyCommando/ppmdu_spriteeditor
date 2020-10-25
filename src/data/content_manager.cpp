@@ -184,6 +184,8 @@ int ContentManager::rowCount(const QModelIndex &parent) const
         return m_container->nodeChildCount();
     const TreeNode *parentItem = static_cast<const TreeNode*>(parent.internalPointer());
     Q_ASSERT(parentItem);
+    if(!parentItem->nodeShowChildrenOnTreeView())
+        return 0;
     return parentItem->nodeChildCount();
 }
 
@@ -195,7 +197,7 @@ bool ContentManager::hasChildren(const QModelIndex &parent) const
         return m_container->nodeHasChildren();
     const TreeNode *parentItem = static_cast<const TreeNode*>(parent.internalPointer());
     Q_ASSERT(parentItem);
-    return parentItem->nodeHasChildren();
+    return parentItem->nodeShowChildrenOnTreeView() && parentItem->nodeHasChildren();
 }
 
 QModelIndex ContentManager::index(int row, int column, const QModelIndex &parent) const

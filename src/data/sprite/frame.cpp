@@ -71,6 +71,38 @@ const fmt::step_t *MFrame::getPart(int id)const
     return const_cast<MFrame*>(this)->getPart(id);
 }
 
+bool MFrame::ClearImageRefs(const QModelIndexList &indices, bool bdelete)
+{
+    int matches = 0;
+    for(int i = 0; i < nodeChildCount(); )
+    {
+        MFramePart * p = static_cast<MFramePart *>(nodeChild(i));
+        bool bgotmatch = false;
+        for(const QModelIndex & idx : indices)
+        {
+            Image * img = static_cast<Image*>(idx.internalPointer());
+            if(static_cast<fmt::frmid_t>(img->getImageUID()) == p->getFrameIndex())
+            {
+                bgotmatch = true;
+                break;
+            }
+        }
+
+        //remove part if we found an index
+        if(bgotmatch)
+        {
+            if(bdelete)
+                _removeChildrenNodes(i,1);
+            else
+                p->setFrameIndex(-1); //Just set it to -1
+            ++matches;
+        }
+        else
+            ++i;
+    }
+    return matches > 0;
+}
+
 QPixmap MFrame::AssembleFrameToPixmap(int xoffset, int yoffset, QRect cropto, QRect *out_area, const Sprite* parentsprite) const
 {
     return qMove( QPixmap::fromImage(AssembleFrame(xoffset, yoffset, cropto, out_area, true, parentsprite)) );
@@ -177,7 +209,7 @@ QRect MFrame::calcFrameBounds() const
 
         auto imgres = part.GetResolution();
         int xoff = part.getXOffset();
-        int yoff = (part.getYOffset() < 128)? part.getYOffset() + 255 : part.getYOffset();
+        int yoff = (part.getYOffset() < 128)? part.getYOffset() + 255 : part.getYOffset(); //wrap around handling
 
         if( xoff < smallestx)
             smallestx = xoff;

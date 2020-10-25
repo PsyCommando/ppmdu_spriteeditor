@@ -2,6 +2,7 @@
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/animgroup.hpp>
 #include <src/data/treenodemodel.hpp>
+#include <QComboBox>
 
 AnimTableDelegate::AnimTableDelegate(AnimTable *parent, QObject *pobj)
     :QStyledItemDelegate(pobj), m_animtable(parent)
@@ -44,8 +45,7 @@ void AnimTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     if(!index.isValid())
     {
         Q_ASSERT(false);
-        qCritical("AnimTableDelegate::setModelData(): Index is inavalid!\n");
-        return;
+        throw std::runtime_error("AnimTableDelegate::setModelData(): Index is inavalid!\n");
     }
 
     TreeNodeModel   * pmod  = static_cast<TreeNodeModel*>(model);
@@ -79,3 +79,28 @@ void AnimTableDelegate::updateEditorGeometry(QWidget *editor, const QStyleOption
 {
     editor->setGeometry(option.rect);
 }
+
+//QWidget *AnimTableDelegate::makeGroupSelect(QWidget *parent, const QModelIndex & index) const
+//{
+//    const TreeNodeModel     *model      = static_cast<const TreeNodeModel*>(index.model());
+//    QComboBox               *cmbGroup   = new QComboBox(parent);
+//    const ImageContainer    *pcnt       = &(model->getOwnerSprite()->getImages());
+//    const Sprite            *spr        = model->getOwnerSprite();
+//    imglstb->setIconSize( QSize(32,32) );
+//    imglstb->setStyleSheet(pcnt->ComboBoxStyleSheet());
+
+//    //Fill the combobox!
+
+//    //Add nodraw frame
+//    imglstb->addItem( QPixmap::fromImage(m_minusone), MFramePart_NoDrawFrame, QVariant(-1)); //Set user data to -1
+//    //Add actual images!
+//    for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
+//    {
+//        const Image* pimg = pcnt->getImage(cntimg);
+//        QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
+//        QString text = pimg->getImageDescription();
+//        imglstb->addItem( QIcon(pmap), text, QVariant(pimg->getID()) ); //Set user data to image's UID
+//    }
+//    imglstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+//    return imglstb;
+//}

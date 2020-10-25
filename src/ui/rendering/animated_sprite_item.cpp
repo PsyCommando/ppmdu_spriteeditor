@@ -61,13 +61,18 @@ QVector<QImage> AnimatedSpriteItem::DumpFrames()const
 
 QRectF AnimatedSpriteItem::boundingRect() const
 {
+    QPointF mypos = this->pos();
     if( m_curfrm >= m_cachedframes.size())
-        return QRectF(0.0, 0.0,150.0, 150.0 );
+        return QRectF(mypos.x(), mypos.y(),32.0, 32.0 );
     QRectF bbox;
-    bbox.setX(DEF_BOUNDING_POS_X);
-    bbox.setY(DEF_BOUNDING_POS_Y);
-    bbox.setWidth(DEF_BOUNDING_WIDTH);
-    bbox.setHeight(DEF_BOUNDING_HEIGHT);
+    bbox.setX(mypos.x());
+    bbox.setY(mypos.y());
+    bbox.setWidth(m_cachedframes[m_curfrm].img.width());
+    bbox.setHeight(m_cachedframes[m_curfrm].img.height());
+//    bbox.setX(DEF_BOUNDING_POS_X);
+//    bbox.setY(DEF_BOUNDING_POS_Y);
+//    bbox.setWidth(DEF_BOUNDING_WIDTH);
+//    bbox.setHeight(DEF_BOUNDING_HEIGHT);
     return bbox;
 }
 
@@ -77,12 +82,12 @@ void AnimatedSpriteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
         return;
     int curfrm = m_curfrm;
 
-    painter->setCompositionMode (QPainter::CompositionMode_Source);
-    painter->fillRect(painter->viewport(), m_cachedpal.front());
-    painter->setCompositionMode( QPainter::CompositionMode_SourceOver );
+    //painter->setCompositionMode (QPainter::CompositionMode_Source);
+    //painter->fillRect(painter->viewport(), m_cachedpal.front());
+    //painter->setCompositionMode( QPainter::CompositionMode_SourceOver );
 
     painter->setBackground(QBrush(m_cachedpal.front()));
-    painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
+    //painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
 
     int xdiff = 0;// (m_cachedframes[curfrm].area.x() - m_biggestFrame.x());
     int ydiff = 0; //(m_cachedframes[curfrm].area.y() - m_biggestFrame.y());
@@ -113,7 +118,7 @@ void AnimatedSpriteItem::UpdateFrame()
     }
     emit frame_changed(m_curfrm, boundingRect());
     m_ticksnextfrm = m_cachedframes[m_curfrm].duration;
-    qDebug("Frame Updated to %d, next in %d ticks\n",  m_curfrm, m_ticksnextfrm);
+    //qDebug("Frame Updated to %d, next in %d ticks\n",  m_curfrm, m_ticksnextfrm);
 }
 
 void AnimatedSpriteItem::setCurFrame(int frmid)

@@ -60,10 +60,10 @@ void SpriteScene::DisconnectSpriteSignals()
 void SpriteScene::SetupSceneBackground()
 {
     //X/Y axis
-    QGraphicsLineItem * xaxis = m_animScene.addLine(-512,    0, 512,   0, QPen(QBrush(QColor(128,0,0)),1.5, Qt::PenStyle::DashLine) );
-    QGraphicsLineItem * yaxis = m_animScene.addLine(   0, -512,   0, 512, QPen(QBrush(QColor(0,128,0)),1.5, Qt::PenStyle::DashLine) );
-    xaxis->setZValue(1);
-    yaxis->setZValue(1);
+//    QGraphicsLineItem * xaxis = m_animScene.addLine(-512,    0, 512,   0, QPen(QBrush(QColor(128,0,0)),1.5, Qt::PenStyle::DashLine) );
+//    QGraphicsLineItem * yaxis = m_animScene.addLine(   0, -512,   0, 512, QPen(QBrush(QColor(0,128,0)),1.5, Qt::PenStyle::DashLine) );
+//    xaxis->setZValue(1);
+//    yaxis->setZValue(1);
 }
 
 void SpriteScene::Clear()
@@ -75,6 +75,7 @@ void SpriteScene::Clear()
         DisconnectSpriteSignals();
         m_animScene.removeItem(m_animsprite.get());
         m_animsprite.reset();
+        m_extraElements.clear();
     }
     //SHOULD BE DONE OUTSIDE THE CLASS!!
 //    if(m_spr)
@@ -111,7 +112,8 @@ void SpriteScene::InstallAnimPreview(QGraphicsView *pview, const Sprite *pspr, c
 
     qDebug() << "SpriteScene::InstallAnimPreview(): Displaying animation..\n";
     pview->setScene(&getAnimScene());
-    pview->centerOn(getAnimSprite());
+    pview->ensureVisible(getAnimSprite(), 8, 8);
+    pview->setBackgroundBrush(QBrush(getSpriteBGColor()));
 }
 
 void SpriteScene::UninstallAnimPreview(QGraphicsView *pview)
@@ -172,6 +174,27 @@ void SpriteScene::setSequence(fmt::AnimDB::animseqid_t seqid)
 //            connect(paniseq->getModel(), &QAbstractItemModel::dataChanged, this, &SpriteScene::OnAnimDataChaged);
 //    }
     loadAnimation();
+}
+
+void SpriteScene::addGraphicsItem(QGraphicsItem *pitem)
+{
+    m_extraElements.push_back(pitem);
+    m_animScene.addItem(pitem);
+}
+
+void SpriteScene::removeGraphicsItem(QGraphicsItem *pitem)
+{
+    m_extraElements.removeOne(pitem);
+}
+
+int SpriteScene::getNbGraphicsItems() const
+{
+    return m_extraElements.size();
+}
+
+QGraphicsItem *SpriteScene::getGraphicsItems(int idx)
+{
+    return m_extraElements.at(idx);
 }
 
 size_t SpriteScene::getAnimationLength() const
@@ -270,7 +293,7 @@ void SpriteScene::OnSpriteDataChanged(const QModelIndex &/*topLeft*/, const QMod
 
 void SpriteScene::OnFrameChanged(int curfrm, QRectF area)
 {
-    m_animScene.update(area);
+    m_animScene.update(/*area*/);
     //Tell the UI we changed frame so the playback cursor can be updated!!!
     emit framechanged(curfrm, area);
 }

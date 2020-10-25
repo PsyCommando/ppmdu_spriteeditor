@@ -18,7 +18,7 @@ enum struct eFramePartColumnsType : int
     Mosaic,
     Mode,
     Priority,
-    HeaderNBColumns,
+    HeaderNBColumns, //Nb of DISPLAYED columns, doesn't include hidden columns
 
 
     direct_XOffset = HeaderNBColumns, //Extra column for accessing directly the x offset
@@ -39,14 +39,19 @@ extern const QStringList            FRAME_PART_MODE_NAMES;
 //*******************************************************************
 // Represents data on a particular image referred in a MFrame.
 class MFrame;
-class MFramePart : public TreeNodeTerminal
+class MFramePart : public TreeNodeTerminal, public utils::BaseSequentialIDGen<MFramePart>
 {
     friend class MFramePartModel;
     typedef TreeNodeTerminal partparent_t;
 public:
     MFramePart(TreeNode * mframe);
     MFramePart(TreeNode * mframe, const fmt::step_t & part);
+    MFramePart(const MFramePart& cp);
+    MFramePart(MFramePart&& mv);
     virtual ~MFramePart();
+
+    MFramePart &operator=(const MFramePart& cp);
+    MFramePart& operator=(MFramePart&& mv);
 
     bool operator==( const MFramePart & other)const;
     bool operator!=( const MFramePart & other)const;
@@ -97,7 +102,7 @@ public:
     inline uint8_t          getPriority()const              {return m_data.getPriority();}
     inline uint16_t         getTileNum()const               {return m_data.getTileNum();}
     inline fmt::eFrameRes   getResolutionType()const        {return m_data.getResolutionType();}
-    inline fmt::frmid_t     getFrameIndex()const            {return m_imgUID;}
+    inline fmt::frmid_t     getFrameIndex()const            {return m_data.getFrameIndex();}
     inline std::pair<uint16_t,uint16_t> GetResolution()const {return m_data.GetResolution();}
 
     inline void setColorPal256      (bool bis256)           {m_data.setColorPal256(bis256);}
@@ -117,7 +122,7 @@ public:
     inline void setPalNb            (uint8_t palnb)         {m_data.setPalNb(palnb);}
     inline void setPriority         (uint8_t prio)          {m_data.setPriority(prio);}
     inline void setTileNum          (uint16_t tnum)         {m_data.setTileNum(tnum);}
-    inline void setFrameIndex       (fmt::frmid_t id)       {m_data.setFrameIndex(id); m_imgUID = id;}
+    inline void setFrameIndex       (fmt::frmid_t id)       {m_data.setFrameIndex(id);}
     inline void setResolutionType   (fmt::eFrameRes res)    {m_data.setResolutionType(res);}
 private:
     //Transform the given image according to the parameters stored in this class!
@@ -125,7 +130,6 @@ private:
 
 private:
     fmt::step_t  m_data;
-    fmt::frmid_t m_imgUID;
 };
 
 #endif // FRAMEPART_HPP

@@ -181,20 +181,25 @@ public:
 //            return success;
 //        }
 
+    bool _insertChildrenNode(TreeNode *node, int destrow) override;
     bool _insertChildrenNodes(int row, int count)override;
     bool _insertChildrenNodes(const QList<TreeNode*> & nodes, int destrow = -1)override;
 
+    bool _removeChildrenNode(TreeNode *node) override;
     bool _removeChildrenNodes(int row, int count)override;
     bool _removeChildrenNodes(const QList<TreeNode*> & nodes)override;
 
     //Remove and delete children nodes
+    bool _deleteChildrenNode(TreeNode *node) override;
     bool _deleteChildrenNodes(int row, int count)override;
     bool _deleteChildrenNodes(const QList<TreeNode*> & nodes)override;
 
     //Move children nodes between postions
     bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode)override;
-
+    bool _moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent) override;
+    bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override;
 private:
+    bool _removeChildrenNode(TreeNode *node, bool bdeleteptr = false); //Helper override, to avoid repeating code
     bool _removeChildrenNodes(const QList<TreeNode *> &nodes, bool bdeleteptr = false); //Helper override, to avoid repeating code
 
 public:

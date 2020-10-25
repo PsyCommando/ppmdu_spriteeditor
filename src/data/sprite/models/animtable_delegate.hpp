@@ -2,6 +2,8 @@
 #define ANIMTABLEDELEGATE_HPP
 #include <QStyledItemDelegate>
 
+//#DELETEME: SEEMS TO BE UNUSED
+
 //**********************************************************************************
 //  AnimTableDelegate
 //**********************************************************************************
@@ -19,6 +21,9 @@ public:
     void setEditorData(QWidget *editor, const QModelIndex &index) const override;
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+private:
+    QWidget * makeGroupSelect(QWidget * parent, const QModelIndex & index)const;
 
 private:
     AnimTable * m_animtable {nullptr};

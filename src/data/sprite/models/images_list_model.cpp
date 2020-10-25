@@ -167,24 +167,23 @@ ImageListModel::~ImageListModel()
     m_sprite = nullptr;
 }
 
-int ImageListModel::rowCount(const QModelIndex &parent) const
-{
-    if(!parent.isValid())
-        return m_root->nodeChildCount();
-    return static_cast<TreeNode*>(parent.internalPointer())->nodeChildCount();
-}
+//int ImageListModel::rowCount(const QModelIndex &/*parent*/) const
+//{
+////    if(!parent.isValid())
+////        return m_root->nodeChildCount();
+//    //return static_cast<TreeNode*>(parent.internalPointer())->nodeChildCount();
+//    return m_root->nodeChildCount();
+//}
 
-int ImageListModel::columnCount(const QModelIndex &parent) const
+int ImageListModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    if(!parent.isValid())
-        return 0;
     return static_cast<int>(Image::eColumnType::NbColumns);
 }
 
 QVariant ImageListModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
-        return QVariant("root");
+//    if (!index.isValid())
+//        return QVariant("root");
 
     if (role != Qt::DisplayRole &&
             role != Qt::DecorationRole &&
@@ -204,8 +203,8 @@ QVariant ImageListModel::data(const QModelIndex &index, int role) const
             else if( role == Qt::SizeHintRole )
             {
                 QSize imgsz = img->getImageSize();
-                imgsz.scale(2, 2, Qt::AspectRatioMode::KeepAspectRatio);
-                res.setValue(imgsz);
+                imgsz.scale(32, 32, Qt::AspectRatioMode::KeepAspectRatio);
+                res = imgsz;
             }
             break;
         }
@@ -333,8 +332,14 @@ QVariant ImageListModelCondensed::data(const QModelIndex &index, int role) const
         res.setValue(img->makeImage(getOwnerSprite()->getPalette()));
     else if( role == Qt::DisplayRole )
     {
-        auto resolution = img->getImageSize();
-        res.setValue(QString("ID:%1 %2bpp %3x%4").arg(img->nodeIndex()).arg(img->getImageOriginalDepth()).arg(resolution.width()).arg(resolution.height()));
+        QSize resolution = img->getImageSize();
+        QString condensed = "ID:%1 %2bpp %3x%4";
+        condensed = condensed
+                .arg(img->nodeIndex())
+                .arg(img->getImageOriginalDepth())
+                .arg(resolution.width())
+                .arg(resolution.height());
+        res = condensed;
     }
     else if(role == Qt::EditRole)
         res.setValue(img->nodeIndex());

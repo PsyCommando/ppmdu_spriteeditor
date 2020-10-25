@@ -59,3 +59,13 @@ const MFrame *FramesContainer::getFrame(fmt::frmid_t id) const
     return const_cast<FramesContainer*>(this)->getFrame(id);
 }
 
+bool FramesContainer::ClearImageReferences(const QModelIndexList &indices, bool bdelete)
+{
+    bool bfoundref = false;
+    for(MFrame * frm : m_container)
+    {
+        bfoundref |= frm->ClearImageRefs(indices, bdelete);
+    }
+    return bfoundref;
+}
+

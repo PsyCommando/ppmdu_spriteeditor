@@ -29,7 +29,7 @@ public:
 
     MFrame(TreeNode * framescnt)
         :TreeNodeWithChilds(framescnt)
-    {}
+    {m_flags |= Qt::ItemFlag::ItemIsEditable;}
 
     MFrame(const MFrame &cp)
         :TreeNodeWithChilds(cp)
@@ -53,9 +53,10 @@ public:
         return *this;
     }
 
-    TreeNode *clone() const override;
-    eTreeElemDataType nodeDataTy() const override;
-    const QString &nodeDataTypeName() const override;
+    TreeNode *          clone() const override;
+    eTreeElemDataType   nodeDataTy() const override;
+    const QString &     nodeDataTypeName() const override;
+    bool                nodeShowChildrenOnTreeView()const override {return false;}
 
     bool operator==( const MFrame & other)const;
     bool operator!=( const MFrame & other)const;
@@ -65,6 +66,7 @@ public:
 
     fmt::step_t         *getPart(int id);
     const fmt::step_t   *getPart(int id)const;
+    bool ClearImageRefs(const QModelIndexList & indices, bool bdelete = false);
 
     QPixmap AssembleFrameToPixmap(int xoffset, int yoffset, QRect cropto, QRect * out_area/*=nullptr*/, const Sprite* parentsprite) const;
     //cropto: A rectangle whose width and height will be used to crop the assembled frame. Mainly useful to get even-sized frames.

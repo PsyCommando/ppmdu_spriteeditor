@@ -2,13 +2,22 @@
 #define EFFECTCONTAINERMODEL_HPP
 #include <src/data/treenodemodel.hpp>
 
-class EffectOffsetContainer;
-class EffectContainerModel : public TreeNodeModel
+class EffectOffsetSet;
+class EffectSetModel : public TreeNodeModel
 {
     Q_OBJECT
+    typedef TreeNodeModel parent_t;
 public:
-    EffectContainerModel(EffectOffsetContainer* poffsets, Sprite * powner);
-    ~EffectContainerModel(){}
+    enum struct eColumns : int
+    {
+        Name,
+        XOffset,
+        YOffset,
+    };
+    static const QList<QString> ColumnNames;
+
+    EffectSetModel(EffectOffsetSet* poffsets, Sprite * powner);
+    ~EffectSetModel(){}
 
     // QAbstractItemModel interface
 public:
@@ -23,8 +32,8 @@ public:
     Sprite *getOwnerSprite() override;
 
 private:
-    EffectOffsetContainer * m_root  {nullptr};
-    Sprite *                m_sprite{nullptr};
+    EffectOffsetSet *   m_root  {nullptr};
+    Sprite *            m_sprite{nullptr};
 };
 
 #endif // EFFECTCONTAINERMODEL_HPP

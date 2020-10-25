@@ -104,7 +104,7 @@ void TabAnimSequence::setupAnimSeq(QPersistentModelIndex seq, Sprite *spr)
     }
     m_curAnimSeq = seq;
     m_curSeqFramesModel.reset(new AnimFramesModel(pseq, spr));
-    m_curSeqFramesDelegate.reset(new AnimFrameDelegate(pseq));
+    m_curSeqFramesDelegate.reset(new AnimFrameDelegate(pseq, spr));
 }
 
 void TabAnimSequence::clearAnimSeq()
@@ -129,6 +129,7 @@ void TabAnimSequence::ConnectSceneRenderer()
 
     //Connect data update signals
     connect( m_curSeqFramesModel.data(), &AnimFramesModel::dataChanged, &m_previewrender, &SpriteScene::OnAnimDataChaged);
+    //connect( m_curSeqFramesDelegate.data(), &AnimFrameDelegate::SlotChanged, &m_previewrender, &SpriteScene::OnAnimDataChaged);
 }
 
 void TabAnimSequence::DisconnectSceneRenderer()
@@ -388,10 +389,11 @@ void TabAnimSequence::on_spinCurFrm_editingFinished()
     SetCurrentFrame(ui->spinCurFrm->value());
 }
 
-void TabAnimSequence::on_tblseqfrmlst_activated(const QModelIndex &/*index*/)
+void TabAnimSequence::on_tblseqfrmlst_activated(const QModelIndex &index)
 {
     //When clicking on a frame in the frame list, stop the anim preview
     m_previewrender.endAnimationPlayback();
+    SetCurrentFrame(index.row(), true);
 }
 
 //-------------------------------------------------------------------------

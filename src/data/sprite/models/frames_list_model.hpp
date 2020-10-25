@@ -11,7 +11,8 @@ class FramesListModel : public TreeNodeModel
 {
     Q_OBJECT
 public:
-     ~FramesListModel(){}
+    explicit FramesListModel(FramesContainer * parent, Sprite * parentsprite);
+     ~FramesListModel();
 
     // QAbstractItemModel interface
 public:

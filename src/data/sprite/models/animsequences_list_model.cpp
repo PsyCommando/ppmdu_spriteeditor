@@ -31,8 +31,6 @@ Sprite *AnimSequencesListModel::getOwnerSprite()
 
 int AnimSequencesListModel::columnCount(const QModelIndex &parent) const
 {
-    if(!parent.isValid())
-        return 0;
     return ANIMATION_SEQUENCE_HEADER_COLUMNS.size();
 }
 

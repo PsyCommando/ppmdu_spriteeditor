@@ -8,12 +8,12 @@
 #include <QFutureWatcher>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
-#include <src/data/sprite/spritemanager.hpp>
-#include <src/data/sprite/sprite.hpp>
 #include <src/ui/dialogprogressbar.hpp>
 #include <src/utility/threadedwriter.hpp>
 #include <src/data/content_factory.hpp>
 #include <src/data/content_manager.hpp>
+#include <src/data/sprite/spritemanager.hpp>
+#include <src/data/sprite/sprite.hpp>
 
 const QString NullString;
 const QString PackFileExt = "bin";
@@ -286,7 +286,7 @@ void SpriteContainer::ImportContainer(const QString &/*path*/)
     Q_ASSERT(false); //Need to be done!
 }
 
-void SpriteContainer::ExportContainer(const QString &/*path*/, const QString & exportype) const
+void SpriteContainer::ExportContainer(const QString &/*path*/, const QString & /*exportype*/) const
 {
     Q_ASSERT(false); //Need to be done!
 }
@@ -424,15 +424,24 @@ const TreeNode *SpriteContainer::getOwnerNode(const QModelIndex &index) const
     return const_cast<SpriteContainer*>(this)->getOwnerNode(index);
 }
 
+bool SpriteContainer::_insertChildrenNode(TreeNode *node, int destrow)
+{
+    ContentManager & manager = ContentManager::Instance();
+    manager.beginInsertRows(QModelIndex(), destrow, destrow);
+    m_spr.insert(destrow, dynamic_cast<Sprite*>(node));
+    manager.endInsertRows();
+    return true;
+}
+
 bool SpriteContainer::_insertChildrenNodes(int row, int count)
 {
     if(row < 0 || row > m_spr.size())
         return false;
-    ContentManager & manager = ContentManager::Instance();
-    manager.beginInsertRows(QModelIndex(), row, row + count - 1);
+    //ContentManager & manager = ContentManager::Instance();
+    //manager.beginInsertRows(QModelIndex(), row, row + count - 1);
     for(int i = 0; i < count; ++i)
-        m_spr.insert(row + i, new Sprite(this));
-    manager.endInsertRows();
+        _insertChildrenNode(new Sprite(this), row + i);
+    //manager.endInsertRows();
     return true;
 }
 
@@ -445,6 +454,23 @@ bool SpriteContainer::_insertChildrenNodes(const QList<TreeNode *> &nodes, int d
     for(int i = 0; i < nodes.size(); ++i)
         m_spr.insert(destrow + i, dynamic_cast<Sprite*>(nodes[i])); //dynamic cast since it'll return null if the TreeNode* isn't a Sprite* instead of causing worst troubles down the line
     manager.endInsertRows();
+    return true;
+}
+
+bool SpriteContainer::_removeChildrenNode(TreeNode *node)
+{
+    return _removeChildrenNode(node, false);
+}
+
+bool SpriteContainer::_removeChildrenNode(TreeNode *node, bool bdeleteptr)
+{
+    ContentManager & manager = ContentManager::Instance();
+    int pos = node->nodeIndex();
+    manager.beginRemoveRows(QModelIndex(), pos, pos);
+    m_spr.removeAt(pos);
+    if(bdeleteptr)
+        delete node;
+    manager.endRemoveRows();
     return true;
 }
 
@@ -471,47 +497,58 @@ bool SpriteContainer::_removeChildrenNodes(const QList<TreeNode *> &nodes, bool 
         return true;
     if(nodes.size() > m_spr.size())
         return false;
-    bool success = true;
+    //bool success = true;
     ContentManager & manager = ContentManager::Instance();
     QModelIndexList origindices    = manager.persistentIndexList();
     QModelIndexList changedindices = origindices;
 
-    manager.layoutAboutToBeChanged();
+    //manager.layoutAboutToBeChanged();
 
-    //Clear out the changed ones and removed the nodes first
-    for(int i = 0; i < changedindices.size(); ++i)
+    for(TreeNode* pnode : nodes)
     {
-        QModelIndex & curidx = changedindices[i];
-        int found = nodes.indexOf(static_cast<TreeNode*>(curidx.internalPointer()));
-        if(found < 0)
-            continue;
-        //delete it from the table
-        Sprite * pspr = static_cast<Sprite*>(curidx.internalPointer());
-        m_spr.removeOne(pspr);
-        if(bdeleteptr)
-            delete pspr;
-        changedindices.removeAt(i); //Clear from changed indices
-        origindices.removeAt(i);    //Clear from changed indices
+        if(!_removeChildrenNode(pnode, bdeleteptr))
+            return false;
     }
 
-    //Iterated the changed indices and find their new indices by pointer
-    for(QModelIndex & idx : changedindices)
-    {
-        if(!idx.isValid())
-            continue;
-        int newrow = m_spr.indexOf(static_cast<Sprite*>(idx.internalPointer()));
-        if(newrow < 0)
-        {
-            Q_ASSERT(false);
-            throw std::runtime_error("SpriteContainer::_removeChildrenNodes(): Found non-existent node pointer when updating persistent index list!");
-        }
-        idx = manager.index(newrow, 0);
-    }
+//    //Clear out the changed ones and removed the nodes first
+//    for(int i = 0; i < changedindices.size(); ++i)
+//    {
+//        QModelIndex & curidx = changedindices[i];
+//        int found = nodes.indexOf(static_cast<TreeNode*>(curidx.internalPointer()));
+//        if(found < 0)
+//            continue;
+//        //delete it from the table
+//        Sprite * pspr = static_cast<Sprite*>(curidx.internalPointer());
+//        m_spr.removeOne(pspr);
+//        if(bdeleteptr)
+//            delete pspr;
+//        changedindices.removeAt(i); //Clear from changed indices
+//        origindices.removeAt(i);    //Clear from changed indices
+//    }
+
+//    //Iterated the changed indices and find their new indices by pointer
+//    for(QModelIndex & idx : changedindices)
+//    {
+//        if(!idx.isValid())
+//            continue;
+//        int newrow = m_spr.indexOf(static_cast<Sprite*>(idx.internalPointer()));
+//        if(newrow < 0)
+//        {
+//            Q_ASSERT(false);
+//            throw std::runtime_error("SpriteContainer::_removeChildrenNodes(): Found non-existent node pointer when updating persistent index list!");
+//        }
+//        idx = manager.index(newrow, 0);
+//    }
 
     //Update persistent indices
-    manager.changePersistentIndexList(origindices, changedindices);
-    manager.layoutChanged();
-    return success;
+//    manager.changePersistentIndexList(origindices, changedindices);
+//    manager.layoutChanged();
+    return true;
+}
+
+bool SpriteContainer::_deleteChildrenNode(TreeNode *node)
+{
+    return _removeChildrenNode(node, true);
 }
 
 bool SpriteContainer::_deleteChildrenNodes(int row, int count)
@@ -534,23 +571,61 @@ bool SpriteContainer::_deleteChildrenNodes(const QList<TreeNode *> &nodes)
     return _removeChildrenNodes(nodes, true);
 }
 
+bool SpriteContainer::_moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent)
+{
+    QList<TreeNode*> tomove;
+    for(QModelIndex & idx : indices)
+    {
+        tomove.push_back(static_cast<TreeNode*>(idx.internalPointer()));
+    }
+    return _moveChildrenNodes(tomove, destrow, destparent);
+}
+
+//#TODO: This could be greatly improved in terms of performances. Just needed something that would work for now!
+bool SpriteContainer::_moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent)
+{
+    ContentManager & manager = ContentManager::Instance();
+    TreeNode* destnode = static_cast<TreeNode*>(destparent.internalPointer());
+    if(nodes.size() > destnode->nodeChildCount() || destrow > destnode->nodeChildCount())
+    {
+        return false;
+    }
+
+    int cntinsert = 0;
+    for(TreeNode * pnode : nodes)
+    {
+        int removedidx = pnode->nodeIndex();
+        if(!manager.beginMoveRows(QModelIndex(), removedidx, removedidx, destparent, destrow + cntinsert))
+            return false;
+        m_spr.removeAt(removedidx);
+        bool hasfailed = !destnode->_insertChildrenNode(pnode, destrow + cntinsert);
+        manager.endMoveRows();
+        if(hasfailed)
+            return false;
+        ++cntinsert;
+    }
+    return true;
+}
+
 bool SpriteContainer::_moveChildrenNodes(int row, int count, int destrow, TreeNode *destnode)
 {
     if(!destnode || ((row + count - 1) > m_spr.size()) || (destrow > destnode->nodeChildCount()))
         return false;
-    bool                success = true;
+//    bool                success = true;
     ContentManager &     manager = ContentManager::Instance();
-    QList<TreeNode*>    moved;
-    moved.reserve(count);
+    QList<TreeNode*>    tomove;
+    tomove.reserve(count);
 
-    manager.beginRemoveRows(QModelIndex(), row, row + (count - 1));
+    //manager.beginRemoveRows(QModelIndex(), row, row + (count - 1));
     for(int i = 0; i < count; ++i)
     {
-        moved.push_back(m_spr[row]);
-        m_spr.removeAt(row);
+        tomove.push_back(m_spr[row]);
+        //m_spr.removeAt(row);
     }
-    manager.endRemoveRows();
-    return success? success & destnode->_insertChildrenNodes(moved, destrow) : false;
+    //manager.endRemoveRows();
+
+    return _moveChildrenNodes(tomove, destrow, manager.index(destnode->nodeIndex(), 0));
+    //return success? success & destnode->_insertChildrenNodes(moved, destrow) : false;
 }
 
 //    int SpriteContainer::columnCount(const QModelIndex &) const
@@ -792,7 +867,7 @@ QVariant SpriteContainer::GetContentData(const QModelIndex &index, int role) con
     return pnode->nodeDisplayName();
 }
 
-QVariant SpriteContainer::GetContentHeaderData(int section, Qt::Orientation orientation, int role) const
+QVariant SpriteContainer::GetContentHeaderData(int /*section*/, Qt::Orientation /*orientation*/, int /*role*/) const
 {
     return QVariant();
 }
@@ -901,3 +976,5 @@ bool FileIsSpriteContainer(const QString & filepath)
     }
     return false;
 }
+
+

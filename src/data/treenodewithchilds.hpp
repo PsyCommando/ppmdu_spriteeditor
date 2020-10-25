@@ -69,6 +69,17 @@ protected:
     //Universal internal handling for growing and shrinking the child container
 
 
+    bool _insertChildrenNode(TreeNode *node, int destrow) override
+    {
+        if(destrow < 0 || destrow > m_container.size())
+            return false;
+        QMutexLocker lk(&getMutex());
+        TreeNode * pthisnode = const_cast<TreeNode*>(static_cast<const TreeNode*>(this));
+        m_container.insert(destrow, static_cast<child_t*>(node));
+        m_container.last()->setParentNode(pthisnode);
+        return true;
+    }
+
     bool _insertChildrenNodes(int row, int count) override
     {
         if(row < -1 || row > m_container.size())
@@ -85,23 +96,19 @@ protected:
         return true;
     }
 
-    bool _insertChildrenNodes(const QList<TreeNode*> & nodes, int row = -1) override
+    bool _insertChildrenNodes(const QList<TreeNode*> & nodes, int row = 0) override
     {
-        if(row < -1 || row > m_container.size())
+        if(row < 0 || row > m_container.size())
             return false;
+        bool result = true;
+        for(int i = 0; i < nodes.size() && (result = _insertChildrenNode(nodes[i], row + i)); ++i);
+        return result;
+    }
 
-        //If row is -1, insert at the end!
-        if(row == -1)
-            row = m_container.size();
-
+    bool _removeChildrenNode(TreeNode *node) override
+    {
         QMutexLocker lk(&getMutex());
-        TreeNode * pthisnode = const_cast<TreeNode*>(static_cast<const TreeNode*>(this));
-        for(int i = 0; i < nodes.size(); ++i)
-        {
-            m_container.insert(row+i, static_cast<child_t*>(nodes[i]));
-            m_container.last()->setParentNode(pthisnode);
-        }
-        return true;
+        return m_container.removeOne(static_cast<child_t*>(node));
     }
 
     bool _removeChildrenNodes(int row, int count) override
@@ -110,16 +117,35 @@ protected:
             return false;
         QMutexLocker lk(&getMutex());
         for(int i = 0; i < count; ++i)
+        {
             m_container.removeAt(row);
+        }
         return true;
     }
 
     bool _removeChildrenNodes(const QList<TreeNode*> & nodes)override
     {
-        QMutexLocker lk(&getMutex());
         for(TreeNode* p : nodes)
-            m_container.removeOne(static_cast<child_t*>(p));
+        {
+            if(!_removeChildrenNode(p))
+                return false;
+        }
         return true;
+    }
+
+    bool _deleteChildrenNode(TreeNode *node) override
+    {
+        QMutexLocker lk(&getMutex());
+        child_t * p = dynamic_cast<child_t*>(node);
+        Q_ASSERT(p);
+        bool succ = m_container.removeOne(p);
+        if(succ)
+        {
+            delete p;
+            return true;
+        }
+        else
+            return false;
     }
 
     bool _deleteChildrenNodes(int row, int count)
@@ -137,12 +163,10 @@ protected:
 
     bool _deleteChildrenNodes(const QList<TreeNode*> & nodes)
     {
-        QMutexLocker lk(&getMutex());
         for(int i = 0; i < m_container.size(); ++i)
         {
-            child_t * p = static_cast<child_t*>(nodes[i]);
-            m_container.removeOne(p);
-            delete p;
+            if(!_deleteChildrenNode(nodes[i]))
+                return false;
         }
         return true;
     }
@@ -161,8 +185,71 @@ protected:
         return _removeChildrenNodes(srcrow, count) && _insertChildrenNodes(movebuffer, destrow);
     }
 
+    bool _moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent) override
+    {
+        QList<TreeNode *> tomove;
+        for(QModelIndex & idx : indices)
+            tomove.push_back(static_cast<TreeNode*>(idx.internalPointer()));
+        return _moveChildrenNodes(tomove, destrow, destparent);
+    }
+
+    bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override
+    {
+        TreeNode* pdestparent = static_cast<TreeNode*>(destparent.internalPointer());
+        if(destrow >= pdestparent->nodeChildCount())
+        {
+            return false;
+        }
+        int cntinsert = 0;
+        for(TreeNode * p : nodes)
+        {
+            if( !_removeChildrenNodes(p->nodeIndex(), 1) ||
+                !_insertChildrenNodes(QList<TreeNode*>{p}, destrow + cntinsert) )
+            {
+                return false;
+            }
+            ++cntinsert;
+        }
+        return true;
+    }
+
     //Get the mutex to ensure we're not modifying the structure as we're accessing it!
     QMutex & getMutex()const{return const_cast<TreeNodeWithChilds*>(this)->m_mutex;}
+
+    //Content Accessor Stuff to allow range based iteration
+public:
+    typedef typename container_t::iterator       iterator;
+    typedef typename container_t::const_iterator const_iterator;
+
+    iterator begin()
+    {
+        return m_container.begin();
+    }
+
+    const_iterator begin() const
+    {
+        return m_container.begin();
+    }
+
+    iterator end()
+    {
+        return m_container.end();
+    }
+
+    const_iterator end() const
+    {
+        return m_container.end();
+    }
+
+    size_t size() const
+    {
+        return m_container.size();
+    }
+
+    bool empty() const
+    {
+        return m_container.empty();
+    }
 
 protected:
     QMutex      m_mutex; //Mutex for modifying the node structure

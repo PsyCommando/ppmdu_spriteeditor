@@ -89,7 +89,8 @@ public:
 
     void HandleItemRemoval(QModelIndex spriteidx);
 
-    void setSelectedTreeViewIndex(const QModelIndex &index);
+    void selectTreeViewNode(const TreeNode * node);
+    void selectTreeViewNode(const QModelIndex &index);
     const QPixmap & getDefaultImage()const {return m_imgNoImg;}
 
 private:

@@ -31,8 +31,6 @@ AnimFramesModel::~AnimFramesModel()
 
 int AnimFramesModel::columnCount(const QModelIndex &parent) const
 {
-    if(!parent.isValid())
-        return 0;
     return AnimFrameColumnNames.size();//static_cast<int>(eAnimFrameColumnsType::NBColumns);
 }
 
@@ -232,32 +230,41 @@ bool AnimFramesModel::setData(const QModelIndex &index, const QVariant &value, i
         }
     //Undefined cases
     default:
-        return false;
+        return false; //Return early
     };
 
-    if(bok && index.model())
+    if(bok/* && index.model()*/)
     {
-        QVector<int> roles{role};
-        QAbstractItemModel* pmod = const_cast<QAbstractItemModel*>(index.model());
-        if(!pmod)
-            qFatal("Model is null!");
+//        QAbstractItemModel* pmod = const_cast<QAbstractItemModel*>(index.model());
+//        if(!pmod)
+//            throw std::runtime_error("Model is null!");
 
-        pmod->dataChanged(index, index, roles);
+        emit dataChanged(index, index, QVector<int>{role});
     }
     return bok;
 }
 
 QVariant AnimFramesModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if( role != Qt::DisplayRole )
+    if(role != Qt::DisplayRole && role != Qt::SizeHintRole && role != Qt::DecorationRole)
         return QVariant();
 
     if( orientation == Qt::Orientation::Vertical )
     {
-        return QVariant( QString("%1").arg(section) );
+        const QString rownum = QString("%1").arg(section);
+        if(role == Qt::SizeHintRole)
+        {
+            return TreeNodeModel::headerData(section, orientation, role);
+        }
+        return QVariant(rownum);
     }
     else if( orientation == Qt::Orientation::Horizontal && section < AnimFrameColumnNames.size() )
     {
+        if(role == Qt::SizeHintRole)
+        {
+            QSize sz = calcTextSize(AnimFrameColumnNames[section]);
+            return sz.grownBy(QMargins(8,0,8,0));
+        }
         return AnimFrameColumnNames[section];
     }
     return QVariant();
@@ -286,5 +293,5 @@ const Sprite *AnimFramesModel::getOwnerSprite() const
 QSize AnimFramesModel::calcTextSize(const QString &text)
 {
     static QFontMetrics fm(QFont("Sergoe UI", 9));
-    return QSize(fm.horizontalAdvance(text), fm.height());
+    return QSize(fm.horizontalAdvance(text) + 4, fm.height() + 4);
 }

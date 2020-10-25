@@ -27,8 +27,6 @@ const QString &AnimSequences::nodeDataTypeName() const
     return ElemName_AnimSequences;
 }
 
-
-
 //QVariant AnimSequences::data(const QModelIndex &index, int role) const
 //{
 //    if (!index.isValid())

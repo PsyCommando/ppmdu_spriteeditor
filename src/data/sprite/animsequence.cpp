@@ -50,8 +50,6 @@ QImage AnimSequence::makePreview(const Sprite* owner) const
     return QImage();
 }
 
-
-
 eTreeElemDataType AnimSequence::nodeDataTy() const
 {
     return eTreeElemDataType::animSequence;
@@ -82,32 +80,4 @@ bool AnimSequence::operator!=(const AnimSequence &other) const
     return !operator==(other);
 }
 
-AnimSequence::iterator AnimSequence::begin()
-{
-    return m_container.begin();
-}
 
-AnimSequence::const_iterator AnimSequence::begin() const
-{
-    return m_container.begin();
-}
-
-AnimSequence::iterator AnimSequence::end()
-{
-    return m_container.end();
-}
-
-AnimSequence::const_iterator AnimSequence::end() const
-{
-    return m_container.end();
-}
-
-size_t AnimSequence::size() const
-{
-    return m_container.size();
-}
-
-bool AnimSequence::empty() const
-{
-    return m_container.empty();
-}

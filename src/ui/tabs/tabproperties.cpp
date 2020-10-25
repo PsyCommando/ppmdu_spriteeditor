@@ -64,9 +64,9 @@ void TabProperties::OnShowTab(QPersistentModelIndex element)
     m_overviewModel.reset(new SpriteOverviewModel(pspr));
     ui->tblOverview->setModel(m_overviewModel.data());
 
-    m_pmainwindow->setSelectedTreeViewIndex(manager.modelIndexOf(pspr));
-    if( !pspr->wasParsed() )
-        pspr->ParseSpriteData();
+//    getMainWindow()->selectTreeViewNode(manager.modelIndexOf(pspr));
+//    if( !pspr->wasParsed() )
+//        pspr->ParseSpriteData();
 
     //display preview image and palette only if we have image data!
     UpdatePreview();

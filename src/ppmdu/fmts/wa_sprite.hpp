@@ -170,8 +170,8 @@ namespace fmt
     **********************************************************************/
     struct effectoffset
     {
-        uint16_t xoff = 0;
-        uint16_t yoff = 0;
+        int16_t xoff = 0;
+        int16_t yoff = 0;
     };
 
 
@@ -1160,8 +1160,8 @@ namespace fmt
             for( ; tblbeg != tblend; )
             {
                 effectoffset ofs;
-                ofs.xoff = utils::readBytesAs<uint16_t>(tblbeg,tblend);
-                ofs.yoff = utils::readBytesAs<uint16_t>(tblbeg,tblend);
+                ofs.xoff = utils::readBytesAs<int16_t>(tblbeg,tblend);
+                ofs.yoff = utils::readBytesAs<int16_t>(tblbeg,tblend);
                 m_efxoffsets.push_back(ofs);
             }
         }
@@ -1368,8 +1368,8 @@ namespace fmt
             {
                 //Calculate effect table length/end
                 int nbentries = (begseqptrtbl - m_animfmt.ptrefxtbl) / sizeof(uint16_t);
-                m_efxoffsets.reserve(nbentries);
                 m_animtions.ParseEfxOffsets(itbeg, itend, m_animfmt, m_animfmt.ptrefxtbl, begseqptrtbl);
+                m_efxoffsets = m_animtions.m_efxoffsets;
             }
         }
 

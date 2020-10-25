@@ -2,6 +2,7 @@
 #define ANIMGROUPMODEL_HPP
 #include <QAbstractItemModel>
 #include <src/data/treenodemodel.hpp>
+#include <src/ppmdu/fmts/wa_sprite.hpp>
 
 //*******************************************************************
 //  AnimGroupModel
@@ -12,6 +13,15 @@ class AnimGroupModel : public TreeNodeModel
 {
     Q_OBJECT
 public:
+    enum struct eColumns : int
+    {
+        Preview = 0,
+        SlotName,
+        NbFrames,
+    };
+
+    static const QStringList ColumnNames;
+
     explicit AnimGroupModel(AnimGroup * pgrp, Sprite * owner);
     ~AnimGroupModel();
 
@@ -29,6 +39,13 @@ public:
         return const_cast<AnimGroupModel*>(this)->getOwnerSprite();
     }
 
+    void setSlotSequenceID(int slot, fmt::AnimDB::animseqid_t id);
+    fmt::AnimDB::animseqid_t getSlotSequenceID(int slot)const;
+
+    //Returns the user-friendly name for the slot
+    QString getSlotName(int index)const;
+    void setSlotName(const QList<QString> & slotnamesref);
+
     // QAbstractItemModel interface
 public:
     QVariant    data(const QModelIndex &index, int role) const override;
@@ -42,10 +59,13 @@ public:
     QMap<int, QVariant> itemData(const QModelIndex &index) const override;
     bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles)override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
+    //int rowCount(const QModelIndex &parent) const override;
+    int columnCount(const QModelIndex &parent) const override;
 
 private:
-    AnimGroup * m_root  {nullptr};
-    Sprite *    m_sprite{nullptr};
+    AnimGroup *     m_root      {nullptr};
+    Sprite *        m_sprite    {nullptr};
+    QList<QString>  m_slotNames;
 };
 
 #endif // ANIMGROUPMODEL_HPP

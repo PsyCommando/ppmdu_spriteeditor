@@ -15,7 +15,7 @@ class AnimFrameDelegate : public QStyledItemDelegate
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(AnimFrameDelegate);
 public:
-    AnimFrameDelegate(AnimSequence * seq, QObject *parent = nullptr);
+    explicit AnimFrameDelegate(AnimSequence * seq, Sprite * spr, QObject *parent = nullptr);
     ~AnimFrameDelegate();
 
     // QAbstractItemDelegate interface
@@ -36,6 +36,11 @@ private:
     QWidget * makeFrameSelect       (QWidget *parent, Sprite* spr, TreeNodeModel * pmodel)const;
     QWidget * makeOffsetWidget      (QWidget *parent)const;
     QWidget * makeShadowOffsetWidget(QWidget *parent)const;
+
+signals:
+    //Sent when the user used the frame selector to change a frame in the anim sequence
+    // so that the preview image can be updated
+    void SlotChanged(int sequenceslot)const;
 
     //Variable:
 private:

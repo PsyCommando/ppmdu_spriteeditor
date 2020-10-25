@@ -41,6 +41,7 @@ public:
 
     MFrame *        getFrame(fmt::frmid_t id);
     const MFrame *  getFrame(fmt::frmid_t id)const;
+    bool ClearImageReferences(const QModelIndexList & indices, bool bdelete = false);
 
     void importFrames( const fmt::ImageDB::frmtbl_t & frms );
     fmt::ImageDB::frmtbl_t exportFrames();

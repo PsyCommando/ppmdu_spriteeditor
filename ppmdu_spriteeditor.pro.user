@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.13.2, 2020-10-06T22:09:43. -->
+<!-- Written by QtCreator 4.13.2, 2020-10-23T04:58:11. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -593,7 +593,7 @@
     <value type="bool" key="RunConfiguration.UseQmlDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
     <value type="QString" key="RunConfiguration.WorkingDirectory">workdir</value>
-    <value type="QString" key="RunConfiguration.WorkingDirectory.default">D:/Users/Guill/Documents/CodingProjects/spriteeditor_build</value>
+    <value type="QString" key="RunConfiguration.WorkingDirectory.default"></value>
    </valuemap>
    <value type="int" key="ProjectExplorer.Target.RunConfigurationCount">1</value>
   </valuemap>
@@ -852,7 +852,7 @@
     <value type="bool" key="RunConfiguration.UseQmlDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
     <value type="QString" key="RunConfiguration.WorkingDirectory">workdir</value>
-    <value type="QString" key="RunConfiguration.WorkingDirectory.default">D:/Users/Guill/Documents/CodingProjects/spriteeditor_build_release</value>
+    <value type="QString" key="RunConfiguration.WorkingDirectory.default"></value>
    </valuemap>
    <value type="int" key="ProjectExplorer.Target.RunConfigurationCount">1</value>
   </valuemap>

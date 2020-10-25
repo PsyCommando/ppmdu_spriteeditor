@@ -11,14 +11,14 @@ enum struct eAnimFrameColumnsType : int
     Offset,
     ShadowOffset,
     Flags,
-    NBColumns,
+    NBColumns [[maybe_unused]],
     //Everything below this is not displayed as header column
 
     //To acces some of the merged data individually via model data! Since we merged both x/y param entry into a single one for each categories
-    Direct_XOffset,
-    Direct_YOffset,
-    Direct_ShadowXOffset,
-    Direct_ShadowYOffset,
+    Direct_XOffset [[maybe_unused]],
+    Direct_YOffset [[maybe_unused]],
+    Direct_ShadowXOffset [[maybe_unused]],
+    Direct_ShadowYOffset [[maybe_unused]],
 };
 extern const QStringList AnimFrameColumnNames;
 

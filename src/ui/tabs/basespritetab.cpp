@@ -86,7 +86,7 @@ AnimSequence *BaseSpriteTab::currentAnimSequence()
     return nullptr;
 }
 
-eTreeElemDataType BaseSpriteTab::currentEntryType()
+eTreeElemDataType BaseSpriteTab::currentEntryType()const
 {
     Q_ASSERT(m_pmainwindow);
     if(m_pmainwindow)

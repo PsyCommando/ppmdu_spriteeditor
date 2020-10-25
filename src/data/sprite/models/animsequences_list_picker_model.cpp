@@ -18,16 +18,16 @@ AnimSequencesListPickerModel::~AnimSequencesListPickerModel()
 
 int AnimSequencesListPickerModel::columnCount(const QModelIndex &parent) const
 {
-    if(!parent.isValid())
-        return 0;
-    return ANIMATION_SEQUENCE_HEADER_COLUMNS.size();
+//    if(!parent.isValid())
+//        return 0;
+    return 1;
 }
 
 QVariant AnimSequencesListPickerModel::data(const QModelIndex &index, int role) const
 {
     //Custom data display for the anim sequence picker!
-    if (!index.isValid())
-        return QVariant("root");
+//    if (!index.isValid())
+//        return QVariant("root");
 
     if (role != Qt::DisplayRole &&
         role != Qt::DecorationRole &&
@@ -38,30 +38,20 @@ QVariant AnimSequencesListPickerModel::data(const QModelIndex &index, int role) 
     {
     case eAnimationSequenceColumns::Preview:
         {
+            AnimSequence * pseq = m_root->getSequenceByID(index.row());
+            Q_ASSERT(pseq);
             if(role == Qt::DecorationRole)
-            {
-                AnimSequence * pseq = m_root->getSequenceByID(index.row());
-                Q_ASSERT(pseq);
                 return QVariant(pseq->makePreview(getOwnerSprite()));
-            }
             else if(role == Qt::DisplayRole)
-            {
-                AnimSequence * pseq = m_root->getSequenceByID(index.row());
-                Q_ASSERT(pseq);
                 return QString("Sequence#%1 - %2 frames").arg(index.row()).arg(pseq->nodeChildCount());
+            else if(role == Qt::SizeHintRole)
+            {
+                QFontMetrics fm(QFont("Sergoe UI",9));
+                QVariant basesprite = data(index, Qt::DisplayRole);
+                return QSize( fm.horizontalAdvance(basesprite.toString()) + 32, 32);
             }
             break;
         }
-    case eAnimationSequenceColumns::NbFrames:
-//        {
-//            if(role == Qt::DisplayRole)
-//            {
-//                AnimSequence * pseq = m_pOwner->getSequenceByID(index.row());
-//                Q_ASSERT(pseq);
-//                return QString("%1 frames").arg(pseq->nodeChildCount());
-//            }
-//            break;
-//        }
     default: break;
     };
     return QVariant();

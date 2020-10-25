@@ -154,7 +154,7 @@ void MainWindow::SetupUIForNewContainer(BaseContainer * sprcnt)
     updateActions();
 
     //Display!
-    setSelectedTreeViewIndex(manager.index(0,0));
+    selectTreeViewNode(manager.index(0,0));
     DisplayTabForElement(m_curItem);
 
     ui->tv_sprcontent->repaint();
@@ -172,6 +172,7 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
 {
     if(!item)
         return;
+
     ContentManager & manager = ContentManager::Instance();
     if(item->nodeCanFetchMore())
         item->nodeFetchMore();
@@ -182,7 +183,7 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
     else if(item->nodeDataTypeName() == ElemName_AnimTable)
         ShowATab(ui->tabAnimTable, manager.modelIndexOf(item));
 
-    else if(item->nodeDataTypeName() == ElemName_AnimGroup)
+    else if(item->nodeDataTypeName() == ElemName_AnimGroup && currentSprite()->hasAnimGrps())
         ShowATab(ui->tabAnimGroup, manager.modelIndexOf(item));
 
     else if(item->nodeDataTypeName() == ElemName_AnimSequences)
@@ -203,7 +204,7 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
     else if(item->nodeDataTypeName() == ElemName_Image)
         ShowATab(ui->tabImages, manager.modelIndexOf(item));
 
-    else if(item->nodeDataTypeName() == ElemName_EffectOffset)
+    else if(item->nodeDataTypeName() == ElemName_EffectOffsetSet)
         ShowATab(ui->tabEfx, manager.modelIndexOf(item));
     else
         HideAllTabs();
@@ -796,7 +797,15 @@ void MainWindow::ShowProgressDiag(QFuture<void> &task)
     m_progress.show();
 }
 
-void MainWindow::setSelectedTreeViewIndex(const QModelIndex & index)
+void MainWindow::selectTreeViewNode(const TreeNode * node)
 {
-    ui->tv_sprcontent->setCurrentIndex(index);
+    const TreeNodeModel * pmodel = static_cast<const TreeNodeModel *>(ui->tv_sprcontent->model());
+    QModelIndex index = pmodel->indexOfChildNode(node);
+    selectTreeViewNode(index);
+}
+
+void MainWindow::selectTreeViewNode(const QModelIndex &index)
+{
+    m_curItem = index;
+    ui->tv_sprcontent->setCurrentIndex(m_curItem);
 }

@@ -42,6 +42,7 @@ SOURCES += src/main.cpp\
     src/data/sprite/animsequences.cpp \
     src/data/sprite/animtable.cpp \
     src/data/sprite/effectoffsetcontainer.cpp \
+    src/data/sprite/effectoffsetset.cpp \
     src/data/sprite/frame.cpp \
     src/data/sprite/framepart.cpp \
     src/data/sprite/framescontainer.cpp \
@@ -50,12 +51,14 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/animframe_delegate.cpp \
     src/data/sprite/models/animframe_model.cpp \
     src/data/sprite/models/animgroup_delegate.cpp \
+    src/data/sprite/models/animgroup_list_picker_delegate.cpp \
+    src/data/sprite/models/animgroup_list_picker_model.cpp \
     src/data/sprite/models/animgroup_model.cpp \
     src/data/sprite/models/animsequences_list_model.cpp \
     src/data/sprite/models/animsequences_list_picker_model.cpp \
     src/data/sprite/models/animtable_delegate.cpp \
     src/data/sprite/models/animtable_model.cpp \
-    src/data/sprite/models/effect_container_model.cpp \
+    src/data/sprite/models/effect_set_model.cpp \
     src/data/sprite/models/framepart_delegate.cpp \
     src/data/sprite/models/framepart_model.cpp \
     src/data/sprite/models/frames_list_model.cpp \
@@ -67,6 +70,7 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/sprite_props_model.cpp \
     src/data/sprite/palettecontainer.cpp \
     src/data/sprite/sprite_container.cpp \
+    src/ui/tabs/tabanimgroup.cpp \
     src/ui/tabs/tabempty.cpp \
     src/ui/tabs/tabwelcome.cpp \
     src/utility/file_support.cpp \
@@ -111,15 +115,18 @@ HEADERS  += \
     src/data/base_container.hpp \
     src/data/content_factory.hpp \
     src/data/content_manager.hpp \
+    src/data/sprite/effectoffsetset.hpp \
     src/data/sprite/models/animframe_delegate.hpp \
     src/data/sprite/models/animframe_model.hpp \
     src/data/sprite/models/animgroup_delegate.hpp \
+    src/data/sprite/models/animgroup_list_picker_delegate.hpp \
+    src/data/sprite/models/animgroup_list_picker_model.hpp \
     src/data/sprite/models/animgroup_model.hpp \
     src/data/sprite/models/animsequences_list_model.hpp \
     src/data/sprite/models/animsequences_list_picker_model.hpp \
     src/data/sprite/models/animtable_delegate.hpp \
     src/data/sprite/models/animtable_model.hpp \
-    src/data/sprite/models/effect_container_model.hpp \
+    src/data/sprite/models/effect_set_model.hpp \
     src/data/sprite/models/framepart_delegate.hpp \
     src/data/sprite/models/framepart_model.hpp \
     src/data/sprite/models/frames_list_model.hpp \
@@ -135,6 +142,7 @@ HEADERS  += \
     src/data/treenodemodel.hpp \
     src/data/treenodeterminal.hpp \
     src/data/treenodewithchilds.hpp \
+    src/ui/tabs/tabanimgroup.hpp \
     src/ui/tabs/tabempty.hpp \
     src/ui/tabs/tabwelcome.hpp \
     src/utility/baseqtexception.hpp \
@@ -201,6 +209,7 @@ FORMS    += src/ui/mainwindow.ui \
     src/ui/dialognewsprite.ui \
     src/ui/dialogabout.ui \
     src/ui/dialogprogressbar.ui \
+    src/ui/tabs/tabanimgroup.ui \
     src/ui/tabs/tabanimsequence.ui \
     src/ui/tabs/tabanimtable.ui \
     src/ui/tabs/tabeffects.ui \

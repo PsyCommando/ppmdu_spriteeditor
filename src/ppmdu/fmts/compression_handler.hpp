@@ -214,6 +214,11 @@ namespace filetypes
                 //no other known data!
                 break;
             }
+//        default:
+//            {
+//                assert(false);
+//                throw std::runtime_error("Decompress(), compression_handler.hpp: Unknown compression format header!");
+//            }
         };
 
         //#4. Copy header data if needed
@@ -236,7 +241,7 @@ namespace filetypes
         {
             //unsupported right now!
             assert(false);
-            throw std::runtime_error("Decompress(): AT4PN is currently unsuported!");
+            throw std::runtime_error("Decompress(), compression_handler.hpp: AT4PN is currently unsuported!");
         }
 
         return itsrcbeg;
@@ -300,7 +305,7 @@ namespace filetypes
             break;
         }
         default:
-            throw std::runtime_error("Compress(): Invalid compression format!!");
+            throw std::runtime_error("Compress(), compression_handler.hpp: Invalid compression format!!");
         };
 
         return itout;

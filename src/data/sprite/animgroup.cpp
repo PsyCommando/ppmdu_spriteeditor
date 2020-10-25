@@ -3,6 +3,68 @@
 #include <src/data/sprite/animsequences.hpp>
 
 const QString ElemName_AnimGroup = "Anim Group";
+const QString ElemName_AnimSeqRef = "Anim Sequence Reference";
+
+//===================================================
+//  AnimSequenceReference
+//===================================================
+AnimSequenceReference::AnimSequenceReference(TreeNode * parent)
+    :TreeNodeTerminal(parent)
+{
+}
+AnimSequenceReference::AnimSequenceReference(AnimSequenceReference&& mv)
+    :TreeNodeTerminal(mv)
+{
+}
+
+AnimSequenceReference::AnimSequenceReference(const AnimSequenceReference & cp)
+    :TreeNodeTerminal(cp)
+{
+}
+
+AnimSequenceReference & AnimSequenceReference::operator=(const AnimSequenceReference & cp)
+{
+    m_seqid = cp.m_seqid;
+    TreeNodeTerminal::operator=(cp);
+    return *this;
+}
+
+AnimSequenceReference & AnimSequenceReference::operator=(AnimSequenceReference && mv)
+{
+    m_seqid = mv.m_seqid;
+    TreeNodeTerminal::operator=(mv);
+    return *this;
+}
+
+AnimSequenceReference::~AnimSequenceReference()
+{
+}
+
+void AnimSequenceReference::setSeqRefID(AnimSequenceReference::seqid_t id)
+{
+    m_seqid = id;
+}
+
+AnimSequenceReference::seqid_t AnimSequenceReference::getSeqRefID() const
+{
+    return m_seqid;
+}
+
+TreeNode *AnimSequenceReference::clone() const
+{
+    return new AnimSequenceReference(*this);
+}
+
+eTreeElemDataType AnimSequenceReference::nodeDataTy() const
+{
+    return eTreeElemDataType::animSequenceRef;
+}
+
+const QString &AnimSequenceReference::nodeDataTypeName() const
+{
+    return ElemName_AnimSeqRef;
+}
+
 
 //**********************************************************************************
 //  AnimGroup
@@ -12,44 +74,40 @@ const QStringList AnimGroup::ColumnNames
     "Group ID",
     "Group Name",
     "Nb Slots",
+    "Preview",
 };
 
 AnimGroup::AnimGroup(TreeNode *parent)
-    :TreeNodeTerminal(parent)
+    :parent_t(parent)
 {
 }
 
 AnimGroup::AnimGroup(AnimGroup &&mv)
-    :TreeNodeTerminal(mv)
+    :parent_t(mv)
 {
-    operator=(mv);
 }
 
 AnimGroup::AnimGroup(const AnimGroup &cp)
-    :TreeNodeTerminal(cp)
+    :parent_t(cp)
 {
-    operator=(cp);
 }
 
 AnimGroup & AnimGroup::operator=(AnimGroup &&mv)
 {
-    m_unk16     = mv.m_unk16;
-    m_seqlist   = qMove(mv.m_seqlist);
-    //We don't touch the delegate
+    m_unk16 = mv.m_unk16;
+    parent_t::operator=(mv);
     return *this;
 }
 
 AnimGroup & AnimGroup::operator=(const AnimGroup &cp)
 {
-    m_unk16     = cp.m_unk16;
-    m_seqlist   = cp.m_seqlist;
-    //We don't touch the delegate
+    m_unk16 = cp.m_unk16;
+    parent_t::operator=(cp);
     return *this;
 }
 
 AnimGroup::~AnimGroup()
 {
-    //Need non-default destructor for defining the delegate in the cpp
 }
 
 //QVariant AnimGroup::nodeData(int column, int role) const
@@ -101,18 +159,19 @@ AnimGroup::~AnimGroup()
 
 void AnimGroup::importGroup(const fmt::AnimDB::animgrp_t &grp)
 {
-    m_seqlist.reserve(grp.seqs.size());
-    for( const auto & seq : grp.seqs )
-        m_seqlist.push_back(seq);
-
+    _insertChildrenNodes(0, grp.seqs.size());
+    for(int i = 0; i < m_container.size(); ++i)
+        m_container[i]->setSeqRefID(grp.seqs[i]);
     m_unk16 = grp.unk16;
 }
 
 fmt::AnimDB::animgrp_t AnimGroup::exportGroup()
 {
     fmt::AnimDB::animgrp_t dest;
-    dest.seqs.resize(m_seqlist.size());
-    std::copy(m_seqlist.begin(), m_seqlist.end(), dest.seqs.begin());
+    const int nbrefs = m_container.size();
+    dest.seqs.resize(nbrefs);
+    for(int i = 0; i < nbrefs; ++i)
+        dest.seqs[i] = m_container[i]->getSeqRefID();
     dest.unk16 = m_unk16;
     return dest;
 }
@@ -127,13 +186,25 @@ bool AnimGroup::operator!=(const AnimGroup &other) const
     return !operator==(other);
 }
 
-void AnimGroup::removeSequenceReferences(fmt::AnimDB::animseqid_t id)
+void AnimGroup::removeSequenceReferences(AnimGroup::animseqid_t id)
 {
-    for( auto & seq : m_seqlist )
+    for( auto & seq : m_container )
     {
-        if(seq == id)
-            seq = -1;
+        if(seq->getSeqRefID() == id)
+            seq->setSeqRefID(-1);
     }
+}
+
+void AnimGroup::setAnimSlotRef(int slot, AnimGroup::animseqid_t id)
+{
+    AnimSequenceReference * ref =  m_container[slot];
+    ref->setSeqRefID(id);
+}
+
+AnimGroup::animseqid_t AnimGroup::getAnimSlotRef(int slot) const
+{
+    const AnimSequenceReference * ref =  m_container[slot];
+    return ref->getSeqRefID();
 }
 
 uint16_t AnimGroup::getUnk16() const
@@ -151,40 +222,31 @@ int AnimGroup::getGroupUID() const
     return nodeIndex();
 }
 
-const AnimGroup::slots_t &AnimGroup::seqSlots() const
+QPixmap AnimGroup::MakeGroupPreview(const Sprite* owner, int maxWidth, int maxHeight, int maxNbImages) const
 {
-    return m_seqlist;
+    if(!owner)
+        throw std::runtime_error("AnimGroup::MakeGroupPreview(): Got null owner sprite pointer!");
+    const int MAX_NB_IMGS       = maxNbImages > 0   ? maxNbImages : nodeChildCount();
+    const int WIDTH_PER_IMAGE   = maxWidth > 0      ? (maxWidth/MAX_NB_IMGS) : 0;
+    const int HEIGTH_PER_IMAGE  = maxHeight;
+    QPixmap target(maxWidth, maxHeight);
+    QPainter stitcher;
+
+    int curX = 0; //Keep track of the top corner position to place the next image at
+
+    stitcher.begin(&target);
+    stitcher.setBackground(QBrush(owner->getPalette().front()));
+    for(const auto node : m_container)
+    {
+        const AnimSequence * seq =  owner->getAnimSequence(node->getSeqRefID());
+        QImage preview(seq->makePreview(owner));
+        stitcher.drawImage(curX, 0, preview.scaled(WIDTH_PER_IMAGE, HEIGTH_PER_IMAGE, Qt::KeepAspectRatio));
+        curX += WIDTH_PER_IMAGE;
+    }
+    stitcher.end();
+    //target.save("D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/test.png", "png");
+    return target;
 }
-
-AnimGroup::slots_t &AnimGroup::seqSlots()
-{
-    return m_seqlist;
-}
-
-void AnimGroup::InsertRow(int row, fmt::AnimDB::animseqid_t val)
-{
-    m_seqlist.insert(row, val);
-}
-
-void AnimGroup::RemoveRow(int row)
-{
-    m_seqlist.removeAt(row);
-}
-
-//Sprite *AnimGroup::parentSprite()
-//{
-//    return static_cast<AnimTable*>(parentNode())->parentSprite();
-//}
-
-//AnimGroupDelegate *AnimGroup::getDelegate()
-//{
-//    return m_delegate.data();
-//}
-
-//const AnimGroupDelegate *AnimGroup::getDelegate() const
-//{
-//    return m_delegate.data();
-//}
 
 TreeNode *AnimGroup::clone() const
 {
@@ -206,3 +268,4 @@ QString AnimGroup::nodeDisplayName() const
     //#TODO: anim groups should be named by the animation they're for maybe?
     return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());
 }
+
