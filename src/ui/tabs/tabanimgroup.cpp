@@ -334,3 +334,11 @@ void TabAnimGroup::on_tblAnimGroup_clicked(const QModelIndex &index)
     if(!pmod->hasSelection()) //Select the anim preview only when we're selecting a single thing
         SelectGroupSlot(index);
 }
+
+void TabAnimGroup::on_chkDisplayFrameBorder_toggled(bool checked)
+{
+    if(checked)
+        ui->gvSequencePreview->setBackgroundBrush(QBrush(QColor("black")));
+    else
+        ui->gvSequencePreview->setBackgroundBrush(QBrush(m_previewScene.getSpriteBGColor()));
+}

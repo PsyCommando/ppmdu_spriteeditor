@@ -8,6 +8,7 @@
 #include <src/utility/baseqtexception.hpp>
 #include <src/data/sprite/models/framepart_model.hpp>
 #include <src/data/sprite/models/framepart_delegate.hpp>
+#include <src/data/sprite/models/effect_set_delegate.hpp>
 
 namespace Ui {
 class TabFrames;
@@ -42,6 +43,9 @@ private:
     void on_cmbFrmQuickPrio_currentIndexChanged(int index);
 
 private:
+    void setupMappedControls();
+    void setupFramePartTable();
+    void setupAttachTable();
     void setupFrameEditPageForPart(MFrame *frm, MFramePart *part);
     void ConnectSignals();
     void DisconnectSignals();
@@ -53,7 +57,12 @@ private slots:
     void OnFrameEditorZoom(int diff);
     void On_spbFrmZoom_ValueChanged(int val);
     void OnDataChanged(const QModelIndex &topLeft,const QModelIndex &bottomRight, const QVector<int> & roles);
-    void OnSelectionChanged(QList<int> parts);
+    void OnOffsetChanged(const QModelIndex &topLeft,const QModelIndex &bottomRight, const QVector<int> & roles);
+    void OnSelectionChanged(QList<EditableItem *> parts);
+    void OnMousePosUpdate(const QPointF & mousepos);
+    void OnOffsetSelected(QModelIndex selected);
+
+    void on_btnEditAttachments_toggled(bool checked);
 
 private:
     Ui::TabFrames *ui;
@@ -63,6 +72,8 @@ private:
     QPersistentModelIndex               m_frame;
     QScopedPointer<MFramePartModel>     m_frmModel;
     QScopedPointer<MFramePartDelegate>  m_frmDelegate;
+    QScopedPointer<EffectSetModel>      m_attachModel;
+    QScopedPointer<EffectSetDelegate>   m_attachDele;
 };
 
 #endif // TABFRAMES_HPP

@@ -113,7 +113,7 @@ void SpriteScene::InstallAnimPreview(QGraphicsView *pview, const Sprite *pspr, c
     qDebug() << "SpriteScene::InstallAnimPreview(): Displaying animation..\n";
     pview->setScene(&getAnimScene());
     pview->ensureVisible(getAnimSprite(), 8, 8);
-    pview->setBackgroundBrush(QBrush(getSpriteBGColor()));
+    //pview->setBackgroundBrush(QBrush(getSpriteBGColor()));
 }
 
 void SpriteScene::UninstallAnimPreview(QGraphicsView *pview)

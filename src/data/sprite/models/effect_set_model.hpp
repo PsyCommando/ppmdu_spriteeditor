@@ -1,7 +1,9 @@
 #ifndef EFFECTCONTAINERMODEL_HPP
 #define EFFECTCONTAINERMODEL_HPP
 #include <src/data/treenodemodel.hpp>
+#include <src/ppmdu/fmts/wa_sprite.hpp>
 
+class EffectOffset;
 class EffectOffsetSet;
 class EffectSetModel : public TreeNodeModel
 {
@@ -19,6 +21,11 @@ public:
     EffectSetModel(EffectOffsetSet* poffsets, Sprite * powner);
     ~EffectSetModel(){}
 
+    const EffectOffset *getHead()const;
+    const EffectOffset *getRHand()const;
+    const EffectOffset *getLHand()const;
+    const EffectOffset *getCenter()const;
+
     // QAbstractItemModel interface
 public:
     int columnCount(const QModelIndex &parent) const override;
@@ -30,6 +37,7 @@ public:
 public:
     node_t *getRootNode() override;
     Sprite *getOwnerSprite() override;
+    const Sprite *getOwnerSprite()const override;
 
 private:
     EffectOffsetSet *   m_root  {nullptr};

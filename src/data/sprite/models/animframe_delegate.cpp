@@ -23,7 +23,6 @@ AnimFrameDelegate::AnimFrameDelegate(AnimSequence *seq, Sprite * spr, QObject *p
 
 AnimFrameDelegate::~AnimFrameDelegate()
 {
-    m_animseq = nullptr;
 }
 
 QSize AnimFrameDelegate::sizeHint(const QStyleOptionViewItem &/*option*/, const QModelIndex &index) const

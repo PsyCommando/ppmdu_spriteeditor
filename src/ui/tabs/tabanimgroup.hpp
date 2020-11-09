@@ -78,6 +78,8 @@ private slots:
 
     void on_tblAnimGroup_clicked(const QModelIndex &index);
 
+    void on_chkDisplayFrameBorder_toggled(bool checked);
+
 private:
     Ui::TabAnimGroup *ui;
     QPersistentModelIndex                           m_curAnimGroup; //The anim group being edited

@@ -3,6 +3,7 @@
 #include <src/ui/tabs/basespritetab.hpp>
 #include <src/data/sprite/models/effect_set_model.hpp>
 #include <src/ui/rendering/sprite_scene.hpp>
+#include <src/ui/rendering/frame_offset_editor.hpp>
 #include <QWidget>
 #include <QDataWidgetMapper>
 
@@ -54,7 +55,7 @@ private:
 private:
     Ui::TabEffects *ui;
     QPersistentModelIndex               m_currentSet;
-    SpriteScene                         m_previewrender;
+    FrameOffsetEditor                   m_preview;
     QScopedPointer<EffectSetModel>      m_effectModel;
     QScopedPointer<QDataWidgetMapper>   m_offsetdatamapper;
     QScopedPointer<QGraphicsTextItem>   m_offsetMarker;

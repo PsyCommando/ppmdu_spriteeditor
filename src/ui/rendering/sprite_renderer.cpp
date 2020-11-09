@@ -14,7 +14,7 @@ QRect FindLargestFrameBounds(const AnimSequence & seq, const Sprite & sprt)
         QRect  area;
         const MFrame * pfrm = sprt.getFrame(afrm->frmidx());
         if(pfrm != nullptr )
-            area = pfrm->calcFrameBounds(); //NDS screenspace image bounds
+            area = pfrm->calcFrameBounds(); //NDS memspace image bounds
 
         if( x2 <= area.width() + area.x() )
             x2 = area.width() + area.x();
@@ -57,7 +57,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
             const MFrame * pfrm = sprt.getFrame(afrm->frmidx());
             //
             if(pfrm != nullptr )
-                target = pfrm->AssembleFrame(afrm->xoffset(), afrm->yoffset(), boundsbiggest, &area, true, &sprt);
+                target = pfrm->AssembleFrame(afrm->xoffset(), afrm->yoffset(), boundsbiggest, &area, false, &sprt);
             else
                 qDebug("AnimatedSpriteItem::LoadSequence(): Got invalid frame index %d!\n", afrm->frmidx());
 

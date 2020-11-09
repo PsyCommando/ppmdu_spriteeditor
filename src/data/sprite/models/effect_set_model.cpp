@@ -16,7 +16,27 @@ EffectSetModel::EffectSetModel(EffectOffsetSet *poffsets, Sprite *powner)
     m_sprite = powner;
 }
 
-int EffectSetModel::columnCount(const QModelIndex &parent) const
+const EffectOffset *EffectSetModel::getHead() const
+{
+    return static_cast<const EffectOffset *>(m_root->nodeChild(static_cast<int>(EffectOffsetSet::eOffsetsPart::Head)));
+}
+
+const EffectOffset *EffectSetModel::getRHand() const
+{
+    return static_cast<const EffectOffset *>(m_root->nodeChild(static_cast<int>(EffectOffsetSet::eOffsetsPart::RHand)));
+}
+
+const EffectOffset *EffectSetModel::getLHand() const
+{
+    return static_cast<const EffectOffset *>(m_root->nodeChild(static_cast<int>(EffectOffsetSet::eOffsetsPart::LHand)));
+}
+
+const EffectOffset *EffectSetModel::getCenter() const
+{
+    return static_cast<const EffectOffset *>(m_root->nodeChild(static_cast<int>(EffectOffsetSet::eOffsetsPart::Center)));
+}
+
+int EffectSetModel::columnCount(const QModelIndex &) const
 {
     return ColumnNames.size(); //Extra for aligning things
 }
@@ -89,7 +109,11 @@ bool EffectSetModel::setData(const QModelIndex &index, const QVariant &value, in
                 poff->setY(y);
             break;
         }
+        case eColumns::Name:
+            break;
     }
+    if(success)
+        emit dataChanged(index, index, QVector<int>{role} );
     return success;
 }
 
@@ -121,4 +145,9 @@ TreeNodeModel::node_t *EffectSetModel::getRootNode()
 Sprite *EffectSetModel::getOwnerSprite()
 {
     return m_sprite;
+}
+
+const Sprite *EffectSetModel::getOwnerSprite() const
+{
+    return const_cast<EffectSetModel*>(this)->getOwnerSprite();
 }

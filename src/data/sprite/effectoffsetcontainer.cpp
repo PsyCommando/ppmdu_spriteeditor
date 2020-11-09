@@ -59,36 +59,17 @@ QString EffectOffsetContainer::nodeDisplayName() const
 
 fmt::WA_SpriteHandler::OffsetsDB EffectOffsetContainer::exportEffects() const
 {
-    using vec_t = std::vector<fmt::effectoffset>;
-    vec_t result;
-    std::back_insert_iterator<vec_t> itin(result);
+    fmt::WA_SpriteHandler::OffsetsDB result;
     for(auto * set : m_container)
-    {
-        std::vector<fmt::effectoffset> exported = set->ExportOffsetSets();
-        std::copy(exported.begin(), exported.end(), itin);
-    }
+        result.push_back(set->ExportOffsetSets());
     return result;
 }
 
-void EffectOffsetContainer::importEffects(const fmt::WA_SpriteHandler::OffsetsDB &efx, unsigned int nboffsetSet)
+void EffectOffsetContainer::importEffects(const fmt::WA_SpriteHandler::OffsetsDB &efx)
 {
-    unsigned int nbsets = efx.size()/nboffsetSet;
-    _insertChildrenNodes(0, nbsets);
-    int cntset = 0;
-    std::vector<fmt::effectoffset> accumulated;
-    accumulated.reserve(nboffsetSet);
-    for(auto off : efx)
-    {
-        accumulated.push_back(off);
-        if(accumulated.size() >= nboffsetSet) //chop the offsets in sets of "nboffsetSet"
-        {
-            EffectOffsetSet * cnt = m_container[cntset];
-            cnt->ImportOffsetSets(std::move(accumulated));
-            accumulated = std::vector<fmt::effectoffset>();
-            accumulated.reserve(nboffsetSet);
-            ++cntset;
-        }
-    }
+    _insertChildrenNodes(0, efx.size());
+    for(size_t i = 0; i < efx.size(); ++i)
+        m_container[i]->ImportOffsetSets(efx[i]);
 }
 
 bool EffectOffsetContainer::nodeIsMutable() const

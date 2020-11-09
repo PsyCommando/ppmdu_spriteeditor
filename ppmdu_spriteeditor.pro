@@ -58,6 +58,7 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/animsequences_list_picker_model.cpp \
     src/data/sprite/models/animtable_delegate.cpp \
     src/data/sprite/models/animtable_model.cpp \
+    src/data/sprite/models/effect_set_delegate.cpp \
     src/data/sprite/models/effect_set_model.cpp \
     src/data/sprite/models/framepart_delegate.cpp \
     src/data/sprite/models/framepart_model.cpp \
@@ -70,6 +71,9 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/sprite_props_model.cpp \
     src/data/sprite/palettecontainer.cpp \
     src/data/sprite/sprite_container.cpp \
+    src/ui/editor/frame/frame_editor_editable.cpp \
+    src/ui/editor/frame/frame_editor_marker.cpp \
+    src/ui/rendering/frame_offset_editor.cpp \
     src/ui/tabs/tabanimgroup.cpp \
     src/ui/tabs/tabempty.cpp \
     src/ui/tabs/tabwelcome.cpp \
@@ -126,6 +130,7 @@ HEADERS  += \
     src/data/sprite/models/animsequences_list_picker_model.hpp \
     src/data/sprite/models/animtable_delegate.hpp \
     src/data/sprite/models/animtable_model.hpp \
+    src/data/sprite/models/effect_set_delegate.hpp \
     src/data/sprite/models/effect_set_model.hpp \
     src/data/sprite/models/framepart_delegate.hpp \
     src/data/sprite/models/framepart_model.hpp \
@@ -142,6 +147,13 @@ HEADERS  += \
     src/data/treenodemodel.hpp \
     src/data/treenodeterminal.hpp \
     src/data/treenodewithchilds.hpp \
+    src/ppmdu/fmts/sprite/raw_sprite_data.hpp \
+    src/ppmdu/fmts/sprite/shared_sprite_constants.hpp \
+    src/ppmdu/fmts/sprite/sprite_content.hpp \
+    src/ppmdu/fmts/sprite/sprite_handler.hpp \
+    src/ui/editor/frame/frame_editor_editable.hpp \
+    src/ui/editor/frame/frame_editor_marker.hpp \
+    src/ui/rendering/frame_offset_editor.hpp \
     src/ui/tabs/tabanimgroup.hpp \
     src/ui/tabs/tabempty.hpp \
     src/ui/tabs/tabwelcome.hpp \

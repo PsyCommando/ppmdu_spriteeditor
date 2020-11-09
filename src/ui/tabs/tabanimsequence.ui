@@ -668,6 +668,19 @@
       </widget>
      </item>
      <item>
+      <widget class="QCheckBox" name="chkDisplayImgBorder">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the the frame's borders will be visible or blended with the background&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>Display frame border</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="vspcControlsBottom">
        <property name="orientation">
         <enum>Qt::Vertical</enum>

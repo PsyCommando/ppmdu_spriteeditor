@@ -76,6 +76,9 @@
        <property name="verticalScrollBarPolicy">
         <enum>Qt::ScrollBarAlwaysOn</enum>
        </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
        <property name="sizeAdjustPolicy">
         <enum>QAbstractScrollArea::AdjustToContents</enum>
        </property>
@@ -182,42 +185,53 @@
       </layout>
      </item>
      <item>
-      <widget class="QGroupBox" name="grpPreview">
+      <widget class="QGroupBox" name="grpFrame">
        <property name="minimumSize">
         <size>
-         <width>256</width>
+         <width>0</width>
          <height>48</height>
         </size>
        </property>
-       <property name="maximumSize">
-        <size>
-         <width>256</width>
-         <height>16777215</height>
-        </size>
-       </property>
        <property name="title">
-        <string>Preview</string>
+        <string>Frame</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <property name="leftMargin">
-         <number>2</number>
-        </property>
-        <property name="topMargin">
-         <number>4</number>
-        </property>
-        <property name="rightMargin">
-         <number>2</number>
-        </property>
-        <property name="bottomMargin">
-         <number>4</number>
-        </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
-         <widget class="QCheckBox" name="chkPlayAnim">
-          <property name="text">
-           <string>Play Animation</string>
+         <widget class="QPushButton" name="btnToFrame">
+          <property name="minimumSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
           </property>
-          <property name="checked">
-           <bool>true</bool>
+          <property name="maximumSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Jump to frame</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../appres.qrc">
+            <normaloff>:/resources/fugue-icons-3.5.6/icons/image--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/image--arrow.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblFrameID">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>FrameID</string>
           </property>
          </widget>
         </item>
@@ -371,6 +385,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../../appres.qrc"/>
+ </resources>
  <connections/>
 </ui>

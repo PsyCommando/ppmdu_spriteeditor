@@ -327,7 +327,7 @@ QVariant MFramePartModel::dataFlip(const MFramePart * part, int role) const
     {
         QString flipval;
         if( !part->isVFlip() && !part->isHFlip() )
-            flipval = "Not flipped";
+            flipval = "";
         else
         {
             if(part->isVFlip())

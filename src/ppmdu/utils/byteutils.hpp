@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <cassert>
 #include <cmath>
+#include <stdexcept>
 
 namespace utils
 {

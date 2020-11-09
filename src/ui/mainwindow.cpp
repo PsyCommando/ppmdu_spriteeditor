@@ -36,38 +36,65 @@ void MainWindow::forEachTab(std::function<void(BaseSpriteTab*)> fun)
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+    m_aboutdiag(this),
+    m_progress(this),
     m_settings("./settings.ini",QSettings::Format::IniFormat)
 {
-    //Resources alloc
-    m_pStatusFileType.reset(new QLabel("     "));
-    setWindowTitle(MAIN_WINDOW_TITLE.arg(QString(GIT_MAJORMINOR_VERSION)));
-    m_imgNoImg = QPixmap(":/imgs/resources/imgs/noimg.png");
-    m_aboutdiag.setParent(this);
-    m_progress.setParent(this);
-
-    //Setup error helper
-    ErrorHelper::getInstance().setMainWindow(this);
-
     //UI init
     ui->setupUi(this);
-
-    //Setup references to main window in tabs
-    forEachTab([this](BaseSpriteTab * ptab){ptab->setMainWindow(this);});
 
     //Parse settings!
     readSettings();
 
+    SetupContent();
+    SetupMenu();
+    SetupStatusBar();
+    DisplayStartScreen();
+}
+
+void MainWindow::SetupContent()
+{
+    setWindowTitle(MAIN_WINDOW_TITLE.arg(QString(GIT_MAJORMINOR_VERSION)));
+    m_imgNoImg = QPixmap(":/imgs/resources/imgs/noimg.png");
+
+    //Setup error helper
+    ErrorHelper::getInstance().setMainWindow(this);
+
+    //Setup references to main window in tabs
+    forEachTab([this](BaseSpriteTab * ptab){ptab->setMainWindow(this);});
+
+    //Main treeview
+    ui->tv_sprcontent->setModel( &ContentManager::Instance() );
+}
+
+void MainWindow::SetupMenu()
+{
     //Undo-Redo
     ui->actionUndo = m_undoStack.createUndoAction(this, tr("&Undo"));
     ui->actionUndo->setShortcuts(QKeySequence::Undo);
 
     ui->actionRedo = m_undoStack.createRedoAction(this, tr("&Redo"));
     ui->actionRedo->setShortcuts(QKeySequence::Redo);
+}
 
-    //Main treeview
-    ui->tv_sprcontent->setModel( &ContentManager::Instance() );
+void MainWindow::SetupStatusBar()
+{
+    //Status bar
+    QSizePolicy szp(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    szp.setHorizontalStretch(0);
+    szp.setVerticalStretch(0);
+
+    //Coordinate widget
+    m_pStatusCoordinates.reset(new QLabel(""));
+    m_pStatusCoordinates->setMinimumSize(96, 24);
+    m_pStatusCoordinates->setSizePolicy(szp);
+    ui->statusBar->addPermanentWidget(m_pStatusCoordinates.data());
+
+    //File type indicator
+    m_pStatusFileType.reset(new QLabel(""));
+    m_pStatusFileType->setMinimumSize(48, 24);
+    m_pStatusFileType->setSizePolicy(szp);
     ui->statusBar->addPermanentWidget(m_pStatusFileType.data());
-    DisplayStartScreen();
 }
 
 MainWindow::~MainWindow()
@@ -795,6 +822,11 @@ void MainWindow::ShowProgressDiag(QFuture<void> &task)
     m_progress.setFuture(task);
     m_progress.setModal(true);
     m_progress.show();
+}
+
+void MainWindow::updateCoordinateBar(const QPointF &pos)
+{
+    m_pStatusCoordinates->setText(QString{"( %1, %2 )"}.arg(qRound(pos.x())).arg(qRound(pos.y())));
 }
 
 void MainWindow::selectTreeViewNode(const TreeNode * node)

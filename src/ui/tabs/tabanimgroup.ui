@@ -555,6 +555,16 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QCheckBox" name="chkDisplayFrameBorder">
+          <property name="text">
+           <string>Display frame borders</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>

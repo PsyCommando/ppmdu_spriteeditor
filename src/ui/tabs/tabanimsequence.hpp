@@ -63,6 +63,8 @@ private slots:
 
     //From main window
 
+    void on_chkDisplayImgBorder_toggled(bool checked);
+
 private:
     Ui::tabAnimSequence *ui;
     SpriteScene m_previewrender;

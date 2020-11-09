@@ -289,7 +289,7 @@ void Sprite::ParseSpriteData()
 
 
     if(m_anmtbl.getNbGroupSequenceSlots() > 0)
-        m_efxcnt.importEffects(m_sprhndl.getEffectOffset(), m_anmtbl.getNbGroupSequenceSlots());
+        m_efxcnt.importEffects(m_sprhndl.getEffectOffset());
 
     m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
     m_bparsed = true;
@@ -377,6 +377,20 @@ Image *Sprite::getImage(fmt::frmid_t idx)
 const Image *Sprite::getImage(fmt::frmid_t idx) const
 {
     return const_cast<Sprite*>(this)->m_imgcnt.getImage(idx);
+}
+
+const EffectOffsetSet* Sprite::getAttachMarkers(fmt::frmid_t frmidx)const
+{
+    return const_cast<Sprite*>(this)->getAttachMarkers(frmidx);
+}
+
+EffectOffsetSet* Sprite::getAttachMarkers(fmt::frmid_t frmidx)
+{
+    if(frmidx < 0 || frmidx > m_efxcnt.nodeChildCount())
+    {
+        return nullptr;
+    }
+    return static_cast<EffectOffsetSet*>(m_efxcnt.nodeChild(frmidx));
 }
 
 void Sprite::convertSpriteToType(fmt::eSpriteType newty)

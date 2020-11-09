@@ -30,7 +30,7 @@ public:
 
     //Import/export
     fmt::WA_SpriteHandler::OffsetsDB exportEffects()const;
-    void importEffects(const fmt::WA_SpriteHandler::OffsetsDB & efx, unsigned int nboffsetSet);
+    void importEffects(const fmt::WA_SpriteHandler::OffsetsDB & efx);
 };
 
 #endif // EFFECTOFFSETCONTAINER_HPP

@@ -437,3 +437,11 @@ void TabAnimSequence::on_tblseqfrmlst_clicked(const QModelIndex &index)
         return;
     SetCurrentFrame(index.row());
 }
+
+void TabAnimSequence::on_chkDisplayImgBorder_toggled(bool checked)
+{
+    if(checked)
+        ui->gvAnimSeqViewport->setBackgroundBrush(QBrush(QColor("black")));
+    else
+        ui->gvAnimSeqViewport->setBackgroundBrush(QBrush(m_previewrender.getSpriteBGColor()));
+}

@@ -86,18 +86,16 @@ public:
     inline bool operator!=( const Sprite & other)const  {return !operator==(other);}
 
 public:
-    TreeNode *  nodeChild(int row) override;
-    int         nodeChildCount() const override;
-    bool        nodeCanFetchMore()const override;
-    void        nodeFetchMore()override;
-//    bool        canFetchMore(const QModelIndex &parent) const override;
-//    void        fetchMore(const QModelIndex &parent) override;
-    eTreeElemDataType nodeDataTy()const override;
-    const QString&  nodeDataTypeName()const override;
-    int indexOfChild(const TreeNode * ptr)const override;
-    bool nodeShouldAutoExpand()const override {return true;}
-    bool nodeAllowFetchMore()const override {return true;}
-    QString nodeDisplayName()const override;
+    TreeNode *          nodeChild(int row) override;
+    int                 nodeChildCount() const override;
+    bool                nodeCanFetchMore()const override;
+    void                nodeFetchMore()override;
+    eTreeElemDataType   nodeDataTy()const override;
+    const QString&      nodeDataTypeName()const override;
+    int                 indexOfChild(const TreeNode * ptr)const override;
+    bool                nodeShouldAutoExpand()const override                {return true;}
+    bool                nodeAllowFetchMore()const override                  {return true;}
+    QString             nodeDisplayName()const override;
 
 protected:
     bool _insertChildrenNode(TreeNode *node, int destrow) override;
@@ -132,20 +130,17 @@ public:
     inline bool hasEfxOffsets()const{return type() == fmt::eSpriteType::Character;}
     inline bool hasAnimGrps()const  {return type() == fmt::eSpriteType::Character;}
 
-    QPixmap & MakePreviewPalette();
-    QPixmap MakePreviewPalette()const; //Ignores cached palette, and makes one from scratch
+    QPixmap &       MakePreviewPalette();
+    QPixmap         MakePreviewPalette()const; //Ignores cached palette, and makes one from scratch
     const QPixmap & getCachedPreviewPalette()const;
 
-    QPixmap & MakePreviewFrame(bool transparency = false);
-    QPixmap MakePreviewFrame(bool transparency = false)const; //Ignores cached image, and makes one from scratch
+    QPixmap &       MakePreviewFrame(bool transparency = false);
+    QPixmap         MakePreviewFrame(bool transparency = false)const; //Ignores cached image, and makes one from scratch
     const QPixmap & getCachedPreviewFrame()const;
 
-    const QVector<QRgb> & getPalette()const     { return m_palcnt.getPalette(); }
-    QVector<QRgb>       & getPalette()          { return m_palcnt.getPalette(); }
-//    const PaletteModel * getPaletteModel()const { return m_palcnt.getModel(); }
-//    PaletteModel       * getPaletteModel()      { return m_palcnt.getModel(); }
-
-    inline void setPalette(const QVector<QRgb> & pal)   {m_palcnt.setPalette(pal);}
+    const QVector<QRgb> &   getPalette()const                       { return m_palcnt.getPalette(); }
+    QVector<QRgb>       &   getPalette()                            { return m_palcnt.getPalette(); }
+    inline void             setPalette(const QVector<QRgb> & pal)   {m_palcnt.setPalette(pal);}
 
     inline AnimSequences        & getAnimSequences()                            {return m_seqcnt;}
     inline const AnimSequences  & getAnimSequences()const                       {return m_seqcnt;}
@@ -162,6 +157,8 @@ public:
     inline const FramesContainer    & getFrames()const                  {return m_frmcnt;}
     Image                           * getImage(fmt::frmid_t idx);
     const Image                     * getImage(fmt::frmid_t idx)const;
+    const EffectOffsetSet           * getAttachMarkers(fmt::frmid_t frmidx)const; //returns attachment markers for the given mframe index
+    EffectOffsetSet                 * getAttachMarkers(fmt::frmid_t frmidx); //returns attachment markers for the given mframe index
 
     //Return binary version of the sprite
     inline rawdat_t             & getRawData()      {return m_raw;}
@@ -171,15 +168,6 @@ public:
     void                    convertSpriteToType(fmt::eSpriteType newty);
 
     //SPRITE PROPERTIES
-//    SpritePropertiesHandler         * propHandler();
-//    const SpritePropertiesHandler   * propHandler()const;
-
-//    SpritePropertiesModel           * model();
-//    const SpritePropertiesModel     * model()const;
-
-//    SpriteOverviewModel             * overviewModel();
-//    const SpriteOverviewModel       * overviewModel()const;
-
     inline bool is256Colors()const
     {
         return m_sprhndl.getImageFmtInfo().is256Colors();
@@ -222,7 +210,7 @@ private:
     TreeNode       * ElemPtrNoEfx(int idx);
     const TreeNode * ElemPtr(int idx)const;
     const TreeNode * ElemPtrNoEfx(int idx)const;
-    int                 nbChildCat()const;
+    int              nbChildCat()const;
 
 private:
     //Raw data buffer & handler
@@ -236,13 +224,11 @@ private:
     FramesContainer         m_frmcnt;
     AnimSequences           m_seqcnt;
     AnimTable               m_anmtbl;
-//    QScopedPointer<SpritePropertiesHandler> m_propshndlr;
 
     //Status / statistics
     bool                                    m_bparsed;          //Whether the sprite's raw has been parsed to be displayed yet or not!
     bool                                    m_bhasimagedata;    //Whether the sprite can be displayed or not!
     filetypes::eCompressionFormats          m_targetgompression;
-//    QScopedPointer<SpriteOverviewModel>     m_overmodel;
 
     //UI data
     QPixmap m_previewImg;       //Cached image preview

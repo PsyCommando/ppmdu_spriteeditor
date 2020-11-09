@@ -71,6 +71,9 @@ public:
 
     //Basically do house keeping stuff when we load something new in the app
     void PrepareForNewContainer();
+    void SetupContent();
+    void SetupMenu();
+    void SetupStatusBar();
 
     void LoadContainer(const QString & path);
     void SaveContainer(const QString & path);
@@ -145,11 +148,14 @@ private slots:
     void on_action_Quit_triggered();
     void on_action_Open_triggered();
 
+public slots:
     void ShowProgressDiag(QFuture<void> & task);
+    void updateCoordinateBar(const QPointF &pos);
 
 private:
     Ui::MainWindow          *ui;
     QScopedPointer<QLabel>  m_pStatusFileType;
+    QScopedPointer<QLabel>  m_pStatusCoordinates;
     QScopedPointer<QLabel>  m_pStatusError;
     QScopedPointer<QAction> m_pActionAddSprite;
     QScopedPointer<QAction> m_pActionRemSprite;
