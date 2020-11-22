@@ -63,6 +63,8 @@ private slots:
 
     void on_btnEditAttachments_toggled(bool checked);
 
+    void on_chkGridSnap_toggled(bool checked);
+
 private:
     Ui::TabFrames *ui;
     QScopedPointer<FrameEditor>         m_frmeditor;
