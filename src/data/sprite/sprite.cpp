@@ -169,99 +169,13 @@ int Sprite::indexOfChild(const TreeNode * ptr)const
 
 int Sprite::nodeChildCount() const
 {
-//    switch(type())
-//    {
-//    case fmt::eSpriteType::Prop:
-//        return 5; // No effects offsets, no animation groups
-//    case fmt::eSpriteType::Character:
-//        return 6;
-//    case fmt::eSpriteType::Effect:
-//        return 5; // No effects offsets, no animation groups
-//    case fmt::eSpriteType::WAT:
-//        return 5; // No effects offsets
-//    default:
-//        Q_ASSERT(false);
-//    };
     return nbChildCat();
 }
-
-//int Sprite::nodeIndex() const
-//{
-//    Q_ASSERT(parentNode());
-//    return parentNode()->indexOfNode(this);
-//}
-
-//int Sprite::indexOfNode(const TreeNode *ptr) const
-//{
-//    //Search a matching child in the list!
-//    for( int idx = 0; idx < nbChildCat(); ++idx )
-//    {
-//        if(ElemPtr(idx) == ptr)
-//            return idx;
-//    }
-//    qWarning("Sprite::indexOfNode(): Couldn't find node!!\n");
-//    Q_ASSERT(false);
-//    return -1;
-//}
-
-//QModelIndex Sprite::modelIndex() const
-//{
-//    spr_manager::SpriteContainer * pcont = static_cast<spr_manager::SpriteContainer*>(m_parentItem);
-//    if(pcont)
-//        pcont->modelIndexOfNode(this);
-//    return QModelIndex();
-//}
-
-//QModelIndex Sprite::modelChildIndex(int row, int column) const
-//{
-//    spr_manager::SpriteContainer * pcont = static_cast<spr_manager::SpriteContainer*>(m_parentItem);
-//    if(pcont)
-//        pcont->index(row, column, modelIndex(), &spr_manager::SpriteManager::Instance());
-//    return QModelIndex();
-//}
-
-//QModelIndex Sprite::modelParentIndex() const
-//{
-//    if (m_parentItem)
-//        return m_parentItem->modelIndex();
-//    return QModelIndex();
-//}
-
-//int Sprite::nodeColumnCount() const
-//{
-//    return 1; //Always just 1 column
-//}
-
-//TreeNode *Sprite::parentNode()
-//{
-//    return m_parentItem;
-//}
-
-//QVariant Sprite::nodeData(int column, int role) const
-//{
-//    if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
-//        return QVariant(QString("Sprite#%1").arg(nodeIndex()));
-//    return QVariant();
-//}
-
-//Sprite *Sprite::parentSprite(){return this;}
 
 bool Sprite::canParse()const
 {
     return m_raw.size() != 0;
 }
-
-//void Sprite::OnClicked()
-//{
-//    //Only parse sprites that were loaded from file! Not newly created ones, or already parsed ones!
-////    if(!m_bparsed )
-////        ParseSpriteData();
-//}
-
-//void Sprite::OnExpanded()
-//{
-//    //OnClicked();
-//}
 
 void Sprite::ParseSpriteData()
 {
@@ -393,6 +307,7 @@ EffectOffsetSet* Sprite::getAttachMarkers(fmt::frmid_t frmidx)
     return static_cast<EffectOffsetSet*>(m_efxcnt.nodeChild(frmidx));
 }
 
+//#TODO: Implement this
 void Sprite::convertSpriteToType(fmt::eSpriteType newty)
 {
     //Do nothing if its the same type as the current one!
@@ -402,15 +317,24 @@ void Sprite::convertSpriteToType(fmt::eSpriteType newty)
     switch(newty)
     {
     case fmt::eSpriteType::Prop:
-
+        //Re-arrange anim table
+        //Delete Attach Points
     case fmt::eSpriteType::Character:
-
+        //Re-arrange anim table, each groups has 8 sequences
+        //Create Attach Points for all frames
     case fmt::eSpriteType::Effect:
-
+        //Re-arrange anim table
+        //Delete Attach Points
     case fmt::eSpriteType::WAT:
+        //Re-arrange anim table
+        //Delete Attach Points
 
     default:
-    break;
+        {
+            //Error
+            Q_ASSERT(false);
+            break;
+        }
     };
 
     //#TODO:!!
@@ -443,29 +367,6 @@ void Sprite::CompressRawData(filetypes::eCompressionFormats cpfmt)
 
 TreeNode *Sprite::ElemPtr(int idx)
 {
-    if( !hasEfxOffsets() )
-        return ElemPtrNoEfx(idx);
-
-    switch(idx)
-    {
-    case 0:
-        return &m_imgcnt;
-    case 1:
-        return &m_frmcnt;
-    case 2:
-        return &m_seqcnt;
-    case 3:
-        return &m_anmtbl;
-    case 4:
-        return &m_efxcnt;
-    default:
-        Q_ASSERT(false);
-    };
-    return nullptr;
-}
-
-TreeNode *Sprite::ElemPtrNoEfx(int idx)
-{
     switch(idx)
     {
     case 0:
@@ -484,20 +385,12 @@ TreeNode *Sprite::ElemPtrNoEfx(int idx)
 
 int Sprite::nbChildCat() const
 {
-    if( !hasEfxOffsets() )
-        return 4;
-    else
-        return 5;
+    return 4;
 }
 
 const TreeNode *Sprite::ElemPtr(int idx) const
 {
     return const_cast<Sprite*>(this)->ElemPtr(idx);
-}
-
-const TreeNode *Sprite::ElemPtrNoEfx(int idx) const
-{
-    return const_cast<Sprite*>(this)->ElemPtrNoEfx(idx);
 }
 
 //bool Sprite::canFetchMore(const QModelIndex & parent)const

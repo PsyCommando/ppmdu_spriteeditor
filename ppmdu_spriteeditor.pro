@@ -73,7 +73,6 @@ SOURCES += src/main.cpp\
     src/data/sprite/sprite_container.cpp \
     src/ui/editor/frame/frame_editor_editable.cpp \
     src/ui/editor/frame/frame_editor_marker.cpp \
-    src/ui/rendering/frame_offset_editor.cpp \
     src/ui/tabs/tabanimgroup.cpp \
     src/ui/tabs/tabempty.cpp \
     src/ui/tabs/tabwelcome.cpp \
@@ -108,7 +107,6 @@ SOURCES += src/main.cpp\
     src/ui/tabs/basespritetab.cpp \
     src/ui/tabs/tabanimsequence.cpp \
     src/ui/tabs/tabanimtable.cpp \
-    src/ui/tabs/tabeffects.cpp \
     src/ui/tabs/tabframes.cpp \
     src/ui/tabs/tabimages.cpp \
     src/ui/tabs/tabproperties.cpp \
@@ -153,7 +151,6 @@ HEADERS  += \
     src/ppmdu/fmts/sprite/sprite_handler.hpp \
     src/ui/editor/frame/frame_editor_editable.hpp \
     src/ui/editor/frame/frame_editor_marker.hpp \
-    src/ui/rendering/frame_offset_editor.hpp \
     src/ui/tabs/tabanimgroup.hpp \
     src/ui/tabs/tabempty.hpp \
     src/ui/tabs/tabwelcome.hpp \
@@ -206,7 +203,6 @@ HEADERS  += \
     src/ui/tabs/basespritetab.hpp \
     src/ui/tabs/tabanimsequence.hpp \
     src/ui/tabs/tabanimtable.hpp \
-    src/ui/tabs/tabeffects.hpp \
     src/ui/tabs/tabframes.hpp \
     src/ui/tabs/tabimages.hpp \
     src/ui/tabs/tabproperties.hpp \
@@ -224,7 +220,6 @@ FORMS    += src/ui/mainwindow.ui \
     src/ui/tabs/tabanimgroup.ui \
     src/ui/tabs/tabanimsequence.ui \
     src/ui/tabs/tabanimtable.ui \
-    src/ui/tabs/tabeffects.ui \
     src/ui/tabs/tabempty.ui \
     src/ui/tabs/tabframes.ui \
     src/ui/tabs/tabimages.ui \

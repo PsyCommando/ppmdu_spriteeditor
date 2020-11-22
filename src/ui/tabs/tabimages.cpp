@@ -47,12 +47,15 @@ TabImages::~TabImages()
 
 void TabImages::OnShowTab(QPersistentModelIndex element)
 {
-    Sprite * pspr = currentSprite();
-    Q_ASSERT(pspr);
-    qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
-    SetupMappings(pspr);
-    qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
-    SetupImage(element);
+    if(element.isValid())
+    {
+        Sprite * pspr = currentSprite();
+        Q_ASSERT(pspr);
+        qDebug() << "MainWindow::DisplayImageListPage(): Displaying images list page!\n";
+        SetupMappings(pspr);
+        qDebug() << "MainWindow::DisplayImageListPage(): Model set!\n";
+        SetupImage(element);
+    }
     BaseSpriteTab::OnShowTab(element);
 }
 
@@ -103,10 +106,16 @@ void TabImages::ClearMappings()
 
 void TabImages::SetupImage(QPersistentModelIndex index)
 {
-    Image * img = static_cast<Image *>(index.internalPointer());
+    //The "Images" category node gets passed here sometimes so no image is selected. Don't cast it to an image...
+    TreeNode * node = static_cast<TreeNode *>(index.internalPointer());
+    if(node->nodeDataTy() != eTreeElemDataType::image)
+    {
+        ClearImage();
+        return;
+    }
+    Image * img = static_cast<Image *>(node);
     if(!index.isValid()|| !img)
     {
-        ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
         ClearImage();
         return;
     }
@@ -114,6 +123,10 @@ void TabImages::SetupImage(QPersistentModelIndex index)
     m_currentImage = index;
     ui->tblviewImages->setCurrentIndex(m_currentImage);
     m_imgdatmapper->setCurrentModelIndex(m_currentImage);
+
+    QSize imgsz = img->getImageSize();
+    ui->lblImgResValue->setText(QString("%1 x %2").arg(imgsz.width()).arg(imgsz.height()));
+    ui->lblImgSizeValue->setText(QString(tr("%L1 bytes")).arg(img->getByteSize()));
 }
 
 void TabImages::ClearImage()
@@ -122,6 +135,8 @@ void TabImages::ClearImage()
     m_currentImage = QModelIndex();
     ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
     m_imgdatmapper->setCurrentModelIndex(QModelIndex());
+    ui->lblImgResValue->setText("");
+    ui->lblImgSizeValue->setText("");
 }
 
 void TabImages::OnDestruction()
@@ -153,7 +168,8 @@ void TabImages::OnItemRemoval(const QModelIndex &item)
 
 void TabImages::on_tblviewImages_clicked(const QModelIndex &index)
 {
-    SetupImage(index);
+    if(index.isValid())
+        SetupImage(index);
 }
 
 void TabImages::on_spbimgunk2_valueChanged(int arg1)
@@ -230,7 +246,7 @@ void TabImages::TryImportImage(const QString &path)
         for(const auto & res : fmt::FrameResValues )
             desc+= QString("%1x%2\n").arg(res.first, res.second);
         desc += tr("You can use the auto-import function instead to import irregular sized images and chop them automatically and generate frames from those.");
-        Warn("Invalid image resolution!",
+        Warn(tr("Invalid image resolution!"),
              desc);
         return;
     }

@@ -1,6 +1,12 @@
 #include "animsequences_list_picker_model.hpp"
 #include <src/data/sprite/animsequences.hpp>
 
+QSize CalcTextSize(const QString & text )
+{
+    static const QFontMetrics fm(QFont("Sergoe UI",9));
+    return QSize(fm.horizontalAdvance(text), fm.height());
+}
+
 //*******************************************************************
 //  AnimSequencesPickerModel
 //*******************************************************************
@@ -8,51 +14,49 @@
 AnimSequencesListPickerModel::AnimSequencesListPickerModel(AnimSequences *pseqs, Sprite *owner)
     :AnimSequencesListModel(pseqs, owner)
 {
-
 }
 
 AnimSequencesListPickerModel::~AnimSequencesListPickerModel()
 {
-
 }
 
-int AnimSequencesListPickerModel::columnCount(const QModelIndex &parent) const
+int AnimSequencesListPickerModel::columnCount(const QModelIndex &/*parent*/) const
 {
-//    if(!parent.isValid())
-//        return 0;
-    return 1;
+    return ANIMATION_SEQUENCE_HEADER_COLUMNS.size();
 }
 
 QVariant AnimSequencesListPickerModel::data(const QModelIndex &index, int role) const
 {
-    //Custom data display for the anim sequence picker!
-//    if (!index.isValid())
-//        return QVariant("root");
-
     if (role != Qt::DisplayRole &&
         role != Qt::DecorationRole &&
         role != Qt::SizeHintRole )
         return QVariant();
 
+    AnimSequence * pseq = m_root->getSequenceByID(index.row());
+    Q_ASSERT(pseq);
+
     switch(static_cast<eAnimationSequenceColumns>(index.column()))
     {
     case eAnimationSequenceColumns::Preview:
         {
-            AnimSequence * pseq = m_root->getSequenceByID(index.row());
-            Q_ASSERT(pseq);
             if(role == Qt::DecorationRole)
                 return QVariant(pseq->makePreview(getOwnerSprite()));
             else if(role == Qt::DisplayRole)
-                return QString("Sequence#%1 - %2 frames").arg(index.row()).arg(pseq->nodeChildCount());
+                return QString("Sequence#%1").arg(index.row());
             else if(role == Qt::SizeHintRole)
-            {
-                QFontMetrics fm(QFont("Sergoe UI",9));
-                QVariant basesprite = data(index, Qt::DisplayRole);
-                return QSize( fm.horizontalAdvance(basesprite.toString()) + 32, 32);
-            }
+                return CalcTextSize(data(index, Qt::DisplayRole).toString());
             break;
         }
-    default: break;
+    case eAnimationSequenceColumns::NbFrames:
+        {
+            if(role == Qt::DisplayRole)
+                return QString("%1 frames").arg(pseq->nodeChildCount());
+            else if(role == Qt::SizeHintRole)
+                return CalcTextSize(data(index, Qt::DisplayRole).toString());
+            break;
+        }
+    default:
+        break;
     };
     return QVariant();
 }
@@ -63,7 +67,11 @@ QVariant AnimSequencesListPickerModel::headerData(int section, Qt::Orientation o
     {
         return QString("%1").arg(section);
     }
-    return QVariant();
+    else if(orientation == Qt::Horizontal && role == Qt::DisplayRole && section < ANIMATION_SEQUENCE_HEADER_COLUMNS.size())
+    {
+        return {ANIMATION_SEQUENCE_HEADER_COLUMNS[section]};
+    }
+    return TreeNodeModel::headerData(section, orientation, role);
 }
 
 Qt::ItemFlags AnimSequencesListPickerModel::flags(const QModelIndex &index) const

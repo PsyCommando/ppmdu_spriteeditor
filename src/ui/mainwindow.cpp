@@ -230,9 +230,6 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
 
     else if(item->nodeDataTypeName() == ElemName_Image)
         ShowATab(ui->tabImages, manager.modelIndexOf(item));
-
-    else if(item->nodeDataTypeName() == ElemName_EffectOffsetSet)
-        ShowATab(ui->tabEfx, manager.modelIndexOf(item));
     else
         HideAllTabs();
 }

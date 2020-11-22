@@ -114,7 +114,7 @@ QWidget *MFramePartDelegate::createEditor(QWidget *parent, const QStyleOptionVie
     if(pedit != nullptr)
     {
         pedit->setAutoFillBackground(true);
-        pedit->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
+//        pedit->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
         pedit->setProperty(MFrame::PropPartID, index.row());
     }
     return pedit;

@@ -56,12 +56,10 @@ public:
     inline QSize getImageSize()const        {return m_img.size();}
     inline int getImageOriginalDepth()const {return m_depth;}
 
-    QString getImageDescription()const;
+    //Returns the raw size of the image's data
+    int getByteSize()const;
 
-    //Reimplemented nodeData method specifically for displaying images in the image list table!
-    //virtual QVariant imgData(int column, int role) const;
-    //virtual bool     setImgData(int column, const QVariant &value, int role);
-    //virtual QVariant imgDataCondensed(int role) const;
+    QString getImageDescription()const;
 
     //Reimplemented nodeColumnCount specifically for displaying images in the image list table!
     virtual int nbimgcolumns()const {return static_cast<int>(eColumnType::NbColumns);}

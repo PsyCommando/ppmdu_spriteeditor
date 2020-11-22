@@ -13,22 +13,26 @@
 #include <QGraphicsSceneDragDropEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLineItem>
+#include <QObject>
+#include <QPointF>
 
 const int FrameEditorSceneWidth  = 512;
 const int FrameEditorSceneHeight = 256;
 const int FrameEditorSceneXPos   = 0;
 const int FrameEditorSceneYPos   = 0;
+const QPointF FrameMidPoint {FrameEditorSceneWidth/2, FrameEditorSceneHeight}; //Scene middle height is 256 because of the Y-wrap
 
 //=======================================================================================================
 //  FrameEditor
 //=======================================================================================================
-FrameEditor::FrameEditor(MFrame *frm, Sprite * pspr, QObject *parent)
+FrameEditor::FrameEditor(MFrame *frm, Sprite * pspr, MFramePartModel * ppartmdl, EffectSetModel * psetmdl, QObject *parent)
     :QGraphicsScene(parent)
 {
     m_pfrm = frm;
     m_psprite = pspr;
-    m_model = new MFramePartModel(m_pfrm, pspr);
-    m_attachModel.reset(new EffectSetModel(pspr->getAttachMarkers(m_pfrm->nodeIndex()), pspr));
+    m_model = ppartmdl; // new MFramePartModel(m_pfrm, pspr);
+    m_attachModel = psetmdl; //.reset(new EffectSetModel(pspr->getAttachMarkers(m_pfrm->nodeIndex()), pspr));
+    connect(this, &QGraphicsScene::selectionChanged, this, &FrameEditor::OnSelectionChanged); //Intercept selection changed events
 }
 
 void FrameEditor::initScene(bool bdrawoutline, bool bdrawmarker, bool btransparency)
@@ -50,15 +54,16 @@ void FrameEditor::initScene()
                   FrameEditorSceneHeight );
     m_parts.clear();
     m_markers.clear();
-    for( int i = 0; i < m_pfrm->nodeChildCount(); ++i )
+    for(int i = 0; i < m_pfrm->nodeChildCount(); ++i)
     {
         MFramePart * ppart = static_cast<MFramePart*>(m_pfrm->nodeChild(i));
-        FramePart  * gfx = new FramePart( this, QPixmap::fromImage(ppart->drawPart(m_psprite, m_bTransparency)), m_model->indexOfChildNode(m_pfrm) );
+        FramePart  * gfx = new FramePart( this, QPixmap::fromImage(ppart->drawPart(m_psprite, m_bTransparency)), m_model->indexOfChildNode(ppart));
         gfx->setShowOutline(m_bDrawOutline);
         m_parts.push_back(gfx);
         addItem(gfx);
         gfx->setPos( ppart->getPartData().getXOffset(), ppart->getPartData().getYOffset() );
-        connect( gfx, &EditableItem::wasDragged, this, &FrameEditor::onPartMoved );
+        connect(gfx, &EditableItem::dragBegin,  this, &FrameEditor::onItemDragBegin);
+        connect(gfx, &EditableItem::dragEnd,    this, &FrameEditor::onItemDragEnd);
     }
 
     for(int i = 0; i < m_attachModel->rowCount(QModelIndex()); ++i)
@@ -66,14 +71,15 @@ void FrameEditor::initScene()
         AttachMarker * mark = new AttachMarker(this, m_attachModel->index(i, 0, QModelIndex()));
         addItem(mark);
         m_markers.push_back(mark);
-        connect(mark, &EditableItem::wasDragged, this, &FrameEditor::onPartMoved);
+        connect(mark, &EditableItem::dragBegin, this, &FrameEditor::onItemDragBegin);
+        connect(mark, &EditableItem::dragEnd,   this, &FrameEditor::onItemDragEnd);
         mark->update();
     }
 
     if(!views().empty())
     {
         for( auto & v : views())
-            v->centerOn( 256, 256 ); //Point of interest of the scene!
+            v->centerOn( FrameEditorSceneWidth/2, FrameEditorSceneHeight ); //Point of interest of the scene!
     }
 
     if(!m_bDrawMiddleMarker)
@@ -91,7 +97,7 @@ void FrameEditor::initScene()
     ln->setPen(midpen);
     ln->setZValue(m_midmarkZ);
 
-    QGraphicsSimpleTextItem* txt = addSimpleText(QString(tr("CNTR X:%1")).arg(FrameEditorSceneWidth/2));
+    QGraphicsSimpleTextItem* txt = addSimpleText(QString(tr("CENTER X:%1")).arg(FrameEditorSceneWidth/2));
     txt->setPos((FrameEditorSceneWidth/2), 128);
     txt->setBrush( QBrush(midcolor.lighter(200)) );
     txt->setParentItem(ln);
@@ -100,8 +106,8 @@ void FrameEditor::initScene()
     QRectF scenerect = sceneRect();
     m_xAxisGuide.reset(new QGraphicsLineItem(0, scenerect.width(), 0, -scenerect.width()));
     m_yAxisGuide.reset(new QGraphicsLineItem(scenerect.width(), 0, -scenerect.width(), 0));
-    m_xAxisGuide->setPen( QPen(QBrush(QColor(200, 0, 0, 180)), 1, Qt::PenStyle::DashLine) );
-    m_yAxisGuide->setPen( QPen(QBrush(QColor(0, 200, 0, 180)), 1, Qt::PenStyle::DashLine) );
+    m_xAxisGuide->setPen( QPen(QBrush(QColor(200, 0, 0, 180)), 2, Qt::PenStyle::DashLine) );
+    m_yAxisGuide->setPen( QPen(QBrush(QColor(0, 200, 0, 180)), 2, Qt::PenStyle::DashLine) );
     m_xAxisGuide->setVisible(false);
     m_yAxisGuide->setVisible(false);
 }
@@ -115,29 +121,59 @@ void FrameEditor::deInitScene()
     m_yAxisGuide.reset();
 }
 
-void FrameEditor::onPartMoved()
+void FrameEditor::onItemDragBegin(EditableItem * item)
 {
-    EditableItem * pp = qobject_cast<EditableItem*>(sender());
-    if(pp)
-    {
-        QModelIndex idx = pp->getItemIndex();
-        if(pp->getDataType() == eTreeElemDataType::effectOffset)
-        {
-            m_attachModel->setData(idx.siblingAtColumn(static_cast<int>(EffectSetModel::eColumns::XOffset)), {qRound(pp->pos().x())}, Qt::EditRole);
-            m_attachModel->setData(idx.siblingAtColumn(static_cast<int>(EffectSetModel::eColumns::YOffset)), {qRound(pp->pos().y())}, Qt::EditRole);
-        }
-        else if(pp->getDataType() == eTreeElemDataType::framepart)
-        {
-            m_model->setData(idx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_XOffset)), {qRound(pp->pos().x())}, Qt::EditRole);
-            m_model->setData(idx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_YOffset)), {qRound(pp->pos().y())}, Qt::EditRole);
-        }
-        m_xAxisGuide->setVisible(true);
-        m_yAxisGuide->setVisible(true);
-        m_xAxisGuide->setPos(QPointF{pp->pos().x(), 0});
-        m_yAxisGuide->setPos(QPointF{0, pp->pos().y()});
-        emit partMoved();
-    }
+    attachRulers(item);
 }
+
+void FrameEditor::onItemDragEnd(EditableItem * item)
+{
+    clearRulers();
+    //QModelIndex idx = item->getItemIndex();
+    if(item->getDataType() == eTreeElemDataType::effectOffset)
+    {
+        item->commitOffset(m_attachModel);
+    }
+    else if(item->getDataType() == eTreeElemDataType::framepart)
+    {
+        item->commitOffset(m_model);
+    }
+    emit partMoved();
+}
+
+void FrameEditor::OnSelectionChanged()
+{
+    //Make sure to notify the tab we need to update our selection
+    QList<QGraphicsItem*> items = selectedItems();
+    QList<EditableItem*> casted;
+    for(QGraphicsItem* p : items)
+        casted.push_back(static_cast<EditableItem*>(p));
+    emit selectionChanged(casted);
+}
+
+//void FrameEditor::onPartMoved()
+//{
+//    EditableItem * pp = qobject_cast<EditableItem*>(sender());
+//    if(pp)
+//    {
+//        QModelIndex idx = pp->getItemIndex();
+//        if(pp->getDataType() == eTreeElemDataType::effectOffset)
+//        {
+//            m_attachModel->setData(idx.siblingAtColumn(static_cast<int>(EffectSetModel::eColumns::XOffset)), {qRound(pp->pos().x())}, Qt::EditRole);
+//            m_attachModel->setData(idx.siblingAtColumn(static_cast<int>(EffectSetModel::eColumns::YOffset)), {qRound(pp->pos().y())}, Qt::EditRole);
+//        }
+//        else if(pp->getDataType() == eTreeElemDataType::framepart)
+//        {
+//            m_model->setData(idx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_XOffset)), {qRound(pp->pos().x())}, Qt::EditRole);
+//            m_model->setData(idx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_YOffset)), {qRound(pp->pos().y())}, Qt::EditRole);
+//        }
+//        m_xAxisGuide->setVisible(true);
+//        m_yAxisGuide->setVisible(true);
+//        m_xAxisGuide->setPos(QPointF{pp->pos().x(), 0});
+//        m_yAxisGuide->setPos(QPointF{0, pp->pos().y()});
+//        emit partMoved();
+//    }
+//}
 
 void FrameEditor::partListChanged(MFrame *pfrm)
 {
@@ -147,8 +183,6 @@ void FrameEditor::partListChanged(MFrame *pfrm)
 
 void FrameEditor::updateScene()
 {
-    bool sceneneedsrebuild = false;
-
     if( m_pfrm->nodeChildCount() != m_parts.size() ||
         m_attachModel->rowCount(QModelIndex()) != m_markers.size() )
     {
@@ -157,31 +191,31 @@ void FrameEditor::updateScene()
         return;
     }
 
-    for(const auto & p : m_parts)
+    //update image part items
+    for(auto & p : m_parts)
     {
         if(!p.isNull())
-        {
-            MFramePart * partdata = static_cast<MFramePart *>(p->partID().internalPointer());
-            if(partdata)
-                p->setPos(partdata->getPartData().getXOffset(), partdata->getPartData().getYOffset());
-            else
-            {
-                qWarning("FrameEditor::updateParts(): Scene contains invalid parts. Needs complete rebuild!");
-                sceneneedsrebuild = true;
-                break;
-            }
-        }
+            p->updateOffset();
     }
 
     //Do markers updates
-    for(int i = 0; i < m_markers.size(); ++i)
+    for(auto & m : m_markers)
     {
-        //const EffectOffsetSet * pset = static_cast<const EffectOffsetSet *>(m_attachModel->getItem(m_attachModel->index(i, 0, QModelIndex())));
-        m_markers[i]->updateOffset();
+        m->updateOffset();
     }
+}
 
-    if(sceneneedsrebuild)
-        initScene();
+QPointF FrameEditor::getSceneCenter()const
+{
+    return FrameMidPoint;
+}
+
+void FrameEditor::setDisplayNDSMode(bool basnds)
+{
+    Q_ASSERT(!basnds); //#TODO: This needs to be properly handled since it can cause issues with the wrong coord being commited
+    m_bNDSMode = basnds;
+    initScene();
+    update();
 }
 
 void FrameEditor::setDrawMiddleGuide(bool bdraw)
@@ -228,6 +262,12 @@ void FrameEditor::setEditorMode(eEditorMode mode)
     update();
 }
 
+void FrameEditor::setGridSnap(bool bsnapon)
+{
+    //#TODO
+    Q_ASSERT(false);
+}
+
 void FrameEditor::deleteItem(EditableItem * item)
 {
     QModelIndex idx = item->getItemIndex();
@@ -259,7 +299,11 @@ void FrameEditor::attachRulers(EditableItem * item)
 void FrameEditor::clearRulers()
 {
     if(m_rulerItem)
+    {
         disconnect(m_rulerItem, &EditableItem::posChanged, nullptr, nullptr);
+        disconnect(m_rulerItem, qOverload<const QPointF&>(&EditableItem::posChanged), nullptr, nullptr);
+        disconnect(m_rulerItem, qOverload<const QPointF&>(&EditableItem::posChanged), nullptr, nullptr);
+    }
     m_xAxisGuide->setVisible(false);
     m_yAxisGuide->setVisible(false);
     m_rulerItem = nullptr;
@@ -384,7 +428,5 @@ void FrameEditor::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void FrameEditor::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    m_xAxisGuide->setVisible(false);
-    m_yAxisGuide->setVisible(false);
     QGraphicsScene::mouseReleaseEvent(event);
 }

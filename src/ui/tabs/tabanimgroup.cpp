@@ -323,15 +323,13 @@ void TabAnimGroup::on_tblSequences_clicked(const QModelIndex &index)
 
 void TabAnimGroup::on_tblAnimGroup_activated(const QModelIndex &index)
 {
-    QItemSelectionModel * pmod = ui->tblAnimGroup->selectionModel();
-    if(!pmod->hasSelection())
-        SelectGroupSlot(index);
+    on_tblAnimGroup_clicked(index);
 }
 
 void TabAnimGroup::on_tblAnimGroup_clicked(const QModelIndex &index)
 {
     QItemSelectionModel * pmod = ui->tblAnimGroup->selectionModel();
-    if(!pmod->hasSelection()) //Select the anim preview only when we're selecting a single thing
+    if(pmod->selectedRows().size() == 1) //Select the anim preview only when we're selecting a single thing
         SelectGroupSlot(index);
 }
 

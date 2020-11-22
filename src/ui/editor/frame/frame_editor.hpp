@@ -31,7 +31,7 @@ public:
         Invalid [[maybe_unused]],
     };
 
-    explicit FrameEditor(MFrame * frm, Sprite * pspr, QObject *parent = nullptr);
+    explicit FrameEditor(MFrame * frm, Sprite * pspr, MFramePartModel * ppartmdl, EffectSetModel * psetmdl, QObject *parent = nullptr);
     void initScene();
     void initScene(bool bdrawoutline, bool bdrawmarker, bool btransparency);
     void deInitScene();
@@ -41,6 +41,9 @@ public:
 
     inline MFrame       * getFrame()        {return m_pfrm;}
     inline const MFrame * getFrame()const   {return m_pfrm;}
+
+    //Returns the middle XY coordinate of the center of the scene
+    QPointF getSceneCenter()const;
 
 private:
     void drawGrid(QPainter * painter, const QRectF & rect);
@@ -60,14 +63,25 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
 public slots:
-    void onPartMoved();
-    void partListChanged(MFrame *pfrm);
-    //void updateParts();
-    void updateScene();
+    //void onPartMoved();
+    void onItemDragBegin(EditableItem * item);
+    void onItemDragEnd(EditableItem * item);
+    void OnSelectionChanged();
+
+
+    //Settings
+    void setDisplayNDSMode(bool basnds);
     void setDrawMiddleGuide(bool bdraw);
     void setDrawOutlines(bool bdraw);
     void setTransparencyEnabled(bool benabled);
     void setEditorMode(eEditorMode mode);
+    void setGridSnap(bool bsnapon);
+
+    void partListChanged(MFrame *pfrm);
+    //void updateParts();
+    void updateScene();
+
+
     void deleteItem(EditableItem * item);
 
     void attachRulers(EditableItem * item);
@@ -91,7 +105,7 @@ private:
     QList<QPointer<FramePart>>          m_parts;        //Parts of the frame
     QPointer<MFramePartModel>           m_model;        //Model to display the parts for the frame
 
-    QScopedPointer<EffectSetModel>      m_attachModel;  //Model for displaying attachment points for effects
+    QPointer<EffectSetModel>            m_attachModel;  //Model for displaying attachment points for effects
     QList<QPointer<AttachMarker>>       m_markers;      //Attachment points for effects
 
     MFrame *                            m_pfrm              {nullptr};  //Frame currently being edited
@@ -107,6 +121,7 @@ private:
     bool                                m_bTransparency     {false};
     bool                                m_bDrawOutline      {true};
     eEditorMode                         m_mode              {eEditorMode::FrameParts}; //Editor mode, decides what's rendered and what's editable
+    bool                                m_bNDSMode          {true};     //If true the sprite will be displayed relative to its in-memory nds offset (aka, with Y-wrap)
 };
 
 #endif // FRAME_EDITOR_HPP

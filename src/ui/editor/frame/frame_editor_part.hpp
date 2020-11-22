@@ -13,6 +13,7 @@
 //===================================================================
 // A movable piece of a frame that is made up of a single image
 class FrameEditor;
+class MFramePart;
 class FramePart : public EditableItem
 {
     using parent_t = EditableItem;
@@ -33,17 +34,26 @@ public:
     static const int FramePartType = UserType + 1;
     enum { Type = FramePartType };
 
-    FramePart(FrameEditor * pfrmedit, const QPixmap & framepart, const QModelIndex & framepartid, QGraphicsItem *parent = nullptr);
+    FramePart(FrameEditor * pfrmedit, const QPixmap & framepart, const QModelIndex & itemidx, QGraphicsItem *parent = nullptr);
     const QColor & overlayColor()const;
     QColor & overlayColor();
 
-    QModelIndex partID()const;
+    MFramePart * getPart();
+    const MFramePart * getPart()const;
+    //QModelIndex partID()const;
+
+    //Update the position of the item from the model's data
+    virtual void updateOffset()override;
+
+    //Commit the position of the editable item to the model
+    virtual void commitOffset(QAbstractItemModel * model)override;
 
     // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)override;
     virtual int type() const override;
+    QString getItemDisplayName() const override;
 private:
     void paintImage(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
@@ -55,7 +65,8 @@ public slots:
 private:
     QPixmap                 m_pixmap;
     QColor                  m_overlayColor; //color for drawing the bounding box and text for this part!
-    QPersistentModelIndex   m_partid;
+    //QPersistentModelIndex   m_partid;
+    MFramePart *            m_pPart;
     bool                    m_bshowoutline{true};
     bool                    m_bTransparency{false};
 };

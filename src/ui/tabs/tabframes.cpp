@@ -30,19 +30,19 @@ void TabFrames::ConnectSignals()
     MFrame * frm = static_cast<MFrame*>(m_frame.internalPointer());
     Q_ASSERT(frm);
     //Setup the callbacks
-    connect(m_frmModel.data(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
-    connect(m_attachModel.data(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
+    connect(m_frmModel.data(),      &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
+    connect(m_attachModel.data(),   &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
 
-    connect(ui->spbFrmZoom, qOverload<int>(&QSpinBox::valueChanged), this, &TabFrames::On_spbFrmZoom_ValueChanged );
-    connect(m_frmeditor.data(), &FrameEditor::zoom, this, &TabFrames::OnFrameEditorZoom);
-    connect(m_frmeditor.data(), &FrameEditor::selectionChanged, this, &TabFrames::OnSelectionChanged);
-    //connect(m_frmeditor.data(), &FrameEditor::mousePosUpdate, this, &TabFrames::OnMousePosUpdate);
-    connect(m_frmeditor.data(), &FrameEditor::mousePosUpdate, getMainWindow(), &MainWindow::updateCoordinateBar);
+    connect(m_frmeditor.data(), &FrameEditor::zoom,             this,           &TabFrames::OnFrameEditorZoom);
+    connect(m_frmeditor.data(), &FrameEditor::selectionChanged, this,           &TabFrames::OnEditorSelectionChanged);
+    connect(m_frmeditor.data(), &FrameEditor::mousePosUpdate,   getMainWindow(),&MainWindow::updateCoordinateBar);
 
     //Init checkboxes state
-    connect(ui->chkColorPartOutlines, &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawOutlines);
-    connect(ui->chkFrmMiddleMarker,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawMiddleGuide);
-    connect(ui->chkFrmTransparency,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setTransparencyEnabled);
+    connect(ui->spbFrmZoom,             qOverload<int>(&QSpinBox::valueChanged), this, &TabFrames::On_spbFrmZoom_ValueChanged );
+    connect(ui->chkColorPartOutlines,   &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawOutlines);
+    connect(ui->chkFrmMiddleMarker,     &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDrawMiddleGuide);
+    connect(ui->chkFrmTransparency,     &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setTransparencyEnabled);
+    connect(ui->chkDisplayMode,         &QCheckBox::toggled, m_frmeditor.data(), &FrameEditor::setDisplayNDSMode);
 
     //Connect mapper
     connect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
@@ -58,17 +58,20 @@ void TabFrames::DisconnectSignals()
     MFrame * frm = static_cast<MFrame*>(m_frame.internalPointer());
     if(frm)
     {
-        disconnect(m_frmModel.data(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
-        disconnect(m_attachModel.data(), &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
+        disconnect(m_frmModel.data(),       &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
+        disconnect(m_attachModel.data(),    &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
     }
 
     if(m_frmeditor)
     {
         disconnect(m_frmeditor.data(),      &FrameEditor::zoom,             this,               &TabFrames::OnFrameEditorZoom);
+        disconnect(m_frmeditor.data(),      &FrameEditor::selectionChanged, this,               &TabFrames::OnEditorSelectionChanged);
+        disconnect(m_frmeditor.data(),      &FrameEditor::mousePosUpdate,   getMainWindow(),    &MainWindow::updateCoordinateBar);
+        disconnect(ui->spbFrmZoom,          qOverload<int>(&QSpinBox::valueChanged), this,      &TabFrames::On_spbFrmZoom_ValueChanged );
         disconnect(ui->chkColorPartOutlines,&QCheckBox::toggled,            m_frmeditor.data(), &FrameEditor::setDrawOutlines);
         disconnect(ui->chkFrmMiddleMarker,  &QCheckBox::toggled,            m_frmeditor.data(), &FrameEditor::setDrawMiddleGuide);
         disconnect(ui->chkFrmTransparency,  &QCheckBox::toggled,            m_frmeditor.data(), &FrameEditor::setTransparencyEnabled);
-        disconnect(m_frmeditor.data(),      &FrameEditor::mousePosUpdate,   getMainWindow(),    &MainWindow::updateCoordinateBar);
+        disconnect(ui->chkDisplayMode,      &QCheckBox::toggled,            m_frmeditor.data(), &FrameEditor::setDisplayNDSMode);
     }
 
     if(m_frmdatmapper)
@@ -119,6 +122,8 @@ void TabFrames::OnDataChanged(const QModelIndex &,const QModelIndex &, const QVe
     if(m_frmeditor)
         m_frmeditor->updateScene();
     ui->gvFrame->update();
+
+    ui->tblframeparts->update();
 }
 
 void TabFrames::OnOffsetChanged(const QModelIndex &/*topLeft*/, const QModelIndex &/*bottomRight*/, const QVector<int> &/*roles*/)
@@ -126,6 +131,8 @@ void TabFrames::OnOffsetChanged(const QModelIndex &/*topLeft*/, const QModelInde
     if(m_frmeditor)
         m_frmeditor->updateScene();
     ui->gvFrame->update();
+
+    ui->tvAttachments->update();
 }
 
 void TabFrames::OnShowTab(QPersistentModelIndex element)
@@ -144,15 +151,15 @@ void TabFrames::OnShowTab(QPersistentModelIndex element)
 
 
     //Setup the frame editor in the viewport!
-    m_frmeditor.reset( new FrameEditor(frm, spr) );
+    m_frmeditor.reset( new FrameEditor(frm, spr, m_frmModel.data(), m_attachModel.data()) );
     ui->gvFrame->setScene( &m_frmeditor->getScene() );
     m_frmeditor->initScene(ui->chkColorPartOutlines->isChecked(),
                            ui->chkFrmMiddleMarker->isChecked(),
                            ui->chkFrmTransparency->isChecked());
     ui->gvFrame->repaint();
 
-    if(ui->tblframeparts->currentIndex().isValid())
-        setupFrameEditPageForPart( frm, static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer()) );
+//    if(ui->tblframeparts->currentIndex().isValid())
+//        setupFrameEditPageForPart( frm, static_cast<MFramePart*>(ui->tblframeparts->currentIndex().internalPointer()) );
 
     setupMappedControls();
 
@@ -191,19 +198,6 @@ void TabFrames::OnHideTab()
     BaseSpriteTab::OnHideTab();
 }
 
-void TabFrames::setupFrameEditPageForPart(MFrame */*frm*/, MFramePart */*part*/)
-{
-//    if(!frm || !part)
-//    {
-//        qWarning("MainWindow::setupFrameEditPageForPart(): Got null frame or part! Skipping!");
-//        HideAllTabs(); //Reset UI to try to avoid further issues
-//        ui->tv_sprcontent->setCurrentIndex(QModelIndex()); //Reset currently selected sprite
-//        ShowStatusErrorMessage("An error occured. UI reset! Please notify devs!");
-//        return;
-//    }
-}
-
-
 
 void TabFrames::OnDestruction()
 {
@@ -227,7 +221,6 @@ void TabFrames::OnItemRemoval(const QModelIndex &item)
         OnHideTab(); //Clear everything
     }
 }
-
 
 // *********************************
 //  Frame Tab
@@ -421,7 +414,6 @@ void TabFrames::on_btnFrmExport_clicked()
     if(filename.isNull())
         return;
 
-
     QImage img(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds(), nullptr, true, currentSprite()));
     if(img.save( filename, "PNG" ))
         ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
@@ -429,7 +421,7 @@ void TabFrames::on_btnFrmExport_clicked()
         ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));
 }
 
-void TabFrames::OnSelectionChanged(QList<EditableItem *> parts)
+void TabFrames::OnEditorSelectionChanged(QList<EditableItem *> parts)
 {
     try
     {
@@ -440,12 +432,14 @@ void TabFrames::OnSelectionChanged(QList<EditableItem *> parts)
                 ui->tblframeparts->blockSignals(true);
                 ui->tblframeparts->selectRow(p->getItemIndex().row());
                 ui->tblframeparts->blockSignals(false);
+                ui->tvAttachments->update();
             }
             else if(p->getDataType() == eTreeElemDataType::effectOffset)
             {
                 ui->tvAttachments->blockSignals(true);
                 ui->tvAttachments->selectRow(p->getItemIndex().row());
                 ui->tvAttachments->blockSignals(false);
+                ui->tvAttachments->update();
             }
         }
     }
@@ -457,12 +451,6 @@ void TabFrames::OnSelectionChanged(QList<EditableItem *> parts)
     }
 }
 
-void TabFrames::OnMousePosUpdate(const QPointF &mousepos)
-{
-    //setStatusTip(QString("%1x%2").arg(mousepos.x(), mousepos.y()));
-
-}
-
 void TabFrames::OnOffsetSelected(QModelIndex selected)
 {
     m_frmeditor->selectMarker(selected);
@@ -470,5 +458,20 @@ void TabFrames::OnOffsetSelected(QModelIndex selected)
 
 void TabFrames::on_btnEditAttachments_toggled(bool checked)
 {
-    m_frmeditor->setEditorMode( checked? FrameEditor::eEditorMode::AttachmentPoints : FrameEditor::eEditorMode::FrameParts);
+    m_frmeditor->setEditorMode(checked? FrameEditor::eEditorMode::AttachmentPoints : FrameEditor::eEditorMode::FrameParts);
+}
+
+void TabFrames::on_tblframeparts_clicked(const QModelIndex &index)
+{
+    if(!index.isValid())
+    {
+        ui->tblframeparts->clearSelection();
+        return;
+    }
+    m_frmeditor->selectMarker(index);
+}
+
+void TabFrames::on_chkGridSnap_toggled(bool checked)
+{
+    m_frmeditor->setGridSnap(checked);
 }

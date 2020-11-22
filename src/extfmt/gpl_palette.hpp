@@ -40,9 +40,6 @@ namespace utils
         for( uint32_t col : srcargb )
         {
             rgbaComponents rescol = colhndlr(col);
-//            uint32_t r = (col >> 16) & 0xFF,
-//                     g = (col >>  8) & 0xFF,
-//                     b =  col & 0xFF;
             sstr <<std::setw(3) <<static_cast<int>(rescol.r)
                  <<" "
                  <<std::setw(3) <<static_cast<int>(rescol.g)
@@ -51,7 +48,7 @@ namespace utils
                  <<"\n";
         }
         std::string res(sstr.str());
-        return std::move( std::vector<uint8_t>(res.begin(), res.end()) );
+        return std::vector<uint8_t>(res.begin(), res.end());
     }
 
     //Pass the color encoder for the color format of the palette to encode!
@@ -76,7 +73,6 @@ namespace utils
         {
             uint32_t r = 0, g = 0, b = 0, a = 255;
             parser >> r >> g >> b;
-//            uint32_t result = (a << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
             return colhndlr(r, g, b, a);
         };
 
@@ -90,7 +86,7 @@ namespace utils
             for( ; itf != raw.end() ; itf = std::find(itf, raw.end(), '\n') )
             {
                 std::string strparsed = std::string(itlast, itf);
-                parser = std::move(std::stringstream(strparsed));
+                parser = std::stringstream(strparsed);
                 out.push_back(lambdacvstr(parser));
                 ++itf;
                 itlast = itf;
@@ -99,11 +95,11 @@ namespace utils
             //Parse the last entry not ending with eol, if neccessary!
             if(itlast != raw.end() && std::distance(itlast, itf) >= 5)
             {
-                parser = std::move(std::stringstream(std::string(itlast, itf)));
+                parser = std::stringstream(std::string(itlast, itf));
                 out.push_back(lambdacvstr(parser));
             }
         }
-        return std::move(out);
+        return out;
     }
 
 };

@@ -7,18 +7,18 @@
 //=================================================================================================================
 const QVector<SpriteOverviewModel::stats_t> SpriteOverviewModel::StatEntries
 {
-    {"Nb Images",       [](Sprite* spr){return spr->getImages().nodeChildCount();} },
-    {"Nb Frames",       [](Sprite* spr){return spr->getFrames().nodeChildCount();} },
-    {"Nb Sequences",    [](Sprite* spr){return spr->getAnimSequences().nodeChildCount();} },
-    {"Nb Animations",   [](Sprite* spr){return spr->getAnimTable().nodeChildCount();} },
+    {"Nb Images",       [](Sprite* spr){return QString("%L1").arg(spr->getImages().nodeChildCount());} },
+    {"Nb Frames",       [](Sprite* spr){return QString("%L1").arg(spr->getFrames().nodeChildCount());} },
+    {"Nb Sequences",    [](Sprite* spr){return QString("%L1").arg(spr->getAnimSequences().nodeChildCount());} },
+    {"Nb Animations",   [](Sprite* spr){return QString("%L1").arg(spr->getAnimTable().nodeChildCount());} },
     {"Palette",         [](Sprite* spr)
         {
             if(!spr->getPalette().empty())
-                return QString("%1 colors").arg( spr->getPalette().size() );
+                return QString("%L1 colors").arg( spr->getPalette().size() );
             else
                 return QString("none");
         } },
-    {"Size",            [](Sprite* spr){return spr->getRawData().size();} },
+    {"Size",            [](Sprite* spr){return QString("%L1 bytes").arg(spr->getRawData().size());} },
 };
 
 SpriteOverviewModel::SpriteOverviewModel(Sprite *spr)
@@ -27,10 +27,7 @@ SpriteOverviewModel::SpriteOverviewModel(Sprite *spr)
 
 QModelIndex SpriteOverviewModel::index(int row, int, const QModelIndex &/*parent*/) const
 {
-    //if( !parent.isValid() )
-    //    return QModelIndex();
-
-    return createIndex( row, 0 );
+    return createIndex(row, 0);
 }
 
 QModelIndex SpriteOverviewModel::parent(const QModelIndex &/*child*/) const

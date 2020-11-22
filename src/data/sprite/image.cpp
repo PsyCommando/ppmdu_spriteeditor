@@ -142,3 +142,8 @@ QString Image::getImageDescription()const
 {
     return QString("ID:%1, %2 x %3, %4bpp").arg(getID()).arg(m_img.width()).arg(m_img.height()).arg(m_depth);
 }
+
+int Image::getByteSize()const
+{
+    return m_raw.size();
+}

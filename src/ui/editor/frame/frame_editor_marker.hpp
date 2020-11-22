@@ -18,16 +18,21 @@ public:
     // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
+    QString getItemDisplayName() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 protected:
-    bool shouldShowBoundingBox() const final {return false;}
+    bool shouldShowBoundingBox() const final {return false;} //Don't show the bounding box or it gets messy
 
 public slots:
-    void updateOffset();
+    //Retrieve position from offset data and position accordingly
+    void updateOffset()override;
+    //Save current position into offset data
+    void commitOffset(QAbstractItemModel * model)override;
 
 private:
-    EffectOffset *  m_poffset   {nullptr};
-    QGraphicsTextItem m_txtitem;
+    EffectOffset *      m_poffset   {nullptr};
+    QGraphicsTextItem   m_txtitem;
 };
 
 #endif // ATTACHMARKER_HPP

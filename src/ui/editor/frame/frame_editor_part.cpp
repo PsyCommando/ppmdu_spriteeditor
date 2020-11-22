@@ -10,10 +10,11 @@
 //=======================================================================================================
 //  FramePart
 //=======================================================================================================
-FramePart::FramePart(FrameEditor * pfrmedit, const QPixmap & framepart, const QModelIndex & framepartid, QGraphicsItem *parent)
-     :parent_t(pfrmedit, parent)
+FramePart::FramePart(FrameEditor * pfrmedit, const QPixmap & framepart, const QModelIndex & itemidx, QGraphicsItem *parent)
+     :parent_t(pfrmedit, itemidx, parent)
 {
-    m_partid = framepartid;
+    m_pPart = static_cast<MFramePart*>(itemidx.internalPointer());
+    Q_ASSERT(m_pPart);
     m_pixmap = framepart;
 }
 
@@ -47,10 +48,32 @@ const QColor &FramePart::overlayColor() const {return m_overlayColor;}
 
 QColor &FramePart::overlayColor() {return m_overlayColor;}
 
-QModelIndex FramePart::partID() const
+MFramePart *FramePart::getPart()
 {
-    return m_partid;
+    return m_pPart;
 }
+
+const MFramePart *FramePart::getPart() const
+{
+    return m_pPart;
+}
+
+void FramePart::updateOffset()
+{
+    setPos(m_pPart->getXOffset(), m_pPart->getYOffset());
+}
+
+void FramePart::commitOffset(QAbstractItemModel *model)
+{
+    QModelIndex myidx = model->index(m_pPart->nodeIndex(), 0);
+    model->setData(myidx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_XOffset)), {qRound(pos().x())}, Qt::EditRole);
+    model->setData(myidx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_YOffset)), {qRound(pos().y())}, Qt::EditRole);
+}
+
+//QModelIndex FramePart::partID() const
+//{
+//    return m_partid;
+//}
 
 QRectF FramePart::boundingRect() const
 {
@@ -75,3 +98,7 @@ void FramePart::onPosChanged()
     //                  .arg(pos().x()).arg(pos().y()));
 }
 
+QString FramePart::getItemDisplayName() const
+{
+    return m_pPart->nodeDisplayName();
+}

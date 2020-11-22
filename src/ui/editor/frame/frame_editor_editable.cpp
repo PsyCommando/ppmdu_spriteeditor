@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QFont>
 #include <QKeyEvent>
+#include <QDebug>
 
 const QColor EditableItem::DefToolTipColor {QColor::fromHsv(198, 128, 100, 225)};
 const QKeySequence  DefKeyRight  {Qt::Key::Key_Right};
@@ -16,9 +17,23 @@ const QKeySequence  DefKeyUp     {Qt::Key::Key_Up};
 const QKeySequence  DefKeyDown   {Qt::Key::Key_Down};
 const int           DefMoveIncrements   {1};
 
-EditableItem::EditableItem(FrameEditor *pfrmedit, QGraphicsItem * parent)
+
+const int EditableItem::XMaxThresholdTooltip = 370;
+const int EditableItem::XMinThresholdTooltip = 0;
+const int EditableItem::YMaxThresholdTooltip = 255;
+const int EditableItem::YMinThresholdTooltip = 96;
+
+const int EditableItem::DefXTooltip = 0;
+const int EditableItem::DefYTooltip = -25;
+const int EditableItem::DefZTooltip = 99;
+const int EditableItem::FarRightXTooltip = -80;
+const int EditableItem::FarLeftXTooltip = -80;
+
+EditableItem::EditableItem(FrameEditor *pfrmedit, const QModelIndex & itemidx, QGraphicsItem * parent)
     :QObject(nullptr), QGraphicsItem(parent)
 {
+    Q_ASSERT(pfrmedit);
+    m_itemidx = itemidx;
     m_frmedit = pfrmedit;
     m_BoundingBoxColor= QColor::fromHsv(GetRandomGenerator().generate() % 255, 200, 128, 200);
     m_BoundingBoxColor = m_BoundingBoxColor.lighter(100);
@@ -38,6 +53,16 @@ EditableItem::~EditableItem()
 
 }
 
+QModelIndex EditableItem::getItemIndex() const
+{
+    return m_itemidx;
+}
+
+void EditableItem::setItemIndex(const QModelIndex &idx)
+{
+    m_itemidx = idx;
+}
+
 eTreeElemDataType EditableItem::getDataType() const
 {
     if(!getItemIndex().isValid())
@@ -46,10 +71,20 @@ eTreeElemDataType EditableItem::getDataType() const
     return pnode? pnode->nodeDataTy() : eTreeElemDataType::INVALID;
 }
 
+QString EditableItem::getItemDisplayName() const
+{
+    return QString();
+}
+
 void EditableItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     //Paint the bounding box
     paintBoundingBox(painter, option, widget);
+}
+
+QPointF EditableItem::getCenterPoint() const
+{
+    return pos() + boundingRect().center();
 }
 
 void EditableItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
@@ -58,7 +93,7 @@ void EditableItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)
     {
         setCursor(Qt::OpenHandCursor);
         m_tooltip->setVisible(false);
-        emit wasDragged();
+        emit dragEnd(this);
         emit posChanged(pos());
     }
     QGraphicsItem::mouseReleaseEvent(ev);
@@ -70,6 +105,7 @@ void EditableItem::mousePressEvent(QGraphicsSceneMouseEvent *ev)
     {
         setCursor(Qt::ClosedHandCursor);
         m_tooltip->setVisible(true);
+        emit dragBegin(this);
     }
     QGraphicsItem::mousePressEvent(ev);
 }
@@ -157,7 +193,7 @@ void EditableItem::UpdateTooltip()
 
     //qDebug("x:%f, y:%f\n", m_tooltip->x(), m_tooltip->y());
 
-    emit updateTooltipPos(QString("(x:%1, y:%2)").arg(qRound(pos().x())).arg(qRound(pos().y())));
+    emit updateTooltipPos(QString("%1 x:%2, y:%3").arg(getItemDisplayName()).arg(qRound(pos().x())).arg(qRound(pos().y())));
 }
 
 void EditableItem::paintBoundingBox(QPainter *painter, const QStyleOptionGraphicsItem */*option*/, QWidget */*widget*/)
@@ -204,6 +240,16 @@ bool EditableItem::shouldShowBoundingBox() const
     return true;
 }
 
+FrameEditor *EditableItem::getFrameEditor()
+{
+    return m_frmedit;
+}
+
+const FrameEditor *EditableItem::getFrameEditor() const
+{
+    return m_frmedit;
+}
+
 QVariant EditableItem::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)
 {
     if (change != ItemPositionChange)
@@ -234,12 +280,18 @@ void EditableItem::SetupTooltip()
     m_tooltip->setFont(tooltipfnt);
     connect(this, &EditableItem::updateTooltipPos, m_tooltip.data(), &QGraphicsTextItem::setPlainText);
 
-    QRectF textbg = QFontMetrics(tooltipfnt).boundingRect(m_tooltip->toPlainText());
-    textbg.setX(0);
-    textbg.setY(0);
-    QGraphicsPolygonItem * poly = new QGraphicsPolygonItem( QPolygonF(textbg), m_tooltip);
-    poly->setZValue(-1);
-    poly->setPen(Qt::PenStyle::NoPen);
-    poly->setBrush(QBrush(Qt::GlobalColor::lightGray));
+//    QRectF textbg = QFontMetrics(tooltipfnt).boundingRect(m_tooltip->toPlainText());
+//    textbg.setX(0);
+//    textbg.setY(0);
+//    QGraphicsPolygonItem * poly = new QGraphicsPolygonItem( QPolygonF(textbg), m_tooltip);
+//    poly->setZValue(-1);
+//    poly->setPen(Qt::PenStyle::NoPen);
+//    poly->setBrush(QBrush(Qt::GlobalColor::lightGray));
+
     m_tooltip->setVisible(false);
+}
+
+void EditableItem::dragMoveEvent(QGraphicsSceneDragDropEvent */*event*/)
+{
+    qDebug() << QString("DragMoveEvent %1, %2").arg(pos().x()).arg(pos().y());
 }

@@ -7,7 +7,7 @@
 
 const QStringList AnimGroupModel::ColumnNames
 {
-    {"Preview"},
+    {"Sequence ID"},
     {"Slot Name"},
     {"Nb Frames"},
 };
@@ -102,19 +102,19 @@ QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
 
 QVariant AnimGroupModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(role != Qt::DisplayRole /*&& role != Qt::SizeHintRole*/)
-        return QVariant();
-
-    if(orientation == Qt::Orientation::Vertical)
+    if(role == Qt::DisplayRole)
     {
-        return section;
+        if(orientation == Qt::Orientation::Vertical)
+        {
+            return section;
+        }
+        else if(orientation == Qt::Orientation::Horizontal &&
+                section >= 0 && section < ColumnNames.size())
+        {
+            return ColumnNames[section];
+        }
     }
-    else if(orientation == Qt::Orientation::Horizontal &&
-            section >= 0 && section < ColumnNames.size())
-    {
-        return ColumnNames[section];
-    }
-    return QVariant();
+    return TreeNodeModel::headerData(section, orientation, role);
 }
 
 bool AnimGroupModel::setData(const QModelIndex &index, const QVariant &value, int role)

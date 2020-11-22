@@ -207,9 +207,7 @@ private:
     void CompressRawData(filetypes::eCompressionFormats cpfmt);
 
     TreeNode       * ElemPtr(int idx);
-    TreeNode       * ElemPtrNoEfx(int idx);
     const TreeNode * ElemPtr(int idx)const;
-    const TreeNode * ElemPtrNoEfx(int idx)const;
     int              nbChildCat()const;
 
 private:
