@@ -57,14 +57,17 @@ public:
 
     //
     bool isContainerLoaded()const override;
-    bool ContainerIsPackFile()const;
-    bool ContainerIsSingleSprite()const;
+    bool isContainerPackFile()const;
+    bool isContainerSingleSprite()const;
+    bool isMultiItemContainer()const override;
 
     //void           SetSpriteContainerType(eContainerType ty);
     //eContainerType GetSpriteContainerType()const;
 
     const QString & GetContainerType()const override;
+    eContainerType GetContainerTypeEnum()const;
     void SetContainerType(const QString & newtype)override;
+    void SetContainerType(eContainerType newtype);
 
     QString         GetContainerSrcFnameOnly()const override;
     const QString & GetContainerSrcPath()const override;
@@ -74,8 +77,7 @@ public:
     QVariant GetContentData(const QModelIndex & index, int role)const override;
     QVariant GetContentHeaderData(int section, Qt::Orientation orientation, int role)const override;
 
-    bool isMultiItemContainer()const override;
-
+    //
     const QString& GetTopNodeName()const override;
 
     //
@@ -94,6 +96,10 @@ public:
     Sprite * GetSprite( sprid_t idx );
     sprid_t  AddSprite();
 
+    //
+    eCompressionFmtOptions GetExpectedCompression()const;
+    void SetExpectedCompression(eCompressionFmtOptions compression);
+
     iterator         begin();
     const_iterator   begin()const;
     iterator         end();
@@ -106,14 +112,6 @@ public:
     int indexOfChild(const TreeNode *ptr) const override;
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
-
-    //QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    //QVariant headerData(int /*section*/, Qt::Orientation /*orientation*/, int /*role */= Qt::DisplayRole) const;
-
-    //int columnCount(const QModelIndex &/*parent */= QModelIndex()) const;
-    //int rowCount(const QModelIndex &parent = QModelIndex()) const;
-    //bool hasChildren(const QModelIndex &parent = QModelIndex()) const;
-    //TreeNode *getItem(const QModelIndex &index);
 
     //Returns the sprite that owns the content at the given index
     TreeNode *getOwnerNode(const QModelIndex & index)override;
@@ -220,6 +218,7 @@ private:
     list_t          m_spr;          //List of all the contained sprites
     eContainerType  m_cntTy     {eContainerType::NONE};
     QThread         m_workthread;
+    eCompressionFmtOptions m_cntCompression {eCompressionFmtOptions::NONE};
 
 signals:
     void startThread();

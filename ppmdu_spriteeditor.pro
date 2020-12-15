@@ -38,6 +38,7 @@ SOURCES += src/main.cpp\
     src/data/content_manager.cpp \
     src/data/sprite/animframe.cpp \
     src/data/sprite/animgroup.cpp \
+    src/data/sprite/animgroups_container.cpp \
     src/data/sprite/animsequence.cpp \
     src/data/sprite/animsequences.cpp \
     src/data/sprite/animtable.cpp \
@@ -71,12 +72,21 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/sprite_props_model.cpp \
     src/data/sprite/palettecontainer.cpp \
     src/data/sprite/sprite_container.cpp \
+    src/extfmt/animtation_table_layout.cpp \
+    src/extfmt/gpl_palette.cpp \
+    src/extfmt/text_palette.cpp \
+    src/ui/dialognew.cpp \
+    src/ui/editor/cropper/autocropper_gizmo.cpp \
+    src/ui/editor/cropper/autocropper_scene.cpp \
     src/ui/editor/frame/frame_editor_editable.cpp \
     src/ui/editor/frame/frame_editor_marker.cpp \
     src/ui/tabs/tabanimgroup.cpp \
     src/ui/tabs/tabempty.cpp \
     src/ui/tabs/tabwelcome.cpp \
+    src/ui/windows/dialogimportwizard.cpp \
+    src/utility/container_threaded_writer.cpp \
     src/utility/file_support.cpp \
+    src/utility/palette_helpers.cpp \
     src/utility/randomgenhelper.cpp \
     src/ui/editor/frame/frame_editor.cpp \
     src/ui/editor/frame/frame_editor_part.cpp \
@@ -110,13 +120,13 @@ SOURCES += src/main.cpp\
     src/ui/tabs/tabframes.cpp \
     src/ui/tabs/tabimages.cpp \
     src/ui/tabs/tabproperties.cpp \
-    src/ui/tvspritescontextmenu.cpp \
-    src/utility/threadedwriter.cpp
+    src/ui/tvspritescontextmenu.cpp
 
 HEADERS  += \
     src/data/base_container.hpp \
     src/data/content_factory.hpp \
     src/data/content_manager.hpp \
+    src/data/sprite/animgroups_container.hpp \
     src/data/sprite/effectoffsetset.hpp \
     src/data/sprite/models/animframe_delegate.hpp \
     src/data/sprite/models/animframe_model.hpp \
@@ -145,15 +155,20 @@ HEADERS  += \
     src/data/treenodemodel.hpp \
     src/data/treenodeterminal.hpp \
     src/data/treenodewithchilds.hpp \
+    src/extfmt/animtation_table_layout.hpp \
     src/ppmdu/fmts/sprite/raw_sprite_data.hpp \
     src/ppmdu/fmts/sprite/shared_sprite_constants.hpp \
     src/ppmdu/fmts/sprite/sprite_content.hpp \
     src/ppmdu/fmts/sprite/sprite_handler.hpp \
+    src/ui/dialognew.hpp \
+    src/ui/editor/cropper/autocropper_gizmo.hpp \
+    src/ui/editor/cropper/autocropper_scene.hpp \
     src/ui/editor/frame/frame_editor_editable.hpp \
     src/ui/editor/frame/frame_editor_marker.hpp \
     src/ui/tabs/tabanimgroup.hpp \
     src/ui/tabs/tabempty.hpp \
     src/ui/tabs/tabwelcome.hpp \
+    src/ui/windows/dialogimportwizard.hpp \
     src/utility/baseqtexception.hpp \
     src/data/sprite/animframe.hpp \
     src/data/sprite/animgroup.hpp \
@@ -167,7 +182,9 @@ HEADERS  += \
     src/data/sprite/image.hpp \
     src/data/sprite/imagescontainer.hpp \
     src/data/sprite/palettecontainer.hpp \
+    src/utility/container_threaded_writer.hpp \
     src/utility/file_support.hpp \
+    src/utility/palette_helpers.hpp \
     src/utility/randomgenhelper.hpp \
     src/data/sprite/sprite.hpp \
     src/data/sprite/spritemanager.hpp \
@@ -207,10 +224,10 @@ HEADERS  += \
     src/ui/tabs/tabimages.hpp \
     src/ui/tabs/tabproperties.hpp \
     src/ui/tvspritescontextmenu.hpp \
-    src/utility/threadedwriter.hpp \
     version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
+    src/ui/dialognew.ui \
     src/ui/editor/palette/paletteeditor.ui \
     src/ui/processingconsole.ui \
     src/ui/diagsingleimgcropper.ui \
@@ -224,7 +241,8 @@ FORMS    += src/ui/mainwindow.ui \
     src/ui/tabs/tabframes.ui \
     src/ui/tabs/tabimages.ui \
     src/ui/tabs/tabproperties.ui \
-    src/ui/tabs/tabwelcome.ui
+    src/ui/tabs/tabwelcome.ui \
+    src/ui/windows/dialogimportwizard.ui
 
 RESOURCES += \
     appres.qrc

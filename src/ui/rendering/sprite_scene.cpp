@@ -137,7 +137,7 @@ void SpriteScene::setSprite(const Sprite *pspr, const AnimSequence *paniseq)
     loadAnimation();
 }
 
-void SpriteScene::setSprite(const Sprite *pspr, fmt::AnimDB::animseqid_t seqid)
+void SpriteScene::setSprite(const Sprite *pspr, fmt::animseqid_t seqid)
 {
     Reset();
     m_spr = pspr;
@@ -162,7 +162,7 @@ void SpriteScene::setSequence(const AnimSequence *paniseq)
     loadAnimation();
 }
 
-void SpriteScene::setSequence(fmt::AnimDB::animseqid_t seqid)
+void SpriteScene::setSequence(fmt::animseqid_t seqid)
 {
     Reset();
     m_seqid = seqid;

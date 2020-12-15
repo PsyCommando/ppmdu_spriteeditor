@@ -13,6 +13,8 @@
 #include <QGraphicsPixmapItem>
 #include <QImage>
 
+const QString TabFrames::TabAttachmentPointsName{tr("Attachment Points")};
+
 TabFrames::TabFrames(QWidget *parent) :
     BaseSpriteTab(parent),
     ui(new Ui::TabFrames)
@@ -31,7 +33,8 @@ void TabFrames::ConnectSignals()
     Q_ASSERT(frm);
     //Setup the callbacks
     connect(m_frmModel.data(),      &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
-    connect(m_attachModel.data(),   &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
+    if(m_attachModel)
+        connect(m_attachModel.data(),   &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
 
     connect(m_frmeditor.data(), &FrameEditor::zoom,             this,           &TabFrames::OnFrameEditorZoom);
     connect(m_frmeditor.data(), &FrameEditor::selectionChanged, this,           &TabFrames::OnEditorSelectionChanged);
@@ -59,7 +62,8 @@ void TabFrames::DisconnectSignals()
     if(frm)
     {
         disconnect(m_frmModel.data(),       &QAbstractItemModel::dataChanged, this, &TabFrames::OnDataChanged);
-        disconnect(m_attachModel.data(),    &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
+        if(m_attachModel)
+            disconnect(m_attachModel.data(),    &QAbstractItemModel::dataChanged, this, &TabFrames::OnOffsetChanged);
     }
 
     if(m_frmeditor)
@@ -89,11 +93,20 @@ bool TabFrames::setFrame(QPersistentModelIndex element, Sprite *spr)
         return false;
     Q_ASSERT(spr && frm);
 
+    //Remove optional tab first
+    int postab = ui->tabwFramesEdit->indexOf(ui->tabAttachPoints);
+    if(postab != -1)
+        ui->tabwFramesEdit->removeTab(postab);
+
     m_frame = element;
     m_frmModel      .reset(new MFramePartModel(frm, spr));
     m_frmDelegate   .reset(new MFramePartDelegate(frm));
-    m_attachModel   .reset(new EffectSetModel(spr->getAttachMarkers(frm->nodeIndex()), spr));
-    m_attachDele    .reset(new EffectSetDelegate(spr->getAttachMarkers(frm->nodeIndex())));
+    if(spr->hasEfxOffsets())
+    {
+        m_attachModel.reset(new EffectSetModel(spr->getAttachMarkers(frm->nodeIndex()), spr));
+        m_attachDele.reset(new EffectSetDelegate(spr->getAttachMarkers(frm->nodeIndex())));
+        ui->tabwFramesEdit->insertTab(0, ui->tabAttachPoints, TabAttachmentPointsName);
+    }
     return true;
 }
 

@@ -51,9 +51,11 @@ public:
     void                        importSequences( const fmt::AnimDB::animseqtbl_t & src );
     fmt::AnimDB::animseqtbl_t   exportSequences();
 
+    AnimSequence *appendNewSequence();
+
     //Accessors
-    AnimSequence        * getSequenceByID( fmt::AnimDB::animseqid_t id );
-    const AnimSequence  * getSequenceByID( fmt::AnimDB::animseqid_t id )const;
+    AnimSequence        * getSequenceByID( fmt::animseqid_t id );
+    const AnimSequence  * getSequenceByID( fmt::animseqid_t id )const;
 
     // TreeNode interface
 public:

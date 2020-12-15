@@ -59,7 +59,7 @@ public:
         return createIndex(parentItem->nodeIndex(), 0, const_cast<node_t*>(parentItem));
     }
 
-    virtual int rowCount(const QModelIndex &parent) const override
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override
     {
         if (parent.isValid())
             return static_cast<node_t*>(parent.internalPointer())->nodeChildCount();
@@ -67,7 +67,7 @@ public:
             return getRootNode()->nodeChildCount();
     }
 
-    virtual int columnCount(const QModelIndex &parent) const override
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override
     {
         if (parent.isValid())
             return 0;
@@ -75,7 +75,7 @@ public:
             return 1;
     }
 
-    virtual bool hasChildren(const QModelIndex &parent) const override
+    virtual bool hasChildren(const QModelIndex &parent = QModelIndex()) const override
     {
         if(!parent.isValid())
             return false;
@@ -101,16 +101,6 @@ public:
         QString sprname = QString("%1#%2").arg(node->nodeDataTypeName()).arg(index.row());
         return QVariant(sprname);
     }
-
-//    virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)override
-//    {
-//        return getRoodNode()->setData(index, value, role);
-//    }
-
-//    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-//    {
-//        return getRootNode()->headerData(section, orientation, role);
-//    }
 
     virtual bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override
     {
@@ -188,8 +178,9 @@ public:
                 TreeNode * curelem = static_cast<TreeNode*>(idx.internalPointer());
                 int newindice = parentItem->indexOfChild(curelem);
                 if(newindice < 0)
-                    throw std::runtime_error("TreeNodeModel::removeRows(): child disapeared from the container during removal of another element!!!!");
-                idx = createIndex(newindice, 0, curelem);
+                    idx = QModelIndex();
+                else
+                    idx = createIndex(newindice, 0, curelem);
             }
 
             //Update the persistent indices from the lists of changed indices

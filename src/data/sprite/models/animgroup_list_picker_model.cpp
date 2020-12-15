@@ -38,10 +38,8 @@ Sprite *AnimGroupListPickerModel::getOwnerSprite()
     return m_sprite;
 }
 
-int AnimGroupListPickerModel::columnCount(const QModelIndex &parent) const
+int AnimGroupListPickerModel::columnCount(const QModelIndex &/*parent*/) const
 {
-//    if(!parent.isValid())
-//        return 0;
     return AnimGroupListPickerColumnNames.size();
 }
 

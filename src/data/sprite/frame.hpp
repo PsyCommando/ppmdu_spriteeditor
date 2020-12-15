@@ -61,6 +61,9 @@ public:
     bool operator==( const MFrame & other)const;
     bool operator!=( const MFrame & other)const;
 
+    //appends a new framepart to the list and returns the pointer
+    MFramePart * appendNewFramePart();
+
     void importFrame(const fmt::ImageDB::frm_t & frms);
     fmt::ImageDB::frm_t exportFrame()const;
 

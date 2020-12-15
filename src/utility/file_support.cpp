@@ -6,11 +6,97 @@
 #include <src/extfmt/riff_palette.hpp>
 #include <src/extfmt/text_palette.hpp>
 #include <src/extfmt/gpl_palette.hpp>
+#include <QFileDialog>
+#include <QWidget>
 
-const QString FileExtPack = "bin";
-const QString FileExtWAN  = "wan";
-const QString FileExtWAT  = "wat";
+const QSize MaxValidCellPartSize {32, 32};
 
+//Helper for generating the supported file filters at runtime
+template<typename CHILD_T>
+    class SupportedFilters
+{
+    typedef CHILD_T child_t;
+    QString filter;
+public:
+    SupportedFilters()
+    {
+        InitSupported();
+    }
+    virtual ~SupportedFilters() {}
+
+    operator const QString & ()const
+    {
+        return filter;
+    }
+
+    virtual void InitSupported()
+    {
+        //CHILD_T * pchild = static_cast<CHILD_T*>(this);
+        //pchild->InitSupported();
+        AddAllFromHash(fileFilters());
+        MakeAllSupportedEntry(fileFilters());
+        filter = QString("All supported (%s)").arg(filter);
+    }
+
+protected:
+    virtual const QHash<QString, QString> fileFilters()const = 0;
+
+    void AddAllFromHash(const QHash<QString, QString>& htable)
+    {
+        for(const auto & entry : htable)
+        {
+            if(filter.size() > 0)
+                filter = QString("%1;%2").arg(filter).arg(entry);
+            else
+                filter = QString("%1").arg(entry);
+        }
+    }
+
+    void MakeAllSupportedEntry(const QHash<QString, QString>& htable)
+    {
+        QString f;
+        for(const auto & entry : htable)
+        {
+            if(f.size() > 0)
+                f = QString("%1, *.%2").arg(f).arg(entry);
+            else
+                f = QString("*.%1").arg(entry);
+        }
+        f = QString("All supported (%1)").arg(f);
+        filter = QString("%1;%2").arg(filter).arg(f);
+    }
+};
+
+//=================================================================
+// File Extensions
+//=================================================================
+const QString FileExtPack   = "bin";
+const QString FileExtWAN    = "wan";
+const QString FileExtWAT    = "wat";
+
+const QString FileExtXML    = "xml";
+
+const QString FileExtPNG    = "png";
+const QString FileExtBMP    = "bmp";
+
+const QString FileExtGPL    = QString::fromStdString(utils::GPL_PAL_Filext);
+const QString FileExtPAL    = QString::fromStdString(utils::RIFF_PAL_Filext);
+const QString FileExtTXTPAL = QString::fromStdString(utils::TEXT_PAL_Filext);
+
+//=================================================================
+// Misc File Filters
+//=================================================================
+const QString XMLFileFilter = "XML files (*.xml)";
+
+const QString &AllSupportedXMLFileFilter()
+{
+    return XMLFileFilter;
+}
+
+
+//=================================================================
+// Game File Filters
+//=================================================================
 const QHash<QString, QString> SupportedFileFiltersByTypename
 {
     {FileExtWAN,    "WAN Sprite (*.wan)"},
@@ -18,154 +104,168 @@ const QHash<QString, QString> SupportedFileFiltersByTypename
     {FileExtPack,   "Pack Files (*.bin)"},
 };
 
-
-struct all_supported_filetypes
+//game files support
+class all_supported_game_filetypes : public SupportedFilters<all_supported_game_filetypes>
 {
-    all_supported_filetypes()
-    {
-        for(const auto & entry : SupportedFileFiltersByTypename)
-        {
-            if(filter.size() > 0)
-                filter = QString("%s, *.%s").arg(filter).arg(entry);
-            else
-                filter = QString("*.%s").arg(entry);
-        }
-        filter = QString("All supported (%s)").arg(filter);
-    }
-    const QString & operator()()const
-    {
-        return filter;
-    }
-    QString filter;
+public:
+    const QHash<QString, QString> fileFilters()const override {return SupportedFileFiltersByTypename;}
 };
 
-const QString &AllSupportedFileFilter()
+const QString &AllSupportedGameFileFilter()
 {
-    const all_supported_filetypes _instance;
-    return _instance();
+    static const all_supported_game_filetypes supported;
+    return supported;
 }
+
+//Sprites support
+class all_supported_game_sprites_filetypes : public SupportedFilters<all_supported_game_sprites_filetypes>
+{
+public:
+    void InitSupported()override
+    {
+        m_supported = SupportedFileFiltersByTypename;
+        m_supported.remove(FileExtPack); //All but packfile
+        SupportedFilters::InitSupported();
+    }
+
+    const QHash<QString, QString> fileFilters()const override {return m_supported;}
+protected:
+    QHash<QString, QString> m_supported;
+};
+
+const QString &AllSupportedGameSpritesFileFilter()
+{
+    static const all_supported_game_sprites_filetypes supported;
+    return supported;
+}
+
+
+//=================================================================
+// Image File Filters
+//=================================================================
+const QHash<QString, QString> SupportedImageFilesFilters
+{
+    {FileExtPNG, "PNG Image File (*.png)"},
+    {FileExtBMP, "Bitmap Image File (*.bmp)"},
+};
+
+class all_supported_images_filetypes : public SupportedFilters<all_supported_images_filetypes>
+{
+public:
+    const QHash<QString, QString> fileFilters()const override {return SupportedImageFilesFilters;}
+};
+
+const QString &AllSupportedImagesFilesFilter()
+{
+    static const all_supported_images_filetypes supported;
+    return supported;
+}
+
+//=================================================================
+// Palettes File Filters
+//=================================================================
+const QHash<QString, QString> SupportedExportPaletteFilesFilters
+{
+    {FileExtGPL,    "GPL Palette File (*.gpl)"},
+    {FileExtPAL,    "GPL Palette File (*.pal)"},
+    {FileExtTXTPAL, "GPL Palette File (*.txt)"},
+};
 
 ePaletteDumpType FilterStringToPaletteType( const QString & selectedfilter )
 {
     ePaletteDumpType fty = ePaletteDumpType::INVALID;
-    if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal))
+    if(selectedfilter == SupportedExportPaletteFilesFilters[FileExtPAL])
         fty = ePaletteDumpType::RIFF_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal))
+    else if(selectedfilter == SupportedExportPaletteFilesFilters[FileExtTXTPAL])
         fty = ePaletteDumpType::TEXT_Pal;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL))
+    else if(selectedfilter == SupportedExportPaletteFilesFilters[FileExtGPL])
         fty = ePaletteDumpType::GIMP_PAL;
-    else if(selectedfilter == GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL))
+    else if(selectedfilter == SupportedImageFilesFilters[FileExtPNG])
         fty = ePaletteDumpType::PNG_PAL;
+    else if(selectedfilter == SupportedImageFilesFilters[FileExtBMP])
+        fty = ePaletteDumpType::BMP_PAL;
     Q_ASSERT(fty < ePaletteDumpType::INVALID);
     return fty;
 }
 
-const QString &GetPaletteFileFilterString(ePaletteDumpType ty)
+class all_supported_import_palette_filetypes : public SupportedFilters<all_supported_import_palette_filetypes>
 {
-    static const QString InvalidString;
-    if(ty >= ePaletteDumpType::INVALID)
-        return InvalidString;
-    return PaletteFileFilter[static_cast<int>(ty)];
-}
-
-void ImportPalette(Sprite *spr, const QString &path, ePaletteDumpType type)
-{
-    if(!spr)
-        throw std::range_error("ImportPalette(): Invalid sprite index!!");
-
-    std::vector<uint8_t> fdata = utils::ReadFileToByteVector(path.toStdString());
-
-    switch(type)
+public:
+    void InitSupported()override
     {
-    case ePaletteDumpType::RIFF_Pal:
-        {
-            //can't use move here since we need the implicit convertion on copy
-            std::vector<uint32_t> imported = utils::ImportFrom_RIFF_Palette(fdata, utils::RGBToARGB);
-            spr->setPalette(QVector<QRgb>(imported.begin(), imported.end())); //since QRgb is ARGB, we use this encoder!
-            break;
-        }
-    case ePaletteDumpType::TEXT_Pal:
-        {
-            //can't use move here since we need the implicit convertion on copy
-            std::vector<uint32_t> imported = utils::ImportPaletteAsTextPalette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVector<QRgb>(imported.begin(), imported.end()) );
-            break;
-        }
-    case ePaletteDumpType::GIMP_PAL:
-        {
-            //can't use move here since we need the implicit convertion on copy
-            std::vector<uint32_t> imported = utils::ImportGimpPalette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVector<QRgb>(imported.begin(), imported.end()) );
-            break;
-        }
-    case ePaletteDumpType::PNG_PAL:
-        {
-            //can't use move here since we need the implicit convertion on copy
-            QImage png(path, "png");
-            spr->setPalette(png.colorTable());
-            break;
-        }
-    default:
-        throw std::invalid_argument("ImportPalette(): Invalid palette type!");
-    };
-}
-
-void DumpPalette(const QModelIndex &sprite, const QString &path, ePaletteDumpType type)
-{
-    if(!sprite.isValid())
-        throw std::invalid_argument("DumpPalette(): Invalid sprite index!!");
-
-    const Sprite * spr = reinterpret_cast<Sprite*>(sprite.internalPointer());
-    DumpPalette(spr, path, type);
-}
-
-void DumpPalette(const Sprite * spr, const QString &path, ePaletteDumpType type)
-{
-    if(!spr)
-        throw std::range_error("DumpPalette(): Invalid sprite index!!");
-
-    std::vector<uint8_t> fdata;
-    std::vector<uint32_t> pal;
-    for(const QRgb & col : spr->getPalette())
-    {
-        pal.push_back(static_cast<uint32_t>(col));
+        m_supported = SupportedExportPaletteFilesFilters;
+        m_supported.insert(SupportedImageFilesFilters);
+        SupportedFilters::InitSupported();
     }
 
-    switch(type)
-    {
-    case ePaletteDumpType::RIFF_Pal:
-        {
-            qDebug("Exporting RIFF Palette\n");
-            fdata = utils::ExportTo_RIFF_Palette(pal, utils::ARGBToComponents); //sice QRgb is ARGB, we use this decoder!
-            qDebug("Exporting RIFF Palette, conversion complete!\n");
-            break;
-        }
-    case ePaletteDumpType::TEXT_Pal:
-        {
-            fdata = utils::ExportPaletteAsTextPalette(pal, utils::ARGBToComponents);
-            break;
-        }
-    case ePaletteDumpType::GIMP_PAL:
-        {
-            fdata = utils::ExportGimpPalette(pal, utils::ARGBToComponents);
-            break;
-        }
-    default:
-        throw std::invalid_argument("DumpPalette(): Invalid palette destination type!");
-    };
+    const QHash<QString, QString> fileFilters()const override {return m_supported;}
+protected:
+    QHash<QString, QString> m_supported;
+};
 
-    qDebug("Exporting RIFF Palette, Writing to file!\n");
-    QSaveFile sf(path);
-    if(!sf.open( QSaveFile::WriteOnly ))
-        throw std::runtime_error(QString("DumpPalette(): Couldn't open file \"%1\" for writing!\n").arg(path).toStdString());
+class all_supported_export_palette_filetypes : public SupportedFilters<all_supported_export_palette_filetypes>
+{
+public:
+    const QHash<QString, QString> fileFilters()const override {return SupportedExportPaletteFilesFilters;}
+};
 
-    if( sf.write( (char*)fdata.data(), fdata.size() ) < static_cast<qint64>(fdata.size()) )
-        qWarning("DumpPalette(): The amount of bytes written to file differs from the expected filesize!\n");
-
-    qDebug("Exporting RIFF Palette, written! Now commiting\n");
-
-    if(!sf.commit())
-        throw std::runtime_error(QString("DumpPalette(): Commit to \"%1\" failed!\n").arg(path).toStdString());
-    qDebug("Exporting RIFF Palette, commited!\n");
+const QString &AllSupportedImportPaletteFilesFilter()
+{
+    static const all_supported_import_palette_filetypes supported;
+    return supported;
 }
+
+const QString &AllSupportedExportPaletteFilesFilter()
+{
+    static const all_supported_export_palette_filetypes supported;
+    return supported;
+}
+
+//=================================================================
+// Helper Functions
+//=================================================================
+
+QStringList GetImagesPathsFromDialog(const QString &title, QWidget *parent)
+{
+    return QFileDialog::getOpenFileNames(parent, title, QString(), AllSupportedImagesFilesFilter());
+}
+
+QString GetImagePathFromDialog(const QString &title, QWidget *parent)
+{
+    return QFileDialog::getOpenFileName(parent, title, QString(), AllSupportedImagesFilesFilter());
+}
+
+QString GetXMLOpenFile(const QString &title, QWidget *parent)
+{
+    return QFileDialog::getOpenFileName(parent, title, QString(), XMLFileFilter);
+}
+
+QString GetXMLSaveFile(const QString &title, QWidget *parent)
+{
+    return QFileDialog::getSaveFileName(parent, title, QString(), XMLFileFilter);
+}
+
+bool IsImageResolutionValid(QSize imgres)
+{
+    for(const auto & supported : fmt::FrameResValues)
+    {
+        if( supported.first  == imgres.width() &&
+            supported.second == imgres.height() )
+            return true;
+    }
+    return false;
+}
+
+
+std::optional<QSize> GetNextBestImgPartResolution(QSize srcres)
+{
+    for(const auto & supported : fmt::FrameResValues)
+    {
+        if( supported.first  >= srcres.width() &&
+            supported.second >= srcres.height() )
+            return std::optional<QSize>(QSize{supported.first, supported.second});
+    }
+    return std::nullopt;
+}
+
 

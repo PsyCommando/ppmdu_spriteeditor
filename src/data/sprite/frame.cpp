@@ -28,6 +28,14 @@ bool MFrame::operator!=(const MFrame &other) const
     return !operator==(other);
 }
 
+MFramePart *MFrame::appendNewFramePart()
+{
+    int insertidx = nodeChildCount();
+    _insertChildrenNodes(insertidx, 1);
+    return m_container[insertidx];
+}
+
+
 void MFrame::importFrame(const fmt::ImageDB::frm_t &frms)
 {
 //    getModel()->removeRows(0, nodeChildCount());

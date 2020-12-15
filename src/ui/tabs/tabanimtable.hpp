@@ -7,6 +7,7 @@
 #include <src/ui/tabs/basespritetab.hpp>
 #include <src/ui/rendering/sprite_scene.hpp>
 #include <src/data/sprite/models/animtable_model.hpp>
+#include <src/data/sprite/models/animtable_delegate.hpp>
 
 namespace Ui {
 class TabAnimTable;
@@ -41,11 +42,19 @@ private:
     void OpenCurrentAnimSequence(); //Opens the tab in the main window at the sequence currently being previewed
     void OpenCurrentGroup();
 
+    //Returns the currently previewed anim group
+    AnimGroup * currentAnimGroup();
+    const AnimGroup * currentAnimGroup()const;
+
+    //Create a menu for the extra option button
+    QMenu *MakeExtraMenu();
+
 private slots:
     void OnAnimTableItemActivate(const QModelIndex &index);
     //void OnAmimTableGroupListItemActivate(const QModelIndex &index);
     //void OnAmimTableSequenceListItemActivate(const QModelIndex &index);
     //void UpdateAnimTblPreview( fmt::AnimDB::animseqid_t seqid );
+    void OnModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
     //##### NEW SLOTS
     void on_btnPlay_clicked();
@@ -55,13 +64,20 @@ private slots:
     void on_chkPreviewLoop_toggled(bool checked);
     void on_btnMoveGroupUp_clicked();
     void on_btnMoveGroupDown_clicked();
+    void on_btnAddGroup_clicked();
+    void on_btnRemoveGroup_clicked();
+
+    void on_actionImport_animation_table_triggered();
+
+    void on_actionExport_animation_table_triggered();
 
 private:
     Ui::TabAnimTable*                   ui;
     QScopedPointer<SpriteScene>         m_previewrender;
     QPersistentModelIndex               m_animTable;
     QScopedPointer<AnimTableModel>      m_animTableModel;
-    QPersistentModelIndex               m_previewedGroup;
+    QScopedPointer<AnimTableDelegate>   m_animTableDelegate;
+    QPersistentModelIndex               m_previewedGroupRef;
 };
 
 #endif // TABANIMTABLE_HPP

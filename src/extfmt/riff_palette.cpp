@@ -113,13 +113,12 @@ namespace utils
         
         qDebug("ExportTo_RIFF_Palette: Moving vector\n");
         //#4 - Profits!
-        return std::move(out_riffpalette);
+        return out_riffpalette;
     }
 
     void ExportTo_RIFF_Palette(const std::vector<uint32_t> &in_palette, const std::string & outputpath, funcoldec_t decoder )
     {
-        vector<uint8_t> output;
-        output = std::move(ExportTo_RIFF_Palette( in_palette, decoder ));
+        vector<uint8_t> output = ExportTo_RIFF_Palette( in_palette, decoder );
         WriteByteVectorToFile( outputpath, output );
     }
 
@@ -183,14 +182,14 @@ namespace utils
 
             ++i;
         }
-        return std::move( out_palette );
+        return out_palette;
     }
 
     std::vector<uint32_t> ImportFrom_RIFF_Palette( const std::string & inputpath, funcolenc_t encoder )
     {
         vector<uint8_t>  riffpaldata(ReadFileToByteVector( inputpath ));
         vector<uint32_t> output     (ImportFrom_RIFF_Palette( riffpaldata, encoder ));
-        return std::move(output);
+        return output;
     }
 
 };

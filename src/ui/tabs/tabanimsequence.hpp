@@ -28,6 +28,8 @@ public:
     void PrepareForNewContainer()override;
 
     void SetCurrentFrame(int frameidx, bool bupdatescene = true);
+    void writeSettings() override;
+    void readSettings() override;
 private:
     void ConnectSceneRenderer();
     void DisconnectSceneRenderer();
@@ -35,6 +37,7 @@ private:
 
     void setupAnimSeq(QPersistentModelIndex seq, Sprite * spr);
     void clearAnimSeq();
+    void RefreshTable(); //Refresh and redraw the table
 
 private slots:
     //Elements callbacks
@@ -64,6 +67,8 @@ private slots:
     //From main window
 
     void on_chkDisplayImgBorder_toggled(bool checked);
+
+    void on_chkAutoplay_toggled(bool checked);
 
 private:
     Ui::tabAnimSequence *ui;

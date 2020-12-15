@@ -36,6 +36,7 @@
 #include <src/data/sprite/palettecontainer.hpp>
 #include <src/data/sprite/animsequences.hpp>
 #include <src/data/sprite/animtable.hpp>
+#include <src/data/sprite/animgroups_container.hpp>
 
 
 //Since we have our own compression settings that differs
@@ -44,6 +45,7 @@ enum struct eCompressionFmtOptions : int
 {
     PKDPX = 0,
     AT4PX,
+    AT4PN,
     NONE,
 };
 extern const QStringList CompressionFmtOptions; //names for the above options
@@ -125,6 +127,11 @@ public:
     //Turns the data from the data structure to its native format into the m_raw container!
     void CommitSpriteData();
 
+    //Dumping
+    void DumpSpriteToStream(QDataStream & outstr);
+    void DumpSpriteToFile(const QString & fpath);
+    void DumpSpriteToXML(const QString & fpath);
+
     inline bool wasParsed()const    {return m_bparsed;}
     inline bool hasImageData()const {return m_imgcnt.nodeHasChildren();}
     inline bool hasEfxOffsets()const{return type() == fmt::eSpriteType::Character;}
@@ -142,23 +149,32 @@ public:
     QVector<QRgb>       &   getPalette()                            { return m_palcnt.getPalette(); }
     inline void             setPalette(const QVector<QRgb> & pal)   {m_palcnt.setPalette(pal);}
 
-    inline AnimSequences        & getAnimSequences()                            {return m_seqcnt;}
-    inline const AnimSequences  & getAnimSequences()const                       {return m_seqcnt;}
-    inline AnimSequence         * getAnimSequence(fmt::AnimDB::animseqid_t id)  {return m_seqcnt.getSequenceByID(id);}
-    inline const AnimSequence   * getAnimSequence(fmt::AnimDB::animseqid_t id)const  {return m_seqcnt.getSequenceByID(id);}
+    inline AnimSequences        & getAnimSequences()                                {return m_seqcnt;}
+    inline const AnimSequences  & getAnimSequences()const                           {return m_seqcnt;}
+    inline AnimSequence         * getAnimSequence(fmt::animseqid_t id)      {return m_seqcnt.getSequenceByID(id);}
+    inline const AnimSequence   * getAnimSequence(fmt::animseqid_t id)const {return m_seqcnt.getSequenceByID(id);}
 
-    inline AnimTable                & getAnimTable()                    {return m_anmtbl;}
-    inline const AnimTable          & getAnimTable()const               {return m_anmtbl;}
-    inline ImageContainer           & getImages()                       {return m_imgcnt;}
-    inline const ImageContainer     & getImages()const                  {return m_imgcnt;}
-    inline MFrame                   * getFrame( fmt::frmid_t id )       {return m_frmcnt.getFrame(id);}
-    inline const MFrame             * getFrame( fmt::frmid_t id )const  {return m_frmcnt.getFrame(id);}
-    inline FramesContainer          & getFrames()                       {return m_frmcnt;}
-    inline const FramesContainer    & getFrames()const                  {return m_frmcnt;}
-    Image                           * getImage(fmt::frmid_t idx);
-    const Image                     * getImage(fmt::frmid_t idx)const;
-    const EffectOffsetSet           * getAttachMarkers(fmt::frmid_t frmidx)const; //returns attachment markers for the given mframe index
-    EffectOffsetSet                 * getAttachMarkers(fmt::frmid_t frmidx); //returns attachment markers for the given mframe index
+    inline AnimGroups           & getAnimGroups()                               {return m_anmgrp;}
+    inline const AnimGroups     & getAnimGroups()const                          {return m_anmgrp;}
+    inline AnimGroup            * getAnimGroup(fmt::animgrpid_t id)     {return m_anmgrp.getGroup(id);}
+    inline const AnimGroup      * getAnimGroup(fmt::animgrpid_t id)const{return m_anmgrp.getGroup(id);}
+
+    inline AnimTable            & getAnimTable()        {return m_anmtbl;}
+    inline const AnimTable      & getAnimTable()const   {return m_anmtbl;}
+
+    inline ImageContainer       & getImages()                       {return m_imgcnt;}
+    inline const ImageContainer & getImages()const                  {return m_imgcnt;}
+    Image                       * getImage(fmt::frmid_t idx);
+    const Image                 * getImage(fmt::frmid_t idx)const;
+
+
+    inline MFrame               * getFrame( fmt::frmid_t id )       {return m_frmcnt.getFrame(id);}
+    inline const MFrame         * getFrame( fmt::frmid_t id )const  {return m_frmcnt.getFrame(id);}
+    inline FramesContainer      & getFrames()                       {return m_frmcnt;}
+    inline const FramesContainer& getFrames()const                  {return m_frmcnt;}
+
+    const EffectOffsetSet       * getAttachMarkers(fmt::frmid_t frmidx)const; //returns attachment markers for the given mframe index
+    EffectOffsetSet             * getAttachMarkers(fmt::frmid_t frmidx); //returns attachment markers for the given mframe index
 
     //Return binary version of the sprite
     inline rawdat_t             & getRawData()      {return m_raw;}
@@ -201,6 +217,19 @@ public:
     inline uint16_t unk13()const        {return m_sprhndl.getImageFmtInfo().unk13;}
     inline void     unk13(uint16_t v)   {m_sprhndl.getImageFmtInfo().unk13 = v;}
 
+    //Utilities
+public:
+    typedef std::pair<QRect, QImage>    imgpart_t; //Single chunk of an image with its position from the original image
+    typedef QVector<imgpart_t>          imgparts_t; //All the parts of a single image
+    typedef QVector<imgparts_t>         imgseq_t; //All the images part of a sequence
+    typedef QVector<imgseq_t>           imgseqs_t; //A set of sequences
+
+
+    bool isImageDoubleSize(const QImage & img);
+    fmt::frmid_t importImageParts(const imgparts_t & img); //returns img ids of the imported parts in the same order!
+    fmt::animseqid_t importImageSequence(const imgseq_t & seq, uint8_t frmduration = 1);
+    void importImageSequences(const imgseqs_t & sequences, uint8_t frmduration = 1);
+
 private:
     bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const;
     void DecompressRawData();
@@ -222,6 +251,7 @@ private:
     FramesContainer         m_frmcnt;
     AnimSequences           m_seqcnt;
     AnimTable               m_anmtbl;
+    AnimGroups              m_anmgrp;
 
     //Status / statistics
     bool                                    m_bparsed;          //Whether the sprite's raw has been parsed to be displayed yet or not!

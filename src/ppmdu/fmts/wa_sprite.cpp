@@ -1,8 +1,10 @@
 #include "wa_sprite.hpp"
+#include <src/ppmdu/fmts/sprite/sprite_content.hpp>
 
 namespace fmt
 {
 
+    const std::pair<uint16_t, uint16_t> MaxFrameResValue { 64, 64 };
 
     const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues
     {{
@@ -32,5 +34,8 @@ namespace fmt
 
         "INVALID",
     };
+
+    const animseqid_t NullSeqIndex = -1;
+    const animgrpid_t NullGrpIndex = -1;
 
 };

@@ -14,7 +14,7 @@ extern const QString ElemName_AnimSeqRef;
 class AnimSequenceReference : public TreeNodeTerminal
 {
 public:
-    using seqid_t = fmt::AnimDB::animseqid_t;
+    using seqid_t = fmt::animseqid_t;
     AnimSequenceReference(TreeNode * parent);
     AnimSequenceReference(AnimSequenceReference&& mv);
     AnimSequenceReference(const AnimSequenceReference & cp);
@@ -44,13 +44,12 @@ class AnimGroup : public TreeNodeWithChilds<AnimSequenceReference>
 {
     typedef TreeNodeWithChilds<AnimSequenceReference> parent_t ;
 public:
-    using animseqid_t = fmt::AnimDB::animseqid_t;
+    using animseqid_t = fmt::animseqid_t;
     enum struct eColumns : int
     {
         GroupID = 0,
         GroupName,
         NbSlots,
-        Preview,
         NbColumns,
     };
     static const QStringList ColumnNames;
@@ -65,7 +64,7 @@ public:
     //Import raw group data
     void                    importGroup(const fmt::AnimDB::animgrp_t & grp);
     //Export to raw group data
-    fmt::AnimDB::animgrp_t  exportGroup();
+    fmt::AnimDB::animgrp_t  exportGroup()const;
 
     bool operator==( const AnimGroup & other)const;
     bool operator!=( const AnimGroup & other)const;
@@ -96,6 +95,7 @@ public:
 
 private:
     uint16_t m_unk16 {0};
+
 };
 
 

@@ -2,71 +2,200 @@
 #include <src/data/sprite/animgroup.hpp>
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/models/animtable_delegate.hpp>
+#include <src/ppmdu/fmts/sprite/sprite_content.hpp>
+#include <src/data/sprite/animgroups_container.hpp>
 
-const QString ElemName_AnimTable = "Animation Table";
+const QString ElemName_AnimGroupRef = "AnimGroup Ref";
+const QString ElemName_AnimTable    = "Animation Table";
+
+//**********************************************************************************
+//  AnimGroupRef
+//**********************************************************************************
+
+const QMap<AnimTableSlot::eColumns,QString> AnimTableSlot::ColumnNames
+{
+    {eColumns::GroupId,     QString("Group ID")},
+    {eColumns::GroupName,   QString("Slot Name")},
+    {eColumns::NbSlots,     QString("Nb Group Slots")},
+};
+
+AnimTableSlot::AnimTableSlot(TreeNode * parent)
+    :parent_t(parent)
+{
+    m_flags |= Qt::ItemFlag::ItemIsEditable;
+}
+
+AnimTableSlot::AnimTableSlot(const AnimTableSlot & cp)
+    :parent_t(cp)
+{
+    m_flags |= Qt::ItemFlag::ItemIsEditable;
+}
+
+AnimTableSlot::AnimTableSlot(AnimTableSlot && mv)
+    :parent_t(mv)
+{
+    m_flags |= Qt::ItemFlag::ItemIsEditable;
+}
+
+AnimTableSlot & AnimTableSlot::operator=(const AnimTableSlot & cp)
+{
+    parent_t::operator=(cp);
+    m_grpId = cp.m_grpId;
+    return *this;
+}
+
+AnimTableSlot & AnimTableSlot::operator=(AnimTableSlot && mv)
+{
+    parent_t::operator=(mv);
+    m_grpId = mv.m_grpId;
+    return *this;
+}
+
+AnimTableSlot::~AnimTableSlot()
+{
+}
+
+void AnimTableSlot::setGroupRef(const QModelIndex & ref)
+{
+    if(ref.isValid())
+    {
+        const AnimGroup* pgrp = static_cast<const AnimGroup*>(ref.internalPointer());
+        Q_ASSERT(pgrp);
+        m_grpId = pgrp->getGroupUID();
+    }
+    else
+        m_grpId = fmt::NullGrpIndex;
+}
+
+void AnimTableSlot::setGroupRef(fmt::animgrpid_t ref)
+{
+    m_grpId = ref;
+}
+
+fmt::animgrpid_t AnimTableSlot::getGroupRef() const
+{
+    return m_grpId;
+}
+
+void AnimTableSlot::setSlotName(const QString &name)
+{
+    m_slotName = name;
+}
+
+const QString &AnimTableSlot::getSlotName() const
+{
+    return m_slotName;
+}
+
+bool AnimTableSlot::isNull() const
+{
+    return m_grpId == fmt::NullGrpIndex;
+}
+
+TreeNode *AnimTableSlot::clone() const
+{
+    return new AnimTableSlot(*this);
+}
+
+eTreeElemDataType AnimTableSlot::nodeDataTy() const
+{
+    return eTreeElemDataType::animGroupRef;
+}
+
+const QString &AnimTableSlot::nodeDataTypeName() const
+{
+    return ElemName_AnimGroupRef;
+}
+
+QString AnimTableSlot::nodeDisplayName() const
+{
+    QString dname = QString("Slot %1").arg(nodeIndex());
+    if(!isNull())
+        return QString("%1: Group %2").arg(dname).arg(m_grpId);
+    else
+        return QString("%1: None").arg(dname);
+}
 
 //**********************************************************************************
 //  AnimTable
 //**********************************************************************************
+AnimTable::AnimTable(TreeNode *parentsprite)
+    :TreeNodeWithChilds(parentsprite)
+{
+    //m_flags |= Qt::ItemFlag::ItemIsEditable;
+}
+
+AnimTable::AnimTable(const AnimTable &cp)
+    :TreeNodeWithChilds(cp)
+{
+    //m_flags |= Qt::ItemFlag::ItemIsEditable;
+}
+
+AnimTable::AnimTable(AnimTable &&mv)
+    :TreeNodeWithChilds(qMove(mv))
+{
+    //m_flags |= Qt::ItemFlag::ItemIsEditable;
+}
+
+AnimTable &AnimTable::operator=(AnimTable &&mv)
+{
+    TreeNodeWithChilds::operator=(mv);
+    //m_slotNames = qMove(mv.m_slotNames);
+    return *this;
+}
+
+AnimTable &AnimTable::operator=(const AnimTable &cp)
+{
+    TreeNodeWithChilds::operator=(cp);
+    //m_slotNames = cp.m_slotNames;
+    return *this;
+}
+
 AnimTable::~AnimTable()
 {
 }
 
-//QVariant AnimTable::nodeData(int column, int role) const
-//{
-//    if(column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
-//        return QVariant(ElemName());
-//    return QVariant();
-//}
-
-void AnimTable::importAnimationTable(const fmt::AnimDB::animtbl_t &orig)
-{
-    //#TODO: See if we can't load strings from a template at the same time for naming slots!
-    for(auto id : orig)
-        m_slotNames.insert(id,QString());
-}
-
-fmt::AnimDB::animtbl_t AnimTable::exportAnimationTable()
-{
-    //#FIXME:
-    //For now just dummy fill it will the ids of all our groups
-    //But eventually rewrite this and the import/export code, so we don't care about group ids
-    //considering groups are tied to animations, and groups never are null or shared.
-    fmt::AnimDB::animtbl_t dest;
-    dest.reserve(nodeChildCount());
-    for( int i = 0; i < nodeChildCount(); ++i )
-    {
-        dest.push_back(i);
-    }
-    return dest;
-}
-
-void AnimTable::importAnimationGroups(fmt::AnimDB::animgrptbl_t &animgrps)
+void AnimTable::importAnimationTable(const fmt::AnimDB::animtbl_t &atbl, const AnimGroups &groups)
 {
     _removeChildrenNodes(0, nodeChildCount());
-    _insertChildrenNodes(0, animgrps.size());
-//    m_container.reserve(animgrps.size());
-//    getModel()->removeRows(0, nodeChildCount());
-//    getModel()->insertRows(0, animgrps.size());
-    using grpid_t = fmt::AnimDB::animgrpid_t;
-    const grpid_t NBGroups = static_cast<grpid_t>(animgrps.size());
+    _insertChildrenNodes(0, atbl.size());
 
-    for(grpid_t cntgrp = 0; cntgrp < NBGroups; ++cntgrp)
-        m_container[cntgrp]->importGroup(animgrps[cntgrp]);
-}
-
-fmt::AnimDB::animgrptbl_t AnimTable::exportAnimationGroups()
-{
-    fmt::AnimDB::animgrptbl_t grps;
-    for( int cntgrp = 0; cntgrp < nodeChildCount(); ++cntgrp )
+    for(size_t i = 0; i < atbl.size(); ++i)
     {
-        grps[cntgrp] = m_container[cntgrp]->exportGroup();
+        AnimTableSlot * curGrpRef = m_container[i]; //The current reference entry
+        fmt::animgrpid_t curgrpid = atbl[i]; //The grp id in the original animation tbl
+        if(curgrpid != fmt::NullGrpIndex)
+        {
+            //Fetch the corresponding group, and make a ref to it
+            const AnimGroup * pgrp = static_cast<const AnimGroup*>(groups.nodeChild(curgrpid));
+            Q_ASSERT(pgrp);
+            curGrpRef->setGroupRef(pgrp->getGroupUID());
+        }
+        else
+            curGrpRef->setGroupRef(fmt::NullGrpIndex);
     }
-    return grps;
 }
 
-void AnimTable::DeleteGroupRefs(fmt::AnimDB::animgrpid_t id)
+fmt::AnimDB::animtbl_t AnimTable::exportAnimationTable(const AnimGroups & groups) const
 {
+    fmt::AnimDB::animtbl_t atbl;
+    for(const AnimTableSlot * g : *this)
+    {
+        if(g->isNull())
+            atbl.push_back(fmt::NullGrpIndex); //Empty references are treated as null values in the table
+        else
+        {
+            const AnimGroup * pgrp = groups.getGroup(g->getGroupRef());
+            Q_ASSERT(pgrp);
+            atbl.push_back(pgrp->getGroupUID());
+        }
+    }
+    return atbl;
+}
+
+void AnimTable::DeleteGroupRefs(fmt::animgrpid_t id)
+{
+    Q_ASSERT(false);
     Q_UNUSED(id);
     //Invalidate all references to this group!
 //    for(int i = 0; i < m_slotNames.size(); ++i)
@@ -76,116 +205,46 @@ void AnimTable::DeleteGroupRefs(fmt::AnimDB::animgrpid_t id)
 //    }
 }
 
-void AnimTable::DeleteGroupChild(fmt::AnimDB::animgrpid_t id)
+void AnimTable::DeleteGroupChild(fmt::animgrpid_t id)
 {
     DeleteGroupRefs(id);
     _removeChildrenNodes(id, 1);
     //getModel()->removeRow(id);
 }
 
-int AnimTable::getNbGroupSequenceSlots() const
+int AnimTable::getNbNamedSlots() const
 {
-    const AnimGroup * grp = m_container.first();
-    if(grp->nodeHasChildren())
-        return grp->nodeChildCount();
-    return 0;
+    return nodeChildCount();
 }
 
-QString AnimTable::getSlotName(fmt::AnimDB::animgrpid_t entry) const
+QString AnimTable::getSlotName(animtblidx_t entry) const
 {
-    if(entry >= 0 && entry < m_slotNames.size() )
+    if(entry >= 0 && entry < nodeChildCount() )
     {
-        auto itf = m_slotNames.find(entry);
-        if(itf != m_slotNames.end())
-            return (*itf);
+        return m_container[entry]->getSlotName();
     }
     return QString();
 }
 
-//QVariant AnimTable::data(const QModelIndex &index, int role) const
-//{
-//    if (!index.isValid())
-//        return QVariant("root");
-
-//    //    if (role != Qt::DisplayRole &&
-//    //        role != Qt::DecorationRole &&
-//    //        role != Qt::SizeHintRole &&
-////        role != Qt::EditRole)
-////        return QVariant();
-
-////    const AnimGroup *grp = static_cast<const AnimGroup*>(getItem(index));
-////    return grp->nodeData(index.column(), role);
-
-//    if( role != Qt::DisplayRole  &&
-//        role != Qt::EditRole     &&
-//        role != Qt::SizeHintRole &&
-//        role != Qt::DecorationRole)
-//        return QVariant();
-
-//    const AnimGroup * grp = static_cast<const AnimGroup*>(getItem(index));
-//    Q_ASSERT(grp);
-
-////    if( Qt::SizeHintRole )
-////    {
-////        QFontMetrics fm(QFont("Sergoe UI", 9));
-////        QString str = data(index, Qt::DisplayRole).toString();
-////        return QSize(fm.width(str), fm.height());
-////    }
-
-//    switch(static_cast<AnimGroup::eColumns>(index.column()))
-//    {
-//    case AnimGroup::eColumns::GroupID:
-//        {
-//            if(role == Qt::DisplayRole || role == Qt::EditRole)
-//                return grp->getGroupUID();
-//            break;
-//        }
-//    case AnimGroup::eColumns::GroupName:
-//        {
-//            if(role == Qt::DisplayRole || role == Qt::EditRole)
-//            {
-//                auto itf = m_slotNames.find(index.row());
-//                if(itf != m_slotNames.end())
-//                    return (*itf);
-//                return QString("--");
-//            }
-//            break;
-//        }
-//    case AnimGroup::eColumns::NbSlots:
-//        {
-//            if(role == Qt::DisplayRole || role == Qt::EditRole)
-//                return grp->seqSlots().size();
-//            break;
-//        }
-//    default:
-//        {
-//            break;
-//        }
-//    };
-//    return QVariant();
-//}
-
-//QVariant AnimTable::headerData(int section, Qt::Orientation orientation, int role) const
-//{
-//    if( role != Qt::DisplayRole )
-//        return QVariant();
-
-//    if( orientation == Qt::Orientation::Vertical )
-//    {
-//        return QVariant(QString("%1").arg(section));
-//    }
-//    else if( orientation == Qt::Orientation::Horizontal &&
-//             (section >= 0) && (section < AnimGroup::ColumnNames.size()) )
-//    {
-//        return AnimGroup::ColumnNames[section];
-//    }
-//    return QVariant();
-//}
-
-void AnimTable::setSlotName(fmt::AnimDB::animgrpid_t entry, const QString &name)
+void AnimTable::setSlotName(animtblidx_t entry, const QString &name)
 {
-    if(entry >= 0 && entry < m_slotNames.size())
-        m_slotNames[entry] = name;
+    if(entry >= 0 && entry < nodeChildCount())
+        m_container[entry]->setSlotName(name);
+}
+
+AnimTable::animtblidx_t AnimTable::findFirstGroupRef(const AnimGroup *grp) const
+{
+    animtblidx_t found = -1;
+    const fmt::animgrpid_t idtofind = grp->getGroupUID();
+    for(animtblidx_t i = 0; i < nodeChildCount(); ++i)
+    {
+        if(m_container[i]->getGroupRef() == idtofind)
+        {
+            found = i;
+            break;
+        }
+    }
+    return found;
 }
 
 TreeNode *AnimTable::clone() const
@@ -207,3 +266,10 @@ QString AnimTable::nodeDisplayName() const
 {
     return nodeDataTypeName();
 }
+
+const QString &AnimTable::ComboBoxStyleSheet()
+{
+    static const QString SSheet("QComboBox QAbstractItemView::item {margin-top: 2px;}");
+    return SSheet;
+}
+

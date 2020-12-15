@@ -44,7 +44,7 @@ QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
 
     const AnimSequenceReference * ref = static_cast<const AnimSequenceReference *>(m_root->nodeChild(index.row()));
     Q_ASSERT(ref);
-    fmt::AnimDB::animseqid_t    id = ref->getSeqRefID();
+    fmt::animseqid_t    id = ref->getSeqRefID();
     const AnimSequence *        pseq = getOwnerSprite()->getAnimSequence(id);
 
     switch(static_cast<eColumns>(index.column()))
@@ -191,7 +191,7 @@ Sprite *AnimGroupModel::getOwnerSprite()
     return m_sprite;
 }
 
-void AnimGroupModel::setSlotSequenceID(int slot, fmt::AnimDB::animseqid_t id)
+void AnimGroupModel::setSlotSequenceID(int slot, fmt::animseqid_t id)
 {
     if(slot > m_root->nodeChildCount() || slot < 0)
         throw std::out_of_range("AnimGroupModel::setSlotSequenceID(): Slot out of range!");
@@ -199,7 +199,7 @@ void AnimGroupModel::setSlotSequenceID(int slot, fmt::AnimDB::animseqid_t id)
     ref->setSeqRefID(id);
 }
 
-fmt::AnimDB::animseqid_t AnimGroupModel::getSlotSequenceID(int slot) const
+fmt::animseqid_t AnimGroupModel::getSlotSequenceID(int slot) const
 {
     if(slot > m_root->nodeChildCount() || slot < 0)
         throw std::out_of_range("AnimGroupModel::getSlotSequenceID(): Slot out of range!");

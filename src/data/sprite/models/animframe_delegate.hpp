@@ -12,7 +12,7 @@ class AnimSequence;
 class FramesListModel;
 class AnimFrameDelegate : public QStyledItemDelegate
 {
-    Q_OBJECT
+    Q_OBJECT;
     Q_DISABLE_COPY_MOVE(AnimFrameDelegate);
 public:
     explicit AnimFrameDelegate(AnimSequence * seq, Sprite * spr, QObject *parent = nullptr);

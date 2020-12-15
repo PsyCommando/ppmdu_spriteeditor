@@ -9,7 +9,7 @@
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/ui/dialogprogressbar.hpp>
-#include <src/utility/threadedwriter.hpp>
+#include <src/utility/container_threaded_writer.hpp>
 #include <src/data/content_factory.hpp>
 #include <src/data/content_manager.hpp>
 #include <src/data/sprite/spritemanager.hpp>
@@ -26,7 +26,24 @@ const QString ContentName_Sprite = "sprite";
 bool FileIsSpriteContainer(const QString & filepath);
 
 //Define the container as a handler for sprite containers
-DEFINE_CONTAINER(SpriteContainer, ContentName_Sprite, FileIsSpriteContainer);
+DEFINE_CONTAINER(SpriteContainer, ContentName_Sprite, FileIsSpriteContainer, ContentName_Sprite);
+
+bool FileIsSpriteContainer(const QString & filepath)
+{
+    const QFileInfo target(filepath);
+    if(target.exists())
+    {
+        const QString extension = target.suffix();
+        if( extension == PackFileExt ||
+            extension == WANFileExt ||
+            extension == WATFileExt )
+        {
+            //#TODO: Do advanced tests
+            return true;
+        }
+    }
+    return false;
+}
 
 //=================================================================================================
 //  SpriteContainer
@@ -98,7 +115,7 @@ void SpriteContainer::Initialize()
 {
     if(isContainerLoaded())
         return; //Don't do anything when we're already filed up!
-    if(ContainerIsSingleSprite())
+    if(isContainerSingleSprite())
     {
         //We want to add a single empty sprite for a single sprite!
         AddSprite();
@@ -124,19 +141,19 @@ SpriteContainer::~SpriteContainer()
     qDeleteAll(m_spr);
 }
 
-bool SpriteContainer::ContainerIsPackFile() const
+bool SpriteContainer::isContainerPackFile() const
 {
     return isContainerLoaded() && m_cntTy == eContainerType::PACK;
 }
 
-bool SpriteContainer::ContainerIsSingleSprite() const
+bool SpriteContainer::isContainerSingleSprite() const
 {
-    return !ContainerIsPackFile();
+    return !isContainerPackFile();
 }
 
 const QString &SpriteContainer::GetContainerType() const
 {
-    switch(m_cntTy)
+    switch(GetContainerTypeEnum())
     {
     case eContainerType::PACK:
         return PackFileExt;
@@ -150,18 +167,28 @@ const QString &SpriteContainer::GetContainerType() const
     return NullString;
 }
 
+SpriteContainer::eContainerType SpriteContainer::GetContainerTypeEnum() const
+{
+    return m_cntTy;
+}
+
 void SpriteContainer::SetContainerType(const QString &newtype)
 {
     if(newtype == PackFileExt)
-        m_cntTy = eContainerType::PACK;
+        SetContainerType(eContainerType::PACK);
     else if(newtype == WANFileExt)
-        m_cntTy = eContainerType::WAN;
+        SetContainerType(eContainerType::WAN);
     else if(newtype == WATFileExt)
-        m_cntTy = eContainerType::WAT;
+        SetContainerType(eContainerType::WAT);
     else
     {
         throw std::runtime_error("SpriteContainer::SetContainerType(): Unknown container type!");
     }
+}
+
+void SpriteContainer::SetContainerType(SpriteContainer::eContainerType newtype)
+{
+    m_cntTy = newtype;
 }
 
 //void SpriteContainer::SetContainerType(SpriteContainer::eContainerType ty){m_cntTy = ty;}
@@ -246,7 +273,7 @@ int SpriteContainer::WriteContainer()const
         return 0;
     }
 
-    ThreadedWriter * pmthw = new ThreadedWriter(pcontainer.take(), ContentManager::Instance().getContainer());
+    ContainerThreadedWriter * pmthw = new ContainerThreadedWriter(pcontainer.take(), ContentManager::Instance().getContainer());
     connect( &m_workthread, SIGNAL(finished()), pmthw, SLOT(deleteLater()) );
     connect(pmthw, SIGNAL(finished()), &m_workthread, SLOT(quit()));
     connect(pmthw, SIGNAL(finished()), pmthw, SLOT(deleteLater()));
@@ -283,12 +310,12 @@ int SpriteContainer::WriteContainer()const
 
 void SpriteContainer::ImportContainer(const QString &/*path*/)
 {
-    Q_ASSERT(false); //Need to be done!
+    Q_ASSERT(false); //#TODO: Need to be done!
 }
 
 void SpriteContainer::ExportContainer(const QString &/*path*/, const QString & /*exportype*/) const
 {
-    Q_ASSERT(false); //Need to be done!
+    Q_ASSERT(false); //#TODO: Need to be done!
 }
 
 Sprite* SpriteContainer::GetSprite(SpriteContainer::sprid_t idx)
@@ -302,10 +329,23 @@ SpriteContainer::sprid_t SpriteContainer::AddSprite()
     size_t offset = m_spr.size();
 
     manager.beginInsertRows( QModelIndex(), offset, offset );
-    m_spr.push_back(new Sprite(this) );
+    Sprite * spr = new Sprite(this);
+   // spr->m_bparsed = true; //#FIXME: Gotta make newly created sprite valid by setting them to parsed!! Or make something smarter
+//    spr->setTargetCompression(filetypes::eCompressionFormats::INVALID);
+    m_spr.push_back(spr);
     manager.endInsertRows();
 
     return offset;
+}
+
+eCompressionFmtOptions SpriteContainer::GetExpectedCompression() const
+{
+    return m_cntCompression;
+}
+
+void SpriteContainer::SetExpectedCompression(eCompressionFmtOptions compression)
+{
+    m_cntCompression = compression;
 }
 
 SpriteContainer::iterator SpriteContainer::begin()
@@ -648,7 +688,10 @@ void SpriteContainer::appendChild(TreeNode *item)
 
 TreeNode *SpriteContainer::nodeChild(int row)
 {
-    return m_spr[row];
+    if(m_spr.empty() || row > m_spr.size())
+        throw std::runtime_error("SpriteContainer::nodeChild(): Row exceeds the the amount of childrens the container has!");
+    else
+        return m_spr[row];
 }
 
 int SpriteContainer::nodeChildCount() const
@@ -874,7 +917,7 @@ QVariant SpriteContainer::GetContentHeaderData(int /*section*/, Qt::Orientation 
 
 bool SpriteContainer::isMultiItemContainer() const
 {
-    return ContainerIsPackFile();
+    return isContainerPackFile();
 }
 
 const QString &SpriteContainer::GetTopNodeName() const
@@ -959,22 +1002,3 @@ const QString &SpriteContainer::nodeDataTypeName() const
 {
     return ElemName_SpriteContainer;
 }
-
-bool FileIsSpriteContainer(const QString & filepath)
-{
-    const QFileInfo target(filepath);
-    if(target.exists())
-    {
-        const QString extension = target.suffix();
-        if( extension == PackFileExt ||
-            extension == WANFileExt ||
-            extension == WATFileExt )
-        {
-            //#TODO: Do advanced tests
-            return true;
-        }
-    }
-    return false;
-}
-
-

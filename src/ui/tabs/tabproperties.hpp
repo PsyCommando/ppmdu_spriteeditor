@@ -29,12 +29,12 @@ public:
     void PrepareForNewContainer() override;
     void OnItemRemoval(const QModelIndex &item) override;
 
-private:
+private slots:
     void on_btnExportPalette_clicked();
     void on_btnImportPalette_clicked();
-    static QString GetPaletteImportFiterString();
-    static const QString PaletteFilterString();
-
+    //static QString GetPaletteImportFiterString();
+    //static const QString PaletteFilterString();
+private:
     QPixmap GenerateSpritePreviewImage();
     QPixmap GenerateSpritePreviewPalette();
     void UpdatePreview();

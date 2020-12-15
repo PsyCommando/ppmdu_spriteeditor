@@ -66,14 +66,17 @@ void FrameEditor::initScene()
         connect(gfx, &EditableItem::dragEnd,    this, &FrameEditor::onItemDragEnd);
     }
 
-    for(int i = 0; i < m_attachModel->rowCount(QModelIndex()); ++i)
+    if(m_attachModel)
     {
-        AttachMarker * mark = new AttachMarker(this, m_attachModel->index(i, 0, QModelIndex()));
-        addItem(mark);
-        m_markers.push_back(mark);
-        connect(mark, &EditableItem::dragBegin, this, &FrameEditor::onItemDragBegin);
-        connect(mark, &EditableItem::dragEnd,   this, &FrameEditor::onItemDragEnd);
-        mark->update();
+        for(int i = 0; i < m_attachModel->rowCount(QModelIndex()); ++i)
+        {
+            AttachMarker * mark = new AttachMarker(this, m_attachModel->index(i, 0, QModelIndex()));
+            addItem(mark);
+            m_markers.push_back(mark);
+            connect(mark, &EditableItem::dragBegin, this, &FrameEditor::onItemDragBegin);
+            connect(mark, &EditableItem::dragEnd,   this, &FrameEditor::onItemDragEnd);
+            mark->update();
+        }
     }
 
     if(!views().empty())
@@ -184,7 +187,7 @@ void FrameEditor::partListChanged(MFrame *pfrm)
 void FrameEditor::updateScene()
 {
     if( m_pfrm->nodeChildCount() != m_parts.size() ||
-        m_attachModel->rowCount(QModelIndex()) != m_markers.size() )
+        (m_attachModel && m_attachModel->rowCount(QModelIndex()) != m_markers.size()) )
     {
         qDebug("FrameEditor::updateParts(): Scene integrity has changed. Rebuilding!\n");
         initScene(); //Force scene refresh if those differ!
@@ -193,16 +196,11 @@ void FrameEditor::updateScene()
 
     //update image part items
     for(auto & p : m_parts)
-    {
-        if(!p.isNull())
-            p->updateOffset();
-    }
+        p->updateOffset();
 
     //Do markers updates
     for(auto & m : m_markers)
-    {
         m->updateOffset();
-    }
 }
 
 QPointF FrameEditor::getSceneCenter()const

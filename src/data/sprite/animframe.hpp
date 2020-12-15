@@ -61,7 +61,6 @@ public:
     inline void setShadowy (int16_t val) {m_data.shadowyoffs = val;}
 
     bool nodeIsMutable()const override              {return true;}
-    bool nodeShowChildrenOnTreeView()const override {return false;}
 
     //Render the frame into an image, or display the cached preview if available
     QImage makePreview(const Sprite* owner)const;

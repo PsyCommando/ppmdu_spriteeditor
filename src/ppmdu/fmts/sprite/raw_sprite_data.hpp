@@ -19,7 +19,7 @@ namespace fmt
     {
         uint32_t ptrimgtable;   //pointer to the image data pointer table
         uint32_t ptrpal;        //pointer to palette data
-        uint16_t unk13;         //tiling?
+        uint16_t unk13;         //VRAM Character Mapping. 0 = 2D Mapping(Tiles placed on a 32x32 matrix), 1 = 1D Mapping(Tiles loaded one after another).
         uint16_t colordepth;    //1 == 256 colors, 0 == 16 colors
         uint16_t unk11;         //palette slot?
         uint16_t nbimgs;        //nb images in the img data table

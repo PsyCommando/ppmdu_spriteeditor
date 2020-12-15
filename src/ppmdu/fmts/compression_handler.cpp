@@ -8,6 +8,7 @@ namespace filetypes
         "AT4PX",
         "AT4PN",
         "INVALID",
+        "NONE",
     };
 
 

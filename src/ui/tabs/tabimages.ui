@@ -158,6 +158,29 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="btnImport">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../appres.qrc">
+           <normaloff>:/resources/fugue-icons-3.5.6/icons/image-import.png</normaloff>:/resources/fugue-icons-3.5.6/icons/image-import.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="btnExport">
          <property name="minimumSize">
           <size>

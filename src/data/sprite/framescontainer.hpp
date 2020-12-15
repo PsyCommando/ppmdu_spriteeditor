@@ -43,6 +43,9 @@ public:
     const MFrame *  getFrame(fmt::frmid_t id)const;
     bool ClearImageReferences(const QModelIndexList & indices, bool bdelete = false);
 
+    //Create and append a new MFrame, return pointer to it
+    MFrame * appendNewFrame();
+
     void importFrames( const fmt::ImageDB::frmtbl_t & frms );
     fmt::ImageDB::frmtbl_t exportFrames();
     bool nodeIsMutable()const override {return false;}

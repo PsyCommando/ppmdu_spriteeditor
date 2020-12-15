@@ -51,8 +51,14 @@ public:
             return nullptr;
     }
 
+    const TreeNode* nodeChild(int row)const override
+    {
+        return const_cast<my_t*>(this)->nodeChild(row);
+    }
+
     int     nodeChildCount()const override  {return m_container.size();}
     bool    nodeHasChildren()const override {return !m_container.empty();}
+    virtual bool nodeShowChildrenOnTreeView()const override {return true;}
 
     int indexOfChild(const TreeNode * ptr)const override
     {
@@ -193,23 +199,64 @@ protected:
         return _moveChildrenNodes(tomove, destrow, destparent);
     }
 
-    bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override
+    bool _moveChildrenNodes(const QList<TreeNode *> &tomove, int destrow, QModelIndex destparent) override
     {
-        TreeNode* pdestparent = static_cast<TreeNode*>(destparent.internalPointer());
-        if(destrow >= pdestparent->nodeChildCount())
-        {
+        TreeNode* pdestparent = nullptr;
+        if(destparent.isValid())
+            pdestparent = static_cast<TreeNode*>(destparent.internalPointer());
+        else
+            pdestparent = this;
+        if(destrow >= pdestparent->nodeChildCount()+1) //Since inserting is done before the specified offset, we gotta add one more child to the count
             return false;
-        }
-        int cntinsert = 0;
-        for(TreeNode * p : nodes)
+
+        for(int i = tomove.size()-1; i >= 0; --i)
         {
-            if( !_removeChildrenNodes(p->nodeIndex(), 1) ||
-                !_insertChildrenNodes(QList<TreeNode*>{p}, destrow + cntinsert) )
+            int newdest = destrow > tomove[i]->nodeIndex()? destrow - 1 : destrow;
+            if( !_removeChildrenNodes(tomove[i]->nodeIndex(), 1) ||
+                !_insertChildrenNodes(QList<TreeNode*>{tomove[i]}, newdest) )
             {
                 return false;
             }
-            ++cntinsert;
         }
+
+//        QList<int> predictedDes; //destination rows for each subsequent moves
+//        int newdest = destrow;
+//        for(TreeNode * t : tomove)
+//        {
+//            int oldidx = t->nodeIndex();
+//            if(newdest > oldidx)
+//            {
+//                //Destination is after the item we're moving
+//                newdest -= 1;
+//            }
+//            predictedDes.push_back(newdest);
+//        }
+
+//        for(int i = 0; i < tomove.size(); ++i)
+//        {
+//            if( !_removeChildrenNodes(tomove[i]->nodeIndex(), 1) ||
+//                !_insertChildrenNodes(QList<TreeNode*>{tomove[i]}, predictedDes[i]) )
+//            {
+//                return false;
+//            }
+//        }
+
+//        for(TreeNode * p : tomove)
+//        {
+//            int newdest = destrow;
+//            //Compensate for removal of the source node if we're operating on the same parent!!!
+//            //If we're operating on the same parent and placing after the source, we don't need to offset the insertion!
+//            if(destparent.internalPointer() != this || (destparent.internalPointer() == this && destrow < p->nodeIndex()))
+//                newdest = destrow + cntinsert;
+
+//            if( !_removeChildrenNodes(p->nodeIndex(), 1) ||
+//                !_insertChildrenNodes(QList<TreeNode*>{p}, newdest) )
+//            {
+//                return false;
+//            }
+//            if(destparent.internalPointer() != this || (destparent.internalPointer() == this && destrow < p->nodeIndex()))
+//                ++cntinsert;
+//        }
         return true;
     }
 

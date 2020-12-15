@@ -12,7 +12,7 @@ extern const QString ElemName_EffectOffsetSets;
 class EffectOffsetContainer : public TreeNodeWithChilds<EffectOffsetSet>
 {
 public:
-    typedef TreeNodeWithChilds<EffectOffsetSet> parent_t;
+    using parent_t = TreeNodeWithChilds<EffectOffsetSet>;
     EffectOffsetContainer(TreeNode * parent);
     EffectOffsetContainer(EffectOffsetContainer && mv);
     EffectOffsetContainer(const EffectOffsetContainer & cp);

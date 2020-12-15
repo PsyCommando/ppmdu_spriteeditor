@@ -136,7 +136,7 @@ void TabAnimGroup::SelectGroupSlot(const QModelIndex &slot)
     Q_ASSERT(sprite);
     AnimGroup * grp = getCurrentGroup();
     Q_ASSERT(grp);
-    fmt::AnimDB::animseqid_t id = grp->getAnimSlotRef(slot.row());
+    fmt::animseqid_t id = grp->getAnimSlotRef(slot.row());
     SelectAnimSequence(m_pAnimPicker->index(id, 0, QModelIndex()));
 }
 

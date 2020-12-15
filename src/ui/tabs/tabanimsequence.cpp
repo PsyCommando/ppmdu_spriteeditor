@@ -1,6 +1,7 @@
 #include "tabanimsequence.hpp"
 #include "ui_tabanimsequence.h"
 #include <QFileDialog>
+#include <QSettings>
 
 const QString DEFAULT_PLAYTIME_VALUE = "----- t";
 
@@ -35,6 +36,8 @@ void TabAnimSequence::OnShowTab(QPersistentModelIndex element)
             ConnectSceneRenderer();
             OnPreviewRangeChanged(0, m_previewrender.getAnimationLength()); //Force set the preview range
             qDebug() << "TabAnimSequence::ShowTab(): Scene set!\n";
+            if(ui->chkAutoplay->isChecked())
+                m_previewrender.beginAnimationPlayback();
         }
     }
     BaseSpriteTab::OnShowTab(element);
@@ -112,6 +115,14 @@ void TabAnimSequence::clearAnimSeq()
     m_curAnimSeq = QModelIndex();
     m_curSeqFramesModel.reset();
     m_curSeqFramesDelegate.reset();
+}
+
+void TabAnimSequence::RefreshTable()
+{
+    ui->tblseqfrmlst->resizeColumnsToContents();
+    ui->tblseqfrmlst->resizeRowsToContents();
+    ui->tblseqfrmlst->repaint();
+    ui->tblseqfrmlst->update();
 }
 
 void TabAnimSequence::ConnectSceneRenderer()
@@ -237,7 +248,7 @@ void TabAnimSequence::on_btnSeqAddFrm_clicked()
         ShowStatusErrorMessage(tr("Insertion failed!"));
 
     m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
+    RefreshTable();
 }
 
 void TabAnimSequence::on_btnSeqRemFrm_clicked()
@@ -264,8 +275,7 @@ void TabAnimSequence::on_btnSeqRemFrm_clicked()
 
     sel->clearSelection();
     m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update(ui->tblseqfrmlst->rect());
-    //ui->tblseqfrmlst->update();
+    RefreshTable();
 }
 
 void TabAnimSequence::on_btnSeqMvUp_clicked()
@@ -290,7 +300,7 @@ void TabAnimSequence::on_btnSeqMvUp_clicked()
     }
 
     m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
+    RefreshTable();
 }
 
 void TabAnimSequence::on_btnSeqMvDown_clicked()
@@ -315,14 +325,14 @@ void TabAnimSequence::on_btnSeqMvDown_clicked()
     }
 
     m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
+    RefreshTable();
 }
 
 void TabAnimSequence::on_btnSeqDup_clicked()
 {
     //#TODO: Separate this from ui code if possible!
-    QModelIndex ind = ui->tblseqfrmlst->currentIndex();
-    AnimSequence    *curseq = static_cast<AnimSequence*>(m_curAnimSeq.internalPointer());
+    QModelIndex     ind     = ui->tblseqfrmlst->currentIndex();
+    AnimSequence*   curseq  = static_cast<AnimSequence*>(m_curAnimSeq.internalPointer());
     Q_ASSERT(curseq);
     if(!ind.isValid())
     {
@@ -330,21 +340,21 @@ void TabAnimSequence::on_btnSeqDup_clicked()
         return;
     }
 
-    AnimFrame tmpfrm = *(static_cast<AnimFrame*>(ind.internalPointer()));
+    AnimFrame * tmpfrm = static_cast<AnimFrame*>(ind.internalPointer());
 
     int insertpos = ind.row();
     if(m_curSeqFramesModel->insertRow(insertpos))
     {
         AnimFrame * pnewfrm = static_cast<AnimFrame *>(m_curSeqFramesModel->getItem( m_curSeqFramesModel->index(insertpos, 0, QModelIndex()) ));
         Q_ASSERT(pnewfrm);
-        (*pnewfrm) = tmpfrm;
+        (*pnewfrm) = *tmpfrm;
         ShowStatusMessage(tr("Duplicated animation frame!"));
     }
     else
         ShowStatusErrorMessage(tr("Duplication failed!"));
 
     m_previewrender.reloadAnim();
-    ui->tblseqfrmlst->update();
+    RefreshTable();
 }
 
 //-------------------------------------------------------------------------
@@ -396,6 +406,33 @@ void TabAnimSequence::on_tblseqfrmlst_activated(const QModelIndex &index)
     SetCurrentFrame(index.row(), true);
 }
 
+void TabAnimSequence::on_tblseqfrmlst_clicked(const QModelIndex &index)
+{
+    if(!index.isValid())
+        return;
+    SetCurrentFrame(index.row());
+}
+
+void TabAnimSequence::on_chkDisplayImgBorder_toggled(bool checked)
+{
+    if(checked)
+        ui->gvAnimSeqViewport->setBackgroundBrush(QBrush(QColor("black")));
+    else
+        ui->gvAnimSeqViewport->setBackgroundBrush(QBrush(m_previewrender.getSpriteBGColor()));
+}
+
+void TabAnimSequence::on_chkAutoplay_toggled(bool checked)
+{
+    if(checked)
+    {
+        m_previewrender.beginAnimationPlayback();
+    }
+    else
+    {
+        m_previewrender.endAnimationPlayback();
+    }
+}
+
 //-------------------------------------------------------------------------
 //  Import/Export
 //-------------------------------------------------------------------------
@@ -431,17 +468,28 @@ void TabAnimSequence::on_btnSeqExport_clicked()
     ShowStatusMessage(QString(tr("Exported %1 images!")).arg(cntimg));
 }
 
-void TabAnimSequence::on_tblseqfrmlst_clicked(const QModelIndex &index)
+//-------------------------------------------------------------------------
+//  Settings
+//-------------------------------------------------------------------------
+const QString TabAnimSequence_GroupName = "TabAnimSequence";
+const QString TabAnimSequence_Autoplay = "Autoplay";
+
+void TabAnimSequence::writeSettings()
 {
-    if(!index.isValid())
-        return;
-    SetCurrentFrame(index.row());
+    QSettings & settings = getSettings();
+    settings.beginGroup(TabAnimSequence_GroupName);
+    settings.setValue(TabAnimSequence_Autoplay, ui->chkAutoplay->isChecked());
+    settings.endGroup();
 }
 
-void TabAnimSequence::on_chkDisplayImgBorder_toggled(bool checked)
+void TabAnimSequence::readSettings()
 {
-    if(checked)
-        ui->gvAnimSeqViewport->setBackgroundBrush(QBrush(QColor("black")));
-    else
-        ui->gvAnimSeqViewport->setBackgroundBrush(QBrush(m_previewrender.getSpriteBGColor()));
+    QSettings & settings = getSettings();
+    settings.beginGroup(TabAnimSequence_GroupName);
+
+    //Set autoplay, without triggering an update
+    ui->chkAutoplay->blockSignals(true);
+    ui->chkAutoplay->setChecked(settings.value(TabAnimSequence_Autoplay, true).toBool());
+    ui->chkAutoplay->blockSignals(false);
+    settings.endGroup();
 }

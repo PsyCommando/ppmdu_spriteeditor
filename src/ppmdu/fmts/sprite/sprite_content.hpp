@@ -502,14 +502,18 @@ namespace fmt
 //-----------------------------------------------------------------------------
 //  AnimDB
 //-----------------------------------------------------------------------------
+    typedef int animseqid_t;   //Id for an animation sequence
+    typedef int animgrpid_t;   //Id for an animation group
+    extern const animseqid_t NullSeqIndex;  //Represents an entry not refering to any sequence
+    extern const animgrpid_t NullGrpIndex;  //Represents an entry not refering to any group
     /**********************************************************************
      * Sub component of a sprite for handling animation data.
     **********************************************************************/
-    struct AnimDB
+    class AnimDB
     {
+    public:
         //A single sequence of animated frames
-        typedef int                                         animseqid_t;   //Id for an animation sequence
-        typedef int                                         animgrpid_t;   //Id for an animation group
+
         typedef std::list<animfrm_t>                        animseq_t;
         typedef std::vector<animgrpid_t>                    animtbl_t;
         /**********************************************************************
@@ -524,8 +528,8 @@ namespace fmt
         typedef std::map<animseqid_t, animseq_t>    animseqtbl_t;
         typedef std::vector<frameoffsets_t>         frmoffslst_t;
 
-        static const animseqid_t NullSeq = -1;  //Represents an entry not refering to any sequence
-        static const animgrpid_t NullGrp = -1;  //Represents an entry not refering to any group
+        //static const animseqid_t NullSeq;  //Represents an entry not refering to any sequence
+        //static const animgrpid_t NullGrp;  //Represents an entry not refering to any group
 
         animseqtbl_t  m_animsequences;  //A table containing all uniques animation sequences
         animgrptbl_t  m_animgrps;       //A table of all the unique animation groups
@@ -572,55 +576,83 @@ namespace fmt
              * grpentry groups[];
             */
 
-            size_t cntgrp = 0;
-            //Writing the first table!
-            for( const auto & grp : m_animgrps )
+
+            for(size_t idxanim = 0; idxanim <  m_animtbl.size(); ++idxanim )
             {
-                //fill empty groups
-                for( ; cntgrp <  m_animtbl.size() && m_animtbl[cntgrp] == NullGrp; ++cntgrp )
-                {
-                    //For empty groups, we have to insert 4 bytes of 0!
+                if(m_animtbl[idxanim] == NullGrpIndex)
                     sir0hlpr.writePtr(static_cast<uint32_t>(0));
-                }
-
-                //Then we can put the data for our valid group!
-                ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(),
-                                                     grp.second.seqs.size())); //add to the list of group array pointers + sizes
-                for( const auto & seq : grp.second.seqs )
+                else
                 {
-                    if(seq >= static_cast<int>(ptrseqs.size()))
-                        throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
-                    sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
+                    const auto & grp = m_animgrps.at(m_animtbl[idxanim]);
+                    //Then we can put the data for our valid group!
+                    ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(),
+                                                         grp.seqs.size())); //add to the list of group array pointers + sizes
+                    for( const auto & seq : grp.seqs )
+                    {
+                        if(seq >= static_cast<int>(ptrseqs.size()))
+                            throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
+                        sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
+                    }
                 }
-
-                ++cntgrp;
             }
+
+
+
+
+//            size_t cntgrp = 0;
+//            //Writing the first table!
+//            for( const auto & grp : m_animgrps )
+//            {
+//                //fill empty groups
+//                for( ; cntgrp <  m_animtbl.size() && m_animtbl[cntgrp] == NullGrp; ++cntgrp )
+//                {
+//                    //For empty groups, we have to insert 4 bytes of 0!
+//                    sir0hlpr.writePtr(static_cast<uint32_t>(0));
+//                }
+
+//                //Then we can put the data for our valid group!
+//                ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(),
+//                                                     grp.second.seqs.size())); //add to the list of group array pointers + sizes
+//                for( const auto & seq : grp.second.seqs )
+//                {
+//                    if(seq >= static_cast<int>(ptrseqs.size()))
+//                        throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
+//                    sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
+//                }
+
+//                ++cntgrp;
+//            }
         }
 
         template<class _writerhelper_t> void WriteAnimTbl( _writerhelper_t                                 & sir0hlpr,
                                                            const std::vector<std::pair<uint32_t, size_t>>  & ptrgrps)const
         {
-            for( const auto & anim : m_animtbl )
+            //#FIXME : Anim table works differently if the sprite is or isn't a character sprite!!!!
+            for( animgrpid_t grpid : m_animtbl )
             {
                 uint32_t ptr    = 0;
                 uint16_t len    = 0;
                 uint16_t unk16  = 0;
-                if(anim != -1)
+                //Check if is empty group
+                if(grpid != -1)
                 {
-                    if( (static_cast<int>(ptrgrps.size()) <= anim || static_cast<int>(m_animgrps.size()) <= anim) )
+                    //Check if the grpid is valid to detect any issues with the algorithm itself
+                    if( (grpid >= static_cast<int>(ptrgrps.size()) || grpid >= static_cast<int>(m_animgrps.size())) )
                     {
+                        assert(false);
                         std::stringstream sstr;
-                        sstr << "AnimDB::WriteAnimTbl(): Group ID " <<anim <<" is out of bound!!";
+                        sstr << "AnimDB::WriteAnimTbl(): Group ID " <<grpid <<" is out of bound!!";
                         throw std::out_of_range(sstr.str());
                     }
                     else
                     {
-                        const auto & refgrp = ptrgrps.at(anim);
+                        const auto & refgrp = ptrgrps.at(grpid);
                         ptr = refgrp.first;
                         len = static_cast<uint16_t>(refgrp.second);
-                        unk16 = m_animgrps.at(anim).unk16;
+                        unk16 = m_animgrps.at(grpid).unk16;
                     }
                 }
+                //Empty groups just have all set to 0
                 sir0hlpr.writePtr(ptr);     //write ptr to group's sequence array in the group table!
                 sir0hlpr.writeVal(len);     //write the size of the group's sequence array in the group table!
                 sir0hlpr.writeVal(unk16);   //write the unk16 value for the current group!
@@ -636,7 +668,7 @@ namespace fmt
         {
             using namespace std;
             if(seqoffset == 0)
-                return NullSeq;
+                return NullSeqIndex;
 
             //check if we have it already
             auto itf = animseqreftable.find(seqoffset);
@@ -672,7 +704,7 @@ namespace fmt
         {
             using namespace std;
             if( offanimgrp == 0 )
-                return NullGrp;
+                return NullGrpIndex;
 
             //check if we have it already
             auto itf = animgrpreftable.find(offanimgrp);
@@ -756,6 +788,8 @@ namespace fmt
         animgrpid_t curgrpid;
         animseqid_t curseqid;
     };
+
+
 };
 
 #endif // SPRITE_CONTENT_HPP

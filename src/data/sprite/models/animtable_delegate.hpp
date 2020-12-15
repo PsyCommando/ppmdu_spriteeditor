@@ -1,17 +1,20 @@
 #ifndef ANIMTABLEDELEGATE_HPP
 #define ANIMTABLEDELEGATE_HPP
 #include <QStyledItemDelegate>
-
-//#DELETEME: SEEMS TO BE UNUSED
+#include <QObject>
+#include <QComboBox>
 
 //**********************************************************************************
 //  AnimTableDelegate
 //**********************************************************************************
+// Used to edit anim table entries
 class AnimTable;
 class AnimTableDelegate : public QStyledItemDelegate
 {
+    Q_OBJECT;
+    Q_DISABLE_COPY_MOVE(AnimTableDelegate);
 public:
-    AnimTableDelegate(AnimTable * parent, QObject * pobj = nullptr);
+    explicit AnimTableDelegate(AnimTable * parent, QObject * pobj = nullptr);
     ~AnimTableDelegate();
 
     // QAbstractItemDelegate interface
@@ -22,8 +25,12 @@ public:
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
+public slots:
+    void commitAndCloseEditor();
+
 private:
-    QWidget * makeGroupSelect(QWidget * parent, const QModelIndex & index)const;
+    QComboBox *makeGroupSelect(QWidget * parent, const QModelIndex & index)const;
+    QLineEdit *makeNameEdit(QWidget * parent, const QModelIndex & index)const;
 
 private:
     AnimTable * m_animtable {nullptr};

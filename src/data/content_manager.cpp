@@ -62,7 +62,7 @@ void ContentManager::NewContainer(const QString &type)
         qWarning() << "ContentManager::NewContainer(): Failed to find a container type named \'" <<type << "\'!";
         throw std::runtime_error("ContentManager::NewContainer(): Unknown container type!");
     }
-    m_container->SetContainerType(type);
+    //m_container->SetContainerType(type); //not the same thing...
     m_container->Initialize();
 }
 
@@ -148,10 +148,14 @@ Qt::ItemFlags ContentManager::flags(const QModelIndex &index) const
     if (!isContainerLoaded())
         return QAbstractItemModel::flags(index);
 
-    TreeNode * pnode = index.isValid()? static_cast<TreeNode*>(index.internalPointer()) : m_container.data();
+    TreeNode * pnode = nullptr;
+    if(!index.isValid())
+        pnode = m_container.data();
+    else
+        pnode = static_cast<TreeNode*>(index.internalPointer());
+
     if(!pnode)
         return QAbstractItemModel::flags(index);
-
     return pnode->nodeFlags();
 }
 

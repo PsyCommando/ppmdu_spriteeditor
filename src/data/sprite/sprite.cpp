@@ -5,6 +5,7 @@
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/data/sprite/sprite_container.hpp>
 #include <src/data/sprite/spritemanager.hpp>
+#include <src/ui/errorhelper.hpp>
 
 const QString ElemName_Sprite = "Sprite";
 
@@ -22,6 +23,7 @@ void Sprite::_ctor()
     m_frmcnt.setParentNode(this);
     m_seqcnt.setParentNode(this);
     m_anmtbl.setParentNode(this);
+    m_anmgrp.setParentNode(this);
 }
 
 Sprite::Sprite(TreeNode *parent)
@@ -31,10 +33,11 @@ Sprite::Sprite(TreeNode *parent)
       m_imgcnt(this),
       m_frmcnt(this),
       m_seqcnt(this),
-      m_anmtbl(this)
-
+      m_anmtbl(this),
+      m_anmgrp(this)
 {
     _ctor();
+    //m_bparsed = true; //Basically a hack to have empty sprites be processed
 }
 
 Sprite::Sprite(TreeNode *parent, Sprite::rawdat_t &&raw)
@@ -45,7 +48,8 @@ Sprite::Sprite(TreeNode *parent, Sprite::rawdat_t &&raw)
       m_imgcnt(this),
       m_frmcnt(this),
       m_seqcnt(this),
-      m_anmtbl(this)
+      m_anmtbl(this),
+      m_anmgrp(this)
 {
     _ctor();
 }
@@ -57,7 +61,8 @@ Sprite::Sprite(const Sprite &cp)
       m_imgcnt(this),
       m_frmcnt(this),
       m_seqcnt(this),
-      m_anmtbl(this)
+      m_anmtbl(this),
+      m_anmgrp(this)
 {
     _ctor();
     operator=(cp);
@@ -94,7 +99,8 @@ Sprite::Sprite(Sprite && mv)
       m_imgcnt(this),
       m_frmcnt(this),
       m_seqcnt(this),
-      m_anmtbl(this)
+      m_anmtbl(this),
+      m_anmgrp(this)
 {
     _ctor();
     operator=(mv);
@@ -188,8 +194,8 @@ void Sprite::ParseSpriteData()
     m_sprhndl.Parse(m_raw.begin(), m_raw.end());
 
     //Fill up the nodes in our model
-    m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable());
-    m_anmtbl.importAnimationGroups(m_sprhndl.getAnimGroups());
+    m_anmgrp.importAnimationGroups(m_sprhndl.getAnimGroups());
+    m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable(), m_anmgrp);
 
     m_palcnt.setPalette(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //convert the palette once, so we don't do it constantly
 
@@ -201,8 +207,7 @@ void Sprite::ParseSpriteData()
     else
         m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
 
-
-    if(m_anmtbl.getNbGroupSequenceSlots() > 0)
+    if(m_sprhndl.getSpriteType() == fmt::eSpriteType::Character && m_frmcnt.nodeChildCount() > 0)
         m_efxcnt.importEffects(m_sprhndl.getEffectOffset());
 
     m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
@@ -214,17 +219,20 @@ void Sprite::CommitSpriteData()
     rawdat_t   buffer;
     auto       itback = std::back_inserter(buffer);
 
-    //First convert the data from the UI
-    m_sprhndl.getAnimationTable()   = m_anmtbl.exportAnimationTable();
-    m_sprhndl.getAnimGroups()       = m_anmtbl.exportAnimationGroups();
-    m_sprhndl.getPalette()          = utils::ConvertSpritePaletteFromQt(m_palcnt.getPalette());
-    m_sprhndl.getAnimSeqs()         = m_seqcnt.exportSequences();
-    m_sprhndl.getFrames()           = m_frmcnt.exportFrames();
+    //First convert the data from the data model
+    m_sprhndl.setPalette(utils::ConvertSpritePaletteFromQt(m_palcnt.getPalette()));
 
     if( m_sprhndl.getImageFmtInfo().is256Colors() ) //#FIXME : FIgure out something better!!!!
-        m_sprhndl.getImages() = m_imgcnt.exportImages8bpp();
+        m_sprhndl.setImages(m_imgcnt.exportImages8bpp());
     else
-        m_sprhndl.getImages() = m_imgcnt.exportImages4bpp();
+        m_sprhndl.setImages(m_imgcnt.exportImages4bpp());
+
+    m_sprhndl.setFrames         (m_frmcnt.exportFrames());
+    m_sprhndl.setEffectOffset   (m_efxcnt.exportEffects());
+
+    m_sprhndl.setAnimSeqs       (m_seqcnt.exportSequences());
+    m_sprhndl.setAnimGroups     (m_anmgrp.exportAnimationGroups());
+    m_sprhndl.setAnimationTable (m_anmtbl.exportAnimationTable(m_anmgrp));
 
     //Write the data
     itback = m_sprhndl.Write(itback);
@@ -235,6 +243,30 @@ void Sprite::CommitSpriteData()
     if(m_targetgompression != filetypes::eCompressionFormats::INVALID)
         CompressRawData(m_targetgompression);
 }
+
+
+void Sprite::DumpSpriteToStream(QDataStream & outstr)
+{
+    CommitSpriteData();
+    outstr.writeRawData( (const char *)(getRawData().data()), getRawData().size() );
+}
+
+void Sprite::DumpSpriteToFile(const QString & fpath)
+{
+    QSaveFile   sf(fpath);
+    QDataStream outstr(&sf);
+
+    if(sf.open(QIODevice::WriteOnly) && sf.error() == QFileDevice::NoError)
+    {
+        DumpSpriteToStream(outstr);
+        sf.commit();
+    }
+    else
+    {
+        throw BaseException(sf.errorString());
+    }
+}
+
 
 QPixmap &Sprite::MakePreviewPalette()
 {
@@ -376,6 +408,8 @@ TreeNode *Sprite::ElemPtr(int idx)
     case 2:
         return &m_seqcnt;
     case 3:
+        return &m_anmgrp;
+    case 4:
         return &m_anmtbl;
     default:
         Q_ASSERT(false);
@@ -385,7 +419,7 @@ TreeNode *Sprite::ElemPtr(int idx)
 
 int Sprite::nbChildCat() const
 {
-    return 4;
+    return 5;
 }
 
 const TreeNode *Sprite::ElemPtr(int idx) const
@@ -438,3 +472,51 @@ bool Sprite::_deleteChildrenNodes   (const QList<TreeNode*> &)      {return fals
 bool Sprite::_moveChildrenNodes     (int, int, int, TreeNode*)      {return false;}
 bool Sprite::_moveChildrenNodes     (QModelIndexList&,int,QModelIndex) {return false;}
 bool Sprite::_moveChildrenNodes     (const QList<TreeNode *>&, int, QModelIndex){return false;}
+
+bool Sprite::isImageDoubleSize(const QImage & img)
+{
+    return img.width() > fmt::MaxFrameResValue.first || img.height() > fmt::MaxFrameResValue.second;
+}
+
+fmt::frmid_t Sprite::importImageParts(const imgparts_t & img)
+{
+    MFrame * newfrm = m_frmcnt.appendNewFrame();
+    for(const imgpart_t & part : img)
+    {
+        Image * newimg = m_imgcnt.appendNewImage();
+        //Convert the QImage to raw
+        fmt::ImageDB::img_t newimgdata;
+        newimgdata.unk2 = 0;
+        newimgdata.unk14 = 0;
+        //All image data is stored as 8bpp
+        newimgdata.data = utils::ImgToRaw(part.second);
+        newimg->importImage8bpp(newimgdata, part.second.width(), part.second.height(), false);
+
+        MFramePart * newpart = newfrm->appendNewFramePart();
+        newpart->setColorPal256(is256Colors());
+        newpart->setDoubleSize(isImageDoubleSize(part.second));
+        newpart->setFrameIndex(newimg->getImageUID());
+    }
+    return newfrm->getFrameUID();
+}
+
+fmt::animseqid_t Sprite::importImageSequence(const imgseq_t & seq, uint8_t frmduration)
+{
+    AnimSequence * newseq = m_seqcnt.appendNewSequence();
+    for(const imgparts_t & img : seq)
+    {
+        fmt::frmid_t curfrmid = importImageParts(img);
+        AnimFrame * newafrm = newseq->appendNewAnimFrame();
+        newafrm->setFrmidx(curfrmid);
+        newafrm->setDuration(frmduration);
+    }
+    return newseq->nodeIndex();
+}
+
+void Sprite::importImageSequences(const imgseqs_t & sequences, uint8_t frmduration)
+{
+    for(const imgseq_t & seq : sequences)
+    {
+        importImageSequence(seq, frmduration);
+    }
+}

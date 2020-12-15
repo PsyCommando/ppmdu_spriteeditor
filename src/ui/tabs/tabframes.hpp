@@ -20,6 +20,7 @@ class TabFrames : public BaseSpriteTab
 {
     Q_OBJECT
 
+    static const QString TabAttachmentPointsName;
 public:
     explicit TabFrames(QWidget *parent = nullptr);
     ~TabFrames();

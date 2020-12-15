@@ -211,14 +211,22 @@
          <item>
           <widget class="QPushButton" name="btnImportPalette">
            <property name="text">
-            <string>Import..</string>
+            <string>Import palette</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../../../appres.qrc">
+             <normaloff>:/resources/fugue-icons-3.5.6/icons/palette--plus.png</normaloff>:/resources/fugue-icons-3.5.6/icons/palette--plus.png</iconset>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="btnExportPalette">
            <property name="text">
-            <string>Export..</string>
+            <string>Export palette</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../../../appres.qrc">
+             <normaloff>:/resources/fugue-icons-3.5.6/icons/palette--arrow.png</normaloff>:/resources/fugue-icons-3.5.6/icons/palette--arrow.png</iconset>
            </property>
           </widget>
          </item>

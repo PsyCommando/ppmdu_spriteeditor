@@ -30,7 +30,7 @@ class AnimatedSpriteItem : public QGraphicsObject
 {
     Q_OBJECT
 public:
-    using animseqid_t = fmt::AnimDB::animseqid_t;
+    using animseqid_t = fmt::animseqid_t;
 
     AnimatedSpriteItem();
     AnimatedSpriteItem(QVector<cachedframe> && frames, QVector<QColor> && palette);

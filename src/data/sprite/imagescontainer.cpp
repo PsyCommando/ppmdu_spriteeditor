@@ -31,10 +31,26 @@ QString ImageContainer::nodeDisplayName()const
     return nodeDataTypeName();
 }
 
+void ImageContainer::DumpAllImages(const QString &dirpath, const QVector<QRgb> & palette) const
+{
+    for(const Image * p : *this)
+    {
+        QImage img = p->makeImage(palette);
+        img.save(QString("%1/%2.png").arg(dirpath).arg(p->getID()), "PNG", 9);
+    }
+}
+
 const QString &ImageContainer::ComboBoxStyleSheet()
 {
     static const QString SSheet("QComboBox QAbstractItemView::item {margin-top: 2px;}");
     return SSheet;
+}
+
+Image *ImageContainer::appendNewImage()
+{
+    int newidx = nodeChildCount();
+    _insertChildrenNodes(newidx, 1);
+    return m_container[newidx];
 }
 
 void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt::ImageDB::frmtbl_t &frms)

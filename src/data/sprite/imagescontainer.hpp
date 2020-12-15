@@ -45,7 +45,7 @@ public:
     TreeNode *clone() const override;
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
-
+    bool nodeShowChildrenOnTreeView()const override {return false;}
 //
 //Image container stuff
 //
@@ -54,6 +54,8 @@ public:
     //lets make things shorter
     using imgtbl_t = fmt::ImageDB::imgtbl_t;
     using frmtbl_t = fmt::ImageDB::frmtbl_t;
+
+    Image * appendNewImage();
 
     /*
         importImages
@@ -83,6 +85,10 @@ public:
     //Whether the node should be movable
     bool    nodeIsMutable()const override {return false;}
     QString nodeDisplayName() const override;
+
+
+
+    void DumpAllImages(const QString & dirpath, const QVector<QRgb> & palette)const;
 };
 
 #endif // IMAGESCONTAINER_HPP

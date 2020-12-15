@@ -69,3 +69,10 @@ bool FramesContainer::ClearImageReferences(const QModelIndexList &indices, bool 
     return bfoundref;
 }
 
+MFrame *FramesContainer::appendNewFrame()
+{
+    int insertidx = nodeChildCount();
+    _insertChildrenNodes(insertidx, 1);
+    return m_container[insertidx];
+}
+

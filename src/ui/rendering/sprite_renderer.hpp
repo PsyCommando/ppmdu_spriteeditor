@@ -24,7 +24,7 @@ class SpriteRenderer : public QObject
 {
     Q_OBJECT
 public:
-    using animseqid_t   = fmt::AnimDB::animseqid_t;
+    using animseqid_t   = fmt::animseqid_t;
     using sprid_t       = SpriteContainer::sprid_t;
     virtual ~SpriteRenderer();
 

@@ -78,7 +78,7 @@ namespace fmt
             for(const auto & ptr : frameptrs)
                 sw.writePtr(ptr);
 
-            //#6. Write effect offset table
+            //#6. Write effect offset table(optional)
             if( !m_animtions.m_frmoffsets.empty() )
             {
                 amiminf.ptrefxtbl = sw.getCurOffset();          //mark offset of effect offset table for animfmt chunk
@@ -132,16 +132,29 @@ namespace fmt
         // ----------- Data Access -----------
         inline ImageDB::frm_t      & getFrame(frmid_t frmid)                   {return m_images.m_frames.at(frmid);}
         inline ImageDB::frmtbl_t   & getFrames()                               {return m_images.m_frames;}
+        inline void                  setFrames(const ImageDB::frmtbl_t & frms) {m_images.m_frames = frms;}
+
         inline ImageDB::img_t      & getImage(size_t imgidx)                   {return m_images.m_images.at(imgidx);}
         inline ImageDB::imgtbl_t   & getImages()                               {return m_images.m_images;}
+        inline void                  setImages(const ImageDB::imgtbl_t & imgs) {m_images.m_images = imgs;}
+
         inline rbgx24pal_t         & getPalette()                              {return m_images.m_pal.colors;}
+        inline void                  setPalette(const rbgx24pal_t & pal)       {m_images.m_pal.colors = pal;}
         inline hdr_palettedata     & getPaletteData()                          {return m_images.m_pal;}
+
         inline AnimDB::animtbl_t   & getAnimationTable()                       {return m_animtions.m_animtbl;}
-        inline AnimDB::animgrp_t   & getAnimGroup(AnimDB::animgrpid_t id)      {return m_animtions.m_animgrps[id];}
-        inline AnimDB::animgrptbl_t& getAnimGroups()                           {return m_animtions.m_animgrps; }
-        inline AnimDB::animseq_t   & getAnimSeq(AnimDB::animseqid_t id)        {return m_animtions.m_animsequences[id];}
+        inline void                  setAnimationTable(const AnimDB::animtbl_t & anit)  {m_animtions.m_animtbl = anit;}
+
+        inline AnimDB::animgrp_t   & getAnimGroup(animgrpid_t id)      {return m_animtions.m_animgrps[id];}
+        inline AnimDB::animgrptbl_t& getAnimGroups()                           {return m_animtions.m_animgrps;}
+        inline void                  setAnimGroups(const AnimDB::animgrptbl_t & agrps)  {m_animtions.m_animgrps = agrps;}
+
+        inline AnimDB::animseq_t   & getAnimSeq(animseqid_t id)        {return m_animtions.m_animsequences[id];}
         inline AnimDB::animseqtbl_t& getAnimSeqs()                             {return m_animtions.m_animsequences;}
+        inline void                  setAnimSeqs(const AnimDB::animseqtbl_t& aseqs) {m_animtions.m_animsequences = aseqs;}
+
         inline OffsetsDB           & getEffectOffset()                         {return m_frmoffsets;}
+        inline void                  setEffectOffset(const OffsetsDB & attach) {m_frmoffsets = attach;}
 
         inline const hdr_animfmtinfo   & getAnimFmtInfo()const                     {return m_animfmt;}
         inline hdr_animfmtinfo         & getAnimFmtInfo()                          {return m_animfmt;}

@@ -49,6 +49,14 @@ public:
         return NULLNAME;
     }
 
+    //Returns a clean user displayable content type name
+    template<class CONTAINER_TYPE>
+        static const QString& GetContentDisplayName()
+    {
+        static const QString NULLNAME = "NULL";
+        return NULLNAME;
+    }
+
     //If a given file match the specified file (Must be specialized!! The Macro DEFINE_CONTAINER does it for you)
     template<class CONTAINER_TYPE>
         static bool DoesFileMatchContainer(const QString & filepath)

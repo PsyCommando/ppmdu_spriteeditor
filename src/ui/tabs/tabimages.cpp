@@ -13,18 +13,11 @@
 #include <src/ui/editor/palette/paletteeditor.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/data/sprite/imagescontainer.hpp>
+#include <src/utility/file_support.hpp>
+
+const QString TabImages::IMG_FORMAT_IO = "PNG";
 
 
-bool IsImageResolutionValid( QSize imgres )
-{
-    for(const auto & supported : fmt::FrameResValues)
-    {
-        if( supported.first  == imgres.width() &&
-            supported.second == imgres.height() )
-            return true;
-    }
-    return false;
-}
 
 //#MOVEME: move to utilities!
 QPixmap ImageToPixmap( QImage && img, const QSize & sz )
@@ -172,20 +165,6 @@ void TabImages::on_tblviewImages_clicked(const QModelIndex &index)
         SetupImage(index);
 }
 
-void TabImages::on_spbimgunk2_valueChanged(int arg1)
-{
-//    Image * pimg = this->currentImage();
-//    if(pimg)
-//        pimg->setUnk2(static_cast<uint32_t>(arg1));
-}
-
-void TabImages::on_spbimgunk14_valueChanged(int arg1)
-{
-//    Image * pimg = this->currentImage();
-//    if(pimg)
-//        pimg->setUnk14(static_cast<uint16_t>(arg1));
-}
-
 void TabImages::on_btnAdd_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(this,
@@ -216,6 +195,8 @@ void TabImages::on_btnRemove_clicked()
         ShowStatusMessage(QString(tr("Removed %1 image(s)%2")).arg(selected.size()).arg(removedrefs? tr(", and cleared references to images from frame data.") : ""));
     else
         ShowStatusErrorMessage(tr("Couldn't remove all images!"));
+    ClearImage();
+    ui->tblviewImages->repaint();
 }
 
 QModelIndexList TabImages::getSelectedIndices()const
@@ -232,7 +213,7 @@ void TabImages::TryImportImage(const QString &path)
     //Validate image
     if(img.format() != QImage::Format_Indexed8)
     {
-        Warn(tr("Invalid image format!"), QString(tr("%1 is not 8 bits per pixel (aka 256 colors). Make sure the image to import is saved as a PNG 8bpp, 256 colors!")).arg(path));
+        Warn(tr("Invalid image format!"), QString(tr("%1 is not 8 bits per pixel (aka 256 colors). Make sure the image to import is saved as a %2 8bpp, 256 colors!")).arg(path).arg(IMG_FORMAT_IO));
         return;
     }
 
@@ -255,9 +236,6 @@ void TabImages::TryImportImage(const QString &path)
     fmt::ImageDB::img_t newimgdata;
     newimgdata.unk2 = 0;
     newimgdata.unk14 = 0;
-//    std::copy(img.bits(),
-//              img.bits() + img.byteCount(),
-//              std::back_inserter(newimgdata.data));
 
     //All image data is stored as 8bpp
     newimgdata.data = utils::ImgToRaw(img);
@@ -334,4 +312,28 @@ void TabImages::on_btnExport_clicked()
         }
         Warn(tr("Export partially failed"), tr("Failed to save the following files:\n") + failedlist);
     }
+}
+
+void TabImages::on_btnImport_clicked()
+{
+
+    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), QString(), "PNG image (*.png)");
+    if(filenames.isEmpty())
+        return;
+
+    //int insertidx = m_imgListModel->rowCount();
+    //m_imgListModel->insertRows(insertidx, filenames.size());
+    for(int i = 0; i < filenames.size(); ++i)
+    {
+        Sprite * spr = m_imgListModel->getOwnerSprite();
+        Image * newimg = spr->getImages().appendNewImage();
+        //Convert the QImage to raw
+        fmt::ImageDB::img_t newimgdata;
+        newimgdata.unk2 = 0;
+        newimgdata.unk14 = 0;
+        QImage loaded(filenames[i], "PNG");
+        newimgdata.data = utils::ImgToRaw(loaded);
+        newimg->importImage8bpp(newimgdata, loaded.width(), loaded.height(), false);
+    }
+    ShowStatusMessage(QString(tr("Imported %1 image(s)!")).arg(filenames.size()));
 }

@@ -14,7 +14,7 @@ class TabImages;
 class TabImages : public BaseSpriteTab
 {
     Q_OBJECT
-
+    static const QString IMG_FORMAT_IO;
 public:
     explicit TabImages(QWidget *parent = nullptr);
     ~TabImages();
@@ -29,11 +29,11 @@ public:
 
 private slots:
     void on_tblviewImages_clicked(const QModelIndex &index);
-    void on_spbimgunk2_valueChanged(int arg1);
-    void on_spbimgunk14_valueChanged(int arg1);
     void on_btnAdd_clicked();
     void on_btnRemove_clicked();
     void on_btnExport_clicked();
+
+    void on_btnImport_clicked();
 
 private:
     void SetupMappings(Sprite * spr);
@@ -49,9 +49,6 @@ private:
 
     QPersistentModelIndex               m_currentImage;
     QScopedPointer<ImageListModel>      m_imgListModel;
-    //QPixmap                             m_imgNoImg;             //Image displayed when no image can be displayed in a view!
-
-
 };
 
 #endif // TABIMAGES_HPP

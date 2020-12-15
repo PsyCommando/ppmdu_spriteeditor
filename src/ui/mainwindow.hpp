@@ -80,6 +80,7 @@ public:
     void ExportContainer(const QString & path, const QString &exportType);
     void ImportContainer(const QString & path);
     void CloseContainer();
+    void NewContainer(QString cnttype = QString());
 
     void OnActionAddTopItem();
     void OnActionRemTopItem();
@@ -107,6 +108,8 @@ private:
 
     BaseContainer * getContainer();
     ContentManager & getManager();
+    QSettings & getSettings();
+    const QSettings & getSettings()const;
 
     //Tweak the list view to better display either single sprites or pack files!!
     void setupListView();
@@ -117,7 +120,8 @@ private:
     void SaveAs(const QString & path);
 
     //Show a message box asking if we should save the changes, and return the button pressed!
-    int AskSaveChanges();
+    // if dosave == true means we actually run the save code if the user picked save
+    int AskSaveChanges(bool dosave = true);
 
     void PushUndoAction(QUndoCommand * cmd);
 
@@ -147,6 +151,10 @@ private slots:
     void on_action_About_triggered();
     void on_action_Quit_triggered();
     void on_action_Open_triggered();
+
+    void on_actionSprite_Sheet_Auto_Importer_triggered();
+
+    void on_actionAdvanced_triggered();
 
 public slots:
     void ShowProgressDiag(QFuture<void> & task);

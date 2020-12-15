@@ -42,6 +42,13 @@ fmt::AnimDB::animseq_t AnimSequence::exportSeq() const
     return seq;
 }
 
+AnimFrame *AnimSequence::appendNewAnimFrame()
+{
+    int insertidx = nodeChildCount();
+    _insertChildrenNodes(insertidx, 1);
+    return m_container[insertidx];
+}
+
 QImage AnimSequence::makePreview(const Sprite* owner) const
 {
     const_iterator itbeg = begin();

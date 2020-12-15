@@ -19,6 +19,7 @@ enum struct [[maybe_unused]] eTreeElemDataType
     animSequence,
     animTable,
     animGroup,
+    animGroupRef,
     animGroups,
     animFrame,
     animSequenceRef,

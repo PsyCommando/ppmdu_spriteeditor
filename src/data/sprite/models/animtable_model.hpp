@@ -10,14 +10,15 @@
 class AnimTableModel : public TreeNodeModel
 {
     Q_OBJECT
+    using parent_t = TreeNodeModel;
 public:
     explicit AnimTableModel(AnimTable* ptable, Sprite * powner);
     ~AnimTableModel();
 
     //Slots naming
-    void setSlotNames(QVector<QString> && names);
-    QVector<QString>& getSlotNames();
-    const QVector<QString>& getSlotNames()const;
+//    void setSlotNames(QVector<QString> && names);
+//    QVector<QString>& getSlotNames();
+//    const QVector<QString>& getSlotNames()const;
 
     // QAbstractItemModel interface
 public:
@@ -34,7 +35,7 @@ public:
     const Sprite *getOwnerSprite()const override{return const_cast<AnimTableModel*>(this)->getOwnerSprite();}
 
 private:
-    QVector<QString>    m_slotNames;            //Strings for naming the animation slots after. For example running animation would be "Run"
+    //QVector<QString>    m_slotNames;            //Strings for naming the animation slots after. For example running animation would be "Run"
     AnimTable*          m_root      {nullptr};
     Sprite*             m_sprite    {nullptr};
 };

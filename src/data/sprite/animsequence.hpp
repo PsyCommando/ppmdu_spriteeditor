@@ -47,6 +47,9 @@ public:
     void                    importSeq(const fmt::AnimDB::animseq_t & seq);
     fmt::AnimDB::animseq_t  exportSeq()const;
 
+    //Create and insert a new animation frame at the end of the list. Returns pointer to it, or null
+    AnimFrame * appendNewAnimFrame();
+
     //Return an image of the first frame of the animation sequence
     QImage makePreview(const Sprite* owner)const;
 

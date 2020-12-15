@@ -4,6 +4,7 @@
 BaseSpriteTab
     Base class for tabs meant to be used for editing sprites data
 */
+#include <QSettings>
 #include <QUndoCommand>
 #include <QWidget>
 #include <src/data/treeenodetypes.hpp>
@@ -27,8 +28,11 @@ public:
      * Sets the main windoe
     */
     virtual void setMainWindow(MainWindow * parentwindow);
-
     virtual MainWindow * getMainWindow();
+    virtual const MainWindow * getMainWindow()const;
+
+    virtual QSettings  & getSettings();
+    virtual const QSettings  & getSettings()const;
 
     /*
      * When the tab is about to be displayed, pass the current sprite and
@@ -63,6 +67,12 @@ public:
     virtual bool canAcceptContentType(const QString & contenttype)const;
 
     /*
+     * Settings serialization callbacks
+    */
+    virtual void writeSettings();
+    virtual void readSettings();
+
+    /*
      * Helpers Main Window procs
     */
     void ShowStatusErrorMessage(QString msg);
@@ -83,6 +93,7 @@ public:
     eTreeElemDataType currentEntryType()const;
 //    MFramePart * currentTblFrameParts();
 //    Image * currentTblImages();
+
 
 signals:
 protected:

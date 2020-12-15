@@ -13,6 +13,9 @@ namespace fmt
     //Frame resolutions
     extern const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues;
 
+    //Maximum possible size for a non-double size frame
+    extern const std::pair<uint16_t, uint16_t> MaxFrameResValue;
+
     //Possible resolutions for individual parts of an assembled frame.
     //The value of the bits matches the 2 first bits of attr1 and attr2 respectively for representing the resolution!
     //SO PLEASE DO NOT REORDER OR OR ADD TO THIS TABLE!

@@ -21,11 +21,13 @@ EffectSetDelegate::~EffectSetDelegate()
 }
 
 EffectSetDelegate::EffectSetDelegate(const EffectSetDelegate &cp)
+    :parent_t(parent())
 {
     operator=(cp);
 }
 
 EffectSetDelegate::EffectSetDelegate(EffectSetDelegate &&mv)
+    :parent_t(parent())
 {
     operator=(mv);
 }

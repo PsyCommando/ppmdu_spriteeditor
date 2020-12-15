@@ -7,17 +7,18 @@
 #include <src/data/sprite/models/sprite_props_model.hpp>
 #include <src/data/sprite/models/sprite_props_delegate.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/utility/palette_helpers.hpp>
 
 #include <QFileDialog>
 
 
-const QVector<QString> PaletteFileFilter
-{
-    "Microsoft RIFF palette (*.pal)",
-    "Text file hex color list (*.txt)",
-    "GIMP GPL palette (*.gpl)",
-    "Palette from a PNG image (*.png)",
-};
+//const QVector<QString> PaletteFileFilter
+//{
+//    "Microsoft RIFF palette (*.pal)",
+//    "Text file hex color list (*.txt)",
+//    "GIMP GPL palette (*.gpl)",
+//    "Palette from a PNG image (*.png)",
+//};
 
 TabProperties::TabProperties(QWidget *parent) :
     BaseSpriteTab(parent),
@@ -31,22 +32,15 @@ TabProperties::~TabProperties()
     delete ui;
 }
 
-QString TabProperties::GetPaletteImportFiterString()
-{
-    static const QString pimportstr = QString("%1;;%2").arg( PaletteFilterString(),
-                                      GetPaletteFileFilterString(ePaletteDumpType::PNG_PAL)); //allow loading a PNG for its palette!
-    return pimportstr;
-}
-
-const QString TabProperties::PaletteFilterString()
-{
-    static const QString filter = GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) +
-                                  ";;" +
-                                  GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) +
-                                  ";;" +
-                                  GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL);
-    return filter;
-}
+//const QString TabProperties::PaletteFilterString()
+//{
+//    static const QString filter = GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) +
+//                                  ";;" +
+//                                  GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) +
+//                                  ";;" +
+//                                  GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL);
+//    return filter;
+//}
 
 void TabProperties::OnShowTab(QPersistentModelIndex element)
 {
@@ -135,7 +129,7 @@ void TabProperties::on_btnImportPalette_clicked()
     QString filename = QFileDialog::getOpenFileName(this,
                                                     QString(tr("Import Palette File")),
                                                     QString(),
-                                                    GetPaletteImportFiterString(),
+                                                    AllSupportedImportPaletteFilesFilter(),
                                                     &selectedfilter );
     if(filename.isNull())
         return;
@@ -174,12 +168,12 @@ void TabProperties::on_btnExportPalette_clicked()
 
     try
     {
-        QString selectedfilter = GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal);
+        QString selectedfilter = SupportedExportPaletteFilesFilters[FileExtTXTPAL];
         qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
         QString filename = QFileDialog::getSaveFileName(this,
                             QString(tr("Save Palette Dump As")),
                             QString(),
-                            PaletteFilterString(),
+                            AllSupportedExportPaletteFilesFilter(),
                             &selectedfilter);
 
         if(filename.isNull())

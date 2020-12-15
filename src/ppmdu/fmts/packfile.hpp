@@ -129,8 +129,8 @@ namespace fmt
         {
             std::lock_guard<std::mutex> lk(m_mtx);
             //Calculate Header + toc + padding len
-            size_t hdrlen       = 8 + ((m_hdr.tocentries.size() + 1) * packfile_hdr::SzFEntry);
-            size_t hdrandpadlen = utils::CalculatePaddedLengthTotal(hdrlen, static_cast<size_t>(AlignHeaderOn));
+            uint32_t hdrlen       = 8 + ((m_hdr.tocentries.size() + 1) * packfile_hdr::SzFEntry);
+            uint32_t hdrandpadlen = utils::CalculatePaddedLengthTotal(hdrlen, AlignHeaderOn);
 
             //Write Leading 0
             where = utils::writeBytesFrom( static_cast<uint32_t>(0), where );
@@ -141,8 +141,8 @@ namespace fmt
             //Write ToC entries
             for( const packfile_hdr::fentry & entry : m_hdr.tocentries )
             {
-                where = utils::writeBytesFrom( entry.offset + hdrandpadlen, where ); //Add the estimated header len to the offset
-                where = utils::writeBytesFrom( entry.length, where );
+                where = utils::writeBytesFrom(static_cast<uint32_t>(entry.offset + hdrandpadlen), where); //Add the estimated header len to the offset
+                where = utils::writeBytesFrom(static_cast<uint32_t>(entry.length), where);
             }
 
             //Add null entry

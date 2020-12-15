@@ -17,6 +17,8 @@ struct ContainerType
     QString                 cntTypeName;            //Key to identify this type as
     funInstantiator_t       cntInstantiator;        //Function for creating an instance of the type
     funFileTypePredicate_t  cntFileTypePredicate;   //Function for matching a type to a file indicated by the specified filepath
+    QString                 cntDisplayName;         //Clean user-readable name for the type of content
+    //**If you add things here, don't forget to update the "ContentTypeInitializer" struct's constructor to init the new vars, and also modify the define macro**
 };
 
 /*
@@ -24,10 +26,9 @@ struct ContainerType
 */
 class ContentContainerFactory
 {
-    typedef std::unordered_map<QString, ContainerType> regtypeslst_t;
-    regtypeslst_t m_registeredtypes;
     ContentContainerFactory();
 public:
+    typedef std::unordered_map<QString, ContainerType> regtypeslst_t;
     static ContentContainerFactory & instance();
     ~ContentContainerFactory();
 
@@ -35,6 +36,10 @@ public:
     BaseContainer* MakeContainerFromType(const QString & containertype);
 
     void RegisterContainerType(ContainerType && newtype);
+    const regtypeslst_t & RegisteredContainerTypes()const;
+
+private:
+    regtypeslst_t m_registeredtypes;
 };
 
 /*
@@ -49,7 +54,8 @@ template<class CNT_TY> struct ContentTypeInitializer
                     {
                         BaseContainer::GetContentName<CNT_TY>(),
                         std::function([](){return new CNT_TY();}),
-                        std::function([](const QString & filepath){return BaseContainer::DoesFileMatchContainer<CNT_TY>(filepath);})
+                        std::function([](const QString & filepath){return BaseContainer::DoesFileMatchContainer<CNT_TY>(filepath);}),
+                        BaseContainer::GetContentDisplayName<CNT_TY>(),
                     });
     }
     static ContentTypeInitializer<CNT_TY> s_instance; //When specializing this template, instantiate the constant
@@ -59,9 +65,11 @@ template<class CNT_TY> struct ContentTypeInitializer
 //TYPE : Type of the container
 //TNAME: Name of the items from the container
 //FUN_FILEMATCH : Function with the signature "bool(const QString&)" that returns if a given filt path can be opened with the container!
-#define DEFINE_CONTAINER(TYPE, TNAME, FUN_FILEMATCH)\
+//DNAME: User readable display name to be used for the container type.
+#define DEFINE_CONTAINER(TYPE, TNAME, FUN_FILEMATCH, DNAME)\
     template<> ContentTypeInitializer<TYPE> ContentTypeInitializer<TYPE>::s_instance{};\
     template<> const QString& BaseContainer::GetContentName<TYPE>(){static const QString NULLNAME = TNAME; return NULLNAME;}\
-    template<> bool BaseContainer::DoesFileMatchContainer<TYPE>(const QString & filepath){return FUN_FILEMATCH(filepath);}
+    template<> bool BaseContainer::DoesFileMatchContainer<TYPE>(const QString & filepath){return FUN_FILEMATCH(filepath);}\
+    template<> const QString& BaseContainer::GetContentDisplayName<TYPE>(){static const QString NULLNAME = DNAME; return NULLNAME;}
 
 #endif // CONTENT_FACTORY_HPP

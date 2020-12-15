@@ -17,6 +17,8 @@
 #include <src/data/sprite/sprite_container.hpp>
 #include <src/data/sprite/spritemanager.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/ui/windows/dialogimportwizard.hpp>
+#include <src/ui/dialognew.hpp>
 
 static const QString MAIN_WINDOW_TITLE = "PMD2 Sprite Muncher v%1";
 
@@ -43,13 +45,13 @@ MainWindow::MainWindow(QWidget *parent) :
     //UI init
     ui->setupUi(this);
 
-    //Parse settings!
-    readSettings();
-
     SetupContent();
     SetupMenu();
     SetupStatusBar();
     DisplayStartScreen();
+
+    //Parse settings!
+    readSettings();
 }
 
 void MainWindow::SetupContent()
@@ -119,18 +121,24 @@ MainWindow::~MainWindow()
 //
 void MainWindow::writeSettings()
 {
+    qDebug() << "MainWindow::writeSettings(): Writing settings!\n";
     m_settings.beginGroup("MainWindow");
     m_settings.setValue("size", size());
     m_settings.setValue("pos", pos());
     m_settings.endGroup();
+    qDebug() << "MainWindow::writeSettings(): Writing tabs settings!\n";
+    forEachTab([](BaseSpriteTab * ptab){ptab->writeSettings();});
 }
 
 void MainWindow::readSettings()
 {
+    qDebug() << "MainWindow::readSettings(): Reading settings!\n";
     m_settings.beginGroup("MainWindow");
     resize( m_settings.value("size", sizeHint() ).toSize());
     move( m_settings.value("pos", pos() ).toPoint());
     m_settings.endGroup();
+    qDebug() << "MainWindow::readSettings(): Reading tabs settings!\n";
+    forEachTab([](BaseSpriteTab * ptab){ptab->readSettings();});
 }
 
 void MainWindow::HideAllTabs()
@@ -174,17 +182,21 @@ void MainWindow::DisplayStartScreen()
 void MainWindow::SetupUIForNewContainer(BaseContainer * sprcnt)
 {
     ContentManager & manager = ContentManager::Instance();
-    ui->tv_sprcontent->setModel( & ContentManager::Instance() );
+    ui->tv_sprcontent->setModel(&ContentManager::Instance());
     ui->tv_sprcontent->setRootIndex(QModelIndex());
     connect(sprcnt, SIGNAL(showProgress(QFuture<void>&)), this, SLOT(ShowProgressDiag(QFuture<void>&)) );
     setupListView();
     updateActions();
 
     //Display!
-    selectTreeViewNode(manager.index(0,0));
-    DisplayTabForElement(m_curItem);
+    if(manager.getContainer()->nodeChildCount() > 0)
+    {
+        selectTreeViewNode(manager.index(0,0));
+        DisplayTabForElement(m_curItem);
+    }
 
     ui->tv_sprcontent->repaint();
+    setWindowTitle(QString());
     setWindowFilePath(sprcnt->GetContainerSrcPath());
 }
 
@@ -200,6 +212,7 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
     if(!item)
         return;
 
+    //#TODO: Maybe automate this?
     ContentManager & manager = ContentManager::Instance();
     if(item->nodeCanFetchMore())
         item->nodeFetchMore();
@@ -352,6 +365,42 @@ void MainWindow::CloseContainer()
     setWindowFilePath(QString());
 }
 
+void MainWindow::NewContainer(QString cnttype)
+{
+    try
+    {
+        ContentManager & manager = ContentManager::Instance();
+        CloseContainer();
+        //Pop new container dialog if no type passed
+        if(cnttype.isNull())
+        {
+            //dialog
+            DialogNew newdiag(this);
+            int result = newdiag.exec();
+            if(result == QMessageBox::Cancel)
+                return;
+            cnttype = newdiag.getContentType();
+            manager.NewContainer(cnttype);
+            if(cnttype == ContentName_Sprite)
+            {
+                SpriteContainer * cnt = static_cast<SpriteContainer*>(manager.getContainer());
+                //Set sprite specific stuff
+                cnt->SetContainerType(newdiag.getSprFormatType());
+                cnt->SetExpectedCompression(newdiag.getSprCompression());
+            }
+            else
+                Q_ASSERT(false); //If this triggers, there's a missing entry for the container type here!!
+        }
+        else
+            manager.NewContainer(cnttype);
+        SetupUIForNewContainer(manager.getContainer());
+    }
+    catch(const std::exception & e)
+    {
+        qWarning() << "MainWindow::NewContainer(): Creating new container failed with exception: \'" << e.what() << "\'";
+    }
+}
+
 void MainWindow::updateActions()
 {
     qInfo() <<"MainWindow::updateActions(): Updating!\n";
@@ -370,8 +419,8 @@ void MainWindow::updateActions()
 
 void MainWindow::addMultiItemActions(const QString & itemname)
 {
-    m_pActionAddSprite.reset(ui->menu_Edit->addAction(QString("Add %1..").arg(itemname),      this, &MainWindow::OnActionAddTopItem));
-    m_pActionRemSprite.reset(ui->menu_Edit->addAction(QString("Remove %1..").arg(itemname),   this, &MainWindow::OnActionRemTopItem));
+    m_pActionAddSprite.reset(ui->menu_Edit->addAction(QString(tr("Add %1..")).arg(itemname),      this, &MainWindow::OnActionAddTopItem));
+    m_pActionRemSprite.reset(ui->menu_Edit->addAction(QString(tr("Remove %1..")).arg(itemname),   this, &MainWindow::OnActionRemTopItem));
 }
 
 void MainWindow::remMultiItemActions()
@@ -385,6 +434,16 @@ void MainWindow::remMultiItemActions()
 ContentManager & MainWindow::getManager()
 {
     return ContentManager::Instance();
+}
+
+QSettings &MainWindow::getSettings()
+{
+    return m_settings;
+}
+
+const QSettings &MainWindow::getSettings() const
+{
+    return m_settings;
 }
 
 BaseContainer *MainWindow::getContainer()
@@ -474,14 +533,8 @@ void MainWindow::on_action_Open_triggered()
         qDebug() << "MainWindow::on_action_Open_triggered(): Asking for saving changes!\n";
         //Ask to save or discard changes!!
         int choice = AskSaveChanges();
-        switch(choice)
-        {
-        case QMessageBox::StandardButton::Save:
-            this->on_action_Save_triggered();
-            break;
-        case QMessageBox::StandardButton::Cancel:
+        if(choice == QMessageBox::Cancel)
             return;
-        };
     }
     LoadContainer(fileName);
     setupListView();
@@ -502,23 +555,9 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
         TreeNode * pcur = static_cast<TreeNode*>(index.internalPointer());
         if(!pcur)
             return;
-
-        //qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Expanding! Disabling updates!\n";
-        //ui->tv_sprcontent->setUpdatesEnabled(false);
-        //pcur->OnExpanded();
-        //ui->tv_sprcontent->dataChanged(index, index); //Make sure we display expandable items properly if we just loaded them!
-        //qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Changing current index!\n";
-        //ui->tv_sprcontent->setCurrentIndex(index);
-
-    //    ui->tv_sprcontent->setUpdatesEnabled(false);
-    //    ui->tv_sprcontent->expand(index);
-    //    ui->tv_sprcontent->setUpdatesEnabled(true);
-
         qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Opening proper tab!\n";
         m_curItem = m_curItem = index;
         DisplayTabForElement(index);
-        //qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Enabling updates!\n";
-        //ui->tv_sprcontent->setUpdatesEnabled(true);
         ui->tv_sprcontent->viewport()->update();
     }
     catch(const std::exception & e)
@@ -564,42 +603,31 @@ void MainWindow::on_actionNewSprite_triggered()
 {
     try
     {
-        Q_ASSERT(false);
+        NewContainer(ContentName_Sprite);
+        ShowStatusMessage(tr("New sprite!"));
     }
     catch (const std::exception & e)
     {
         qWarning() << "MainWindow::on_actionNewSprite_triggered(): failed with exception: \'" << e.what() << "\'";
     }
-//    ContentManager & sprman = ContentManager::Instance();
-//    BaseContainer * cnt = sprman.NewContainer();
-
-//    if(cnt)
-//        DisplayTabForElement(cnt->nodeChild(0));
-
-//    //Display!
-//    updateActions();
-//    setupListView();
-//    ShowStatusMessage(tr("New sprite!"));
-
 }
 
 void MainWindow::on_actionNewSprite_Pack_File_triggered()
 {
     try
     {
-        Q_ASSERT(false);
+        NewContainer(ContentName_Sprite);
+        ContentManager & manager = ContentManager::Instance();
+        SpriteContainer * cnt = static_cast<SpriteContainer*>(manager.getContainer());
+        cnt->SetContainerType(SpriteContainer::eContainerType::PACK); //Set to pack
+        setupListView();
+        updateActions();
+        ShowStatusMessage(tr("New sprite pack!"));
     }
     catch (const std::exception & e)
     {
         qWarning() << "MainWindow::on_actionNewSprite_Pack_File_triggered(): failed with exception: \'" << e.what() << "\'";
-    }
-    //ContentManager   & sprman = ContentManager::Instance();
-    //SpriteContainer * sprcnt = sprman.NewContainer( SpriteContainer::eContainerType::PACK );
-
-    //Display!
-//    updateActions();
-//    setupListView();
-//    ShowStatusMessage(tr("New pack file!"));
+    }  
 }
 
 void MainWindow::setupListView()
@@ -608,9 +636,6 @@ void MainWindow::setupListView()
     if(manager.isMultiItemContainer())
     {
         ui->tv_sprcontent->setRootIsDecorated(true);
-        //ui->tv_sprcontent->expandToDepth(1);
-        //ui->tv_sprcontent->viewport()->update();
-        //ui->tv_sprcontent->collapseAll();
         ui->tv_sprcontent->viewport()->update();
     }
     else
@@ -620,7 +645,7 @@ void MainWindow::setupListView()
     }
 }
 
-int MainWindow::AskSaveChanges()
+int MainWindow::AskSaveChanges(bool dosave)
 {
     QMessageBox msgBox(this);
     msgBox.setIcon(QMessageBox::Icon::Question);
@@ -628,7 +653,10 @@ int MainWindow::AskSaveChanges()
     msgBox.setInformativeText("Do you want to save your changes?");
     msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     msgBox.setDefaultButton(QMessageBox::Save);
-    return msgBox.exec();
+    int result = msgBox.exec();
+    if(dosave && result == QMessageBox::Save)
+        on_action_Save_triggered();
+    return result;
 }
 
 void MainWindow::PushUndoAction(QUndoCommand *cmd)
@@ -730,7 +758,6 @@ void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
         //remove/copy/duplicate/etc
         QMenu * menu = makeSpriteContextMenu(entry);
         menu->popup(ui->tv_sprcontent->mapToGlobal(pos));
-        //menu->show();
     }
     else
     {
@@ -746,8 +773,8 @@ QMenu *MainWindow::makeSpriteContextMenu(QModelIndex entry)
     TreeNode * elem = static_cast<TreeNode*>(entry.internalPointer());
     Q_ASSERT(elem);
 
-    TVSpritesContextMenu * menu = new TVSpritesContextMenu( this, entry, ui->tv_sprcontent);
-    connect( menu, SIGNAL(afterclosed()), menu, SLOT(deleteLater()) );
+    TVSpritesContextMenu * menu = new TVSpritesContextMenu(this, entry, ui->tv_sprcontent);
+    //connect( menu, SIGNAL(afterclosed()), menu, SLOT(deleteLater()) );
     return menu;
 }
 
@@ -837,4 +864,30 @@ void MainWindow::selectTreeViewNode(const QModelIndex &index)
 {
     m_curItem = index;
     ui->tv_sprcontent->setCurrentIndex(m_curItem);
+}
+
+void MainWindow::on_actionSprite_Sheet_Auto_Importer_triggered()
+{
+    if(currentSprite())
+    {
+        DialogImportWizard dlg(this, currentSprite());
+        dlg.exec();
+    }
+    else
+    {
+        ShowStatusErrorMessage(tr("No active sprites"));
+        Q_ASSERT(false);
+    }
+}
+
+void MainWindow::on_actionAdvanced_triggered()
+{
+    try
+    {
+        NewContainer();
+    }
+    catch (const std::exception & e)
+    {
+        qWarning() << "MainWindow::on_actionAdvanced_triggered(): failed with exception: \'" << e.what() << "\'";
+    }
 }

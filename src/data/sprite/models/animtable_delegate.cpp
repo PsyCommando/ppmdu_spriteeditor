@@ -1,12 +1,17 @@
 #include "animtable_delegate.hpp"
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/animgroup.hpp>
+#include <src/data/sprite/animgroups_container.hpp>
+#include <src/data/sprite/animtable.hpp>
 #include <src/data/treenodemodel.hpp>
 #include <QComboBox>
+#include <QLineEdit>
+#include <QTextEdit>
 
 AnimTableDelegate::AnimTableDelegate(AnimTable *parent, QObject *pobj)
     :QStyledItemDelegate(pobj), m_animtable(parent)
-{}
+{
+}
 
 AnimTableDelegate::~AnimTableDelegate()
 {
@@ -23,21 +28,48 @@ QSize AnimTableDelegate::sizeHint(const QStyleOptionViewItem &option, const QMod
     return QStyledItemDelegate::sizeHint(option,index);
 }
 
-QWidget *AnimTableDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
+QWidget *AnimTableDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &/*option*/, const QModelIndex &index) const
 {
-    Q_UNUSED(parent);
-    Q_UNUSED(option);
-    Q_UNUSED(index);
     QWidget * pedit = nullptr;
-    Q_ASSERT(false); //TODO
+    if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupId)
+        pedit = makeGroupSelect(parent, index);
+    else if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupName)
+        pedit = makeNameEdit(parent, index);
+
+    //Common properties
+    if(pedit != nullptr)
+    {
+        //pedit->setAutoFillBackground(true);
+        //pedit->setFocusPolicy(Qt::FocusPolicy::NoFocus);
+        //pedit->setProperty(UProp_OffsetIdx, index.row());
+    }
     return pedit;
 }
 
 void AnimTableDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
 {
-    Q_UNUSED(editor);
-    Q_UNUSED(index);
-    Q_ASSERT(false); //TODO
+    if(!index.isValid())
+        return;
+    const AnimTableSlot * pgrp  = static_cast<const AnimTableSlot*>(index.internalPointer());
+
+    if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupId)
+    {
+        QComboBox *cmb = static_cast<QComboBox*>(editor);
+        Q_ASSERT(cmb);
+        fmt::animgrpid_t ref = pgrp->getGroupRef();
+        if(ref == fmt::NullGrpIndex)
+            cmb->setCurrentIndex(0);
+        else
+            cmb->setCurrentIndex(ref + 1); //Since 0 is reserved increment always by one
+    }
+    else if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupName)
+    {
+        QLineEdit *txtname = dynamic_cast<QLineEdit*>(editor);
+        Q_ASSERT(txtname);
+        txtname->setText(pgrp->getSlotName());
+    }
+    else
+        return QStyledItemDelegate::setEditorData(editor,index);
 }
 
 void AnimTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
@@ -48,31 +80,20 @@ void AnimTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         throw std::runtime_error("AnimTableDelegate::setModelData(): Index is inavalid!\n");
     }
 
-    TreeNodeModel   * pmod  = static_cast<TreeNodeModel*>(model);
-    Q_ASSERT(pmod);
-    Sprite          * spr   = pmod->getOwnerSprite();
-    const AnimGroup * pfrm  = static_cast<const AnimGroup*>(spr->getAnimTable().nodeChild(index.row()));
-    Q_ASSERT(spr && pfrm);
-
-    switch(static_cast<AnimGroup::eColumns>(index.column()))
+    if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupId)
     {
-    case AnimGroup::eColumns::GroupName:
-        {
-            Q_ASSERT(false); //TODO
-            break;
-        }
-    case AnimGroup::eColumns::GroupID:
-        {
-            Q_ASSERT(false); //TODO
-            break;
-        }
-    case AnimGroup::eColumns::NbSlots:
-    default:
-        {
-            QStyledItemDelegate::setModelData(editor,model,index);
-            break;
-        }
-    };
+        QComboBox *cmb = dynamic_cast<QComboBox*>(editor);
+        Q_ASSERT(cmb);
+        model->setData(index, cmb->currentData(), Qt::EditRole);
+    }
+    else if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupName)
+    {
+        QLineEdit *txtname = dynamic_cast<QLineEdit*>(editor);
+        Q_ASSERT(txtname);
+        model->setData(index, txtname->text(), Qt::EditRole);
+    }
+    else
+        return QStyledItemDelegate::setModelData(editor, model,index);
 }
 
 void AnimTableDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &) const
@@ -80,27 +101,41 @@ void AnimTableDelegate::updateEditorGeometry(QWidget *editor, const QStyleOption
     editor->setGeometry(option.rect);
 }
 
-//QWidget *AnimTableDelegate::makeGroupSelect(QWidget *parent, const QModelIndex & index) const
-//{
-//    const TreeNodeModel     *model      = static_cast<const TreeNodeModel*>(index.model());
-//    QComboBox               *cmbGroup   = new QComboBox(parent);
-//    const ImageContainer    *pcnt       = &(model->getOwnerSprite()->getImages());
-//    const Sprite            *spr        = model->getOwnerSprite();
-//    imglstb->setIconSize( QSize(32,32) );
-//    imglstb->setStyleSheet(pcnt->ComboBoxStyleSheet());
+void AnimTableDelegate::commitAndCloseEditor()
+{
+    QWidget *editor = qobject_cast<QWidget *>(sender());
+    emit commitData(editor);
+    emit closeEditor(editor);
+}
 
-//    //Fill the combobox!
+QComboBox *AnimTableDelegate::makeGroupSelect(QWidget *parent, const QModelIndex & index) const
+{
+    const TreeNodeModel     *model      = static_cast<const TreeNodeModel*>(index.model());
+    QComboBox               *grplstb    = new QComboBox(parent);
+    const AnimGroups        *pcnt       = &(model->getOwnerSprite()->getAnimGroups());
+    const Sprite            *spr        = model->getOwnerSprite();
+    grplstb->setIconSize( QSize(256,32) );
+    grplstb->setStyleSheet(m_animtable->ComboBoxStyleSheet());
 
-//    //Add nodraw frame
-//    imglstb->addItem( QPixmap::fromImage(m_minusone), MFramePart_NoDrawFrame, QVariant(-1)); //Set user data to -1
-//    //Add actual images!
-//    for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
-//    {
-//        const Image* pimg = pcnt->getImage(cntimg);
-//        QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
-//        QString text = pimg->getImageDescription();
-//        imglstb->addItem( QIcon(pmap), text, QVariant(pimg->getID()) ); //Set user data to image's UID
-//    }
-//    imglstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
-//    return imglstb;
-//}
+    //Fill the combobox!
+
+    //Add nodraw frame
+    grplstb->addItem( QIcon(), tr("None"), QVariant(-1)); //Set user data to -1
+    //Add actual images!
+    for( int cntgrp = 0; cntgrp < pcnt->nodeChildCount(); ++cntgrp )
+    {
+        const AnimGroup* pgrp = pcnt->getGroup(cntgrp);
+        QPixmap pmap = pgrp->MakeGroupPreview(spr, 256, 32, 8);
+        grplstb->addItem( QIcon(pmap), QString("ID %1").arg(pgrp->getGroupUID()), QVariant(pgrp->getGroupUID()) ); //Set user data to group UID
+    }
+    grplstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    connect(grplstb, qOverload<int>(&QComboBox::activated), this, &AnimTableDelegate::commitAndCloseEditor);
+    return grplstb;
+}
+
+QLineEdit *AnimTableDelegate::makeNameEdit(QWidget *parent, const QModelIndex &/*index*/) const
+{
+    QLineEdit *txtname = new QLineEdit(parent);
+    txtname->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    return txtname;
+}

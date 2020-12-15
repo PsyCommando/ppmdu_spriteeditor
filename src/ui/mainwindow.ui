@@ -175,6 +175,8 @@
      </property>
      <addaction name="actionNewSprite"/>
      <addaction name="actionNewSprite_Pack_File"/>
+     <addaction name="separator"/>
+     <addaction name="actionAdvanced"/>
     </widget>
     <addaction name="menu_New"/>
     <addaction name="action_Open"/>
@@ -425,7 +427,7 @@
   </action>
   <action name="actionSprite_Sheet_Auto_Importer">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="icon">
     <iconset resource="../../appres.qrc">
@@ -481,6 +483,17 @@
    </property>
    <property name="text">
     <string>Report a bug</string>
+   </property>
+  </action>
+  <action name="actionAdvanced">
+   <property name="text">
+    <string>Adva&amp;nced..</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Create a new item to work on and select precisely what you need..&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
  </widget>

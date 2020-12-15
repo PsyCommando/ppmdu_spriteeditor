@@ -68,12 +68,12 @@ const QString &AnimSequences::nodeDataTypeName() const
 //        return HEADER_COLUMNS.size();
 //}
 
-AnimSequence *AnimSequences::getSequenceByID(fmt::AnimDB::animseqid_t id)
+AnimSequence *AnimSequences::getSequenceByID(fmt::animseqid_t id)
 {
     return static_cast<AnimSequence*>(nodeChild(id));
 }
 
-const AnimSequence *AnimSequences::getSequenceByID(fmt::AnimDB::animseqid_t id) const
+const AnimSequence *AnimSequences::getSequenceByID(fmt::animseqid_t id) const
 {
     return const_cast<AnimSequences*>(this)->getSequenceByID(id);
 }
@@ -101,7 +101,7 @@ void AnimSequences::importSequences(const fmt::AnimDB::animseqtbl_t &src)
     _removeChildrenNodes(0, nodeChildCount());
     _insertChildrenNodes(0, src.size());
 
-    for( fmt::AnimDB::animseqid_t cntid = 0; static_cast<size_t>(cntid) < src.size(); ++cntid )
+    for( fmt::animseqid_t cntid = 0; static_cast<size_t>(cntid) < src.size(); ++cntid )
         m_container[cntid]->importSeq(src.at(cntid));
 }
 
@@ -112,6 +112,13 @@ fmt::AnimDB::animseqtbl_t AnimSequences::exportSequences()
         seqs[cntid] = m_container[cntid]->exportSeq();
 
     return seqs;
+}
+
+AnimSequence *AnimSequences::appendNewSequence()
+{
+    int newidx = nodeChildCount();
+    _insertChildrenNodes(newidx, 1);
+    return m_container[newidx];
 }
 
 //AnimSequences::model_t *AnimSequences::getModel() {return m_pmodel.data();}

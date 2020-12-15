@@ -20,7 +20,7 @@ class SpriteScene : public QObject
 {
     Q_OBJECT
 public:
-    using animseqid_t = fmt::AnimDB::animseqid_t;
+    using animseqid_t = fmt::animseqid_t;
 
     explicit SpriteScene(QObject *parent = 0);
     virtual ~SpriteScene();
@@ -70,14 +70,14 @@ public:
      * Sets the sprite to render. Must also specify the animation sequence.
     */
     void setSprite(const Sprite * pspr, const AnimSequence * paniseq);
-    void setSprite(const Sprite * pspr, fmt::AnimDB::animseqid_t seqid = 0);
+    void setSprite(const Sprite * pspr, fmt::animseqid_t seqid = 0);
 
     /*
      * setSequence
      * Sets the animation sequence to render.
     */
     void setSequence(const AnimSequence * paniseq);
-    void setSequence(fmt::AnimDB::animseqid_t seqid);
+    void setSequence(fmt::animseqid_t seqid);
 
     //For layering items over the preview
     void addGraphicsItem(QGraphicsItem * pitem);
@@ -160,7 +160,7 @@ private:
     QScopedPointer<AnimatedSpriteItem> m_animsprite;    //Temporary object containing the currently displayed animated sequence
     unsigned int           m_ticks{0};                  //Animation ticks counter
     unsigned int           m_tickselapsed{0};           //The amount of ticks that are elapsed since the start of the animation sequence. Aka, the time between the first frame and the current frame plus the time spent on the current frame in ticks.
-    fmt::AnimDB::animseqid_t m_seqid{fmt::AnimDB::animseqid_t()}; //Currently displayed animation sequence id
+    fmt::animseqid_t        m_seqid{fmt::animseqid_t()}; //Currently displayed animation sequence id
     SpriteRenderer           m_renderer;                //Renderer for sprites
 
     //Concurent processing

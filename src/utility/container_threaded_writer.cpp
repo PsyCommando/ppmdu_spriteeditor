@@ -1,26 +1,27 @@
-#include "threadedwriter.hpp"
+#include "container_threaded_writer.hpp"
 #include <QDataStream>
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/sprite_container.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
+#include <src/ui/errorhelper.hpp>
 
 
 //=================================================================================================
 //  ThreadedWriter
 //=================================================================================================
-ThreadedWriter::ThreadedWriter(QSaveFile *sfile, BaseContainer *cnt)
+ContainerThreadedWriter::ContainerThreadedWriter(QSaveFile *sfile, BaseContainer *cnt)
     :QObject(nullptr),savefile(sfile), container(cnt), bywritten(0)
 {
 
 }
 
-ThreadedWriter::~ThreadedWriter()
+ContainerThreadedWriter::~ContainerThreadedWriter()
 {
     qDebug("ThreadedWriter::~ThreadedWriter()\n");
 }
 
-void ThreadedWriter::WritePack()
+void ContainerThreadedWriter::WritePack()
 {
     try
     {
@@ -28,11 +29,11 @@ void ThreadedWriter::WritePack()
     }
     catch(const std::exception & e)
     {
-        qCritical(e.what());
+        ErrorHelper::getInstance().sendErrorMessage(e.what());
     }
 }
 
-void ThreadedWriter::WriteSprite()
+void ContainerThreadedWriter::WriteSprite()
 {
     try
     {
@@ -40,11 +41,11 @@ void ThreadedWriter::WriteSprite()
     }
     catch(const std::exception & e)
     {
-        qCritical(e.what());
+        ErrorHelper::getInstance().sendErrorMessage(e.what());
     }
 }
 
-void ThreadedWriter::_WriteSprite()
+void ContainerThreadedWriter::_WriteSprite()
 {
     Q_ASSERT(container && container->GetNbDataRows() );
     QDataStream     outstr(savefile.data());
@@ -56,13 +57,12 @@ void ThreadedWriter::_WriteSprite()
     {
         try
         {
-            node->CommitSpriteData();
-            bywritten = outstr.writeRawData( (const char *)(node->getRawData().data()), node->getRawData().size() );
+            node->DumpSpriteToStream(outstr);
             savefile->commit();
         }
         catch(const std::exception & e )
         {
-            qCritical(e.what());
+            ErrorHelper::getInstance().sendErrorMessage(e.what());
         }
     });
     op2 = QtConcurrent::run( [](){} ); //dummy op
@@ -78,7 +78,7 @@ void ThreadedWriter::_WriteSprite()
     qDebug("ThreadedWriter::WritePack(): WriteSprite!\n");
 }
 
-void ThreadedWriter::_WritePack()
+void ContainerThreadedWriter::_WritePack()
 {
     Q_ASSERT(container && container->nodeHasChildren());
     bywritten = 0;
@@ -97,7 +97,7 @@ void ThreadedWriter::_WritePack()
         }
         catch(const std::exception & e)
         {
-            qCritical(e.what());
+            ErrorHelper::getInstance().sendErrorMessage(e.what());
         }
     });
     op2 = QtConcurrent::run([&]()

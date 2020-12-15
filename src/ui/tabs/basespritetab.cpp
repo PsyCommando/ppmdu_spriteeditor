@@ -16,6 +16,21 @@ MainWindow *BaseSpriteTab::getMainWindow()
     return m_pmainwindow;
 }
 
+const MainWindow *BaseSpriteTab::getMainWindow() const
+{
+    return m_pmainwindow;
+}
+
+QSettings &BaseSpriteTab::getSettings()
+{
+    return m_pmainwindow->getSettings();
+}
+
+const QSettings &BaseSpriteTab::getSettings() const
+{
+    return m_pmainwindow->getSettings();
+}
+
 void BaseSpriteTab::OnShowTab(QPersistentModelIndex)
 {
 }
@@ -113,4 +128,14 @@ eTreeElemDataType BaseSpriteTab::currentEntryType()const
 bool BaseSpriteTab::canAcceptContentType(const QString &/*contenttype*/) const
 {
     return false;
+}
+
+void BaseSpriteTab::writeSettings()
+{
+
+}
+
+void BaseSpriteTab::readSettings()
+{
+
 }

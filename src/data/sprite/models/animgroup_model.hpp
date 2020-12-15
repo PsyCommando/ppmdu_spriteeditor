@@ -39,8 +39,8 @@ public:
         return const_cast<AnimGroupModel*>(this)->getOwnerSprite();
     }
 
-    void setSlotSequenceID(int slot, fmt::AnimDB::animseqid_t id);
-    fmt::AnimDB::animseqid_t getSlotSequenceID(int slot)const;
+    void setSlotSequenceID(int slot, fmt::animseqid_t id);
+    fmt::animseqid_t getSlotSequenceID(int slot)const;
 
     //Returns the user-friendly name for the slot
     QString getSlotName(int index)const;

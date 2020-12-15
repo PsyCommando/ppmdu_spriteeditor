@@ -35,6 +35,7 @@ namespace filetypes
         AT4PX,
         AT4PN,
         INVALID,
+        NONE,
     };
 
     extern const std::vector<std::string> CompressionFormatsNames;
@@ -214,11 +215,11 @@ namespace filetypes
                 //no other known data!
                 break;
             }
-//        default:
-//            {
-//                assert(false);
-//                throw std::runtime_error("Decompress(), compression_handler.hpp: Unknown compression format header!");
-//            }
+        default:
+            {
+                assert(false);
+                throw std::runtime_error("Decompress(), compression_handler.hpp: Unknown compression format header!");
+            }
         };
 
         //#4. Copy header data if needed

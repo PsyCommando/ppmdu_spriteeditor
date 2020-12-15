@@ -14,8 +14,12 @@ public:
     {
         m_flags |= Qt::ItemFlag::ItemNeverHasChildren;
     }
-    TreeNodeTerminal(const TreeNodeTerminal & cp):TreeNode(cp){}
-    TreeNodeTerminal(TreeNodeTerminal && mv):TreeNode(mv){}
+    TreeNodeTerminal(const TreeNodeTerminal & cp):TreeNode(cp)
+    {
+    }
+    TreeNodeTerminal(TreeNodeTerminal && mv):TreeNode(mv)
+    {
+    }
     virtual ~TreeNodeTerminal() {}
     TreeNodeTerminal& operator=(const TreeNodeTerminal & cp){TreeNode::operator=(cp); return *this;}
     TreeNodeTerminal& operator=(TreeNodeTerminal && mv)     {TreeNode::operator=(mv); return *this;}
@@ -24,6 +28,7 @@ public:
     TreeNode *nodeChild(int) final                  {return nullptr;}
     int nodeChildCount() const final                {return 0;}
     int indexOfChild(const TreeNode* )const final   {return 0;}
+    bool nodeShowChildrenOnTreeView()const final    {return false;}
 
     //No childs so no need for that
 protected:

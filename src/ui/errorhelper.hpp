@@ -2,6 +2,7 @@
 #define ERRORHELPER_HPP
 #include <QString>
 #include <QPointer>
+#include <QMutex>
 
 class MainWindow;
 /*
@@ -31,6 +32,7 @@ private:
     ErrorHelper();
 
     QPointer<MainWindow> pmain;
+    QMutex              m_msgmtx;
 };
 
 #endif // ERRORHELPER_HPP

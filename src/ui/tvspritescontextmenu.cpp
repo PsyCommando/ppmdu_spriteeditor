@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <src/ui/mainwindow.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/ui/errorhelper.hpp>
 
 //===================================================================================================================
 // TVSpritesContextMenu
@@ -11,7 +12,6 @@ TVSpritesContextMenu::TVSpritesContextMenu( MainWindow * mainwindow,
                                             QWidget * parent)
     :QMenu(parent)
 {
-    m_pitem = static_cast<TreeNode*>(item.internalPointer());
     m_itemidx = item;
     m_pmainwindow = mainwindow;
     BuildMenu();
@@ -19,79 +19,102 @@ TVSpritesContextMenu::TVSpritesContextMenu( MainWindow * mainwindow,
 
 void TVSpritesContextMenu::BuildMenu()
 {
-
+    TreeNode * node = static_cast<TreeNode*>(m_itemidx.internalPointer());
     //Common default actions:
-    switch(m_pitem->nodeDataTy())
+    switch(node->nodeDataTy())
     {
     case eTreeElemDataType::sprite:
         {
-            addAction(tr("properties"),   this, &TVSpritesContextMenu::ShowProperties);
-            addAction(tr("dump.."),       this, &TVSpritesContextMenu::SaveDump);
+            addAction(tr("Properties"),     this, &TVSpritesContextMenu::ShowProperties);
+            addAction(tr("Dump to file.."), this, &TVSpritesContextMenu::SaveDump);
+            addAction(tr("Dump to xml.."),  this, &TVSpritesContextMenu::SaveXMLDump);
             break;
         }
     default:
         break;
     };
 
-    if(m_pitem->nodeIsMutable())
+    if(node->nodeIsMutable())
     {
         addAction(tr("remove"), this, &TVSpritesContextMenu::RemoveEntry);
     }
-
 }
 
 void TVSpritesContextMenu::ShowProperties()
 {
-    Q_ASSERT(m_pitem && m_pmainwindow && m_pitem->nodeDataTy() == eTreeElemDataType::sprite);
+    Q_ASSERT(m_pmainwindow);
     m_pmainwindow->DisplayTabForElement(m_itemidx);
-    close();
+    closeAndDelete();
 }
 
 void TVSpritesContextMenu::SaveDump()
 {
-//    Q_ASSERT(m_pitem && m_pmainwindow && m_itemidx.isValid());
-//    ContentManager & sprman = ContentManager::Instance();
-//    QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
-//                                                    tr("Save Sprite Dump As"),
-//                                                    QString(),
-//                                                    QString("%1;;%2")
-//                                                    .arg(SupportedFileFiltersByTypename[FileExtWAN])
-//                                                    .arg(SupportedFileFiltersByTypename[FileExtWAT]) );
+    Q_ASSERT(m_pmainwindow);
+    if(m_itemidx.isValid())
+    {
+        Sprite *    spr   = static_cast<Sprite*>(m_itemidx.internalPointer());
+        MainWindow *pmain = m_pmainwindow;
+        QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
+                                                        tr("Save selected as.."),
+                                                        QString(),
+                                                        AllSupportedGameSpritesFileFilter());
+        if(!filename.isNull())
+        {
+            spr->DumpSpriteToFile(filename);
+            pmain->ShowStatusMessage(tr("Dumped!"));
+        }
+    }
+    else
+        ErrorHelper::getInstance().sendWarningMessage(tr("Couldn't dump invalid item!"));
+    closeAndDelete();
+}
 
-//    if(filename.isNull())
-//    {
-//        close();
-//        return;
-//    }
-
-//    DumpSprite(m_itemidx, filename);
-//    m_pmainwindow->ShowStatusMessage( QString(tr("Sprite dumped!")) );
-//    close();
-
-    Q_ASSERT(false);
+void TVSpritesContextMenu::SaveXMLDump()
+{
+    Q_ASSERT(m_pmainwindow);
+    if(m_itemidx.isValid())
+    {
+        Sprite *    spr     = static_cast<Sprite*>(m_itemidx.internalPointer());
+        QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
+                                                        tr("Save XML as.."),
+                                                        QString(),
+                                                        AllSupportedXMLFileFilter());
+        if(!filename.isNull())
+        {
+            spr->DumpSpriteToXML(filename);
+            m_pmainwindow->ShowStatusMessage(tr("Dumped to xml and files!"));
+        }
+    }
+    else
+        ErrorHelper::getInstance().sendWarningMessage(tr("Couldn't dump invalid item!"));
+    closeAndDelete();
 }
 
 void TVSpritesContextMenu::RemoveEntry()
 {
-//    Q_ASSERT(m_pitem && m_pmainwindow && m_itemidx.isValid());
-//    TreeNode * pparent = m_pitem->parentNode();
-//    if(!pparent)
-//    {
-//        m_pmainwindow->ShowStatusErrorMessage( QString(tr("Entry to remove is invalid!")) );
-//        close();
-//        return;
-//    }
-//    if(m_pitem->nodeDataTy() == eTreeElemDataType::sprite &&
-//       !SpriteManager::Instance().ContainerIsPackFile())
-//    {
-//        m_pmainwindow->ShowStatusErrorMessage( QString(tr("Cannot delete the main sprite!")) );
-//        close();
-//        return;
-//    }
+    Q_ASSERT(m_pmainwindow);
+    if(m_itemidx.isValid())
+    {
+        TreeNode * node = static_cast<TreeNode*>(m_itemidx.internalPointer());
+        TreeNode * pparent = node->parentNode();
+        if(pparent && ContentManager::Instance().isMultiItemContainer())
+        {
+            m_pmainwindow->HandleItemRemoval(m_itemidx);
+        }
+        else if(!pparent)
+            ErrorHelper::getInstance().sendErrorMessage(tr("Entry to remove is invalid!"));
+        if(!ContentManager::Instance().isMultiItemContainer())
+            ErrorHelper::getInstance().sendErrorMessage(tr("Cannot delete the main item!"));
+    }
+    else
+        ErrorHelper::getInstance().sendWarningMessage(tr("Couldn't remove invalid item!"));
+    closeAndDelete();
+}
 
-//    m_pmainwindow->HandleItemRemoval(m_itemidx);
-//    close();
-    Q_ASSERT(false);
+void TVSpritesContextMenu::closeAndDelete()
+{
+    close();
+    deleteLater();
 }
 
 void TVSpritesContextMenu::closeEvent(QCloseEvent *event)
@@ -99,5 +122,3 @@ void TVSpritesContextMenu::closeEvent(QCloseEvent *event)
     QWidget::closeEvent(event);
     emit afterclosed();
 }
-
-

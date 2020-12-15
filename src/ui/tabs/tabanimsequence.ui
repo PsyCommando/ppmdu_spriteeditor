@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>836</width>
-    <height>470</height>
+    <height>510</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -603,7 +603,7 @@
        <property name="flat">
         <bool>false</bool>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+       <layout class="QVBoxLayout" name="verticalLayout">
         <property name="leftMargin">
          <number>9</number>
         </property>
@@ -612,7 +612,7 @@
           <item>
            <widget class="QPushButton" name="btnSeqPlay">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -632,7 +632,7 @@
           <item>
            <widget class="QPushButton" name="btnSeqStop">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -652,6 +652,16 @@
          </layout>
         </item>
         <item>
+         <widget class="QCheckBox" name="chkAutoplay">
+          <property name="text">
+           <string>Autoplay</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCheckBox" name="chkAnimSeqLoop">
           <property name="statusTip">
            <string>Loop animation</string>
@@ -664,20 +674,20 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QCheckBox" name="chkDisplayImgBorder">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the the frame's borders will be visible or blended with the background&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Display frame border</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="chkDisplayImgBorder">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the the frame's borders will be visible or blended with the background&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Display frame border</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
       </widget>
      </item>
      <item>

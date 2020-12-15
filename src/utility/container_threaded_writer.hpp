@@ -6,12 +6,14 @@
 #include <QFuture>
 #include <src/data/base_container.hpp>
 
+//#FIXME: Generalize this so that the actual container handles the writing, and this only handles the threading!!!
+
 /*
-    ThreadedWriter
-        Used so the event loop of the mainwindow can continue looping while we do long operations!
+    ContainerThreadedWriter
+        Writes the content of a container on a separate thread.
 */
 
-class ThreadedWriter : public QObject
+class ContainerThreadedWriter : public QObject
 {
     Q_OBJECT
 public:
@@ -22,8 +24,8 @@ public:
     QFuture<void>                     op1;
     QFuture<void>                     op2;
 
-    explicit ThreadedWriter(QSaveFile * sfile, BaseContainer * cnt);
-    virtual ~ThreadedWriter();
+    explicit ContainerThreadedWriter(QSaveFile * sfile, BaseContainer * cnt);
+    virtual ~ContainerThreadedWriter();
 
 public slots:
     void WritePack();

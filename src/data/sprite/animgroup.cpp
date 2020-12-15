@@ -74,7 +74,6 @@ const QStringList AnimGroup::ColumnNames
     "Group ID",
     "Group Name",
     "Nb Slots",
-    "Preview",
 };
 
 AnimGroup::AnimGroup(TreeNode *parent)
@@ -165,7 +164,7 @@ void AnimGroup::importGroup(const fmt::AnimDB::animgrp_t &grp)
     m_unk16 = grp.unk16;
 }
 
-fmt::AnimDB::animgrp_t AnimGroup::exportGroup()
+fmt::AnimDB::animgrp_t AnimGroup::exportGroup()const
 {
     fmt::AnimDB::animgrp_t dest;
     const int nbrefs = m_container.size();
@@ -268,4 +267,3 @@ QString AnimGroup::nodeDisplayName() const
     //#TODO: anim groups should be named by the animation they're for maybe?
     return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());
 }
-

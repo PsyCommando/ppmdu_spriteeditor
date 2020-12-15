@@ -41,4 +41,9 @@ void ContentContainerFactory::RegisterContainerType(ContainerType &&newtype)
     m_registeredtypes.insert_or_assign(newtype.cntTypeName, newtype);
 }
 
+const ContentContainerFactory::regtypeslst_t &ContentContainerFactory::RegisteredContainerTypes() const
+{
+    return m_registeredtypes;
+}
+
 

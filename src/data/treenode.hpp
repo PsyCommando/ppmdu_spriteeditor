@@ -46,8 +46,8 @@ public:
     virtual TreeNode* clone()const = 0;
 
     //Child nodes handling
-    virtual TreeNode*    nodeChild(int row)=0;
-    const TreeNode*      nodeChild(int row)const {return const_cast<TreeNode*>(this)->nodeChild(row);}
+    virtual TreeNode*       nodeChild(int row)=0;
+    virtual const TreeNode* nodeChild(int row)const {return const_cast<TreeNode*>(this)->nodeChild(row);}
 
     virtual bool    nodeHasChildren()const  {return nodeChildCount() > 0;}
     virtual int     nodeChildCount()const = 0;
