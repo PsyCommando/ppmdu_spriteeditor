@@ -3,6 +3,7 @@
 
 namespace fmt
 {
+     const int SPR_PAL_NB_COLORS_SUBPAL = 16;
 
     const std::pair<uint16_t, uint16_t> MaxFrameResValue { 64, 64 };
 
@@ -37,5 +38,9 @@ namespace fmt
 
     const animseqid_t NullSeqIndex = -1;
     const animgrpid_t NullGrpIndex = -1;
+
+    //Tiles length
+    const int NDS_TILE_SIZE_4BPP = 32; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
+    const int NDS_TILE_SIZE_8BPP = 64; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
 
 };

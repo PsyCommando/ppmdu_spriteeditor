@@ -24,6 +24,9 @@ public:
     void importAnimationGroups(const fmt::AnimDB::animgrptbl_t & grps);
     fmt::AnimDB::animgrptbl_t exportAnimationGroups()const;
 
+    //Resizes all groups to have this exact amount of slots
+    void setNbGroupSlots(int nbslots);
+
     // TreeNode interface
 public:
     TreeNode *clone() const override;

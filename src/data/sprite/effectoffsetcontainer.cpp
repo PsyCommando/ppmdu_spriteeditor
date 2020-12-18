@@ -30,6 +30,24 @@ EffectOffsetContainer & EffectOffsetContainer::operator=(const EffectOffsetConta
 EffectOffsetContainer::~EffectOffsetContainer()
 {}
 
+void EffectOffsetContainer::Clear()
+{
+    _removeChildrenNodes(0, nodeChildCount());
+}
+
+void EffectOffsetContainer::Resize(int nboffsets)
+{
+    int diff = static_cast<int>(m_container.size()) - nboffsets;
+    if(diff > 0) //remove
+    {
+        _removeChildrenNodes((nodeChildCount() - 1) - diff, diff);
+    }
+    else if(diff < 0) //add
+    {
+        _insertChildrenNodes(nodeChildCount(), abs(diff));
+    }
+}
+
 TreeNode *EffectOffsetContainer::clone() const
 {
     return new EffectOffsetContainer(*this);

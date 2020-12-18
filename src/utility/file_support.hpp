@@ -5,7 +5,7 @@
 */
 #include <QString>
 #include <QSize>
-#include <QHash>
+#include <QMap>
 
 //==============================================================
 // Image stuff
@@ -35,9 +35,9 @@ extern const QString FileExtTXTPAL;
 //==============================================================
 //File Filters
 //==============================================================
-extern const QHash<QString, QString>    SupportedFileFiltersByTypename;
-extern const QHash<QString, QString>    SupportedImageFilesFilters;
-extern const QHash<QString, QString>    SupportedExportPaletteFilesFilters;
+extern const QMap<QString, QString>    SupportedFileFiltersByTypename;
+extern const QMap<QString, QString>    SupportedImageFilesFilters;
+extern const QMap<QString, QString>    SupportedExportPaletteFilesFilters;
 
 const QString &AllSupportedGameFileFilter();
 const QString &AllSupportedGameSpritesFileFilter();

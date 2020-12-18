@@ -167,6 +167,8 @@ private:
     QScopedPointer<QLabel>  m_pStatusError;
     QScopedPointer<QAction> m_pActionAddSprite;
     QScopedPointer<QAction> m_pActionRemSprite;
+    QScopedPointer<QMenu>   m_pContainerMenu;
+    QPointer<QAction>       m_pContainerMenuAction;
     QPixmap                 m_imgNoImg;             //Image displayed when no image can be displayed in a view!
     DialogAbout             m_aboutdiag;
     DialogProgressBar       m_progress;

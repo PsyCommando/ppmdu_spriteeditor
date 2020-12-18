@@ -24,6 +24,10 @@ void Sprite::_ctor()
     m_seqcnt.setParentNode(this);
     m_anmtbl.setParentNode(this);
     m_anmgrp.setParentNode(this);
+    if(is256Colors())
+        m_palcnt.setPalette(QVector<QRgb>(256));
+    else
+        m_palcnt.setPalette(QVector<QRgb>(16));
 }
 
 Sprite::Sprite(TreeNode *parent)
@@ -285,7 +289,7 @@ const QPixmap & Sprite::getCachedPreviewPalette()const
 
 QPixmap &Sprite::MakePreviewFrame(bool transparency)
 {
-    if(wasParsed() && hasImageData())
+    if(hasImageData())
     {
         if(m_frmcnt.nodeHasChildren())
             return m_previewImg = QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
@@ -297,7 +301,7 @@ QPixmap &Sprite::MakePreviewFrame(bool transparency)
 
 QPixmap Sprite::MakePreviewFrame(bool transparency)const
 {
-    if(wasParsed() && hasImageData())
+    if(hasImageData())
     {
         if(m_frmcnt.nodeHasChildren())
             return QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
@@ -348,29 +352,47 @@ void Sprite::convertSpriteToType(fmt::eSpriteType newty)
 
     switch(newty)
     {
-    case fmt::eSpriteType::Prop:
-        //Re-arrange anim table
-        //Delete Attach Points
-    case fmt::eSpriteType::Character:
-        //Re-arrange anim table, each groups has 8 sequences
-        //Create Attach Points for all frames
-    case fmt::eSpriteType::Effect:
-        //Re-arrange anim table
-        //Delete Attach Points
-    case fmt::eSpriteType::WAT:
-        //Re-arrange anim table
-        //Delete Attach Points
-
-    default:
+        case fmt::eSpriteType::Prop:
+        {
+            //Anim groups have a single slot
+            ResizeAnimGroupSlots(1);
+            //Delete Attach Points
+            ClearAttachPoints();
+            break;
+        }
+        case fmt::eSpriteType::Character:
+        {
+            //Re-arrange anim table, each groups has 8 sequences
+            ResizeAnimGroupSlots(8);
+            //Create Attach Points for all frames
+            CreateAttachPoints();
+            break;
+        }
+        case fmt::eSpriteType::Effect:
+        {
+            //Re-arrange anim table
+            ResizeAnimGroupSlots(1);
+            //Delete Attach Points
+            ClearAttachPoints();
+            break;
+        }
+        case fmt::eSpriteType::WAT:
+        {
+            //Re-arrange anim table
+            ResizeAnimGroupSlots(1);
+            //Delete Attach Points
+            ClearAttachPoints();
+            break;
+        }
+        default:
         {
             //Error
             Q_ASSERT(false);
-            break;
+            throw BaseException("Sprite::convertSpriteToType(): Bad sprite type!!");
         }
     };
 
-    //#TODO:!!
-    Q_ASSERT(false);
+    m_sprhndl.setSpriteType(newty);
 }
 
 bool Sprite::IsRawDataCompressed(filetypes::eCompressionFormats *outfmt) const
@@ -395,6 +417,20 @@ void Sprite::CompressRawData(filetypes::eCompressionFormats cpfmt)
     auto     itback = std::back_inserter(buffer);
     filetypes::Compress( cpfmt, m_raw.begin(), m_raw.end(), itback);
     m_raw = std::move(buffer);
+}
+
+void Sprite::ResizeAnimGroupSlots(int newsz)
+{
+    m_anmgrp.setNbGroupSlots(newsz);
+}
+
+void Sprite::ClearAttachPoints()
+{
+    m_efxcnt.Clear();
+}
+void Sprite::CreateAttachPoints()
+{
+    m_efxcnt.Resize(m_frmcnt.size());
 }
 
 TreeNode *Sprite::ElemPtr(int idx)
@@ -449,7 +485,7 @@ const TreeNode *Sprite::ElemPtr(int idx) const
 
 bool Sprite::nodeCanFetchMore()const
 {
-    return !wasParsed();
+    return canParse() && !wasParsed();
 }
 
 void Sprite::nodeFetchMore()
@@ -520,3 +556,9 @@ void Sprite::importImageSequences(const imgseqs_t & sequences, uint8_t frmdurati
         importImageSequence(seq, frmduration);
     }
 }
+
+//If true the caller will likely force a commit on this sprite!!!
+ bool Sprite::hasUnsavedChanges()const
+ {
+    return !hasRawData(); //#FIXME: Maybe a better system should be implemented since loaded sprites will always have raw data
+ }

@@ -79,6 +79,10 @@ public:
 
     //For now UID is index!
     inline int getFrameUID()const {return nodeIndex();}
+
+    //Generates a filed tile buffer based on this frame's sub-parts
+    // Adds up tiles up to "uptopartidx". If its -1, adds all frames parts
+    QVector<uint8_t> generateTilesBuffer(const Sprite * spr, int uptopartidx = -1)const;
 };
 
 #endif // FRAME_HPP

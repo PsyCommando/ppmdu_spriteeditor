@@ -213,6 +213,8 @@ void SpriteContainer::LoadContainer()
 
     QByteArray data = container.readAll();
     ContentManager & manager = ContentManager::Instance();
+    fmt::eSpriteType sprCntType = fmt::eSpriteType::INVALID;
+    eCompressionFmtOptions sprComp = eCompressionFmtOptions::NONE;
 
     m_spr.clear();
     //Lets identify the format
@@ -254,6 +256,18 @@ void SpriteContainer::LoadContainer()
         m_cntTy = eContainerType::WAT;
     }
 
+    //Setup expected container wide formats
+    if(!m_spr.empty())
+    {
+        Sprite *first =  m_spr.front();
+        if(first)
+        {
+            sprComp = CompFmtToCompOption(first->getTargetCompression());
+            sprCntType = first->type();
+        }
+    }
+    m_cntsprty = sprCntType;
+    m_cntCompression = sprComp;
 }
 
 int SpriteContainer::WriteContainer()const
@@ -330,8 +344,8 @@ SpriteContainer::sprid_t SpriteContainer::AddSprite()
 
     manager.beginInsertRows( QModelIndex(), offset, offset );
     Sprite * spr = new Sprite(this);
-   // spr->m_bparsed = true; //#FIXME: Gotta make newly created sprite valid by setting them to parsed!! Or make something smarter
-//    spr->setTargetCompression(filetypes::eCompressionFormats::INVALID);
+    spr->convertSpriteToType(getExpectedSpriteType());
+    spr->setTargetCompression(CompOptionToCompFmt(GetExpectedCompression()));
     m_spr.push_back(spr);
     manager.endInsertRows();
 
@@ -346,6 +360,25 @@ eCompressionFmtOptions SpriteContainer::GetExpectedCompression() const
 void SpriteContainer::SetExpectedCompression(eCompressionFmtOptions compression)
 {
     m_cntCompression = compression;
+    for(Sprite * spr : m_spr)
+        spr->setTargetCompression(CompOptionToCompFmt(m_cntCompression));
+}
+
+fmt::eSpriteType SpriteContainer::getExpectedSpriteType() const
+{
+    return m_cntsprty;
+}
+
+void SpriteContainer::setExpectedSpriteType(fmt::eSpriteType sprty)
+{
+    m_cntsprty = sprty;
+    for(Sprite * spr : m_spr)
+        spr->convertSpriteToType(sprty);
+}
+
+QMenu *SpriteContainer::MakeActionMenu(QWidget *parent)
+{
+    return new SpriteContainerMenu(this, parent);
 }
 
 SpriteContainer::iterator SpriteContainer::begin()
@@ -936,7 +969,7 @@ bool SpriteContainer::canFetchMore(const QModelIndex &index) const
     Q_ASSERT(pspr);
     if(!pspr)
         return false;
-    return !pspr->wasParsed();
+    return pspr->canParse() && !pspr->wasParsed();
 }
 
 void SpriteContainer::fetchMore(const QModelIndex &index)
@@ -1001,4 +1034,41 @@ eTreeElemDataType SpriteContainer::nodeDataTy() const
 const QString &SpriteContainer::nodeDataTypeName() const
 {
     return ElemName_SpriteContainer;
+}
+
+//=================================================================================================
+// SpriteContainerMenu
+//=================================================================================================
+SpriteContainerMenu::SpriteContainerMenu(SpriteContainer * container, QWidget * parent)
+    :QMenu(parent)
+{
+    m_container = container;
+    InitContent();
+}
+
+SpriteContainerMenu::~SpriteContainerMenu()
+{
+}
+
+void SpriteContainerMenu::InitContent()
+{
+    //
+
+    //Compression select
+    QMenu        * compMenu = new QMenu(tr("Compression"), this);
+    QActionGroup * compgrp  = new QActionGroup(this);
+
+    //Fill up compression options
+    for(int i = 0; i < CompressionFmtOptions.size(); ++i)
+    {
+        QAction * paction = new QAction(CompressionFmtOptions[i], compMenu);
+        paction->setCheckable(true);
+        paction->setActionGroup(compgrp);
+        if(m_container->GetExpectedCompression() == static_cast<eCompressionFmtOptions>(i))
+            paction->setChecked(true);
+        connect(paction, &QAction::toggled, [&](bool state){m_container->SetExpectedCompression(static_cast<eCompressionFmtOptions>(i));});
+        compMenu->addAction(paction);
+    }
+    addMenu(compMenu);
+
 }

@@ -20,6 +20,11 @@ public:
     EffectOffsetContainer & operator=(const EffectOffsetContainer & cp);
     ~EffectOffsetContainer();
 
+    //Removes all effect offsets
+    void Clear();
+    //Grows the offset container to match the new number of entries
+    void Resize(int nboffsets);
+
     // TreeNode interface
 public:
     TreeNode *clone() const override;

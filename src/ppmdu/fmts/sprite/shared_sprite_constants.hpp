@@ -10,6 +10,8 @@ namespace fmt
     typedef int16_t             frmid_t;       //-1 is a nodraw frame, so must be signed
     typedef std::vector<rgbx_t> rbgx24pal_t;   //RGBX 24bits palette type
 
+    extern const int SPR_PAL_NB_COLORS_SUBPAL;      //Amount of colors per sub-palette when in 4bpp mode
+
     //Frame resolutions
     extern const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues;
 
@@ -50,6 +52,10 @@ namespace fmt
 
     //Human readable names for the sprite types
     extern const std::vector<std::string> SpriteTypeNames;
+
+    //Tiles length
+    extern const int NDS_TILE_SIZE_4BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
+    extern const int NDS_TILE_SIZE_8BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
 };
 
 #endif // SHARED_SPRITE_CONSTANTS_HPP

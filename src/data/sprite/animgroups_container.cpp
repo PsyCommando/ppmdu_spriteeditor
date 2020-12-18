@@ -63,6 +63,12 @@ fmt::AnimDB::animgrptbl_t AnimGroups::exportAnimationGroups() const
     return tbl;
 }
 
+void AnimGroups::setNbGroupSlots(int nbslots)
+{
+    for(AnimGroup * g : *this)
+        g->setNbSlots(nbslots);
+}
+
 TreeNode *AnimGroups::clone() const
 {
     return new AnimGroups(*this);

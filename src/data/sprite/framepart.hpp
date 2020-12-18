@@ -72,7 +72,7 @@ public:
      *      Optimized for displaying the part, return an image in the ARGB32_premultiplied format.
      *      If the part is a -1 frame, returns a null image!
     */
-    QImage drawPart(Sprite * spr, bool transparencyenabled = false)const;
+    QImage drawPart(const Sprite * spr, bool transparencyenabled = false)const;
 
 public:
     void        importPart(const fmt::step_t & part);
@@ -80,6 +80,12 @@ public:
 
     fmt::step_t         & getPartData();
     const fmt::step_t   & getPartData()const;
+
+    //Returns the length in tiles this part is
+    uint16_t getTileLen()const;
+
+    //Returns the right sub-palette from the src that matches the palette number of the framepart
+    QVector<QRgb> getPartPalette(const QVector<QRgb> & src)const;
 
     //Wrapper methods
 public:

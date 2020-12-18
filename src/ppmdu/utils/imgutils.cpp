@@ -242,7 +242,7 @@ namespace utils
                 //tiles[tile][tileX + (tileY * TileWidth)] = src.pixel(x, y);
             }
         }
-        return std::move(out);
+        return out;
 
 //        auto lbdReadTile = [&](size_t pos)
 //        {

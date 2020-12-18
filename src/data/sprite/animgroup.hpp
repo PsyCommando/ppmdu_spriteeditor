@@ -79,6 +79,9 @@ public:
     uint16_t getUnk16()const;
     void     setUnk16(uint16_t val);
 
+    //Force the selected amount of slots into this groups, removes extras, adds new empty slots
+    void setNbSlots(int newnbslots);
+
     //Returns the unique id of this group within this sprite
     int getGroupUID()const;
 

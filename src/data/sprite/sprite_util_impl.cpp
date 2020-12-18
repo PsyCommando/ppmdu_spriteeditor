@@ -345,10 +345,8 @@ private:
 //=================================================================================================================
 void Sprite::DumpSpriteToXML(const QString & fpath)
 {
-    if(!wasParsed() && canParse())
+    if(canParse() && !wasParsed())
         ParseSpriteData();
-    else if(!canParse())
-        throw BaseException(("Can't parse sprite being dumped to XML!!"));
 
     QSaveFile sf(fpath);
     if(sf.open(QIODevice::WriteOnly) && sf.error() == QFileDevice::NoError)

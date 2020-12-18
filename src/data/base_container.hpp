@@ -1,6 +1,7 @@
 #ifndef BASE_CONTAINER_HPP
 #define BASE_CONTAINER_HPP
 #include <src/data/treenode.hpp>
+#include <QMenu>
 /*
  * BaseContainer
  * Base class for containers to be displayed by the SpriteManager model.
@@ -77,6 +78,9 @@ public:
     //Returns the top level node owning what is referred by the index
     virtual TreeNode*         getOwnerNode(const QModelIndex & index) = 0;
     virtual const TreeNode*   getOwnerNode(const QModelIndex & index)const = 0;
+
+    //Make a QMenu that offers actions to be performed on the container itself.
+    virtual QMenu * MakeActionMenu(QWidget * parent = nullptr) = 0;
 
     //***************************
     //Container Model Interface

@@ -82,10 +82,18 @@ public:
     inline Image        * getImage(fmt::frmid_t id)     { return static_cast<Image*>(nodeChild(id)); }
     inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
 
+    /*
+     * getTileData
+     *      Allow access to all the image data as if it was in tile memory
+    */
+    QVector<uint8_t> getTileData(int id, int len)const;
+
+    //Same as above, but starts to lookup at the specified image
+    QVector<uint8_t> getTileDataFromImage(int imgidx, int id, int len)const;
+
     //Whether the node should be movable
     bool    nodeIsMutable()const override {return false;}
     QString nodeDisplayName() const override;
-
 
 
     void DumpAllImages(const QString & dirpath, const QVector<QRgb> & palette)const;

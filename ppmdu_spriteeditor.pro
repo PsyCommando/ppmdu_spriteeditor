@@ -75,6 +75,7 @@ SOURCES += src/main.cpp\
     src/extfmt/animtation_table_layout.cpp \
     src/extfmt/gpl_palette.cpp \
     src/extfmt/text_palette.cpp \
+    src/ppmdu/fmts/sprite/sprite_handler.cpp \
     src/ui/dialognew.cpp \
     src/ui/editor/cropper/autocropper_gizmo.cpp \
     src/ui/editor/cropper/autocropper_scene.cpp \
@@ -104,7 +105,6 @@ SOURCES += src/main.cpp\
     src/ppmdu/utils/imgutils.cpp \
     src/ui/diagsingleimgcropper.cpp \
     src/ui/dialognewsprite.cpp \
-    src/scenerenderer.cpp \
     src/ui/dialogabout.cpp \
     src/ui/dialogprogressbar.cpp \
     src/ppmdu/fmts/compression_handler.cpp \
@@ -200,7 +200,6 @@ HEADERS  += \
     src/ppmdu/utils/imgutils.hpp \
     src/ui/diagsingleimgcropper.hpp \
     src/ui/dialognewsprite.hpp \
-    src/scenerenderer.hpp \
     src/ui/dialogabout.hpp \
     src/ui/dialogprogressbar.hpp \
     src/extfmt/riff_palette.hpp \

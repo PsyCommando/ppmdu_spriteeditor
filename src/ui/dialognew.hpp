@@ -24,6 +24,7 @@ public:
     QString getContentType()const;
     eCompressionFmtOptions          getSprCompression()const;
     SpriteContainer::eContainerType getSprFormatType()const;
+    fmt::eSpriteType                getSprSubType()const;
 
 public:
 

@@ -162,16 +162,17 @@ namespace fmt
         inline hdr_imgfmtinfo          & getImageFmtInfo()                         {return m_imgfmt;}
 
         inline eSpriteType           getSpriteType()const                      {return m_sprty;}
+        void                         setSpriteType(eSpriteType ty);
 
         inline const uint16_t      & getUnk12()const                           {return m_unk12;}
         inline uint16_t            & getUnk12()                                {return m_unk12;}
 
     private:
         //Sprite Header
-        uint32_t    m_offsetAnimInfo;
-        uint32_t    m_offsetImgInfo;
-        eSpriteType m_sprty;
-        uint16_t    m_unk12;
+        uint32_t    m_offsetAnimInfo{0};
+        uint32_t    m_offsetImgInfo {0};
+        eSpriteType m_sprty         {eSpriteType::INVALID};
+        uint16_t    m_unk12         {0};
 
         //Info chunks
         hdr_imgfmtinfo  m_imgfmt;
@@ -249,6 +250,7 @@ namespace fmt
         }
 
     };
+
 };
 
 #endif // SPRITE_HANDLER_HPP

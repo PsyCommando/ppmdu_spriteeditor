@@ -223,7 +223,7 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
     else if(item->nodeDataTypeName() == ElemName_AnimTable)
         ShowATab(ui->tabAnimTable, manager.modelIndexOf(item));
 
-    else if(item->nodeDataTypeName() == ElemName_AnimGroup && currentSprite()->hasAnimGrps())
+    else if(item->nodeDataTypeName() == ElemName_AnimGroup)
         ShowATab(ui->tabAnimGroup, manager.modelIndexOf(item));
 
     else if(item->nodeDataTypeName() == ElemName_AnimSequences)
@@ -421,6 +421,12 @@ void MainWindow::addMultiItemActions(const QString & itemname)
 {
     m_pActionAddSprite.reset(ui->menu_Edit->addAction(QString(tr("Add %1..")).arg(itemname),      this, &MainWindow::OnActionAddTopItem));
     m_pActionRemSprite.reset(ui->menu_Edit->addAction(QString(tr("Remove %1..")).arg(itemname),   this, &MainWindow::OnActionRemTopItem));
+
+    //Add container menu
+    ContentManager & manager = ContentManager::Instance();
+    BaseContainer * cnt = manager.getContainer();
+    m_pContainerMenu.reset(cnt->MakeActionMenu(ui->menuBar));
+    m_pContainerMenuAction = ui->menuBar->addMenu(m_pContainerMenu.data());
 }
 
 void MainWindow::remMultiItemActions()
@@ -429,6 +435,11 @@ void MainWindow::remMultiItemActions()
     ui->menu_Edit->removeAction(m_pActionRemSprite.data());
     m_pActionAddSprite.reset(nullptr);
     m_pActionRemSprite.reset(nullptr);
+
+    if(m_pContainerMenuAction)
+        ui->menuBar->removeAction(m_pContainerMenuAction);
+    if(m_pContainerMenu)
+        m_pContainerMenu.reset();
 }
 
 ContentManager & MainWindow::getManager()
@@ -512,16 +523,7 @@ void MainWindow::on_action_Open_triggered()
     ContentManager & manager = ContentManager::Instance();
 
     //#TODO: Move that to constant!!
-    QString filefilter;
-    for(const auto & filters : SupportedFileFiltersByTypename)
-    {
-        if(filefilter.size() > 0)
-            filefilter = QString("%1;;%2").arg(filefilter).arg(filters);
-        else
-            filefilter = QString("%1").arg(filefilter);
-    }
-
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString(), filefilter);
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString(), AllSupportedGameFileFilter());
 
     if(fileName.isNull())
         return;

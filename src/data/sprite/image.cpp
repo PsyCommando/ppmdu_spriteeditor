@@ -147,3 +147,31 @@ int Image::getByteSize()const
 {
     return m_raw.size();
 }
+
+int Image::getTileSize()const
+{
+//    if(m_depth == 8)
+        return getByteSize() / fmt::NDS_TILE_SIZE_8BPP;
+//    else if(m_depth == 4)
+//        return getByteSize() / fmt::NDS_TILE_SIZE_4BPP;
+//    else
+//        throw std::runtime_error("Image::getTileSize() : Bad image depth");
+}
+
+std::vector<uint8_t> Image::getTile(int id)const
+{
+    //Tiles are always 8bpp tiles since data is stored as 8bpp
+    const unsigned int tilesz = /*(m_depth == 8)?*/ fmt::NDS_TILE_SIZE_8BPP /*: (m_depth == 4)? fmt::NDS_TILE_SIZE_4BPP : 0*/;
+    auto itbeg = m_raw.begin();
+    auto itend = m_raw.end();
+    std::advance(itbeg, id * tilesz);
+
+    //If end of tile not past the end of the image, set it up properly
+    if((id + 1) * tilesz < m_raw.size())
+    {
+        itend = itbeg;
+        std::advance(itend, tilesz);
+    }
+
+    return std::vector<uint8_t>(itbeg, itend);
+}

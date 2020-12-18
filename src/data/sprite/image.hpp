@@ -58,6 +58,12 @@ public:
 
     //Returns the raw size of the image's data
     int getByteSize()const;
+    inline const std::vector<uint8_t> & getRaw()const{return m_raw;}
+    int getTileSize()const;
+    std::vector<uint8_t> getTile(int id)const;
+
+    //Returns the contained image as-is with no palette
+    const QImage & getImage()const {return m_img;}
 
     QString getImageDescription()const;
 
@@ -81,8 +87,8 @@ public:
 
 protected:
     QImage                  m_img;
-    std::vector<uint8_t>    m_raw;          //Need this because QImage doesn't own the raw img data buffer...
-    int                     m_depth {0};    //Original image depth in bpp
+    std::vector<uint8_t>    m_raw;          //8 bpp raw image data (always 8bpp, because Qt doesn't support 4bpp)
+    int                     m_depth {0};    //Original image bit depth in bpp, either 4 or 8
     uint16_t                m_unk2  {0};
     uint16_t                m_unk14 {0};
 };

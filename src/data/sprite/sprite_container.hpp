@@ -8,6 +8,7 @@
 #include <QAbstractItemModel>
 #include <QList>
 #include <QDebug>
+#include <QMenu>
 #include <cstdint>
 #include <QtConcurrent/QtConcurrent>
 #include <src/data/sprite/sprite.hpp>
@@ -17,6 +18,25 @@
 */
 extern const QString ElemName_SpriteContainer;
 extern const QString ContentName_Sprite;
+
+/*
+ * SpriteContainerMenu
+ *  Menu for options specific to the sprite container
+*/
+class SpriteContainer;
+class SpriteContainerMenu : public QMenu
+{
+public:
+    SpriteContainerMenu(SpriteContainer * container, QWidget * parent = nullptr);
+    virtual ~SpriteContainerMenu();
+
+    void InitContent();
+
+public slots:
+
+private:
+    SpriteContainer * m_container {nullptr};
+};
 
 /*
  *  SpriteContainer
@@ -100,6 +120,13 @@ public:
     eCompressionFmtOptions GetExpectedCompression()const;
     void SetExpectedCompression(eCompressionFmtOptions compression);
 
+    fmt::eSpriteType getExpectedSpriteType()const;
+    void setExpectedSpriteType(fmt::eSpriteType sprty);
+
+    //Returns a QMenu that offers actions to be done on this container.
+    QMenu *MakeActionMenu(QWidget * parent)override;
+
+    //Container standard access
     iterator         begin();
     const_iterator   begin()const;
     iterator         end();
@@ -218,7 +245,8 @@ private:
     list_t          m_spr;          //List of all the contained sprites
     eContainerType  m_cntTy     {eContainerType::NONE};
     QThread         m_workthread;
-    eCompressionFmtOptions m_cntCompression {eCompressionFmtOptions::NONE};
+    eCompressionFmtOptions  m_cntCompression {eCompressionFmtOptions::NONE};
+    fmt::eSpriteType        m_cntsprty {fmt::eSpriteType::Character}; //By default the only sprite containers with several sprites are character sprites
 
 signals:
     void startThread();

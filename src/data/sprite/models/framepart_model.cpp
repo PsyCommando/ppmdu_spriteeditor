@@ -203,29 +203,33 @@ QVariant MFramePartModel::dataImgPreview(const MFramePart * part, int role) cons
 {
     if(role == Qt::DecorationRole)
     {
-        //#TODO: Draw only this part/step
-        if( part->getFrameIndex() >= 0 && part->getFrameIndex() < m_sprite->getImages().nodeChildCount() )
-        {
-            Image * pimg = m_sprite->getImage(part->getFrameIndex());
-            if(!pimg)
-                throw std::runtime_error(QString("MFrame::dataImgPreview(): Invalid image at index %1!\n").arg(part->getFrameIndex()).toStdString());
-            else
-                return QVariant(pimg->makeImage(m_sprite->getPalette()));
-        }
-        else
-        {
-            //#TODO: draw last step
-            return QVariant("COPY PREV");
-        }
+        return QVariant(part->drawPart(m_sprite));
+//        //#TODO: Draw only this part/step
+//        if( part->getFrameIndex() >= 0 && part->getFrameIndex() < m_sprite->getImages().nodeChildCount() )
+//        {
+//            Image * pimg = m_sprite->getImage(part->getFrameIndex());
+//            if(!pimg)
+//                throw std::runtime_error(QString("MFrame::dataImgPreview(): Invalid image at index %1!\n").arg(part->getFrameIndex()).toStdString());
+//            else
+//                return QVariant(pimg->makeImage(m_sprite->getPalette()));
+//        }
+//        else
+//        {
+//            //#TODO: draw last step
+//            return QVariant("COPY PREV");
+//        }
     }
     else if(role == Qt::SizeHintRole)
     {
-        if( part->getFrameIndex() >= 0 && part->getFrameIndex() < m_sprite->getImages().nodeChildCount() )
-        {
-            Image * pimg = m_sprite->getImage(part->getFrameIndex());
-            return (pimg->getImageSize());
-//            return (pimg->getImageSize()).width();
-        }
+
+        return part->drawPart(m_sprite).size();
+
+//        if( part->getFrameIndex() >= 0 && part->getFrameIndex() < m_sprite->getImages().nodeChildCount() )
+//        {
+//            Image * pimg = m_sprite->getImage(part->getFrameIndex());
+//            return (pimg->getImageSize());
+////            return (pimg->getImageSize()).width();
+//        }
     }
     return QVariant();
 }

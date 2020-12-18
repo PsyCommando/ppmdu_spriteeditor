@@ -216,6 +216,19 @@ void AnimGroup::setUnk16(uint16_t val)
     m_unk16 = val;
 }
 
+void AnimGroup::setNbSlots(int newnbslots)
+{
+    int diff = static_cast<int>(m_container.size()) - newnbslots;
+    if(diff > 0) //remove
+    {
+        _removeChildrenNodes((nodeChildCount()-1) - abs(diff), abs(diff));
+    }
+    else if(diff < 0) //add
+    {
+        _insertChildrenNodes(nodeChildCount(), abs(diff));
+    }
+}
+
 int AnimGroup::getGroupUID() const
 {
     return nodeIndex();

@@ -59,7 +59,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
             if(pfrm != nullptr )
                 target = pfrm->AssembleFrame(afrm->xoffset(), afrm->yoffset(), boundsbiggest, &area, false, &sprt);
             else
-                qDebug("AnimatedSpriteItem::LoadSequence(): Got invalid frame index %d!\n", afrm->frmidx());
+                qDebug("SpriteRenderer::RenderFrames(): Got invalid frame index %d!\n", afrm->frmidx());
 
             cachedframe dest;
             dest.area     = area;
@@ -84,7 +84,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
     }
     else
     {
-        throw ExBadAnimSequence( QString("AnimatedSpriteItem::LoadSequence(): Invalid sequence id %d!\n").arg(seqid) );
+        throw ExBadAnimSequence( QString("SpriteRenderer::RenderFrames(): Invalid sequence id %d!\n").arg(seqid) );
     }
     return cachedframes;
 }
@@ -93,16 +93,13 @@ QImage SpriteRenderer::RenderPalette(const Sprite &sprt, size_t colperrow, size_
 {
     const QVector<QRgb> pal = sprt.getPalette();
     const size_t NbColors = pal.size();
-//    const size_t NbRows = (NbColors % colperrow == 0)?
-//                              (NbColors / colperrow) :
-//                              ((NbColors / colperrow) + 1);
     int curY = 0;
     QGraphicsScene rendertarget;
     for(size_t cntcolr = 0; cntcolr < NbColors;)
     {
         for(size_t cntr = 0; (cntr < colperrow) && (cntcolr < NbColors); ++cntr, ++cntcolr)
         {
-            QGraphicsRectItem * rect = rendertarget.addRect(0,0, swatchsize, swatchsize, QPen(), QBrush(pal[cntcolr]));//rendertarget.addPixmap( QPixmap::fromImage(dat.value<QImage>()) );
+            QGraphicsRectItem * rect = rendertarget.addRect(0,0, swatchsize, swatchsize, QPen(), QBrush(pal[cntcolr]));
             rect->setPos( cntr * swatchsize, curY );
         }
         curY += colperrow;

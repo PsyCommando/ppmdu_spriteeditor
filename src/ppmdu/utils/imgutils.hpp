@@ -134,7 +134,7 @@ namespace utils
     {
         QImage img((unsigned char *)src.data(), pixwidth, pixheight, QImage::Format_Indexed8 );
         img.setColorTable(colors);
-        return std::move(img);
+        return img;
     }
 
     std::vector<uint8_t> ImgToRaw(const QImage & src);

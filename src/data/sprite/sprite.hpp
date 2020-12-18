@@ -47,6 +47,8 @@ enum struct eCompressionFmtOptions : int
     AT4PX,
     AT4PN,
     NONE,
+
+    NbOptions,
 };
 extern const QStringList CompressionFmtOptions; //names for the above options
 filetypes::eCompressionFormats  CompOptionToCompFmt( eCompressionFmtOptions opt );
@@ -127,15 +129,20 @@ public:
     //Turns the data from the data structure to its native format into the m_raw container!
     void CommitSpriteData();
 
+    //Whether there's uncommited data for this sprite in its raw data container
+    bool hasUnsavedChanges()const;
+
     //Dumping
     void DumpSpriteToStream(QDataStream & outstr);
     void DumpSpriteToFile(const QString & fpath);
     void DumpSpriteToXML(const QString & fpath);
 
+    inline bool hasRawData()const   {return !m_raw.empty();}
     inline bool wasParsed()const    {return m_bparsed;}
     inline bool hasImageData()const {return m_imgcnt.nodeHasChildren();}
     inline bool hasEfxOffsets()const{return type() == fmt::eSpriteType::Character;}
     inline bool hasAnimGrps()const  {return type() == fmt::eSpriteType::Character;}
+
 
     QPixmap &       MakePreviewPalette();
     QPixmap         MakePreviewPalette()const; //Ignores cached palette, and makes one from scratch
@@ -235,6 +242,11 @@ private:
     void DecompressRawData();
     void CompressRawData(filetypes::eCompressionFormats cpfmt);
 
+    void ResizeAnimGroupSlots(int newsz);
+
+    void ClearAttachPoints();
+    void CreateAttachPoints();
+
     TreeNode       * ElemPtr(int idx);
     const TreeNode * ElemPtr(int idx)const;
     int              nbChildCat()const;
@@ -254,9 +266,9 @@ private:
     AnimGroups              m_anmgrp;
 
     //Status / statistics
-    bool                                    m_bparsed;          //Whether the sprite's raw has been parsed to be displayed yet or not!
-    bool                                    m_bhasimagedata;    //Whether the sprite can be displayed or not!
-    filetypes::eCompressionFormats          m_targetgompression;
+    bool                                    m_bparsed{false};       //Whether the sprite's raw has been parsed to be displayed yet or not!
+    bool                                    m_bhasimagedata{false}; //Whether the sprite can be displayed or not!
+    filetypes::eCompressionFormats          m_targetgompression{filetypes::eCompressionFormats::NONE};
 
     //UI data
     QPixmap m_previewImg;       //Cached image preview

@@ -114,6 +114,7 @@ void TabImages::SetupImage(QPersistentModelIndex index)
     }
     ui->lbl_imgpreview->setPixmap(ImageToPixmap(img->makeImage(m_imgListModel->getOwnerSprite()->getPalette()), ui->lbl_imgpreview->size()));
     m_currentImage = index;
+
     ui->tblviewImages->setCurrentIndex(m_currentImage);
     m_imgdatmapper->setCurrentModelIndex(m_currentImage);
 
@@ -170,7 +171,7 @@ void TabImages::on_btnAdd_clicked()
     QStringList filenames = QFileDialog::getOpenFileNames(this,
                                 tr("Import Images"),
                                 QString(),
-                                "PNG image (*.png)");
+                                AllSupportedImagesFilesFilter());
 
     if(filenames.empty())
         return;
@@ -274,7 +275,7 @@ void TabImages::on_btnExport_clicked()
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image(s)"),
                         QString(),
-                        "PNG image (*.png)");
+                        AllSupportedImagesFilesFilter());
     if(filename.isNull())
         return;
 
@@ -291,7 +292,7 @@ void TabImages::on_btnExport_clicked()
         newpath = (bmultiple? newpath.arg(successcnt) : newpath.arg(""));
         newpath = newpath.arg(finfo.completeSuffix());
 
-        if(img.save(newpath, "PNG"))
+        if(img.save(newpath))
             ++successcnt;
         else
             failed.append(newpath);
@@ -316,13 +317,10 @@ void TabImages::on_btnExport_clicked()
 
 void TabImages::on_btnImport_clicked()
 {
-
-    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), QString(), "PNG image (*.png)");
+    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), QString(), AllSupportedImagesFilesFilter());
     if(filenames.isEmpty())
         return;
 
-    //int insertidx = m_imgListModel->rowCount();
-    //m_imgListModel->insertRows(insertidx, filenames.size());
     for(int i = 0; i < filenames.size(); ++i)
     {
         Sprite * spr = m_imgListModel->getOwnerSprite();
@@ -331,9 +329,11 @@ void TabImages::on_btnImport_clicked()
         fmt::ImageDB::img_t newimgdata;
         newimgdata.unk2 = 0;
         newimgdata.unk14 = 0;
-        QImage loaded(filenames[i], "PNG");
+        QImage loaded(filenames[i]);
         newimgdata.data = utils::ImgToRaw(loaded);
         newimg->importImage8bpp(newimgdata, loaded.width(), loaded.height(), false);
+
     }
+    ui->tblviewImages->repaint();
     ShowStatusMessage(QString(tr("Imported %1 image(s)!")).arg(filenames.size()));
 }

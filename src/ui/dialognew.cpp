@@ -30,6 +30,15 @@ void DialogNew::InitTabs()
     for(int i = 0; i < CompressionFmtOptions.size(); ++i)
         ui->cmbSprCompression->addItem(CompressionFmtOptions[i], i);
     ui->cmbSprCompression->setCurrentIndex(static_cast<int>(eCompressionFmtOptions::NONE));
+
+    //Add sprite subtypes to subtypes list
+    for(size_t i = 0; i < fmt::SpriteTypeNames.size(); ++i)
+    {
+        //Add all sprite types except the invalid one
+        if(i != static_cast<int>(fmt::eSpriteType::INVALID))
+            ui->cmbSpriteSubType->addItem(QString::fromStdString(fmt::SpriteTypeNames[i]), i);
+    }
+    ui->cmbSprCompression->setCurrentIndex(static_cast<int>(fmt::eSpriteType::Character));
 }
 
 void DialogNew::InitTypeList()
@@ -48,6 +57,7 @@ void DialogNew::InitTypeList()
         ui->cmbContainerType->setCurrentIndex(0);
         SelectType(ui->cmbContainerType->currentData(Qt::UserRole).toString());
     }
+
 }
 
 void DialogNew::SelectType(const QString &type)
@@ -76,6 +86,11 @@ eCompressionFmtOptions DialogNew::getSprCompression() const
 SpriteContainer::eContainerType DialogNew::getSprFormatType() const
 {
     return static_cast<SpriteContainer::eContainerType>(ui->cmbSprFormat->currentData(Qt::UserRole).toInt());
+}
+
+fmt::eSpriteType DialogNew::getSprSubType() const
+{
+    return static_cast<fmt::eSpriteType>(ui->cmbSpriteSubType->currentData(Qt::UserRole).toInt());
 }
 
 void DialogNew::on_cmbContainerType_activated(int index)

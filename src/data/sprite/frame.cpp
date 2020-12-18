@@ -144,9 +144,9 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
     //Make first color transparent
     if(makebgtransparent)
     {
-        QColor firstcol(pal.front());
-        firstcol.setAlpha(0);
-        pal.front() = firstcol.rgba();
+//        QColor firstcol(pal.front());
+//        firstcol.setAlpha(0);
+//        pal.front() = firstcol.rgba();
         painter.setBackgroundMode(Qt::BGMode::TransparentMode);
     }
     else
@@ -158,30 +158,40 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
     }
 
     //Draw all the parts of the frame
-    const fmt::step_t * plast = nullptr; //A reference on the last valid frame, so we can properly copy it when encountering a -1 frame!
+    //const fmt::step_t * plast = nullptr; //A reference on the last valid frame, so we can properly copy it when encountering a -1 frame!
     for( const MFramePart * pwrap : m_container )
     {
         const fmt::step_t & part = pwrap->getPartData();
-        //auto res = part.GetResolution();
-        const Image* pimg = parentsprite->getImage(part.getFrameIndex()); // returns null if -1 frame or out of range!
-        QImage pix;
-        if(!pimg && plast) //check for -1 frames
-        {
-            const Image* plastimg = parentsprite->getImage(plast->getFrameIndex());
-            pix = plastimg->makeImage(pal);
-        }
-        else if(pimg)
-        {
-            pix = pimg->makeImage(pal);
-            plast = &part;
-        }
+
+        //If frame index is completely out of range, something weird is up
+//        if(part.getFrameIndex() > parentsprite->getImages().size())
+//        {
+//            //This means something is very off
+//            qDebug() << "MFrame::AssembleFrame() : Got a reference to an image completely out of range!!";
+//            break;
+//        }
+
+        QImage pix = pwrap->drawPart(parentsprite);
+
+//        const Image* pimg = parentsprite->getImage(part.getFrameIndex()); // returns null if -1 frame or out of range!
+//        QImage pix;
+//        if(!pimg && plast) //check for -1 frames
+//        {
+//            const Image* plastimg = parentsprite->getImage(plast->getFrameIndex());
+//            pix = plastimg->makeImage(pal);
+//        }
+//        else if(pimg)
+//        {
+//            pix = pimg->makeImage(pal);
+//            plast = &part;
+//        }
 
         //pix.setMask(pix.createMaskFromColor( QColor(pspr->getPalette().front()), Qt::MaskMode::MaskInColor ));
 
-        if(part.isHFlip())
-            pix = pix.transformed( QTransform().scale(-1, 1) );
-        if(part.isVFlip())
-            pix = pix.transformed( QTransform().scale(1, -1) );
+ //       if(part.isHFlip())
+//            pix = pix.transformed( QTransform().scale(-1, 1) );
+//        if(part.isVFlip())
+//            pix = pix.transformed( QTransform().scale(1, -1) );
 
         int finalx = (part.getXOffset());
         int finaly = (part.getYOffset() < 128)? part.getYOffset() + 255 : part.getYOffset(); //simulate wrap-around past 256 Y
@@ -231,6 +241,38 @@ QRect MFrame::calcFrameBounds() const
     }
 
     return QRect( smallestx, smallesty, (biggestx - smallestx), (biggesty - smallesty) );
+}
+
+QVector<uint8_t> MFrame::generateTilesBuffer(const Sprite * spr, int uptopartidx) const
+{
+    const int TILESZ = /*((spr->is256Colors())? */fmt::NDS_TILE_SIZE_8BPP/* : fmt::NDS_TILE_SIZE_4BPP)*/;
+    QVector<uint8_t> tilebuffer(1024 * TILESZ, 0);
+    const int lastEntry = uptopartidx != -1 ? uptopartidx : nodeChildCount();
+
+    for(int i = 0; i < lastEntry; ++i)
+    {
+        const MFramePart * part = m_container[i];
+        //We only place things when there's an actual valid frame index
+        if(part->getFrameIndex() >= 0)
+        {
+            int tileoffset = part->getTileNum() * TILESZ;
+            const Image * img = spr->getImage(part->getFrameIndex());
+            auto itbuf = tilebuffer.begin();
+            std::advance(itbuf, tileoffset);
+
+            if((tileoffset + img->getByteSize()) > tilebuffer.size())
+            {
+                throw BaseException("MFrame::generateTilesBuffer(): Data past end of buffer!");
+            }
+            std::vector<uint8_t> raw;
+//            if(spr->isTiled())
+//                raw = utils::TileFromImg(img->getImage());
+//            else
+                raw = img->getRaw();
+            std::copy(raw.begin(), raw.end(), itbuf);
+        }
+    }
+    return tilebuffer;
 }
 
 TreeNode *MFrame::clone() const

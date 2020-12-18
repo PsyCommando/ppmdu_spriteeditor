@@ -17,11 +17,9 @@ template<typename CHILD_T>
 {
     typedef CHILD_T child_t;
     QString filter;
+    bool binitialized {false};
 public:
-    SupportedFilters()
-    {
-        InitSupported();
-    }
+    SupportedFilters() {}
     virtual ~SupportedFilters() {}
 
     operator const QString & ()const
@@ -31,39 +29,39 @@ public:
 
     virtual void InitSupported()
     {
-        //CHILD_T * pchild = static_cast<CHILD_T*>(this);
-        //pchild->InitSupported();
         AddAllFromHash(fileFilters());
         MakeAllSupportedEntry(fileFilters());
-        filter = QString("All supported (%s)").arg(filter);
+        binitialized = true;
     }
 
-protected:
-    virtual const QHash<QString, QString> fileFilters()const = 0;
+    bool isInitialized()const {return binitialized;}
 
-    void AddAllFromHash(const QHash<QString, QString>& htable)
+protected:
+    virtual const QMap<QString, QString> fileFilters()const = 0;
+
+    void AddAllFromHash(const QMap<QString, QString>& htable)
     {
         for(const auto & entry : htable)
         {
             if(filter.size() > 0)
-                filter = QString("%1;%2").arg(filter).arg(entry);
+                filter = QString("%1;;%2").arg(filter).arg(entry);
             else
                 filter = QString("%1").arg(entry);
         }
     }
 
-    void MakeAllSupportedEntry(const QHash<QString, QString>& htable)
+    void MakeAllSupportedEntry(const QMap<QString, QString>& htable)
     {
-        QString f;
+        QString supportedext;
         for(const auto & entry : htable)
         {
-            if(f.size() > 0)
-                f = QString("%1, *.%2").arg(f).arg(entry);
+            if(supportedext.size() > 0)
+                supportedext = QString("%1, *.%2").arg(supportedext).arg(htable.key(entry));
             else
-                f = QString("*.%1").arg(entry);
+                supportedext = QString("*.%1").arg(htable.key(entry));
         }
-        f = QString("All supported (%1)").arg(f);
-        filter = QString("%1;%2").arg(filter).arg(f);
+        supportedext = QString("All supported (%1)").arg(supportedext);
+        filter = QString("%1;;%2").arg(filter).arg(supportedext);
     }
 };
 
@@ -97,7 +95,7 @@ const QString &AllSupportedXMLFileFilter()
 //=================================================================
 // Game File Filters
 //=================================================================
-const QHash<QString, QString> SupportedFileFiltersByTypename
+const QMap<QString, QString> SupportedFileFiltersByTypename
 {
     {FileExtWAN,    "WAN Sprite (*.wan)"},
     {FileExtWAT,    "WAT Sprite (*.wat)"},
@@ -108,12 +106,14 @@ const QHash<QString, QString> SupportedFileFiltersByTypename
 class all_supported_game_filetypes : public SupportedFilters<all_supported_game_filetypes>
 {
 public:
-    const QHash<QString, QString> fileFilters()const override {return SupportedFileFiltersByTypename;}
+    const QMap<QString, QString> fileFilters()const override {return SupportedFileFiltersByTypename;}
 };
 
 const QString &AllSupportedGameFileFilter()
 {
-    static const all_supported_game_filetypes supported;
+    static all_supported_game_filetypes supported;
+    if(!supported.isInitialized())
+        supported.InitSupported();
     return supported;
 }
 
@@ -128,14 +128,16 @@ public:
         SupportedFilters::InitSupported();
     }
 
-    const QHash<QString, QString> fileFilters()const override {return m_supported;}
+    const QMap<QString, QString> fileFilters()const override {return m_supported;}
 protected:
-    QHash<QString, QString> m_supported;
+    QMap<QString, QString> m_supported;
 };
 
 const QString &AllSupportedGameSpritesFileFilter()
 {
-    static const all_supported_game_sprites_filetypes supported;
+    static all_supported_game_sprites_filetypes supported;
+    if(!supported.isInitialized())
+        supported.InitSupported();
     return supported;
 }
 
@@ -143,32 +145,34 @@ const QString &AllSupportedGameSpritesFileFilter()
 //=================================================================
 // Image File Filters
 //=================================================================
-const QHash<QString, QString> SupportedImageFilesFilters
+const QMap<QString, QString> SupportedImageFilesFilters
 {
     {FileExtPNG, "PNG Image File (*.png)"},
-    {FileExtBMP, "Bitmap Image File (*.bmp)"},
+//    {FileExtBMP, "Bitmap Image File (*.bmp)"},
 };
 
 class all_supported_images_filetypes : public SupportedFilters<all_supported_images_filetypes>
 {
 public:
-    const QHash<QString, QString> fileFilters()const override {return SupportedImageFilesFilters;}
+    const QMap<QString, QString> fileFilters()const override {return SupportedImageFilesFilters;}
 };
 
 const QString &AllSupportedImagesFilesFilter()
 {
-    static const all_supported_images_filetypes supported;
+    static all_supported_images_filetypes supported;
+    if(!supported.isInitialized())
+        supported.InitSupported();
     return supported;
 }
 
 //=================================================================
 // Palettes File Filters
 //=================================================================
-const QHash<QString, QString> SupportedExportPaletteFilesFilters
+const QMap<QString, QString> SupportedExportPaletteFilesFilters
 {
-    {FileExtGPL,    "GPL Palette File (*.gpl)"},
-    {FileExtPAL,    "GPL Palette File (*.pal)"},
-    {FileExtTXTPAL, "GPL Palette File (*.txt)"},
+    {FileExtGPL,    "GIMP GPL Palette (*.gpl)"},
+    {FileExtPAL,    "Microsoft RIFF Palette (*.pal)"},
+    {FileExtTXTPAL, "Text File Hex Color (*.txt)"},
 };
 
 ePaletteDumpType FilterStringToPaletteType( const QString & selectedfilter )
@@ -188,6 +192,7 @@ ePaletteDumpType FilterStringToPaletteType( const QString & selectedfilter )
     return fty;
 }
 
+//We also support importing palettes from images!!!!
 class all_supported_import_palette_filetypes : public SupportedFilters<all_supported_import_palette_filetypes>
 {
 public:
@@ -198,26 +203,30 @@ public:
         SupportedFilters::InitSupported();
     }
 
-    const QHash<QString, QString> fileFilters()const override {return m_supported;}
+    const QMap<QString, QString> fileFilters()const override {return m_supported;}
 protected:
-    QHash<QString, QString> m_supported;
+    QMap<QString, QString> m_supported;
 };
 
 class all_supported_export_palette_filetypes : public SupportedFilters<all_supported_export_palette_filetypes>
 {
 public:
-    const QHash<QString, QString> fileFilters()const override {return SupportedExportPaletteFilesFilters;}
+    const QMap<QString, QString> fileFilters()const override {return SupportedExportPaletteFilesFilters;}
 };
 
 const QString &AllSupportedImportPaletteFilesFilter()
 {
-    static const all_supported_import_palette_filetypes supported;
+    static all_supported_import_palette_filetypes supported;
+    if(!supported.isInitialized())
+        supported.InitSupported();
     return supported;
 }
 
 const QString &AllSupportedExportPaletteFilesFilter()
 {
-    static const all_supported_export_palette_filetypes supported;
+    static all_supported_export_palette_filetypes supported;
+    if(!supported.isInitialized())
+        supported.InitSupported();
     return supported;
 }
 

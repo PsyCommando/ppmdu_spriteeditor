@@ -8,6 +8,7 @@
 #include <src/data/sprite/frame.hpp>
 #include <src/data/sprite/framepart.hpp>
 #include <src/data/sprite/models/framepart_delegate.hpp>
+#include <src/utility/file_support.hpp>
 
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
@@ -422,13 +423,13 @@ void TabFrames::on_btnFrmExport_clicked()
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image"),
                         QString(),
-                        "PNG image (*.png)");
+                        AllSupportedImagesFilesFilter());
 
     if(filename.isNull())
         return;
 
     QImage img(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds(), nullptr, true, currentSprite()));
-    if(img.save( filename, "PNG" ))
+    if(img.save(filename))
         ShowStatusMessage(QString(tr("Exported assembled frame to %1!")).arg(filename));
     else
         ShowStatusErrorMessage(tr("Couldn't export, saving failed!"));

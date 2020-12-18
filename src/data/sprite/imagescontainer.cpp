@@ -77,10 +77,7 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
 
         for( size_t frmid = 0; frmid < frms.size(); ++frmid )
         {
-            //bool foundres   = false;
-            auto itstep     = frms[frmid].begin();
-            //int  curTileNum = 0; //We count the tileids so we can use the tile id in case of -1 frame
-
+            auto itstep = frms[frmid].begin();
             //Look through all the frame's parts
             for( size_t stepid= 0; stepid < frms[frmid].size(); ++stepid, ++itstep )
             {
@@ -90,47 +87,16 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
                     pstep = &(*itstep);
                     w = res.first;
                     h = res.second;
-                    //foundres = true;
                 }
-                //                    else if( curTileNum == itstep->getTileNum() )
-                //                    {
-                //                        pstep = &(*itstep);
-                //                        qInfo("ImageContainer::importImages8bpp(): Used matching tilenum for -1 frame!!\n");
-                //                        w = res.first;
-                //                        h = res.second;
-                //                        //foundres = true;
-                //                    }
-                //curTileNum = itstep->getTileNum(); //add up tile index
             }
-
-            //                if(!foundres)
-            //                {
-            //                    //If all fails, try to deduct from tile number
-            //                    qInfo("ImageContainer::importImages8bpp(): Deducting image resolution using number of tiles!!\n");
-            //                    int NbTiles = imgs[cntid].data.size() / TileLength;
-
-            //                    int nbtilessqrt = qRound(sqrt(NbTiles));
-            //                    if( NbTiles % nbtilessqrt == 0 )
-            //                    {
-            //                        //if square
-            //                        w = nbtilessqrt * TileWidth;
-            //                        h = w;
-            //                    }
-            //                    else
-            //                    {
-            //                        //not square
-            //                        w = nbtilessqrt + (NbTiles % nbtilessqrt) * TileWidth;
-            //                        h = nbtilessqrt * TileHeight;
-            //                    }
-            //                }
         }
 
         //Depending on the format of the parent sprite, we'll import the image in 8bpp or 4bpp format
         if( (pstep && pstep->isColorPal256()) ||
             (!pstep && spr->is256Colors()) ) //Assume 8bpp when the sprite is set to 256
-            m_container[cntid]->importImage8bpp(imgs[cntid], w, h, spr->isTiled() );
+            m_container[cntid]->importImage8bpp(imgs[cntid], w, h, spr->isTiled());
         else
-            m_container[cntid]->importImage4bpp(imgs[cntid], w, h, spr->isTiled() ); //default to 16 colors
+            m_container[cntid]->importImage4bpp(imgs[cntid], w, h, spr->isTiled()); //default to 16 colors
     }
 }
 
@@ -169,6 +135,52 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages8bpp()
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
         images[cntid] = m_container[cntid]->exportImage8bpp(w, h, spr->isTiled());
     return images;
+}
+
+QVector<uint8_t> ImageContainer::getTileData(int id, int len) const
+{
+    return getTileDataFromImage(0, id, len);
+}
+
+QVector<uint8_t> ImageContainer::getTileDataFromImage(int imgidx, int id, int len) const
+{
+    const Sprite * spr = static_cast<const Sprite*>(parentNode());
+    QVector<uint8_t> data;
+
+    const int tileLen = spr->is256Colors() ? fmt::NDS_TILE_SIZE_8BPP : fmt::NDS_TILE_SIZE_4BPP;
+    const int tileEnd = (id + len);
+    data.reserve(len * tileLen);
+
+    int curImg = imgidx;
+    int totalTiles = 0;
+    int totalBytes = 0;
+    //First get to start of the first tile
+    //Then copy all tiles up to "len"
+    for(;curImg < nodeChildCount(); ++curImg)
+    {
+        const Image * img = m_container[curImg];
+        for(int cntImgTiles = 0; cntImgTiles < img->getTileSize() ; ++totalTiles, ++cntImgTiles)
+        {
+            if(totalTiles >= id && totalTiles < tileEnd)
+            {
+                std::vector<uint8_t> atile = img->getTile(cntImgTiles);
+                data.append(QVector<uint8_t>(atile.begin(), atile.end()));
+            }
+            else if(totalTiles >= tileEnd)
+                break; //Break when we have everything we need
+            totalBytes += tileLen;
+        }
+    }
+
+    //If the tile is out of range, or if its not completely full
+    if(data.size() < (len * tileLen))
+    {
+        //make sure we end up with data in there
+        const int diff = (len * tileLen) - data.size();
+        auto itback = std::back_insert_iterator(data);
+        std::fill_n( itback, diff, 0); //Make sure we add zeros and not garbage
+    }
+    return data;
 }
 
 //QVariant ImageContainer::nodeData(int column, int role) const

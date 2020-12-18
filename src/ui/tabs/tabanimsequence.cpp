@@ -2,6 +2,7 @@
 #include "ui_tabanimsequence.h"
 #include <QFileDialog>
 #include <QSettings>
+#include <src/utility/file_support.hpp>
 
 const QString DEFAULT_PLAYTIME_VALUE = "----- t";
 
@@ -448,7 +449,7 @@ void TabAnimSequence::on_btnSeqExport_clicked()
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Images Sequence : Pick name+path first image!"),
                         QString(),
-                        "PNG image (*.png)");
+                        AllSupportedImagesFilesFilter());
 
     if(filename.isNull())
         return;

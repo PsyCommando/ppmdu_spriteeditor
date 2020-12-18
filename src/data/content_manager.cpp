@@ -62,7 +62,6 @@ void ContentManager::NewContainer(const QString &type)
         qWarning() << "ContentManager::NewContainer(): Failed to find a container type named \'" <<type << "\'!";
         throw std::runtime_error("ContentManager::NewContainer(): Unknown container type!");
     }
-    //m_container->SetContainerType(type); //not the same thing...
     m_container->Initialize();
 }
 

@@ -92,7 +92,7 @@ void ContainerThreadedWriter::_WritePack()
     {
         try
         {
-            if(curspr->wasParsed())
+            if(curspr->hasUnsavedChanges())
                 curspr->CommitSpriteData();
         }
         catch(const std::exception & e)
