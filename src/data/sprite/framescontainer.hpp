@@ -42,6 +42,7 @@ public:
     MFrame *        getFrame(fmt::frmid_t id);
     const MFrame *  getFrame(fmt::frmid_t id)const;
     bool ClearImageReferences(const QModelIndexList & indices, bool bdelete = false);
+    uint16_t getMaxTileUsage()const; //Returns the highest amount of tiles used out of all frames
 
     //Create and append a new MFrame, return pointer to it
     MFrame * appendNewFrame();

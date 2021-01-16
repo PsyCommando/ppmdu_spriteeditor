@@ -36,6 +36,7 @@ DEFINES += GIT_VERSION=\\\"$$GIT_VERSION\\\" \
 SOURCES += src/main.cpp\
     src/data/content_factory.cpp \
     src/data/content_manager.cpp \
+    src/data/contents_selection_manager.cpp \
     src/data/sprite/animframe.cpp \
     src/data/sprite/animgroup.cpp \
     src/data/sprite/animgroups_container.cpp \
@@ -76,7 +77,7 @@ SOURCES += src/main.cpp\
     src/extfmt/gpl_palette.cpp \
     src/extfmt/text_palette.cpp \
     src/ppmdu/fmts/sprite/sprite_handler.cpp \
-    src/ui/dialognew.cpp \
+    src/ui/windows/dialognew.cpp \
     src/ui/editor/cropper/autocropper_gizmo.cpp \
     src/ui/editor/cropper/autocropper_scene.cpp \
     src/ui/editor/frame/frame_editor_editable.cpp \
@@ -84,10 +85,12 @@ SOURCES += src/main.cpp\
     src/ui/tabs/tabanimgroup.cpp \
     src/ui/tabs/tabempty.cpp \
     src/ui/tabs/tabwelcome.cpp \
+    src/ui/windows/dialog_settings.cpp \
     src/ui/windows/dialogimportwizard.cpp \
     src/utility/container_threaded_writer.cpp \
     src/utility/file_support.cpp \
     src/utility/palette_helpers.cpp \
+    src/utility/program_settings.cpp \
     src/utility/randomgenhelper.cpp \
     src/ui/editor/frame/frame_editor.cpp \
     src/ui/editor/frame/frame_editor_part.cpp \
@@ -96,17 +99,15 @@ SOURCES += src/main.cpp\
     src/ui/mainwindow.cpp \
     src/ui/processingconsole.cpp \
     src/data/sprite/sprite.cpp \
-    src/data/sprite/spritemanager.cpp \
     src/ppmdu/fmts/sir0.cpp \
     src/ppmdu/fmts/packfile.cpp \
     src/ppmdu/fmts/px_compression.cpp \
     src/ppmdu/fmts/pxhandler.cpp \
     src/ppmdu/fmts/wa_sprite.cpp \
     src/ppmdu/utils/imgutils.cpp \
-    src/ui/diagsingleimgcropper.cpp \
-    src/ui/dialognewsprite.cpp \
-    src/ui/dialogabout.cpp \
-    src/ui/dialogprogressbar.cpp \
+    src/ui/windows/diagsingleimgcropper.cpp \
+    src/ui/windows/dialogabout.cpp \
+    src/ui/windows/dialogprogressbar.cpp \
     src/ppmdu/fmts/compression_handler.cpp \
     src/extfmt/riff_palette.cpp \
     src/ppmdu/utils/gfileio.cpp \
@@ -126,6 +127,7 @@ HEADERS  += \
     src/data/base_container.hpp \
     src/data/content_factory.hpp \
     src/data/content_manager.hpp \
+    src/data/contents_selection_manager.hpp \
     src/data/sprite/animgroups_container.hpp \
     src/data/sprite/effectoffsetset.hpp \
     src/data/sprite/models/animframe_delegate.hpp \
@@ -160,7 +162,7 @@ HEADERS  += \
     src/ppmdu/fmts/sprite/shared_sprite_constants.hpp \
     src/ppmdu/fmts/sprite/sprite_content.hpp \
     src/ppmdu/fmts/sprite/sprite_handler.hpp \
-    src/ui/dialognew.hpp \
+    src/ui/windows/dialognew.hpp \
     src/ui/editor/cropper/autocropper_gizmo.hpp \
     src/ui/editor/cropper/autocropper_scene.hpp \
     src/ui/editor/frame/frame_editor_editable.hpp \
@@ -168,6 +170,7 @@ HEADERS  += \
     src/ui/tabs/tabanimgroup.hpp \
     src/ui/tabs/tabempty.hpp \
     src/ui/tabs/tabwelcome.hpp \
+    src/ui/windows/dialog_settings.hpp \
     src/ui/windows/dialogimportwizard.hpp \
     src/utility/baseqtexception.hpp \
     src/data/sprite/animframe.hpp \
@@ -184,10 +187,11 @@ HEADERS  += \
     src/data/sprite/palettecontainer.hpp \
     src/utility/container_threaded_writer.hpp \
     src/utility/file_support.hpp \
+    src/utility/graphics_util.hpp \
     src/utility/palette_helpers.hpp \
+    src/utility/program_settings.hpp \
     src/utility/randomgenhelper.hpp \
     src/data/sprite/sprite.hpp \
-    src/data/sprite/spritemanager.hpp \
     src/ppmdu/fmts/sir0.hpp \
     src/ppmdu/utils/byteutils.hpp \
     src/ppmdu/fmts/packfile.hpp \
@@ -198,10 +202,9 @@ HEADERS  += \
     src/ppmdu/fmts/wa_sprite.hpp \
     src/ppmdu/utils/algo.hpp \
     src/ppmdu/utils/imgutils.hpp \
-    src/ui/diagsingleimgcropper.hpp \
-    src/ui/dialognewsprite.hpp \
-    src/ui/dialogabout.hpp \
-    src/ui/dialogprogressbar.hpp \
+    src/ui/windows/diagsingleimgcropper.hpp \
+    src/ui/windows/dialogabout.hpp \
+    src/ui/windows/dialogprogressbar.hpp \
     src/extfmt/riff_palette.hpp \
     src/ppmdu/utils/gfileio.hpp \
     src/extfmt/text_palette.hpp \
@@ -226,13 +229,12 @@ HEADERS  += \
     version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
-    src/ui/dialognew.ui \
+    src/ui/windows/dialognew.ui \
     src/ui/editor/palette/paletteeditor.ui \
     src/ui/processingconsole.ui \
-    src/ui/diagsingleimgcropper.ui \
-    src/ui/dialognewsprite.ui \
-    src/ui/dialogabout.ui \
-    src/ui/dialogprogressbar.ui \
+    src/ui/windows/diagsingleimgcropper.ui \
+    src/ui/windows/dialogabout.ui \
+    src/ui/windows/dialogprogressbar.ui \
     src/ui/tabs/tabanimgroup.ui \
     src/ui/tabs/tabanimsequence.ui \
     src/ui/tabs/tabanimtable.ui \
@@ -241,6 +243,7 @@ FORMS    += src/ui/mainwindow.ui \
     src/ui/tabs/tabimages.ui \
     src/ui/tabs/tabproperties.ui \
     src/ui/tabs/tabwelcome.ui \
+    src/ui/windows/dialog_settings.ui \
     src/ui/windows/dialogimportwizard.ui
 
 RESOURCES += \

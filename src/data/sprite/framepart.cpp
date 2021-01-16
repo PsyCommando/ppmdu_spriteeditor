@@ -2,39 +2,45 @@
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/frame.hpp>
 
-const QString               ElemName_FramePart = "Frame Part";
-const size_t                FramePartHeaderNBColumns = static_cast<unsigned int>(eFramePartColumnsType::HeaderNBColumns);
-const std::vector<QString>  FramePartHeaderColumnNames
+const QString   ElemName_FramePart = "Frame Part";
+const std::map<eFramePartColumnsType, QString>  FramePartHeaderColumnNames
 {
-    QString(("")),
+    {eFramePartColumnsType::Preview,        "Preview"},
+    {eFramePartColumnsType::ImgID,          "Image ID"},
+    {eFramePartColumnsType::ImgSz,          "Image Size"},
+    {eFramePartColumnsType::TileNum,        "Tile ID"},
+    {eFramePartColumnsType::PaletteID,      "Palette"},
+    {eFramePartColumnsType::XOffset,        "X"},
+    {eFramePartColumnsType::YOffset,        "Y"},
+    {eFramePartColumnsType::VFlip,          "V-Flip"},
+    {eFramePartColumnsType::HFlip,          "H-Flip"},
+    {eFramePartColumnsType::Mosaic,         "Mosaic"},
+    {eFramePartColumnsType::Mode,           "Mode"},
+    {eFramePartColumnsType::Priority,       "Priority"},
 
-    //The rest below is for the parts/step to assemble the frame!
-    QString(("Img ID")),
-    QString(("Tile ID")),
-    QString(("Palette")),
-    QString(("Unk#0")),
-    QString(("Offset")),
-    QString(("Flip")),
-    QString(("Rotation & Scaling")),
-    QString(("Mosaic")),
-    QString(("Mode")),
-    QString(("Priority")),
+    //Rotation and scaling
+    {eFramePartColumnsType::RnS,            "RnS"},
+    {eFramePartColumnsType::RnSParam,       "RnS - Param"},
+    {eFramePartColumnsType::RnSCanvasRot,   "RnS - Canvas Rotate"},
+
+    //Research stuff
+    {eFramePartColumnsType::Unk0,           "Unk#0"},
 };
 
 const QStringList FRAME_PART_PRIORITY_NAMES
 {
-    QString("0- Highest"),
-    QString("1- High"),
-    QString("2- Low"),
-    QString("3- Lowest"),
+    "0 - Highest",
+    "1 - High",
+    "2 - Low",
+    "3 - Lowest",
 };
 
 const QStringList FRAME_PART_MODE_NAMES
 {
-    QString("Normal"),
-    QString("Blended"),
-    QString("Windowed"),
-    QString("Bitmap"),
+    "Normal",
+    "Blended",
+    "Windowed",
+    "Bitmap",
 };
 
 //*******************************************************************
@@ -126,14 +132,51 @@ const QString &MFramePart::nodeDataTypeName() const
 
 Qt::ItemFlags MFramePart::nodeFlags(int column) const
 {
-    if(column == static_cast<int>(eFramePartColumnsType::Preview) )
-        return Qt::ItemFlags(m_flags).setFlag(Qt::ItemFlag::ItemIsEditable, false); //The preview is never editable!
-    return m_flags;
+    Qt::ItemFlags newflags = TreeNodeTerminal::nodeFlags(column);
+
+    switch(static_cast<eFramePartColumnsType>(column))
+    {
+        case eFramePartColumnsType::ImgSz:
+        case eFramePartColumnsType::Preview:
+        {
+            //Can't edit those
+            newflags.setFlag(Qt::ItemFlag::ItemIsEditable, false);
+            break;
+        }
+        case eFramePartColumnsType::RnS:
+        case eFramePartColumnsType::Mosaic:
+        {
+            newflags.setFlag(Qt::ItemFlag::ItemIsEditable, false); //Checkable needs editable off to work properly
+            newflags.setFlag(Qt::ItemIsUserCheckable);
+            break;
+        }
+        case eFramePartColumnsType::RnSCanvasRot:
+        {
+            newflags.setFlag(Qt::ItemFlag::ItemIsEditable, false); //Checkable needs editable off to work properly
+            newflags.setFlag(Qt::ItemIsUserCheckable, m_data.isRotAndScalingOn());
+            break;
+        }
+        case eFramePartColumnsType::HFlip:
+        case eFramePartColumnsType::VFlip:
+        {
+            newflags.setFlag(Qt::ItemFlag::ItemIsEditable, false); //Checkable needs editable off to work properly
+            newflags.setFlag(Qt::ItemIsUserCheckable, !m_data.isRotAndScalingOn());
+            break;
+        }
+        case eFramePartColumnsType::RnSParam:
+        {
+            newflags.setFlag(Qt::ItemFlag::ItemIsEditable, m_data.isRotAndScalingOn());
+            break;
+        }
+        default:
+            break;
+    }
+    return newflags;
 }
 
 QImage MFramePart::drawPart(const Sprite * spr, bool transparencyenabled) const
 {
-    const int TILESZ = /*(isColorPal256())? */fmt::NDS_TILE_SIZE_8BPP/* : fmt::NDS_TILE_SIZE_4BPP*/;
+    const int TILESZ = fmt::NDS_TILE_SIZE_8BPP * 4;
     QImage          imgo;
     QVector<QRgb>   newpal = getPartPalette(spr->getPalette()); //Grab the part of the palette we care about
     const MFrame * parent = static_cast<const MFrame*>(parentNode());
@@ -165,7 +208,7 @@ QImage MFramePart::drawPart(const Sprite * spr, bool transparencyenabled) const
             std::advance(itTileEnd, frmbytelen);
         }
         QVector<uint8_t> tiles = QVector<uint8_t>(itTileBeg, itTileEnd);
-        auto res = GetResolution(); //get the actual resolution, including double size flag
+        auto res = GetResolution(); //get the actual resolution
         imgo = utils::RawToImg(res.first, res.second, tiles, newpal);
         imgo = imgo.copy(); //test
         //imgo.save(QString("D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/test_%1_%2.png").arg(parent->nodeIndex()).arg(nodeIndex()), "PNG");
@@ -278,12 +321,17 @@ const fmt::step_t &MFramePart::getPartData() const
     return m_data;
 }
 
+bool MFramePart::isPartReference() const
+{
+    return m_data.isReference();
+}
+
 uint16_t MFramePart::getTileLen() const
 {
-    auto res = GetResolution();
+    const auto res = GetResolution();
     const int pixellen = (res.first * res.second);
-    static const int NB_PIXELS_PER_TILE = 64; //8x8 tile is 64 pixels
-    return pixellen / NB_PIXELS_PER_TILE;
+    const int clampedlen = std::max(pixellen / fmt::NB_PIXELS_WAN_TILES, 1);
+    return static_cast<uint16_t>(clampedlen); //Since tiles are 16x16, and 8x8 exists, we gotta make sure we don't return 0
 }
 
 QVector<QRgb> MFramePart::getPartPalette(const QVector<QRgb> &src) const

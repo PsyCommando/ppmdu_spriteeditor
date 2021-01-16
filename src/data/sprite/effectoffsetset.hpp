@@ -3,16 +3,20 @@
 #include <src/data/treenodewithchilds.hpp>
 #include <src/data/treenodeterminal.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
-
-
+#include <QColor>
 extern const QString ElemName_EffectOffset;
 extern const QString ElemName_EffectOffsetSet;
 
+/*
+ * Represents a single attachment point
+*/
 class EffectOffset : public TreeNodeTerminal
 {
     typedef TreeNodeTerminal parent_t;
 public:
-    EffectOffset(TreeNode * parent);
+    static const QColor ColorDefault;
+
+    EffectOffset(TreeNode * parent, QColor displaycolor = ColorDefault);
     EffectOffset(const EffectOffset & cp);
     EffectOffset(EffectOffset && mv);
     EffectOffset operator=(const EffectOffset & cp);
@@ -24,6 +28,9 @@ public:
     void setX(int16_t x);
     void setY(int16_t y);
 
+    void setDisplayColor(QColor newcolor) {m_displayColor = newcolor;}
+    const QColor & getDisplayColor()const {return m_displayColor;}
+
     // TreeNode interface
 public:
     TreeNode *clone() const override;
@@ -34,9 +41,12 @@ public:
 private:
     int16_t m_x{0};
     int16_t m_y{0};
+    QColor m_displayColor {ColorDefault}; //Color the offset is displayed in the editor
 };
 
-//Represents a set of offset for displaying sprite effect sprites (exclamation marks, sweat drops, etc..)
+/*
+ * Represents a set of offset for displaying sprite effect sprites (exclamation marks, sweat drops, etc..)
+*/
 class EffectOffsetSet : public TreeNode
 {
     typedef TreeNode parent_t;

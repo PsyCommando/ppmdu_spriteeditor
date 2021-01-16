@@ -146,6 +146,8 @@ public:
 
     QPixmap &       MakePreviewPalette();
     QPixmap         MakePreviewPalette()const; //Ignores cached palette, and makes one from scratch
+    //Generate a preview of a 16 color sub-palette
+    QPixmap         MakePreviewSubPalette(int subpalid)const;
     const QPixmap & getCachedPreviewPalette()const;
 
     QPixmap &       MakePreviewFrame(bool transparency = false);
@@ -207,8 +209,8 @@ public:
     void                                    setTargetCompression(filetypes::eCompressionFormats fmt){ m_targetgompression = fmt;}
     inline filetypes::eCompressionFormats   getTargetCompression()const                             {return m_targetgompression;}
 
-    inline uint16_t unk6()const         {return m_sprhndl.getAnimFmtInfo().unk6;}
-    inline void     unk6(uint16_t v)    {m_sprhndl.getAnimFmtInfo().unk6 = v;}
+    uint16_t getMaxTileUsage()const;
+
     inline uint16_t unk7()const         {return m_sprhndl.getAnimFmtInfo().unk7;}
     inline void     unk7(uint16_t v)    {m_sprhndl.getAnimFmtInfo().unk7 = v;}
     inline uint16_t unk8()const         {return m_sprhndl.getAnimFmtInfo().unk8;}

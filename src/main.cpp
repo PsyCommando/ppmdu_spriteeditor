@@ -8,8 +8,7 @@
 #include <QCommandLineParser>
 #include <QTime>
 #include <src/utility/randomgenhelper.hpp>
-
-//#include <iostream>
+#include <src/utility/program_settings.hpp>
 
 const QString OPT_Export = "e";
 const QString OPT_Import = "i";
@@ -21,12 +20,10 @@ const QList<QCommandLineOption> PGRM_Options
     QCommandLineOption(OPT_Export, "Application will run in export mode!"),
 };
 
-
-inline bool ShouldDisplayUI(const QCommandLineParser & parser)
-{
-    return !(parser.isSet(OPT_Import) || parser.isSet(OPT_Export));
-}
-
+/*
+ * Because Qt doesn't handle exceptions from its message handlers by default,
+ * we need to do this here.
+*/
 class ApplicationNoExcept : public QApplication
 {
 public:
@@ -53,18 +50,38 @@ public:
     }
 };
 
+inline bool ShouldDisplayUI(const QCommandLineParser & parser)
+{
+    return !(parser.isSet(OPT_Import) || parser.isSet(OPT_Export));
+}
+
+void SetupApplication()
+{
+    //App constants
+    QCoreApplication::setOrganizationName("PPMDU");
+    QCoreApplication::setApplicationName("Sprite Crunsher");
+
+    //RNG seed init
+    GetRandomGenerator().seed(QTime(0,0,0).secsTo(QTime::currentTime()));
+}
+
+QCommandLineParser & SetupApplicationOptions(ApplicationNoExcept & /*app*/, QCommandLineParser & parser)
+{
+    //Options
+    parser.addOptions(PGRM_Options);
+
+    //Positional
+    parser.addPositionalArgument("filepath", "File to open with the program!");
+
+    return parser;
+}
+
 int main(int argc, char *argv[])
 {
-    ApplicationNoExcept a(argc, argv);
-    QCoreApplication::setOrganizationName("PPMDU");
-    QCoreApplication::setApplicationName("Sprite Muncher");
+    ApplicationNoExcept app(argc, argv);
     QCommandLineParser  parser;
-    //random generator
-    GetRandomGenerator().seed(QTime(0,0,0).secsTo(QTime::currentTime()));
-
-    parser.addOptions(PGRM_Options);
-    parser.addPositionalArgument("filepath", "File to open with the program!");
-    parser.process(a);
+    SetupApplication();
+    SetupApplicationOptions(app, parser).process(app);
 
     QString openFilePath;
     const QStringList positionalArguments = parser.positionalArguments();
@@ -82,7 +99,7 @@ int main(int argc, char *argv[])
             w.setFocus();
             if(!openFilePath.isEmpty())
                 w.LoadContainer(openFilePath);
-            return a.exec();
+            return app.exec();
         }
         else
         {
@@ -94,7 +111,7 @@ int main(int argc, char *argv[])
             //##TODO##
             //Execute the tasks here!
             w.WriteLine( "AYY LMAO!" );
-            return a.exec();
+            return app.exec();
         }
     }
     catch(const std::exception & e)

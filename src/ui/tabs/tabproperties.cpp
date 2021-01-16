@@ -1,8 +1,8 @@
 #include "tabproperties.hpp"
 #include "ui_tabproperties.h"
 #include <src/ui/mainwindow.hpp>
-#include <src/ui/diagsingleimgcropper.hpp>
-#include <src/ui/dialogabout.hpp>
+#include <src/ui/windows/diagsingleimgcropper.hpp>
+#include <src/ui/windows/dialogabout.hpp>
 #include <src/ui/editor/palette/paletteeditor.hpp>
 #include <src/data/sprite/models/sprite_props_model.hpp>
 #include <src/data/sprite/models/sprite_props_delegate.hpp>

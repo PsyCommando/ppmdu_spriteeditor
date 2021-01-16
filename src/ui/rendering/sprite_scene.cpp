@@ -1,6 +1,7 @@
 #include "sprite_scene.hpp"
 #include <src/ui/errorhelper.hpp>
 #include <QGraphicsView>
+#include <src/utility/program_settings.hpp>
 
 SpriteScene::SpriteScene(QObject *parent)
     :QObject(parent)
@@ -221,7 +222,7 @@ void SpriteScene::beginAnimationPlayback()
 
     m_timer.reset(new QTimer);
     connect(m_timer.data(), &QTimer::timeout, this, &SpriteScene::TimerTick );
-    m_timer->setInterval(TICK_RATE);
+    m_timer->setInterval(ProgramSettings::Instance().previewFramerate());
     m_timer->start();
 }
 

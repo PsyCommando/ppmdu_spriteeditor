@@ -600,6 +600,8 @@ DialogImportWizard::choppedimg_t DialogImportWizard::autochopImage(const QImage 
     //We Couldn't do it in a single part
     if(parts.empty())
     {
+        //#TODO
+        Q_ASSERT(false);
         sizeOfUsedPixels;
     }
 

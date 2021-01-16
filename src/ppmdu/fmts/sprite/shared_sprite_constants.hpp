@@ -56,6 +56,11 @@ namespace fmt
     //Tiles length
     extern const int NDS_TILE_SIZE_4BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
     extern const int NDS_TILE_SIZE_8BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
+
+    extern const int NDS_OAM_MAX_NB_TILES; //The number of available tiles for OAM objects
+    extern const int NDS_OAM_NB_PIXELS_TILES; //The number of pixels per tile
+
+    extern const int NB_PIXELS_WAN_TILES; //The number of pixels per "wan" tile. The tiles as indicated in the wan file are calculated on 16x16 pixels tiles, intead of 8x8 for some reasons
 };
 
 #endif // SHARED_SPRITE_CONSTANTS_HPP

@@ -82,18 +82,15 @@ public:
     /*
      * Helper Data access
     */
-    Sprite * currentSprite();
-    const Sprite * currentSprite() const {return const_cast<BaseSpriteTab*>(this)->currentSprite();}
-    MFrame * currentFrame();
-    const MFrame * currentFrame() const {return const_cast<BaseSpriteTab*>(this)->currentFrame();}
-    Image * currentImage();
-    const Image * currentImage() const {return const_cast<BaseSpriteTab*>(this)->currentImage();}
-    AnimSequence * currentAnimSequence();
-    const AnimSequence * currentAnimSequence() const {return const_cast<BaseSpriteTab*>(this)->currentAnimSequence();}
-    eTreeElemDataType currentEntryType()const;
-//    MFramePart * currentTblFrameParts();
-//    Image * currentTblImages();
-
+    Sprite *            currentSprite();
+    const Sprite *      currentSprite() const {return const_cast<BaseSpriteTab*>(this)->currentSprite();}
+    MFrame *            currentFrame();
+    const MFrame *      currentFrame() const {return const_cast<BaseSpriteTab*>(this)->currentFrame();}
+    Image *             currentImage();
+    const Image *       currentImage() const {return const_cast<BaseSpriteTab*>(this)->currentImage();}
+    AnimSequence *      currentAnimSequence();
+    const AnimSequence *currentAnimSequence() const {return const_cast<BaseSpriteTab*>(this)->currentAnimSequence();}
+    eTreeElemDataType   currentEntryType()const;
 
 signals:
 protected:

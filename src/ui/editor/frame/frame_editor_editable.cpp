@@ -82,9 +82,16 @@ void EditableItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
     paintBoundingBox(painter, option, widget);
 }
 
+QPointF EditableItem::getRelativeMiddle() const
+{
+    return boundingRect().center();
+}
+
 QPointF EditableItem::getCenterPoint() const
 {
-    return pos() + boundingRect().center();
+    const QPointF bboxcntr = getRelativeMiddle();
+    const QPointF itempos  = pos();
+    return itempos + bboxcntr;
 }
 
 void EditableItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *ev)

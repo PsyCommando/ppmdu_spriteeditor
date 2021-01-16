@@ -152,7 +152,7 @@ public slots:
     //void OnRangeChanged( int min, int max );
 
 private:
-    static const int TICK_RATE = 24; //Default animation tickrate
+    //static const int TICK_RATE = 24; //Default animation tickrate
     bool                   m_shouldLoop{false};         //Whether the animation should loop or anot
     QScopedPointer<QTimer> m_timer;                     //Timer for running the animation
     QGraphicsScene         m_animScene;                 //Graphic scene used to render the animation sequence

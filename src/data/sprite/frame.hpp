@@ -83,6 +83,10 @@ public:
     //Generates a filed tile buffer based on this frame's sub-parts
     // Adds up tiles up to "uptopartidx". If its -1, adds all frames parts
     QVector<uint8_t> generateTilesBuffer(const Sprite * spr, int uptopartidx = -1)const;
+    int calcTileLen()const;
+
+    //Function to assign tilenums in order to all the framparts
+    void optimizeTileUsage();
 };
 
 #endif // FRAME_HPP

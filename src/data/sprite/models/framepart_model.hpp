@@ -31,14 +31,15 @@ public:
 private:
     QVariant dataImgPreview     (const MFramePart * part, int role)const;
     QVariant dataImgId          (const MFramePart * part, int role)const;
+    QVariant dataImgSize        (const MFramePart * part, int role)const;
     QVariant dataUnk0           (const MFramePart * part, int role)const;
-    QVariant dataOffset         (const MFramePart * part, int role)const;
-    QVariant dataDirectXOffset  (const MFramePart * part, int role)const;
-    QVariant dataDirectYOffset  (const MFramePart * part, int role)const;
-    QVariant dataFlip           (const MFramePart * part, int role)const;
-    QVariant dataDirectVFlip    (const MFramePart * part, int role)const;
-    QVariant dataDirectHFlip    (const MFramePart * part, int role)const;
-    QVariant dataRotNScaling    (const MFramePart * part, int role)const;
+    QVariant dataXOffset        (const MFramePart * part, int role)const;
+    QVariant dataYOffset        (const MFramePart * part, int role)const;
+    QVariant dataVFlip          (const MFramePart * part, int role)const;
+    QVariant dataHFlip          (const MFramePart * part, int role)const;
+    QVariant dataRnS            (const MFramePart * part, int role)const;
+    QVariant dataRnSParam       (const MFramePart * part, int role)const;
+    QVariant dataRotCanvas      (const MFramePart * part, int role)const;
     QVariant dataPaletteID      (const MFramePart * part, int role)const;
     QVariant dataPriority       (const MFramePart * part, int role)const;
     QVariant dataTileNum        (const MFramePart * part, int role)const;

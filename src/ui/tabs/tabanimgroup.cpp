@@ -1,5 +1,6 @@
 #include "tabanimgroup.hpp"
 #include "ui_tabanimgroup.h"
+#include <src/utility/program_settings.hpp>
 
 const QList<QString> TabAnimGroup::NameGrpSlotsFacing
 {
@@ -112,7 +113,7 @@ void TabAnimGroup::SetupPreview(const AnimSequence *pseq)
     Q_ASSERT(pspr);
     m_previewScene.InstallAnimPreview(ui->gvSequencePreview, pspr, pseq);
     m_previewScene.setCurrentFrame(0);
-    if(ui->chkAutoPlay->isChecked())
+    if(ProgramSettings::Instance().isAutoplayEnabled())
         m_previewScene.beginAnimationPlayback();
 }
 

@@ -31,6 +31,9 @@ public:
     QString getContainerSrcFile()const;
     BaseContainer *getContainer();
 
+    QString getContainerParentDir()const;  //Returns the parent directory of the loaded container if it has been saved at least once
+    QString getContainerFileFilter()const; //Return the file filter to use for the container in a open/save file dialog
+
     //IO
     void NewContainer(const QString & type);
     void OpenContainer(const QString & fname);
@@ -97,6 +100,12 @@ public:
     using QAbstractItemModel::changePersistentIndex;
     using QAbstractItemModel::changePersistentIndexList;
     using QAbstractItemModel::persistentIndexList;
+
+public slots:
+
+signals:
+    void contentChanged(); //Emited when the container and content changed and need the ui to be redrawn
+
 private:
     QScopedPointer<BaseContainer> m_container;
 };

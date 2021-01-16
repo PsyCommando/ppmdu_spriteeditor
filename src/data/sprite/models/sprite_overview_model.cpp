@@ -18,6 +18,7 @@ const QVector<SpriteOverviewModel::stats_t> SpriteOverviewModel::StatEntries
             else
                 return QString("none");
         } },
+    {"Tiles Used",      [](Sprite* spr){return QString("%L1 tiles").arg(spr->getMaxTileUsage());}},
     {"Size",            [](Sprite* spr){return QString("%L1 bytes").arg(spr->getRawData().size());} },
 };
 

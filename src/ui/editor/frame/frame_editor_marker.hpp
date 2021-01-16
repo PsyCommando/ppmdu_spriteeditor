@@ -15,10 +15,14 @@ public:
     AttachMarker(FrameEditor * frmedit, const QModelIndex & idx, QGraphicsItem * parent = nullptr);
     ~AttachMarker();
 
+    //Whether this marker matches the given offset pointer
+    bool matchAttachementOffset(const EffectOffset * attach)const;
+
     // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
     QString getItemDisplayName() const override;
+
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 protected:
@@ -29,6 +33,8 @@ public slots:
     void updateOffset()override;
     //Save current position into offset data
     void commitOffset(QAbstractItemModel * model)override;
+
+    QColor getItemDisplayColor()const;
 
 private:
     EffectOffset *      m_poffset   {nullptr};

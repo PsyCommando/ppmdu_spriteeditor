@@ -61,7 +61,7 @@ protected:
                 supportedext = QString("*.%1").arg(htable.key(entry));
         }
         supportedext = QString("All supported (%1)").arg(supportedext);
-        filter = QString("%1;;%2").arg(filter).arg(supportedext);
+        filter = QString("%1;;%2").arg(supportedext).arg(filter);
     }
 };
 

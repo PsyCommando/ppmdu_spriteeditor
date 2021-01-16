@@ -63,27 +63,27 @@ namespace fmt
     struct hdr_animfmtinfo
     {
         uint32_t ptroamtbl;     //pointer to the frame assembly table/oam data
-        uint32_t ptrefxtbl;     //pointer to the effect offsets table
+        uint32_t ptrattachtbl;  //pointer to the attachment points table
         uint32_t ptranimtbl;    //pointer to the animation table
         uint16_t nbanims;       //nb of animations in the animation table
-        uint16_t unk6;          //Usually the nb of tiles that the bigest assembled frame takes in memory
+        uint16_t maxnbusedtiles;//The number of tiles that the bigest assembled frame takes in memory
         uint16_t unk7;
         uint16_t unk8;
         uint16_t unk9;          //possibly boolean
         uint16_t unk10;
 
         hdr_animfmtinfo()
-            :ptroamtbl(0), ptrefxtbl(0),ptranimtbl(0), nbanims(0),unk6(0), unk7(0), unk8(0), unk9(0), unk10(0)
+            :ptroamtbl(0), ptrattachtbl(0),ptranimtbl(0), nbanims(0),maxnbusedtiles(0), unk7(0), unk8(0), unk9(0), unk10(0)
         {}
 
         template<class _init>
         _init read( _init beg, _init end )
         {
             beg = utils::readBytesAs( beg, end, ptroamtbl );
-            beg = utils::readBytesAs( beg, end, ptrefxtbl );
+            beg = utils::readBytesAs( beg, end, ptrattachtbl );
             beg = utils::readBytesAs( beg, end, ptranimtbl );
             beg = utils::readBytesAs( beg, end, nbanims );
-            beg = utils::readBytesAs( beg, end, unk6 );
+            beg = utils::readBytesAs( beg, end, maxnbusedtiles );
             beg = utils::readBytesAs( beg, end, unk7 );
             beg = utils::readBytesAs( beg, end, unk8 );
             beg = utils::readBytesAs( beg, end, unk9 );
@@ -95,10 +95,10 @@ namespace fmt
             _writerhelper_t & write( _writerhelper_t & sir0hlpr )const
         {
             sir0hlpr.writePtr(ptroamtbl);
-            sir0hlpr.writePtr(ptrefxtbl);
+            sir0hlpr.writePtr(ptrattachtbl);
             sir0hlpr.writePtr(ptranimtbl);
             sir0hlpr.writeVal(nbanims);
-            sir0hlpr.writeVal(unk6);
+            sir0hlpr.writeVal(maxnbusedtiles);
             sir0hlpr.writeVal(unk7);
             sir0hlpr.writeVal(unk8);
             sir0hlpr.writeVal(unk9);
@@ -135,12 +135,14 @@ namespace fmt
     **********************************************************************/
     struct offset_t
     {
+        static const uint32_t LEN {4}; //in bytes
         int16_t xoff = 0;
         int16_t yoff = 0;
 
         template<class _init>
         _init read( _init beg, _init end )
         {
+            assert(beg != end);
             beg = utils::readBytesAs( beg, end, xoff );
             beg = utils::readBytesAs( beg, end, yoff );
             return beg;
@@ -162,6 +164,7 @@ namespace fmt
     **********************************************************************/
     struct frameoffsets_t
     {
+        static const uint32_t LEN {offset_t::LEN * 4};
         offset_t head;
         offset_t rhand;
         offset_t lhand;
@@ -248,6 +251,8 @@ namespace fmt
         static const uint16_t  XOFFSET_MAX       = 511;     //512 possible values (-255 to 255)
         static const uint16_t  TILENUM_MAX       = 1023;    //1024 possible values
         static const uint8_t   PALID_MAX         = 15;      //16 palettes
+        static const uint8_t   MAX_NB_PAL        = 16;      //16 palettes maximum
+        static const uint8_t   NB_RNS_PARAM      = 32;      //32 possible values for the RnS param
 
         /*
          * eObjMode
@@ -318,11 +323,11 @@ namespace fmt
             return helpr;
         }
 
-
+        inline bool isReference()const              {return frmidx == static_cast<frmid_t>(-1);}
         inline bool isColorPal256()const            {return (ATTR0_ColPalMask & attr0) != 0;}
         inline bool isMosaicOn()const               {return (ATTR0_MosaicMask & attr0) != 0;}
         inline bool isDisabled()const               {return !isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
-        inline bool isDoubleSize()const             {return isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);}
+        inline bool isRnSRotCanvas()const             {return isRotAndScalingOn() && ((ATTR0_DblSzDisabled & attr0) != 0);} //Previously isDoubleSize
         inline bool isRotAndScalingOn()const        {return (ATTR0_RotNScaleMask & attr0) != 0;}
         inline uint16_t getYOffset()const           {return (ATTR0_YOffsetMask & attr0);}
 
@@ -338,7 +343,7 @@ namespace fmt
         inline uint8_t getPalNb()const              {return static_cast<uint8_t>((ATTR2_PalNumberMask & attr2) >> 12);}
         inline uint8_t getPriority()const           {return static_cast<uint8_t>((ATTR2_PriorityMask  & attr2) >> 10);}
         inline uint16_t getTileNum()const           {return (ATTR2_TileNumMask & attr2);}
-        inline eFrameRes getResolutionType()const   { return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
+        inline eFrameRes getResolutionType()const   {return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
 
         inline frmid_t getFrameIndex()const         {return frmidx;}
 
@@ -347,14 +352,14 @@ namespace fmt
             uint8_t  flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
             assert(flagresval < FrameResValues.size());
 
-            if(isDoubleSize())
-            {
-                auto res = FrameResValues[flagresval];
-                res.first  *= 2;
-                res.second *= 2;
-                return res;
-            }
-            else
+//            if(isDoubleSize())
+//            {
+//                auto res = FrameResValues[flagresval];
+//                res.first  *= 2;
+//                res.second *= 2;
+//                return res;
+//            }
+//            else
                 return FrameResValues[flagresval];
         }
 
@@ -363,7 +368,7 @@ namespace fmt
         inline void setMosaicOn     (bool bon)      {attr0 = (bon)? (ATTR0_MosaicMask | attr0) : (attr0 & ~ATTR0_MosaicMask);}
         inline void setObjMode      (eObjMode mode) {attr0 = (attr0 & ~ATTR0_ObjModeMask) | ((static_cast<uint16_t>(mode) & 0x3 ) << 10);}
         inline void setDisabled     (bool bon)      {attr0 = (bon)? (ATTR0_DblSzDisabled | attr0) : (attr0 & ~ATTR0_DblSzDisabled);}
-        inline void setDoubleSize   (bool bon)      {setDisabled(bon);}
+        inline void setRnSCanvasRot (bool bon)      {setDisabled(bon);}
         inline void setRotAndScaling(bool bon)      {attr0 = (bon)? (ATTR0_RotNScaleMask | attr0) : (attr0 & ~ATTR0_RotNScaleMask);}
         inline void setYOffset      (uint16_t y)    {attr0 = (attr0 & ATTR0_FlagBitsMask) | (ATTR0_YOffsetMask & y);}
 
@@ -384,6 +389,14 @@ namespace fmt
             uint16_t flagval = static_cast<uint16_t>(res);
             attr1 = (attr1 & ~ATTR01_ResMask) | ((flagval << 14) & ATTR01_ResMask);
             attr0 = (attr0 & ~ATTR01_ResMask) | ((flagval << 12) & ATTR01_ResMask);
+        }
+
+        //Returns our size in nb of tiles
+        inline uint16_t calculateTileSize()const
+        {
+            const auto res = GetResolution();
+            const int  totalpixels = res.first * res.second;
+            return static_cast<uint16_t>(totalpixels / NB_PIXELS_WAN_TILES);
         }
     };
 

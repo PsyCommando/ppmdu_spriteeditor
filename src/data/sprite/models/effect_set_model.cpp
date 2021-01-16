@@ -47,6 +47,11 @@ QVariant EffectSetModel::data(const QModelIndex &index, int role) const
         return QVariant();
     const EffectOffset * poff = static_cast<const EffectOffset *>(getItem(index));
     Q_ASSERT(poff);
+
+    //Set bg color to display color
+    if(role == Qt::BackgroundRole)
+        return QBrush(poff->getDisplayColor());
+
     switch(static_cast<eColumns>(index.column()))
     {
         case eColumns::Name:

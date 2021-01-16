@@ -1,4 +1,5 @@
 #include "sprite_container.hpp"
+#include <QMenu>
 #include <QMessageBox>
 #include <QString>
 #include <QSaveFile>
@@ -8,11 +9,11 @@
 #include <QFutureWatcher>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
-#include <src/ui/dialogprogressbar.hpp>
+#include <src/ui/windows/dialogprogressbar.hpp>
 #include <src/utility/container_threaded_writer.hpp>
 #include <src/data/content_factory.hpp>
 #include <src/data/content_manager.hpp>
-#include <src/data/sprite/spritemanager.hpp>
+#include <src/data/contents_selection_manager.hpp>
 #include <src/data/sprite/sprite.hpp>
 
 const QString NullString;
@@ -96,7 +97,7 @@ SpriteContainer& SpriteContainer::operator=(const SpriteContainer & cp)
 
     //copy all the sprites
     m_spr.reserve(cp.m_spr.size());
-    for(Sprite* spr : m_spr)
+    Q_FOREACH(Sprite* spr, m_spr)
         m_spr.push_back(new Sprite(*spr));
     return *this;
 }
@@ -120,6 +121,7 @@ void SpriteContainer::Initialize()
         //We want to add a single empty sprite for a single sprite!
         AddSprite();
     }
+    connect(this, &SpriteContainer::compressionChanged, &ContentManager::Instance(), &ContentManager::contentChanged);
 }
 
 bool SpriteContainer::isContainerLoaded() const
@@ -262,6 +264,8 @@ void SpriteContainer::LoadContainer()
         Sprite *first =  m_spr.front();
         if(first)
         {
+            if(first->canParse())
+                first->ParseSpriteData(); //Need to parse first to access type
             sprComp = CompFmtToCompOption(first->getTargetCompression());
             sprCntType = first->type();
         }
@@ -339,18 +343,48 @@ Sprite* SpriteContainer::GetSprite(SpriteContainer::sprid_t idx)
 
 SpriteContainer::sprid_t SpriteContainer::AddSprite()
 {
-    ContentManager & manager = ContentManager::Instance();
-    size_t offset = m_spr.size();
+    return AddSprite(m_spr.size());
+}
 
-    manager.beginInsertRows( QModelIndex(), offset, offset );
+SpriteContainer::sprid_t SpriteContainer::AddSprite(SpriteContainer::sprid_t idx)
+{
+    ContentManager & manager = ContentManager::Instance();
+    manager.beginInsertRows(QModelIndex(), idx, idx);
     Sprite * spr = new Sprite(this);
     spr->convertSpriteToType(getExpectedSpriteType());
     spr->setTargetCompression(CompOptionToCompFmt(GetExpectedCompression()));
     m_spr.push_back(spr);
     manager.endInsertRows();
-
-    return offset;
+    return idx;
 }
+
+void SpriteContainer::RemSprite()
+{
+    _removeChildrenNode(m_spr.back(), false);
+}
+
+void SpriteContainer::RemSprites(const QModelIndexList &remove)
+{
+    QList<TreeNode*> nodes;
+    Q_FOREACH(const QModelIndex & idx, remove)
+        nodes.push_back(static_cast<TreeNode*>(idx.internalPointer()));
+    _removeChildrenNodes(nodes, false);
+}
+
+//SpriteContainer::sprid_t SpriteContainer::AddSprite()
+//{
+//    ContentManager & manager = ContentManager::Instance();
+//    size_t offset = m_spr.size();
+
+//    manager.beginInsertRows( QModelIndex(), offset, offset );
+//    Sprite * spr = new Sprite(this);
+//    spr->convertSpriteToType(getExpectedSpriteType());
+//    spr->setTargetCompression(CompOptionToCompFmt(GetExpectedCompression()));
+//    m_spr.push_back(spr);
+//    manager.endInsertRows();
+
+//    return offset;
+//}
 
 eCompressionFmtOptions SpriteContainer::GetExpectedCompression() const
 {
@@ -360,8 +394,9 @@ eCompressionFmtOptions SpriteContainer::GetExpectedCompression() const
 void SpriteContainer::SetExpectedCompression(eCompressionFmtOptions compression)
 {
     m_cntCompression = compression;
-    for(Sprite * spr : m_spr)
+    Q_FOREACH(Sprite * spr, m_spr)
         spr->setTargetCompression(CompOptionToCompFmt(m_cntCompression));
+    emit compressionChanged(m_cntCompression);
 }
 
 fmt::eSpriteType SpriteContainer::getExpectedSpriteType() const
@@ -372,7 +407,7 @@ fmt::eSpriteType SpriteContainer::getExpectedSpriteType() const
 void SpriteContainer::setExpectedSpriteType(fmt::eSpriteType sprty)
 {
     m_cntsprty = sprty;
-    for(Sprite * spr : m_spr)
+    Q_FOREACH(Sprite * spr, m_spr)
         spr->convertSpriteToType(sprty);
 }
 
@@ -405,69 +440,6 @@ bool SpriteContainer::empty() const
 {
     return m_spr.empty();
 }
-
-//    QVariant SpriteContainer::data(const QModelIndex &index, int role) const
-//    {
-//        if(!ContainerLoaded() || m_spr.empty())
-//            return QVariant();
-
-//        if (!index.isValid())
-//            return QVariant("root");
-
-//        if (role != Qt::DisplayRole && role != Qt::EditRole)
-//            return QVariant();
-
-//        TreeNode *item = const_cast<SpriteContainer*>(this)->getItem(index);
-//        return item->nodeData(index.column(), role);
-//    }
-
-//    QVariant SpriteContainer::headerData(int, Qt::Orientation, int) const
-//    {
-//        //nothing really
-//        return QVariant();
-//    }
-
-//int SpriteContainer::rowCount(const QModelIndex &parent) const
-//{
-//    if (!isContainerLoaded() || m_spr.empty())
-//        return 0;
-
-//    TreeNode *parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
-//    Q_ASSERT(parentItem);
-
-//    //Exclude some items from being displayed as having childrens!
-//    if(parentItem->nodeDataTy() == eTreeElemDataType::animSequence ||
-//       //parentItem->getNodeDataTy() == eTreeElemDataType::animTable    ||
-//       parentItem->nodeDataTy() == eTreeElemDataType::frame)
-//        return 0;
-
-//    return parentItem->nodeChildCount();
-//}
-
-//bool SpriteContainer::hasChildren(const QModelIndex &parent) const
-//{
-//    if(!isContainerLoaded() || m_spr.empty())
-//        return false;
-
-//    return rowCount(parent) > 0;
-////        TreeNode * parentItem = const_cast<SpriteContainer*>(this)->getItem(parent);
-
-////        if(parentItem)
-////            return parentItem->nodeChildCount() > 0;
-////        else
-////            return false;
-//}
-
-//TreeNode *SpriteContainer::getItem(const QModelIndex &index)
-//{
-//    if (index.isValid())
-//    {
-//        TreeNode *item = reinterpret_cast<TreeNode*>(index.internalPointer());
-//        if (item)
-//            return item;
-//    }
-//    return this;
-//}
 
 TreeNode *SpriteContainer::getOwnerNode(const QModelIndex &index)
 {
@@ -549,7 +521,7 @@ bool SpriteContainer::_removeChildrenNode(TreeNode *node, bool bdeleteptr)
 
 bool SpriteContainer::_removeChildrenNodes(int row, int count)
 {
-    if(row < 0 || row > m_spr.size())
+    if(row < 0 || row >= m_spr.size())
         return false;
     ContentManager & manager = ContentManager::Instance();
     manager.beginRemoveRows(QModelIndex(), row, row + count - 1);
@@ -626,7 +598,7 @@ bool SpriteContainer::_deleteChildrenNode(TreeNode *node)
 
 bool SpriteContainer::_deleteChildrenNodes(int row, int count)
 {
-    if(row < 0 || row > m_spr.size())
+    if(row < 0 || row >= m_spr.size())
         return false;
     ContentManager & manager = ContentManager::Instance();
     manager.beginRemoveRows(QModelIndex(), row, row + count - 1);
@@ -647,7 +619,7 @@ bool SpriteContainer::_deleteChildrenNodes(const QList<TreeNode *> &nodes)
 bool SpriteContainer::_moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent)
 {
     QList<TreeNode*> tomove;
-    for(QModelIndex & idx : indices)
+    Q_FOREACH(const QModelIndex & idx, indices)
     {
         tomove.push_back(static_cast<TreeNode*>(idx.internalPointer()));
     }
@@ -665,7 +637,7 @@ bool SpriteContainer::_moveChildrenNodes(const QList<TreeNode *> &nodes, int des
     }
 
     int cntinsert = 0;
-    for(TreeNode * pnode : nodes)
+    Q_FOREACH(TreeNode * pnode, nodes)
     {
         int removedidx = pnode->nodeIndex();
         if(!manager.beginMoveRows(QModelIndex(), removedidx, removedidx, destparent, destrow + cntinsert))
@@ -682,9 +654,8 @@ bool SpriteContainer::_moveChildrenNodes(const QList<TreeNode *> &nodes, int des
 
 bool SpriteContainer::_moveChildrenNodes(int row, int count, int destrow, TreeNode *destnode)
 {
-    if(!destnode || ((row + count - 1) > m_spr.size()) || (destrow > destnode->nodeChildCount()))
+    if(!destnode || ((row + count - 1) >= m_spr.size()) || (destrow > destnode->nodeChildCount()))
         return false;
-//    bool                success = true;
     ContentManager &     manager = ContentManager::Instance();
     QList<TreeNode*>    tomove;
     tomove.reserve(count);
@@ -701,14 +672,6 @@ bool SpriteContainer::_moveChildrenNodes(int row, int count, int destrow, TreeNo
     //return success? success & destnode->_insertChildrenNodes(moved, destrow) : false;
 }
 
-//    int SpriteContainer::columnCount(const QModelIndex &) const
-//    {
-//        //            if (parent.isValid())
-//        //                return static_cast<TreeNode*>(parent.internalPointer())->columnCount();
-//        //            else
-//        return 1;
-//    }
-
 void SpriteContainer::appendChild(TreeNode *item)
 {
     //QMutexLocker lk(&getMutex());
@@ -721,10 +684,10 @@ void SpriteContainer::appendChild(TreeNode *item)
 
 TreeNode *SpriteContainer::nodeChild(int row)
 {
-    if(m_spr.empty() || row > m_spr.size())
-        throw std::runtime_error("SpriteContainer::nodeChild(): Row exceeds the the amount of childrens the container has!");
+    if(m_spr.empty() || row >= m_spr.size())
+        return nullptr;
     else
-        return m_spr[row];
+        return m_spr.at(row); //QList at() avoids checking for writing
 }
 
 int SpriteContainer::nodeChildCount() const
@@ -737,135 +700,10 @@ int SpriteContainer::nodeIndex() const
     return 0; //Always first!
 }
 
-//int SpriteContainer::indexOfNode(const TreeNode *ptr) const
-//{
-//    QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
-//    const Sprite * ptrspr = dynamic_cast<const Sprite *>(ptr);
-
-//    if( ptrspr )
-//        return m_spr.indexOf(*ptrspr);
-//    return 0;
-//}
-
-//QModelIndex SpriteContainer::modelIndexOfNode(const TreeNode *ptr) const
-//{
-//    //#TODO: Its pretty useless if its limited to only sprites......
-//    QMutexLocker lk(&const_cast<SpriteContainer*>(this)->getMutex());
-
-//    if(ptr->nodeDataTy() != eTreeElemDataType::sprite)
-//    {
-//        qFatal(QString("SpriteContainer::modelIndexOfNode(): Got non-sprite node! Type is %1").arg(static_cast<int>(ptr->getNodeDataTy())).toStdString().c_str());
-//        return QModelIndex();
-//    }
-
-//    const Sprite * ptrspr = dynamic_cast<const Sprite *>(ptr);
-//    Q_ASSERT(ptrspr);
-
-//    int idx = m_spr.indexOf(*ptrspr);
-//    if(idx == -1)
-//    {
-//        Q_ASSERT(false);
-//        throw std::runtime_error("SpriteContainer::modelIndexOfNode(): Couldn't find node in table! Node is possibly not a sprite!");
-//    }
-
-//    return spr_manager::ContentManager::Instance().index(idx, 0);
-//}
-
-//    QModelIndex spr_manager::SpriteContainer::modelIndex() const
-//    {
-//        return QModelIndex();
-//    }
-
-//    QModelIndex spr_manager::SpriteContainer::modelChildIndex(int row, int column) const
-//    {
-//        return spr_manager::ContentManager::Instance().index(row, column);
-//    }
-
-//    QModelIndex spr_manager::SpriteContainer::modelParentIndex() const
-//    {
-//        return spr_manager::ContentManager::Instance().parent();
-//    }
-
-//    int SpriteContainer::nodeColumnCount() const
-//    {
-//        return 1;
-//    }
-
 TreeNode *SpriteContainer::parentNode()
 {
     return m_parentItem;
 }
-
-//    Sprite *SpriteContainer::parentSprite()
-//    {
-//        return nullptr;
-//    }
-
-//    QVariant SpriteContainer::nodeData(int column, int role) const
-//    {
-//        if( (role == Qt::DisplayRole || role == Qt::EditRole) && column != 0)
-//            return QVariant(getSrcFnameOnly());
-//        return QVariant();
-//    }
-
-//    bool SpriteContainer::insertChildrenNodes(int position, int count)
-//    {
-//        QMutexLocker lk(&getMutex());
-//        if(position > m_spr.size())
-//            return false;
-
-//        for( int i = 0; i < count; ++i )
-//            m_spr.insert(position, Sprite(this));
-//        return true;
-//    }
-
-//    bool SpriteContainer::removeChildrenNodes(int position, int count)
-//    {
-//        QMutexLocker lk(&getMutex());
-//        if(position + (count-1) > m_spr.size())
-//            return false;
-//        for(int i = 0; i < count; ++i)
-//            m_spr.removeAt(position);
-//        return true;
-//    }
-
-//    bool SpriteContainer::removeChildrenNodes(QModelIndexList indices)
-//    {
-//        bool success = true;
-//        for(QModelIndex idx : indices)
-//        {
-//            if(!idx.isValid())
-//                continue;
-//            TreeNode * node = static_cast<TreeNode*>(idx.internalPointer());
-//            Q_ASSERT(node);
-//            success = (removeChildrenNodes(node->nodeIndex(), 1) && success);
-//        }
-//        return success;
-//    }
-
-//    bool SpriteContainer::moveChildrenNodes(int srcrow, int count, int destrow)
-//    {
-//        QMutexLocker lk(&getMutex());
-
-//        if( srcrow + count > m_spr.size() || destrow > m_spr.size() )
-//        {
-//            Q_ASSERT(false);
-//            return false;
-//        }
-
-//        if(destrow > srcrow)
-//        {
-//            for( int i = 0; i < count; ++i )
-//                m_spr.move(srcrow, destrow);
-//        }
-//        else
-//        {
-//            for( int i = 0; i < count; ++i )
-//                m_spr.move(srcrow, destrow + i);
-//        }
-
-//        return true;
-//    }
 
 bool SpriteContainer::nodeIsMutable() const
 {
@@ -907,27 +745,6 @@ int SpriteContainer::GetNbDataColumns() const
     return 1;
 }
 
-
-//    QVariant SpriteContainer::data(const QModelIndex &index, int role) const
-//    {
-//        if(!ContainerLoaded() || m_spr.empty())
-//            return QVariant();
-
-//        if (!index.isValid())
-//            return QVariant("root");
-
-//        if (role != Qt::DisplayRole && role != Qt::EditRole)
-//            return QVariant();
-
-//        TreeNode *item = const_cast<SpriteContainer*>(this)->getItem(index);
-//        return item->nodeData(index.column(), role);
-//    }
-
-//    QVariant SpriteContainer::headerData(int, Qt::Orientation, int) const
-//    {
-//        //nothing really
-//        return QVariant();
-//    }
 QVariant SpriteContainer::GetContentData(const QModelIndex &index, int role) const
 {
     if(!isContainerLoaded() || m_spr.empty())
@@ -987,31 +804,10 @@ void SpriteContainer::fetchMore(const QModelIndex &index)
     ContentManager & manager = ContentManager::Instance();
 
     const QList<QPersistentModelIndex> changed{index};
-    manager.layoutAboutToBeChanged(changed);
+    emit manager.layoutAboutToBeChanged(changed);
     pspr->ParseSpriteData();
-    manager.layoutChanged(changed);
+    emit manager.layoutChanged(changed);
 }
-
-//    //Incremental load
-//    void SpriteContainer::fetchMore(const QModelIndex &parent)
-//    {
-//        if (!parent.isValid() || !ContainerLoaded())
-//            return;
-//        TreeNode * pte = getItem(parent);
-//        if(!pte || (pte && pte == this))
-//            return;
-//        pte->fetchMore(parent);
-//    }
-
-//    bool SpriteContainer::canFetchMore(const QModelIndex &parent) const
-//    {
-//        if (!parent.isValid() || !ContainerLoaded())
-//            return false;
-//        TreeNode * pte = const_cast<SpriteContainer*>(this)->getItem(parent);
-//        if(!pte || (pte && pte == this))
-//            return false;
-//        return pte->canFetchMore(parent);
-//    }
 
 TreeNode *SpriteContainer::clone() const
 {
@@ -1050,25 +846,88 @@ SpriteContainerMenu::~SpriteContainerMenu()
 {
 }
 
+const char * PROP_COMPRESSION_FMT {"compression_fmt"};
+
 void SpriteContainerMenu::InitContent()
 {
-    //
+    if(m_container->isMultiItemContainer())
+        setTitle(tr("Sprite pack"));
+    else
+        setTitle(tr("Sprite"));
+
+    //Sprite Adding/Removal
+    if(m_container->isMultiItemContainer())
+    {
+        addAction(tr("&Add sprite.."),      this, &SpriteContainerMenu::OnAddSprite);
+        addAction(tr("&Remove sprite.."),   this, &SpriteContainerMenu::OnRemSprite);
+    }
 
     //Compression select
-    QMenu        * compMenu = new QMenu(tr("Compression"), this);
-    QActionGroup * compgrp  = new QActionGroup(this);
+    addSeparator()->setText(tr("Compression"));
+
+    m_actionGrp.reset(new QActionGroup(this));
+    m_actionGrp->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);
 
     //Fill up compression options
     for(int i = 0; i < CompressionFmtOptions.size(); ++i)
     {
-        QAction * paction = new QAction(CompressionFmtOptions[i], compMenu);
+        QAction * paction = addAction(CompressionFmtOptions[i]);
         paction->setCheckable(true);
-        paction->setActionGroup(compgrp);
+        m_actionGrp->addAction(paction);
         if(m_container->GetExpectedCompression() == static_cast<eCompressionFmtOptions>(i))
             paction->setChecked(true);
-        connect(paction, &QAction::toggled, [&](bool state){m_container->SetExpectedCompression(static_cast<eCompressionFmtOptions>(i));});
-        compMenu->addAction(paction);
+        paction->setProperty(PROP_COMPRESSION_FMT, i);
+        addAction(paction);
     }
-    addMenu(compMenu);
 
+    connect(m_actionGrp.data(), &QActionGroup::triggered,              this, &SpriteContainerMenu::OnCompressionChanged);
+    connect(m_container,        &SpriteContainer::compressionChanged,  this, &SpriteContainerMenu::updateMenu);
+}
+
+void SpriteContainerMenu::updateMenu()
+{
+    //Helper to block signals and unblock via RAII (Avoid signal staying stuck in case of exception)
+    struct autoblock
+    {
+        QActionGroup * ag;
+        autoblock(QActionGroup * _ag):ag(_ag)   {ag->blockSignals(true); Q_FOREACH(QAction * act, ag->actions()){act->blockSignals(true);}}
+        ~autoblock()                            {ag->blockSignals(false);Q_FOREACH(QAction * act, ag->actions()){act->blockSignals(false);}}
+    } ab(m_actionGrp.data());
+
+    //Sync the radio button with the container's compression
+    eCompressionFmtOptions  curopt  = m_container->GetExpectedCompression();
+    QList<QAction*>         opt     = m_actionGrp->actions();
+    for(int i = 0; i < opt.size(); ++i)
+    {
+        if(opt[i]->property(PROP_COMPRESSION_FMT).value<int>() == static_cast<int>(curopt) && !opt[i]->isChecked())
+            opt[i]->setChecked(true);
+    }
+}
+
+void SpriteContainerMenu::OnCompressionChanged(QAction * selected)
+{
+    eCompressionFmtOptions cmpfmt = static_cast<eCompressionFmtOptions>(selected->property(PROP_COMPRESSION_FMT).value<int>());
+    m_container->SetExpectedCompression(cmpfmt);
+}
+
+void SpriteContainerMenu::OnAddSprite()
+{
+    QItemSelectionModel * model = ContentsSelectionManager::SelectionModel();
+    if(model->hasSelection())
+        m_container->AddSprite(model->selectedRows().last().row()); //Add after last selected item
+    else if(model->currentIndex().isValid())
+        m_container->AddSprite(model->currentIndex().row());
+    else
+        m_container->AddSprite();
+}
+
+void SpriteContainerMenu::OnRemSprite()
+{
+    QItemSelectionModel * model = ContentsSelectionManager::SelectionModel();
+    if(model->hasSelection())
+        m_container->RemSprites(model->selectedRows());
+    else if(model->currentIndex().isValid())
+        m_container->RemSprites(QModelIndexList{model->currentIndex()});
+    else
+        m_container->RemSprite();
 }

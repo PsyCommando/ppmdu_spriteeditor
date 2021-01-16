@@ -4,7 +4,6 @@
 #include <QPainter>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/data/sprite/sprite_container.hpp>
-#include <src/data/sprite/spritemanager.hpp>
 #include <src/ui/errorhelper.hpp>
 
 const QString ElemName_Sprite = "Sprite";
@@ -343,13 +342,13 @@ EffectOffsetSet* Sprite::getAttachMarkers(fmt::frmid_t frmidx)
     return static_cast<EffectOffsetSet*>(m_efxcnt.nodeChild(frmidx));
 }
 
-//#TODO: Implement this
 void Sprite::convertSpriteToType(fmt::eSpriteType newty)
 {
     //Do nothing if its the same type as the current one!
     if(newty == type())
         return;
 
+    m_sprhndl.setSpriteType(newty);
     switch(newty)
     {
         case fmt::eSpriteType::Prop:
@@ -391,8 +390,6 @@ void Sprite::convertSpriteToType(fmt::eSpriteType newty)
             throw BaseException("Sprite::convertSpriteToType(): Bad sprite type!!");
         }
     };
-
-    m_sprhndl.setSpriteType(newty);
 }
 
 bool Sprite::IsRawDataCompressed(filetypes::eCompressionFormats *outfmt) const
@@ -530,7 +527,7 @@ fmt::frmid_t Sprite::importImageParts(const imgparts_t & img)
 
         MFramePart * newpart = newfrm->appendNewFramePart();
         newpart->setColorPal256(is256Colors());
-        newpart->setDoubleSize(isImageDoubleSize(part.second));
+        //newpart->setRotCanvas(isImageDoubleSize(part.second));
         newpart->setFrameIndex(newimg->getImageUID());
     }
     return newfrm->getFrameUID();
@@ -558,7 +555,31 @@ void Sprite::importImageSequences(const imgseqs_t & sequences, uint8_t frmdurati
 }
 
 //If true the caller will likely force a commit on this sprite!!!
- bool Sprite::hasUnsavedChanges()const
- {
+bool Sprite::hasUnsavedChanges()const
+{
     return !hasRawData(); //#FIXME: Maybe a better system should be implemented since loaded sprites will always have raw data
- }
+}
+
+uint16_t Sprite::getMaxTileUsage()const
+{
+    return m_frmcnt.getMaxTileUsage();
+}
+
+QPixmap Sprite::MakePreviewSubPalette(int subpalid)const
+{
+    const QVector<QRgb> & pal = getPalette();
+    QVector<QRgb> subpal;
+    const int startoffset = subpalid * 16;
+    for(int i = 0; i < 16; ++i)
+    {
+        if(startoffset + i < pal.size())
+        {
+            subpal.push_back(pal[startoffset + i]);
+        }
+        else
+        {
+            subpal.push_back(QRgb());
+        }
+    }
+    return  utils::PaintPaletteToPixmap(subpal);
+}

@@ -24,7 +24,7 @@ namespace fmt
         bool Validate()
         {
             //Check if the amount of frames match the amount of groups of frames offsets groups
-            if(m_images.m_frames.size() != m_animtions.m_frmoffsets.size())
+            if(m_images.m_frames.size() != m_animtions.m_attachPoints.size())
             {
                 assert(false);
                 return false;
@@ -37,7 +37,7 @@ namespace fmt
         {
             ParseHeaders(itbeg, itend);
             ParseImageInfo(itbeg, itend);
-            ParseAnimInfoAndData(itbeg, itend);
+            ParseAnimInfoAndData(itbeg, itend); //anim must be after images
         }
 
         template<class _outit>
@@ -58,6 +58,7 @@ namespace fmt
             uint32_t                                ptrimginf = 0;          //pointer to the anim info chunk, for the sprite header
 
             //#1. Write frame assembly
+            amiminf.maxnbusedtiles = m_images.calculateLargestFrameSize();
             m_images.WriteFrames(sw, frameptrs);
 
             //#2. Write animation sequences
@@ -79,13 +80,13 @@ namespace fmt
                 sw.writePtr(ptr);
 
             //#6. Write effect offset table(optional)
-            if( !m_animtions.m_frmoffsets.empty() )
+            if( !m_animtions.m_attachPoints.empty() )
             {
-                amiminf.ptrefxtbl = sw.getCurOffset();          //mark offset of effect offset table for animfmt chunk
+                amiminf.ptrattachtbl = sw.getCurOffset();          //mark offset of effect offset table for animfmt chunk
                 m_animtions.WriteEffectsTbl(sw);
             }
             else
-                amiminf.ptrefxtbl = 0;                          //Don't write an effect table at all in this case!
+                amiminf.ptrattachtbl = 0;                          //Don't write an effect table at all in this case!
 
             //#7. Write animation groups sequences array table
             m_animtions.WriteAnimGroups(sw, ptrseqs, ptrgrps);
@@ -153,8 +154,8 @@ namespace fmt
         inline AnimDB::animseqtbl_t& getAnimSeqs()                             {return m_animtions.m_animsequences;}
         inline void                  setAnimSeqs(const AnimDB::animseqtbl_t& aseqs) {m_animtions.m_animsequences = aseqs;}
 
-        inline OffsetsDB           & getEffectOffset()                         {return m_frmoffsets;}
-        inline void                  setEffectOffset(const OffsetsDB & attach) {m_frmoffsets = attach;}
+        inline OffsetsDB           & getEffectOffset()                         {return m_attachPoints;}
+        inline void                  setEffectOffset(const OffsetsDB & attach) {m_attachPoints = attach;}
 
         inline const hdr_animfmtinfo   & getAnimFmtInfo()const                     {return m_animfmt;}
         inline hdr_animfmtinfo         & getAnimFmtInfo()                          {return m_animfmt;}
@@ -181,7 +182,7 @@ namespace fmt
         //Content
         ImageDB     m_images;
         AnimDB      m_animtions;
-        OffsetsDB   m_frmoffsets;
+        OffsetsDB   m_attachPoints;
 
     private:
         template<class _init>
@@ -201,7 +202,6 @@ namespace fmt
 
             if( m_sprty >= eSpriteType::INVALID )
                 throw std::runtime_error("WA_SpriteHandler::Parse(): Invalid sprite type!!"); //STOP HERE!!
-            assert( m_sprty < eSpriteType::INVALID );
 
             if( m_offsetAnimInfo != 0 )
                 m_animfmt.read(std::next( itsrcbeg, m_offsetAnimInfo ), itend); //Parse anim info chunk
@@ -219,15 +219,16 @@ namespace fmt
         template<class _init>
             void ParseAnimInfoAndData(_init itbeg, _init itend )
         {
-            uint32_t begseqptrtbl = 0;
             //Parse animations
-            m_animtions.ParseAnimTbl(itbeg, itend, m_animfmt, begseqptrtbl);
-            if(m_animfmt.ptrefxtbl != 0 && begseqptrtbl != std::numeric_limits<uint32_t>::max())
+            m_animtions.ParseAnimTbl(itbeg, itend, m_animfmt);
+
+            //Parse attachment table if its there
+            if(m_animfmt.ptrattachtbl != 0)
             {
-                //Calculate effect table length/end
-                //int nbentries = (begseqptrtbl - m_animfmt.ptrefxtbl) / sizeof(uint16_t);
-                m_animtions.ParseEfxOffsets(itbeg, itend, m_animfmt, m_animfmt.ptrefxtbl, begseqptrtbl);
-                m_frmoffsets = m_animtions.m_frmoffsets;
+                if(m_sprty != eSpriteType::Character)
+                    assert(false);
+                m_animtions.ParseAttachmentOffsets(itbeg, itend, m_animfmt, m_images.getNbFrames());
+                m_attachPoints = m_animtions.m_attachPoints;
             }
         }
 

@@ -7,29 +7,35 @@
 
 enum struct eFramePartColumnsType : int
 {
-    Preview     = 0,
+    Preview = 0,
     ImgID,
+    ImgSz,
     TileNum,
     PaletteID,
-    Unk0,
-    Offset,
-    Flip,
-    RotNScaling,
+    XOffset,
+    YOffset,
+    VFlip,
+    HFlip,
+    Priority,
+    NBColumnsBasicMode = Priority, //So we don't count the nb columns
+
+    //Advanced Controls
     Mosaic,
     Mode,
-    Priority,
-    HeaderNBColumns, //Nb of DISPLAYED columns, doesn't include hidden columns
 
+    //Rotation and scaling
+    RnS,
+    RnSParam,
+    RnSCanvasRot,
 
-    direct_XOffset = HeaderNBColumns, //Extra column for accessing directly the x offset
-    direct_YOffset, //Extra column for accessing directly the y offset
-    direct_VFlip,   //Extra column for accessing directly the vflip boolean
-    direct_HFlip,   //Extra column for accessing directly the hflip boolean
+    //Research stuff
+    Unk0,
+
+    //Always last
     NBColumns,
-    INVALID,
 };
-extern const size_t                 FramePartHeaderNBColumns;
-extern const std::vector<QString>   FramePartHeaderColumnNames;
+
+extern const std::map<eFramePartColumnsType, QString>   FramePartHeaderColumnNames;
 extern const QString                ElemName_FramePart;
 extern const QStringList            FRAME_PART_PRIORITY_NAMES;
 extern const QStringList            FRAME_PART_MODE_NAMES;
@@ -57,10 +63,6 @@ public:
     bool operator!=( const MFramePart & other)const;
 
     TreeNode * clone()const override;
-
-//    Sprite          * parentSprite();
-//    const Sprite    * parentSprite()const;
-
     eTreeElemDataType nodeDataTy() const override;
     const QString &nodeDataTypeName() const override;
 
@@ -81,6 +83,9 @@ public:
     fmt::step_t         & getPartData();
     const fmt::step_t   & getPartData()const;
 
+    //Whether the part is a reference on another part, AKA a -1 frame
+    bool isPartReference()const;
+
     //Returns the length in tiles this part is
     uint16_t getTileLen()const;
 
@@ -92,7 +97,8 @@ public:
     inline bool     isColorPal256()const            {return m_data.isColorPal256();}
     inline bool     isMosaicOn()const               {return m_data.isMosaicOn();}
     inline bool     isDisabled()const               {return m_data.isDisabled();}
-    inline bool     isDoubleSize()const             {return m_data.isDoubleSize();}
+    inline bool     isRnSRotCanvas()const           {return m_data.isRnSRotCanvas();}
+    //inline bool     isDoubleSize()const             {return m_data.isDoubleSize();} //Misnomer from doc, actually rotates the "canvas" with the sprite instead of rotating the sprite in the "canvas"
     inline bool     isRotAndScalingOn()const        {return m_data.isRotAndScalingOn();}
     inline uint16_t getYOffset()const               {return m_data.getYOffset();}
 
@@ -115,7 +121,7 @@ public:
     inline void setMosaicOn         (bool bon)              {m_data.setMosaicOn(bon);}
     inline void setObjMode          (fmt::step_t::eObjMode mode){m_data.setObjMode(mode);}
     inline void setDisabled         (bool bon)              {m_data.setDisabled(bon);}
-    inline void setDoubleSize       (bool bon)              {m_data.setDoubleSize(bon);}
+    inline void setRnSRotCanvas     (bool bon)              {m_data.setRnSCanvasRot(bon);}
     inline void setRotAndScaling    (bool bon)              {m_data.setRotAndScaling(bon);}
     inline void setYOffset          (uint16_t y)            {m_data.setYOffset(y);}
 

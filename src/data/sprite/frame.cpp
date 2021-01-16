@@ -245,8 +245,8 @@ QRect MFrame::calcFrameBounds() const
 
 QVector<uint8_t> MFrame::generateTilesBuffer(const Sprite * spr, int uptopartidx) const
 {
-    const int TILESZ = /*((spr->is256Colors())? */fmt::NDS_TILE_SIZE_8BPP/* : fmt::NDS_TILE_SIZE_4BPP)*/;
-    QVector<uint8_t> tilebuffer(1024 * TILESZ, 0);
+    //const int TILESZ = fmt::NDS_TILE_SIZE_8BPP * 4; //Always 8bpp since we converted image data to 8bpp when importing
+    QVector<uint8_t> tilebuffer(fmt::NDS_OAM_MAX_NB_TILES * fmt::ImageDB::FRAME_TILE_SZ_BYTES, 0);
     const int lastEntry = uptopartidx != -1 ? uptopartidx : nodeChildCount();
 
     for(int i = 0; i < lastEntry; ++i)
@@ -255,7 +255,7 @@ QVector<uint8_t> MFrame::generateTilesBuffer(const Sprite * spr, int uptopartidx
         //We only place things when there's an actual valid frame index
         if(part->getFrameIndex() >= 0)
         {
-            int tileoffset = part->getTileNum() * TILESZ;
+            int tileoffset = part->getTileNum() * fmt::ImageDB::FRAME_TILE_SZ_BYTES;
             const Image * img = spr->getImage(part->getFrameIndex());
             auto itbuf = tilebuffer.begin();
             std::advance(itbuf, tileoffset);
@@ -273,6 +273,61 @@ QVector<uint8_t> MFrame::generateTilesBuffer(const Sprite * spr, int uptopartidx
         }
     }
     return tilebuffer;
+}
+
+int MFrame::calcTileLen() const
+{
+    int totallen = 0;
+    int curtilenum = 0; //tile counter to keep track of what is the highest tile number so far
+    for(int i = 0; i < nodeChildCount(); ++i)
+    {
+        const MFramePart * part = m_container[i];
+        if(curtilenum < part->getTileNum())
+        {
+            curtilenum = part->getTileNum();
+            totallen = part->getTileNum() + part->getTileLen();
+        }
+    }
+    return totallen;
+}
+
+void MFrame::optimizeTileUsage()
+{
+    qDebug() << "MFrame::optimizeTileUsage(): Optimizing tile usage for Meta-Frame #" <<nodeIndex();
+    std::map<int, std::vector<MFramePart*>> tileidrefs; // -1 frame parts refering a given tile id
+
+    //Gather refs and preserve them
+    for(int i = 0; i < nodeChildCount(); ++i)
+    {
+        MFramePart * part = m_container[i];
+        if(part->isPartReference())
+            tileidrefs[part->getTileNum()].push_back(part);
+    }
+
+    // Re-calculate the frame part tile number for each frame parts in the sprite
+    uint16_t curtileofs = 0;
+    for(int i = 0; i < nodeChildCount(); ++i)
+    {
+        MFramePart * part = m_container[i];
+        if(part->isPartReference()) //Skip reference parts
+            continue;
+
+        qDebug() << "MFrame::optimizeTileUsage(): Changing part #" <<part->nodeIndex() <<" tile id from " <<part->getTileNum() <<" to " <<curtileofs <<"!";
+        part->setTileNum(curtileofs);
+
+        //Update references if any
+        auto itrefs = tileidrefs.find(curtileofs);
+        if(itrefs != tileidrefs.end())
+        {
+            for( MFramePart * ref : itrefs->second)
+            {
+                qDebug() << "MFrame::optimizeTileUsage(): Ref #" <<ref->nodeIndex() <<" to part #" <<part->nodeIndex() <<" tile id changed from " <<ref->getTileNum() <<" to " <<curtileofs <<"!";
+                ref->setTileNum(curtileofs);
+            }
+        }
+
+        curtileofs += part->getTileLen(); //Add up the tiles to get the next available offset
+    }
 }
 
 TreeNode *MFrame::clone() const

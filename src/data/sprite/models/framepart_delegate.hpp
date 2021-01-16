@@ -45,28 +45,22 @@ public:
 
 private:
 
-    static constexpr const char * ImgSelCmbBoxName(){return "cmbImgSelect";}
-    static constexpr const char * ImgSelBtnName()      {return "btnImgSelect";}
+    static constexpr const char * ImgSelCmbBoxName()    {return "cmbImgSelect";}
+    static constexpr const char * ImgSelBtnName()       {return "btnImgSelect";}
     //Make the selector for picking the image id for a given row!
     QWidget * makeImgSelect(QWidget *parent, const QModelIndex & index)const;
 
-    static constexpr const char * VFlipChkBoxName() {return "chkVflip";}
-    static constexpr const char * HFlipChkBoxName() {return "chkHflip";}
-    QWidget * makeFlipSelect(QWidget *parent, int row)const;
+    QWidget * makeVFlipSelect(QWidget *parent, int row)const;
+    QWidget * makeHFlipSelect(QWidget *parent, int row)const;
 
-    static constexpr const char * OffsetXSpinBoxName() {return "spbXOff";}
-    static constexpr const char * OffsetYSpinBoxName() {return "spbYOff";}
-    QWidget * makeOffsetSelect(QWidget *parent, int row)const;
+    QWidget * makeXOffsetSelect(QWidget *parent, int row)const;
+    QWidget * makeYOffsetSelect(QWidget *parent, int row)const;
 
-    static constexpr const char * RotNScaleChkBoxName() {return "chkRnS";}
-    static constexpr const char * RotNScaleBtnName()   {return "btnRnS";}
-    QWidget * makeRotNScalingSelect(QWidget *parent, int row)const;
-
-
-    QWidget * makePaletteIDSelect(QWidget * parent, int row)const;
-    QWidget * makePrioritySelect (QWidget * parent, int row)const;
-    QWidget * makeTileIdSelect   (QWidget * parent, int row)const;
-    QWidget * makeModeSelect     (QWidget * parent, int row)const;
+    QWidget * makePaletteIDSelect       (QWidget * parent, const QModelIndex & index)const;
+    QWidget * makePrioritySelect        (QWidget * parent, int row)const;
+    QWidget * makeTileIdSelect          (QWidget * parent, int row)const;
+    QWidget * makeModeSelect            (QWidget * parent, int row)const;
+    QWidget * makeRotnScalingParamSelect(QWidget * parent)const;
 
 private:
     MFrame *m_pfrm{nullptr};

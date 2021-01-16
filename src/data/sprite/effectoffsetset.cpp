@@ -1,14 +1,17 @@
 #include "effectoffsetset.hpp"
 #include <src/data/sprite/models/effect_set_model.hpp>
+#include <src/utility/graphics_util.hpp>
 
 const QString ElemName_EffectOffset = "Effect Offset";
 const QString ElemName_EffectOffsetSet = "Effect Offset Set";
 
+const QColor EffectOffset::ColorDefault {255,   0, 0};
+
 //===========================================================
 //  EffectOffsetSet
 //===========================================================
-EffectOffset::EffectOffset(TreeNode * parent)
-    :parent_t(parent)
+EffectOffset::EffectOffset(TreeNode * parent, QColor displaycolor)
+    :parent_t(parent), m_displayColor(displaycolor)
 {
     m_flags |= Qt::ItemFlag::ItemIsEditable;
 }
@@ -24,12 +27,18 @@ EffectOffset::EffectOffset(EffectOffset && mv)
 EffectOffset EffectOffset::operator=(const EffectOffset & cp)
 {
     parent_t::operator=(cp);
+    m_x = cp.m_x;
+    m_y = cp.m_y;
+    m_displayColor = cp.m_displayColor;
     return *this;
 }
 
 EffectOffset EffectOffset::operator=(EffectOffset && mv)
 {
     parent_t::operator=(mv);
+    m_x = mv.m_x;
+    m_y = mv.m_y;
+    m_displayColor = mv.m_displayColor;
     return *this;
 }
 
@@ -101,8 +110,12 @@ Qt::ItemFlags EffectOffset::nodeFlags(int column) const
 EffectOffsetSet::EffectOffsetSet(TreeNode * parent)
     :parent_t(parent)
 {
+    QColor displaycol {EffectOffset::ColorDefault};
     for(int i = 0; i < static_cast<int>(eOffsetsPart::NbParts); ++i)
-        m_offsets.push_back(new EffectOffset(this));
+    {
+        displaycol.setHsv(RotateHue(displaycol.hue(), 45), displaycol.saturation(), displaycol.value());
+        m_offsets.push_back(new EffectOffset(this, displaycol));
+    }
 }
 
 EffectOffsetSet::EffectOffsetSet(const EffectOffsetSet & cp)

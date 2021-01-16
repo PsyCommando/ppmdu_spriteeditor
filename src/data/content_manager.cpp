@@ -1,6 +1,9 @@
 #include "content_manager.hpp"
 #include <src/data/content_factory.hpp>
+#include <src/utility/file_support.hpp>
 #include <QDebug>
+#include <QFileInfo>
+#include <QDir>
 
 const QString ContainerTypeNone = "None";
 
@@ -52,6 +55,29 @@ QString ContentManager::getContainerSrcFile() const
 BaseContainer *ContentManager::getContainer()
 {
     return m_container.data();
+}
+
+QString ContentManager::getContainerParentDir() const
+{
+    QString currentDir;
+    const QString srcpath = getContainerSrcFile();
+    if(isContainerLoaded() && !srcpath.isEmpty())
+    {
+        QFileInfo finf(srcpath);
+        currentDir = finf.dir().absolutePath();
+    }
+    return currentDir;
+}
+
+QString ContentManager::getContainerFileFilter() const
+{
+    QString currentCntType;
+    if(isContainerLoaded())
+    {
+        QFileInfo finf(getContainerSrcFile());
+        currentCntType = SupportedFileFiltersByTypename[getContainerType()]; //Set to the container's format
+    }
+    return currentCntType;
 }
 
 void ContentManager::NewContainer(const QString &type)

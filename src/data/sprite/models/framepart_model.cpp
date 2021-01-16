@@ -3,6 +3,7 @@
 #include <src/data/sprite/frame.hpp>
 #include <src/data/sprite/framepart.hpp>
 #include <src/ppmdu/utils/imgutils.hpp>
+#include <src/utility/program_settings.hpp>
 
 MFramePartModel::MFramePartModel(MFrame *pmfrm, Sprite *pspr)
     :TreeNodeModel(nullptr)
@@ -13,58 +14,55 @@ MFramePartModel::MFramePartModel(MFrame *pmfrm, Sprite *pspr)
 
 MFramePartModel::~MFramePartModel()
 {
-    m_root = nullptr;
-    m_sprite = nullptr;
 }
 
-int MFramePartModel::columnCount(const QModelIndex &parent) const
+int MFramePartModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return static_cast<int>(eFramePartColumnsType::HeaderNBColumns);
+    if(ProgramSettings::Instance().isAdvancedMode())
+        return static_cast<int>(eFramePartColumnsType::NBColumns);
+    else
+        return static_cast<int>(eFramePartColumnsType::NBColumnsBasicMode);
 }
 
 QVariant MFramePartModel::data(const QModelIndex &index, int role) const
 {
-//    if (!index.isValid())
-//        return QVariant("root");
-
-    if (role != Qt::DisplayRole &&
-            role != Qt::DecorationRole &&
-            role != Qt::SizeHintRole &&
-            role != Qt::EditRole)
-        return QVariant();
-
     const MFramePart *part = static_cast<const MFramePart*>(getItem(index));
     if(!part)
         return QVariant();
     switch(static_cast<eFramePartColumnsType>(index.column()))
     {
-    case eFramePartColumnsType::Preview:       return dataImgPreview        (part, role);
-    case eFramePartColumnsType::ImgID:         return dataImgId             (part, role);
-    case eFramePartColumnsType::TileNum:       return dataTileNum           (part, role);
-    case eFramePartColumnsType::PaletteID:     return dataPaletteID         (part, role);
-    case eFramePartColumnsType::Unk0:          return dataUnk0              (part, role);
-    case eFramePartColumnsType::Offset:        return dataOffset            (part, role);
-    case eFramePartColumnsType::Flip:          return dataFlip              (part, role);
-    case eFramePartColumnsType::RotNScaling:   return dataRotNScaling       (part, role);
-    case eFramePartColumnsType::Mosaic:        return dataMosaic            (part, role);
-    case eFramePartColumnsType::Mode:          return dataMode              (part, role);
-    case eFramePartColumnsType::Priority:      return dataPriority          (part, role);
-    //For direct access to the individual values that are grouped together, not displayed by the model!!!
-    case eFramePartColumnsType::direct_VFlip:   return dataDirectVFlip      (part, role);
-    case eFramePartColumnsType::direct_HFlip:   return dataDirectHFlip      (part, role);
-    case eFramePartColumnsType::direct_XOffset: return dataDirectXOffset    (part, role);
-    case eFramePartColumnsType::direct_YOffset: return dataDirectYOffset    (part, role);
+    case eFramePartColumnsType::Preview:        return dataImgPreview   (part, role);
+    case eFramePartColumnsType::ImgID:          return dataImgId        (part, role);
+    case eFramePartColumnsType::ImgSz:          return dataImgSize      (part, role);
+    case eFramePartColumnsType::TileNum:        return dataTileNum      (part, role);
+    case eFramePartColumnsType::PaletteID:      return dataPaletteID    (part, role);
+    case eFramePartColumnsType::VFlip:          return dataVFlip        (part, role);
+    case eFramePartColumnsType::HFlip:          return dataHFlip        (part, role);
+    case eFramePartColumnsType::XOffset:        return dataXOffset      (part, role);
+    case eFramePartColumnsType::YOffset:        return dataYOffset      (part, role);
+    case eFramePartColumnsType::Priority:       return dataPriority     (part, role);
 
-        //Undefined cases
+    //Advanced stuff
+    case eFramePartColumnsType::Mosaic:         return dataMosaic       (part, role);
+    case eFramePartColumnsType::Mode:           return dataMode         (part, role);
+
+    //RnS stuff
+    case eFramePartColumnsType::RnS:            return dataRnS          (part, role);
+    case eFramePartColumnsType::RnSCanvasRot:   return dataRotCanvas    (part, role);
+    case eFramePartColumnsType::RnSParam:       return dataRnSParam     (part, role);
+
+    //Debug stuff
+    case eFramePartColumnsType::Unk0:           return dataUnk0         (part, role);
     default:
-        break;
+        break; //Undefined cases
     };
+
     return QVariant();
 }
 
 bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if( !index.isValid() || role != Qt::EditRole)
+    if( !index.isValid() || (role != Qt::EditRole && role != Qt::CheckStateRole))
         return false;
 
     MFramePart* pfpart = static_cast<MFramePart*>(getRootNode()->nodeChild(index.row()));
@@ -74,91 +72,151 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
 
     switch(static_cast<eFramePartColumnsType>(index.column()))
     {
-    case eFramePartColumnsType::ImgID:
+        case eFramePartColumnsType::ImgID:
         {
-            part.setFrameIndex(value.toInt(&bok));
-            break;
-        }
-    case eFramePartColumnsType::Offset:
-        {
-            bok = value.canConvert<QPair<int,int>>();
-            if(bok)
+            if(role == Qt::EditRole)
             {
-                QPair<int,int> offs = value.value<QPair<int,int>>();
-                part.setXOffset(offs.first);
-                part.setYOffset(offs.second);
+                const fmt::frmid_t imgid = value.toInt(&bok);
+                if(!bok)
+                    break;
+                part.setFrameIndex(imgid);
             }
-            else
-                qDebug("MFrame::setData(): Couldn't convert offset value to a QPair!\n");
             break;
         }
-    case eFramePartColumnsType::Flip:
+        case eFramePartColumnsType::PaletteID:
         {
-            bok = value.canConvert<QPair<bool,bool>>();
-            if(bok)
+            if(role == Qt::EditRole)
             {
-                QPair<bool,bool> offs = value.value<QPair<bool,bool>>();
-                part.setVFlip(offs.first);
-                part.setHFlip(offs.second);
+                const unsigned int palid = value.toInt(&bok);
+                if(!bok)
+                    break;
+                part.setPalNb(palid);
             }
-            else
-                qDebug("MFrame::setData(): Couldn't convert flip value to a QPair!\n");
             break;
         }
-    case eFramePartColumnsType::RotNScaling:
+        case eFramePartColumnsType::Mode:
         {
-            part.setRotAndScaling(value.toBool());
-            bok = true; //gotta set this to true because toBool doesn't return success or not
+            if(role == Qt::EditRole)
+            {
+                const fmt::step_t::eObjMode mode = static_cast<fmt::step_t::eObjMode>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                part.setObjMode(mode);
+            }
             break;
         }
-    case eFramePartColumnsType::PaletteID:
+        case eFramePartColumnsType::Mosaic:
         {
-            part.setPalNb(value.toInt(&bok));
+            if(role == Qt::CheckStateRole)
+            {
+                const Qt::CheckState chkst = static_cast<Qt::CheckState>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                part.setMosaicOn(chkst == Qt::CheckState::Checked);
+            }
             break;
         }
-    case eFramePartColumnsType::Mode:
+        case eFramePartColumnsType::Priority:
         {
-            part.setObjMode(static_cast<fmt::step_t::eObjMode>(value.toInt(&bok)));
+            if(role == Qt::EditRole)
+            {
+                const int priority = value.toInt(&bok);
+                if(!bok)
+                    break;
+                part.setPriority(priority);
+            }
             break;
         }
-    case eFramePartColumnsType::Priority:
+        case eFramePartColumnsType::TileNum:
         {
-            part.setPriority(value.toInt(&bok));
+            if(role == Qt::EditRole)
+            {
+                const int tileid = value.toInt(&bok);
+                if(!bok)
+                    break;
+                part.setTileNum(tileid);
+            }
             break;
         }
-    case eFramePartColumnsType::TileNum:
+        case eFramePartColumnsType::HFlip:
         {
-            part.setTileNum(value.toInt(&bok));
+            if(role == Qt::CheckStateRole)
+            {
+                const Qt::CheckState chkst = static_cast<Qt::CheckState>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                part.setHFlip(chkst == Qt::CheckState::Checked);
+            }
             break;
         }
-
-    //direct access columns
-    case eFramePartColumnsType::direct_HFlip:
+        case eFramePartColumnsType::VFlip:
         {
-            part.setHFlip(value.toBool());
+            if(role == Qt::CheckStateRole)
+            {
+                const Qt::CheckState chkst = static_cast<Qt::CheckState>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                part.setVFlip(chkst == Qt::CheckState::Checked);
+            }
             break;
         }
-    case eFramePartColumnsType::direct_VFlip:
+        case eFramePartColumnsType::XOffset:
         {
-            part.setVFlip(value.toBool());
+            if(role == Qt::EditRole)
+            {
+                const unsigned int x = value.toUInt(&bok);
+                if(!bok)
+                    break;
+                part.setXOffset(x);
+            }
             break;
         }
-    case eFramePartColumnsType::direct_XOffset:
+        case eFramePartColumnsType::YOffset:
         {
-            part.setXOffset(value.toUInt(&bok));
+            if(role == Qt::EditRole)
+            {
+                const unsigned int y = value.toUInt(&bok);
+                if(!bok)
+                    break;
+                part.setYOffset(y);
+            }
             break;
         }
-    case eFramePartColumnsType::direct_YOffset:
+        case eFramePartColumnsType::RnSParam:
         {
-            part.setYOffset(value.toUInt(&bok));
+            if(role == Qt::EditRole)
+            {
+                const uint8_t param = value.toUInt(&bok);
+                if(!bok)
+                    break;
+                part.setRnSParam(param);
+            }
             break;
         }
-        //Undefined cases
-    //case eFramePartColumnsType::Preview:
-    //case eFramePartColumnsType::TotalSize:
-    //case eFramePartColumnsType::Unk0:
-    default:
-        return false;
+        case eFramePartColumnsType::RnS:
+        {
+            if(role == Qt::CheckStateRole)
+            {
+                const Qt::CheckState chkst = static_cast<Qt::CheckState>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                part.setRotAndScaling(chkst == Qt::CheckState::Checked);
+            }
+            break;
+        }
+        case eFramePartColumnsType::RnSCanvasRot:
+        {
+            if(role == Qt::CheckStateRole)
+            {
+                const Qt::CheckState chkst = static_cast<Qt::CheckState>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                part.setRnSCanvasRot(chkst == Qt::CheckState::Checked);
+            }
+            break;
+        }
+        default:
+            break;
     };
 
     if(bok && index.model())
@@ -170,20 +228,21 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
 
 QVariant MFramePartModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(section < 0 || static_cast<size_t>(section) >= FramePartHeaderColumnNames.size() )
+    if(section < 0 || section >= columnCount(QModelIndex()))
         return QVariant();
 
+    const eFramePartColumnsType columnkey = static_cast<eFramePartColumnsType>(section);
     if( role == Qt::DisplayRole )
     {
         if( orientation == Qt::Orientation::Horizontal)
-            return FramePartHeaderColumnNames[section];
+            return FramePartHeaderColumnNames.at(columnkey);
     }
     else if(role == Qt::SizeHintRole)
     {
         if( orientation == Qt::Orientation::Horizontal)
         {
             QFontMetrics fm(QFont("Sergoe UI",9));
-            return QSize(fm.horizontalAdvance(FramePartHeaderColumnNames[section])+4, fm.height()+4);
+            return QSize(fm.horizontalAdvance(FramePartHeaderColumnNames.at(columnkey))+4, fm.height()+4);
         }
     }
     return QVariant();
@@ -201,37 +260,16 @@ Sprite *MFramePartModel::getOwnerSprite()
 
 QVariant MFramePartModel::dataImgPreview(const MFramePart * part, int role) const
 {
+    if(role != Qt::DecorationRole && role != Qt::SizeHintRole)
+        return QVariant();
+
+    QImage imgpart = part->drawPart(m_sprite);
+    QVariant result;
     if(role == Qt::DecorationRole)
-    {
-        return QVariant(part->drawPart(m_sprite));
-//        //#TODO: Draw only this part/step
-//        if( part->getFrameIndex() >= 0 && part->getFrameIndex() < m_sprite->getImages().nodeChildCount() )
-//        {
-//            Image * pimg = m_sprite->getImage(part->getFrameIndex());
-//            if(!pimg)
-//                throw std::runtime_error(QString("MFrame::dataImgPreview(): Invalid image at index %1!\n").arg(part->getFrameIndex()).toStdString());
-//            else
-//                return QVariant(pimg->makeImage(m_sprite->getPalette()));
-//        }
-//        else
-//        {
-//            //#TODO: draw last step
-//            return QVariant("COPY PREV");
-//        }
-    }
+        result = QVariant(imgpart);
     else if(role == Qt::SizeHintRole)
-    {
-
-        return part->drawPart(m_sprite).size();
-
-//        if( part->getFrameIndex() >= 0 && part->getFrameIndex() < m_sprite->getImages().nodeChildCount() )
-//        {
-//            Image * pimg = m_sprite->getImage(part->getFrameIndex());
-//            return (pimg->getImageSize());
-////            return (pimg->getImageSize()).width();
-//        }
-    }
-    return QVariant();
+        result = imgpart.size();
+    return result;
 }
 
 QVariant MFramePartModel::dataImgId(const MFramePart * part, int role) const
@@ -255,6 +293,22 @@ QVariant MFramePartModel::dataImgId(const MFramePart * part, int role) const
     return QVariant();
 }
 
+QVariant MFramePartModel::dataImgSize(const MFramePart * part, int role)const
+{
+    if(role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        auto res = part->GetResolution();
+        return QString("%1x%2 (%3 tiles)").arg(res.first).arg(res.second).arg(part->getTileLen());
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        QSize sz = calcTextSize(dataImgSize(part, Qt::DisplayRole).toString());
+        sz.setWidth(sz.width() + 16);
+        return sz;
+    }
+    return QVariant();
+}
+
 QVariant MFramePartModel::dataUnk0(const MFramePart * part, int role) const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole)
@@ -268,28 +322,7 @@ QVariant MFramePartModel::dataUnk0(const MFramePart * part, int role) const
     return QVariant();
 }
 
-QVariant MFramePartModel::dataOffset(const MFramePart * part, int role) const
-{
-    if(role == Qt::DisplayRole)
-    {
-        return QString("(%1, %2)").arg(part->getXOffset()).arg(part->getYOffset());
-    }
-    else if(role == Qt::EditRole)
-    {
-        QVariant res;
-        res.setValue(QPair<int,int>(part->getXOffset(), part->getYOffset()));
-        return res;
-    }
-    else if(role == Qt::SizeHintRole)
-    {
-        QSize sz = calcTextSize(dataOffset(part, Qt::DisplayRole).toString());
-        sz.setWidth( sz.width() + 80 );
-        return sz;
-    }
-    return QVariant();
-}
-
-QVariant MFramePartModel::dataDirectXOffset(const MFramePart * part, int role) const
+QVariant MFramePartModel::dataXOffset(const MFramePart * part, int role) const
 {
     if(role == Qt::DisplayRole)
     {
@@ -301,13 +334,13 @@ QVariant MFramePartModel::dataDirectXOffset(const MFramePart * part, int role) c
     }
     else if(role == Qt::SizeHintRole)
     {
-        QSize sz = calcTextSize(dataDirectXOffset(part, Qt::DisplayRole).toString());
+        QSize sz = calcTextSize(dataXOffset(part, Qt::DisplayRole).toString());
         return sz;
     }
     return QVariant();
 }
 
-QVariant MFramePartModel::dataDirectYOffset(const MFramePart * part, int role) const
+QVariant MFramePartModel::dataYOffset(const MFramePart * part, int role) const
 {
     if(role == Qt::DisplayRole)
     {
@@ -319,94 +352,90 @@ QVariant MFramePartModel::dataDirectYOffset(const MFramePart * part, int role) c
     }
     else if(role == Qt::SizeHintRole)
     {
-        QSize sz = calcTextSize(dataDirectYOffset(part, Qt::DisplayRole).toString());
+        QSize sz = calcTextSize(dataYOffset(part, Qt::DisplayRole).toString());
         return sz;
     }
     return QVariant();
 }
 
-QVariant MFramePartModel::dataFlip(const MFramePart * part, int role) const
+QVariant MFramePartModel::dataVFlip(const MFramePart * part, int role) const
+{
+    if(role == Qt::CheckStateRole)
+        return part->isVFlip()? Qt::Checked : Qt::Unchecked;
+    else if(role == Qt::SizeHintRole)
+    {
+        QSize sz = calcTextSize(dataVFlip(part, Qt::CheckStateRole).toString());
+        return sz;
+    }
+    return QVariant();
+}
+
+QVariant MFramePartModel::dataHFlip(const MFramePart * part, int role) const
+{
+    if(role == Qt::CheckStateRole)
+        return part->isHFlip()? Qt::Checked : Qt::Unchecked;
+    else if(role == Qt::SizeHintRole)
+    {
+        QSize sz = calcTextSize(dataHFlip(part, Qt::CheckStateRole).toString());
+        return sz;
+    }
+    return QVariant();
+}
+
+QVariant MFramePartModel::dataRnSParam(const MFramePart *part, int role) const
 {
     if(role == Qt::DisplayRole)
     {
-        QString flipval;
-        if( !part->isVFlip() && !part->isHFlip() )
-            flipval = "";
+        if(part->isRotAndScalingOn())
+            return part->getRnSParam();
         else
-        {
-            if(part->isVFlip())
-                flipval += "V ";
-            if(part->isHFlip())
-                flipval += "H ";
-        }
-        return flipval;
+            return QString{tr("Disabled")};
     }
     else if(role == Qt::EditRole)
     {
-        QVariant res;
-        res.setValue(QPair<bool,bool>(part->isVFlip(), part->isHFlip()));
-        return res;
+        if(part->isRotAndScalingOn())
+            return part->getRnSParam();
     }
     else if(role == Qt::SizeHintRole)
     {
-        QSize sz = calcTextSize(dataFlip(part, Qt::DisplayRole).toString());
-        sz.setWidth( sz.width() + 80 );
+        QSize sz = calcTextSize(dataRnSParam(part, Qt::DisplayRole).toString());
+        sz.setWidth( sz.width() + 16 );
         return sz;
     }
     return QVariant();
 }
 
-QVariant MFramePartModel::dataDirectVFlip(const MFramePart * part, int role) const
+QVariant MFramePartModel::dataRotCanvas(const MFramePart *part, int role) const
 {
     if(role == Qt::DisplayRole)
     {
-        return part->isVFlip();
+        if(!part->isRotAndScalingOn())
+            return QString{tr("Disabled")};
     }
-    else if(role == Qt::EditRole)
+    else if(role == Qt::CheckStateRole)
     {
-        return part->isVFlip();
+        if(part->isRotAndScalingOn())
+            return part->isRnSRotCanvas()? Qt::Checked : Qt::Unchecked;
     }
     else if(role == Qt::SizeHintRole)
     {
-        QSize sz = calcTextSize(dataDirectVFlip(part, Qt::DisplayRole).toString());
+        QSize sz = calcTextSize(dataRnS(part, Qt::CheckStateRole).toString());
+        sz.setWidth( sz.width() + 16 );
         return sz;
     }
     return QVariant();
 }
 
-QVariant MFramePartModel::dataDirectHFlip(const MFramePart * part, int role) const
+QVariant MFramePartModel::dataRnS(const MFramePart * part, int role) const
 {
-    if(role == Qt::DisplayRole)
+    if(role == Qt::CheckStateRole)
     {
-        return part->isHFlip();
-    }
-    else if(role == Qt::EditRole)
-    {
-        return part->isHFlip();
+        return part->isRotAndScalingOn()? Qt::Checked : Qt::Unchecked;
     }
     else if(role == Qt::SizeHintRole)
     {
-        QSize sz = calcTextSize(dataDirectHFlip(part, Qt::DisplayRole).toString());
-        return sz;
-    }
-    return QVariant();
-}
-
-QVariant MFramePartModel::dataRotNScaling(const MFramePart * part, int role) const
-{
-    if(role == Qt::DisplayRole)
-    {
-        return part->isRotAndScalingOn();
-    }
-    else if(role == Qt::EditRole)
-    {
-        //#TODO: will need a custom struct here to properly send over RnS data!
-        return part->isRotAndScalingOn();
-    }
-    else if(role == Qt::SizeHintRole)
-    {
-        QSize sz = calcTextSize(dataRotNScaling(part, Qt::DisplayRole).toString());
-        sz.setWidth( sz.width() + 80 );
+        QSize sz = calcTextSize(dataRnS(part, Qt::CheckStateRole).toString());
+        sz.setWidth( sz.width() + 16 );
         return sz;
     }
     return QVariant();
@@ -414,13 +443,26 @@ QVariant MFramePartModel::dataRotNScaling(const MFramePart * part, int role) con
 
 QVariant MFramePartModel::dataPaletteID(const MFramePart * part, int role) const
 {
-    if(role == Qt::DisplayRole || role == Qt::EditRole)
+    if(role == Qt::DecorationRole)
+    {
+        if(part->isColorPal256())
+            return m_sprite->MakePreviewPalette();
+        else
+            return m_sprite->MakePreviewSubPalette(part->getPalNb());
+    }
+    if(role == Qt::DisplayRole)
+    {
+        return QString("Palette #%1").arg(part->getPalNb());
+    }
+    else if(role == Qt::EditRole)
     {
         return static_cast<int>(part->getPalNb());
     }
     else if(role == Qt::SizeHintRole)
     {
-        return calcTextSize(dataPaletteID(part, Qt::DisplayRole).toString());
+        QSize txtsz = calcTextSize(dataPaletteID(part, Qt::DisplayRole).toString());
+        txtsz.setWidth(txtsz.width() + 256);
+        return txtsz;
     }
     return QVariant();
 }
@@ -455,10 +497,8 @@ QVariant MFramePartModel::dataTileNum(const MFramePart * part, int role) const
 
 QVariant MFramePartModel::dataMosaic(const MFramePart * part, int role) const
 {
-    if(role == Qt::DisplayRole || role == Qt::EditRole)
-    {
-        return part->isMosaicOn();
-    }
+    if(role == Qt::CheckStateRole)
+        return part->isMosaicOn()? Qt::Checked : Qt::Unchecked;
     else if(role == Qt::SizeHintRole)
     {
         QSize sz = calcTextSize(dataMosaic(part, Qt::DisplayRole).toString());

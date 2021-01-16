@@ -34,16 +34,6 @@ public:
     void OnItemRemoval(const QModelIndex &item) override;
 
 private:
-    void on_tblframeparts_clicked(const QModelIndex &index);
-    void on_btnFrmExport_clicked();
-    void on_btnFrmRmPart_clicked();
-    void on_btnFrmAdPart_clicked();
-    void on_btnFrmMvUp_clicked();
-    void on_btnFrmMvDown_clicked();
-    void on_btnFrmDup_clicked();
-    void on_cmbFrmQuickPrio_currentIndexChanged(int index);
-
-private:
     void setupMappedControls();
     void setupFramePartTable();
     void setupAttachTable();
@@ -53,6 +43,7 @@ private:
 
     bool setFrame(QPersistentModelIndex element, Sprite* spr);
     void clearFrame();
+    void updateListAndEditor();
 
 private slots:
     void OnFrameEditorZoom(int diff);
@@ -63,8 +54,21 @@ private slots:
     void OnOffsetSelected(QModelIndex selected);
 
     void on_btnEditAttachments_toggled(bool checked);
-
     void on_chkGridSnap_toggled(bool checked);
+    void on_tblframeparts_clicked(const QModelIndex &index);
+    void on_btnFrmExport_clicked();
+    void on_btnFrmRmPart_clicked();
+    void on_btnFrmAdPart_clicked();
+    void on_btnFrmMvUp_clicked();
+    void on_btnFrmMvDown_clicked();
+    void on_btnFrmDup_clicked();
+    void on_cmbFrmQuickPrio_currentIndexChanged(int index);
+
+    void on_tvAttachments_clicked(const QModelIndex &index);
+
+signals:
+    void partSelected(const QModelIndexList & selected);
+    void markerSelected(const QModelIndexList & selected);
 
 private:
     Ui::TabFrames *ui;

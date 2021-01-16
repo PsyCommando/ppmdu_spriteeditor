@@ -652,16 +652,6 @@
          </layout>
         </item>
         <item>
-         <widget class="QCheckBox" name="chkAutoplay">
-          <property name="text">
-           <string>Autoplay</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QCheckBox" name="chkAnimSeqLoop">
           <property name="statusTip">
            <string>Loop animation</string>

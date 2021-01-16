@@ -1,6 +1,7 @@
 #include "basespritetab.hpp"
 #include <src/data/sprite/sprite.hpp>
 #include <src/ui/mainwindow.hpp>
+#include <src/utility/program_settings.hpp>
 
 BaseSpriteTab::BaseSpriteTab(QWidget *parent): QWidget(parent), m_pmainwindow(nullptr){}
 
@@ -23,12 +24,12 @@ const MainWindow *BaseSpriteTab::getMainWindow() const
 
 QSettings &BaseSpriteTab::getSettings()
 {
-    return m_pmainwindow->getSettings();
+    return ProgramSettings::Settings();
 }
 
 const QSettings &BaseSpriteTab::getSettings() const
 {
-    return m_pmainwindow->getSettings();
+    return ProgramSettings::Settings();
 }
 
 void BaseSpriteTab::OnShowTab(QPersistentModelIndex)

@@ -55,10 +55,7 @@ QSize EffectSetDelegate::sizeHint(const QStyleOptionViewItem &/*option*/, const 
 
 QWidget *EffectSetDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    QWidget *               pedit = nullptr;
-    //const EffectSetModel *  pmod  = static_cast<const EffectSetModel*>(index.model());
-    //const Sprite *          owner = pmod->getOwnerSprite();
-
+    QWidget * pedit = nullptr;
     switch(static_cast<EffectSetModel::eColumns>(index.column()))
     {
     case EffectSetModel::eColumns::XOffset:

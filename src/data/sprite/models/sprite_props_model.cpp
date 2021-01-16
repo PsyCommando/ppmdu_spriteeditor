@@ -14,7 +14,6 @@ const QStringList SpritePropertiesNames
     "Sprite Type",
     "Compression",
     "Color Mode",
-    "Unk#6",
     "Unk#7",
     "Unk#8",
     "Unk#9",
@@ -29,7 +28,6 @@ const QStringList SpritePropertiesDescriptions
     "**Use with caution!** Setting this will change the sprite type and its content!\n It will remove superflous data if you change an existing sprite's type!",
     "Sets the compression used on the sprite container when written to file. Its advised not to changed this unless you know what you're doing!",
     "If set to 256 the game will attempt to treat the content of the sprite as 256 colors/8bpp images. Otherwise, treats it as 4bpp/16colors images.",
-    "##UNKNOWN## Mess with memory alignement of the sprite's tiles and of the next sprites loaded after.",
     "##UNKNOWN##",
     "##UNKNOWN##",
     "##UNKNOWN## Apparently a boolean value linked to animations.",
@@ -162,8 +160,6 @@ QVariant SpritePropertiesModel::getNameForProperty(int propid) const
         return tr("Compression");
     case eSpriteProperties::ColorMode:
         return tr("Color Mode");
-    case eSpriteProperties::Unk6:
-        return tr("Unk#6");
     case eSpriteProperties::Unk7:
         return tr("Unk#7");
     case eSpriteProperties::Unk8:
@@ -212,12 +208,6 @@ QVariant SpritePropertiesModel::getDataForProperty(int propid, int role) const
             {
                 return SpriteColorModes.at( m_spr->is256Colors() ? 1 : 0 );
             }
-            break;
-        }
-    case eSpriteProperties::Unk6:
-        {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk6();
             break;
         }
     case eSpriteProperties::Unk7:
@@ -290,11 +280,6 @@ void SpritePropertiesModel::setDataForProperty(eSpriteProperties propid, const Q
     case eSpriteProperties::ColorMode:
         {
             m_spr->setIs256Colors(data.toBool());
-            break;
-        }
-    case eSpriteProperties::Unk6:
-        {
-            m_spr->unk6(data.toUInt());
             break;
         }
     case eSpriteProperties::Unk7:

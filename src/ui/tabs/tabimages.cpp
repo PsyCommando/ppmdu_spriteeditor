@@ -8,8 +8,8 @@
 #include <QSvgRenderer>
 
 #include <src/ui/mainwindow.hpp>
-#include <src/ui/diagsingleimgcropper.hpp>
-#include <src/ui/dialogabout.hpp>
+#include <src/ui/windows/diagsingleimgcropper.hpp>
+#include <src/ui/windows/dialogabout.hpp>
 #include <src/ui/editor/palette/paletteeditor.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/data/sprite/imagescontainer.hpp>

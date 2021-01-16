@@ -6,20 +6,12 @@ const QString ElemName_FrameCnt = "Frames";
 
 FramesContainer::~FramesContainer()
 {
-
 }
 
 TreeNode * FramesContainer::clone()const
 {
     return new FramesContainer(*this);
 }
-
-//QVariant FramesContainer::nodeData(int column, int role) const
-//{
-//    if( column == 0 && (role == Qt::DisplayRole || role == Qt::EditRole))
-//        return QVariant(ElemName());
-//    return QVariant();
-//}
 
 QString FramesContainer::nodeDisplayName() const
 {
@@ -28,9 +20,6 @@ QString FramesContainer::nodeDisplayName() const
 
 void FramesContainer::importFrames(const fmt::ImageDB::frmtbl_t &frms)
 {
-//    getModel()->removeRows(0, nodeChildCount());
-//    getModel()->insertRows(0, frms.size());
-
     //Resize container
     _removeChildrenNodes(0, nodeChildCount());
     _insertChildrenNodes(0, frms.size());
@@ -69,10 +58,28 @@ bool FramesContainer::ClearImageReferences(const QModelIndexList &indices, bool 
     return bfoundref;
 }
 
+uint16_t FramesContainer::getMaxTileUsage() const
+{
+    uint16_t largest = 0; // the largest amount of tiles used out of all frames
+    for(const MFrame * frm : m_container)
+    {
+        uint16_t curfrmtotalsz = 0; //highest tile number + size used out of all steps
+        for(const MFramePart * part : *frm)
+        {
+            const uint16_t curmax = part->getTileNum() + part->getTileLen();
+            if(curmax > curfrmtotalsz)
+                curfrmtotalsz = curmax;
+        }
+        if(curfrmtotalsz > largest)
+            largest = curfrmtotalsz;
+    }
+    assert(largest != 0 || m_container.empty());
+    return largest;
+}
+
 MFrame *FramesContainer::appendNewFrame()
 {
     int insertidx = nodeChildCount();
     _insertChildrenNodes(insertidx, 1);
     return m_container[insertidx];
 }
-

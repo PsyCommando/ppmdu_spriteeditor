@@ -20,15 +20,12 @@
 #include <QSettings>
 #include <QCloseEvent>
 #include <QUndoStack>
-
-#include "src/data/sprite/spritemanager.hpp"
-#include <src/ui/rendering/sprite_scene.hpp>
-#include <src/ui/dialogabout.hpp>
-#include <src/ui/dialogprogressbar.hpp>
-#include <atomic>
-
 #include <src/ui/editor/frame/frame_editor.hpp>
 #include <src/data/content_manager.hpp>
+#include <src/ui/rendering/sprite_scene.hpp>
+#include <src/ui/windows/dialogabout.hpp>
+#include <src/ui/windows/dialogprogressbar.hpp>
+#include <atomic>
 
 class BaseSpriteTab;
 namespace Ui {
@@ -46,8 +43,8 @@ public:
     ~MainWindow();
 
     //Settings
-    void writeSettings();
-    void readSettings();
+    void writeSettings(QSettings & settings);
+    void readSettings(QSettings & settings);
 
     //Internal processing stuff
     void HideAllTabs();
@@ -56,18 +53,7 @@ public:
 
     void DisplayTabForElement(const QModelIndex & index);
     void DisplayTabForElement(TreeNode * item);
-
     void DisplayStartScreen();
-//    void DisplayPropertiesPage(Sprite * spr);
-//    void DisplayMFramePage(Sprite * spr, const QModelIndex & index);
-//    void DisplayAnimSequencePage(Sprite * spr, const QModelIndex & index);
-////    void DisplayAnimSequencePage(QPersistentModelIndex spr, QPersistentModelIndex aniseq);
-//    void DisplayAnimTablePage(Sprite * spr, const QModelIndex & index);
-//    void DisplayEffectsPage(Sprite * spr, const QModelIndex & index);
-//    void DisplayImageListPage(Sprite * spr, const QModelIndex & index);
-
-    //Hiding stuff
-    //void HideAnimSequencePage();
 
     //Basically do house keeping stuff when we load something new in the app
     void PrepareForNewContainer();
@@ -82,9 +68,6 @@ public:
     void CloseContainer();
     void NewContainer(QString cnttype = QString());
 
-    void OnActionAddTopItem();
-    void OnActionRemTopItem();
-
     //Show a warning message box with the specified content
     void Warn(const QString & title, const QString & text);
 
@@ -97,6 +80,17 @@ public:
     void selectTreeViewNode(const QModelIndex &index);
     const QPixmap & getDefaultImage()const {return m_imgNoImg;}
 
+public slots:
+    void ShowProgressDiag(QFuture<void> & task);
+    void updateCoordinateBar(const QPointF &pos);
+    void updateCurrentTab();
+
+    void OnContentRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last); //Called when the rows of the model are being changed
+    void OnContentRowsAboutToBeMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int row); //Called when the rows of the model are being changed
+    void OnRowInserted(const QModelIndex &parent, int first, int last);
+//    void OnActionAddTopItem();
+//    void OnActionRemTopItem();
+
 private:
     void forEachTab(std::function<void (BaseSpriteTab *)> fun);
 
@@ -108,8 +102,6 @@ private:
 
     BaseContainer * getContainer();
     ContentManager & getManager();
-    QSettings & getSettings();
-    const QSettings & getSettings()const;
 
     //Tweak the list view to better display either single sprites or pack files!!
     void setupListView();
@@ -127,12 +119,13 @@ private:
 
     QMenu *makeSpriteContextMenu(QModelIndex entry);
 
-    Sprite      * currentSprite();
-    QModelIndex currentSpriteModelIndex();
-    MFrame      * currentFrame();
-    Image       * currentImage();
-    AnimSequence* currentAnimSequence();
-    eTreeElemDataType currentEntryType();
+    Sprite *            currentSprite();
+    QModelIndex         currentSpriteModelIndex();
+    MFrame *            currentFrame();
+    Image *             currentImage();
+    AnimSequence *      currentAnimSequence();
+    eTreeElemDataType   currentEntryType()const;
+    QModelIndexList     currentlySelectedItems()const;
 
     // QWidget interface
 protected:
@@ -156,25 +149,24 @@ private slots:
 
     void on_actionAdvanced_triggered();
 
-public slots:
-    void ShowProgressDiag(QFuture<void> & task);
-    void updateCoordinateBar(const QPointF &pos);
+    void on_action_Settings_triggered();
+
+
 
 private:
     Ui::MainWindow          *ui;
     QScopedPointer<QLabel>  m_pStatusFileType;
     QScopedPointer<QLabel>  m_pStatusCoordinates;
     QScopedPointer<QLabel>  m_pStatusError;
-    QScopedPointer<QAction> m_pActionAddSprite;
-    QScopedPointer<QAction> m_pActionRemSprite;
-    QScopedPointer<QMenu>   m_pContainerMenu;
+    QPointer<QAction>       m_pActionAddCnt;
+    QPointer<QAction>       m_pActionRemCnt;
+    QScopedPointer<QMenu>   m_pContainerMenu;       //Menubar doesn't take ownership
     QPointer<QAction>       m_pContainerMenuAction;
     QPixmap                 m_imgNoImg;             //Image displayed when no image can be displayed in a view!
     DialogAbout             m_aboutdiag;
     DialogProgressBar       m_progress;
     QString                 m_lastSavePath;
     QPersistentModelIndex   m_curItem;
-    QSettings               m_settings;
     QUndoStack              m_undoStack;
 };
 

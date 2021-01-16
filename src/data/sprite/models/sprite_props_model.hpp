@@ -9,7 +9,6 @@ enum struct eSpriteProperties : int
     Compression,
 
     ColorMode,
-    Unk6,
     Unk7,
     Unk8,
     Unk9,

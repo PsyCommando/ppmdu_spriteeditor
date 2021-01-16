@@ -68,6 +68,9 @@ public slots:
     void onItemDragEnd(EditableItem * item);
     void OnSelectionChanged();
 
+    //Slots we receive from the TableView
+    void OnViewPartsSelected(const QModelIndexList & selected);
+    void OnViewMarkersSelected(const QModelIndexList & selected);
 
     //Settings
     void setDisplayNDSMode(bool basnds);
@@ -98,6 +101,7 @@ signals:
     //List items that are now selected
     void selectionChanged(QList<EditableItem*> items);
 
+    void markerWasSelected(EditableItem * pmarker);
 
 private:
     QRectF                              m_bgarea;

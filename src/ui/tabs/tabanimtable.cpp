@@ -5,6 +5,7 @@
 #include <src/data/sprite/models/animtable_delegate.hpp>
 #include <src/extfmt/animtation_table_layout.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/utility/program_settings.hpp>
 #include <QFileDialog>
 #include <QFile>
 
@@ -124,7 +125,7 @@ void TabAnimTable::OnSelectGroup(const QItemSelection &selection)
         ui->sldrSubSequence->update();
 
         //Preview first sequence
-        PreviewGroupAnimSequence(0, ui->chkAutoPlay->isChecked());
+        PreviewGroupAnimSequence(0, ProgramSettings::Instance().isAutoplayEnabled());
 
         //Enable Controls
         ui->grpPreviewOptions->setEnabled(true);
@@ -275,7 +276,7 @@ void TabAnimTable::on_btnStop_clicked()
 
 void TabAnimTable::on_sldrSubSequence_valueChanged(int value)
 {
-    PreviewGroupAnimSequence(value, ui->chkAutoPlay->isChecked());
+    PreviewGroupAnimSequence(value, ProgramSettings::Instance().isAutoplayEnabled());
 }
 
 void TabAnimTable::on_chkAutoPlay_toggled(bool checked)

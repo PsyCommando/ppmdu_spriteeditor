@@ -66,7 +66,6 @@ QWidget *SpritePropertiesDelegate::createEditor(QWidget *parent, const QStyleOpt
                 pcolmode->addItem(s);
             return pcolmode;
         }
-    case eSpriteProperties::Unk6:   [[fallthrough]];
     case eSpriteProperties::Unk7:   [[fallthrough]];
     case eSpriteProperties::Unk8:   [[fallthrough]];
     case eSpriteProperties::Unk9:   [[fallthrough]];
@@ -113,7 +112,6 @@ void SpritePropertiesDelegate::setEditorData(QWidget *editor, const QModelIndex 
             pcolmode->setCurrentIndex((m_spr->is256Colors())? 1 : 0);
             return;
         }
-    case eSpriteProperties::Unk6:   [[fallthrough]];
     case eSpriteProperties::Unk7:   [[fallthrough]];
     case eSpriteProperties::Unk8:   [[fallthrough]];
     case eSpriteProperties::Unk9:   [[fallthrough]];
@@ -158,7 +156,6 @@ void SpritePropertiesDelegate::setModelData(QWidget *editor, QAbstractItemModel 
             model->setData(index, pcolmode->currentIndex());
             return;
         }
-    case eSpriteProperties::Unk6:   [[fallthrough]];
     case eSpriteProperties::Unk7:   [[fallthrough]];
     case eSpriteProperties::Unk8:   [[fallthrough]];
     case eSpriteProperties::Unk9:   [[fallthrough]];

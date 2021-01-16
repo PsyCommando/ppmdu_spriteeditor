@@ -38,6 +38,9 @@ public:
 
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)override;
 
+    //Returns the offset of the middle of the object, from its top left corner
+    virtual QPointF getRelativeMiddle()const;
+
     //Returns the position of the center of the item in absolute coordinates. Exactly like pos(), but offset the pos so its relative to the center of the item
     virtual QPointF getCenterPoint()const;
 

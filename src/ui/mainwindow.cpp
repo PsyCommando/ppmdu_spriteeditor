@@ -1,5 +1,6 @@
 #include "mainwindow.hpp"
 #include "ui_mainwindow.h"
+#include <functional>
 #include <QApplication>
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
@@ -9,19 +10,18 @@
 #include <QSpinBox>
 #include <QTimer>
 #include <QStackedLayout>
-#include <src/ui/diagsingleimgcropper.hpp>
-#include <src/ui/dialogabout.hpp>
 #include <src/ui/editor/palette/paletteeditor.hpp>
 #include <src/ui/tvspritescontextmenu.hpp>
 #include <src/ui/errorhelper.hpp>
-#include <src/data/sprite/sprite_container.hpp>
-#include <src/data/sprite/spritemanager.hpp>
+#include <src/utility/program_settings.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/ui/windows/dialog_settings.hpp>
 #include <src/ui/windows/dialogimportwizard.hpp>
-#include <src/ui/dialognew.hpp>
-
-static const QString MAIN_WINDOW_TITLE = "PMD2 Sprite Muncher v%1";
-
+#include <src/ui/windows/dialogabout.hpp>
+#include <src/ui/windows/dialognew.hpp>
+#include <src/ui/windows/diagsingleimgcropper.hpp>
+#include <src/data/sprite/sprite_container.hpp>
+#include <src/data/contents_selection_manager.hpp>
 
 //Utiliy method to run a lambda on all BaseSpriteTab in the main stacked widget!
 void MainWindow::forEachTab(std::function<void(BaseSpriteTab*)> fun)
@@ -39,8 +39,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     m_aboutdiag(this),
-    m_progress(this),
-    m_settings("./settings.ini",QSettings::Format::IniFormat)
+    m_progress(this)
 {
     //UI init
     ui->setupUi(this);
@@ -51,12 +50,12 @@ MainWindow::MainWindow(QWidget *parent) :
     DisplayStartScreen();
 
     //Parse settings!
-    readSettings();
+    ProgramSettings::Instance().ReadSettings(objectName(), std::bind(&MainWindow::readSettings, this, std::placeholders::_1) );
 }
 
 void MainWindow::SetupContent()
 {
-    setWindowTitle(MAIN_WINDOW_TITLE.arg(QString(GIT_MAJORMINOR_VERSION)));
+    setWindowTitle(QString("%1 v%2").arg(QApplication::applicationName()).arg(QString(GIT_MAJORMINOR_VERSION)));
     m_imgNoImg = QPixmap(":/imgs/resources/imgs/noimg.png");
 
     //Setup error helper
@@ -66,7 +65,14 @@ void MainWindow::SetupContent()
     forEachTab([this](BaseSpriteTab * ptab){ptab->setMainWindow(this);});
 
     //Main treeview
-    ui->tv_sprcontent->setModel( &ContentManager::Instance() );
+    ui->tv_sprcontent->setModel(&ContentManager::Instance());
+    ui->tv_sprcontent->setSelectionModel(ContentsSelectionManager::SelectionModel());
+
+    //Signals
+    connect(&ContentManager::Instance(), &ContentManager::contentChanged,       this, &MainWindow::updateCurrentTab);
+    connect(&ContentManager::Instance(), &ContentManager::rowsAboutToBeRemoved, this, &MainWindow::OnContentRowsAboutToBeRemoved);
+    connect(&ContentManager::Instance(), &ContentManager::rowsAboutToBeMoved,   this, &MainWindow::OnContentRowsAboutToBeMoved);
+    connect(&ContentManager::Instance(), &ContentManager::rowsInserted,         this, &MainWindow::OnRowInserted);
 }
 
 void MainWindow::SetupMenu()
@@ -119,26 +125,29 @@ MainWindow::~MainWindow()
 //
 // Serialization for using settings
 //
-void MainWindow::writeSettings()
+void MainWindow::writeSettings(QSettings & settings)
 {
-    qDebug() << "MainWindow::writeSettings(): Writing settings!\n";
-    m_settings.beginGroup("MainWindow");
-    m_settings.setValue("size", size());
-    m_settings.setValue("pos", pos());
-    m_settings.endGroup();
-    qDebug() << "MainWindow::writeSettings(): Writing tabs settings!\n";
-    forEachTab([](BaseSpriteTab * ptab){ptab->writeSettings();});
+    //Main window state
+    settings.setValue("size",   size());
+    settings.setValue("pos",    pos());
+
+    //Do tabs
+    forEachTab([](BaseSpriteTab * ptab)
+    {
+        ProgramSettings::Instance().WriteSettings(ptab->objectName(), [ptab](QSettings &){ptab->writeSettings();});
+    });
 }
 
-void MainWindow::readSettings()
+void MainWindow::readSettings(QSettings & settings)
 {
-    qDebug() << "MainWindow::readSettings(): Reading settings!\n";
-    m_settings.beginGroup("MainWindow");
-    resize( m_settings.value("size", sizeHint() ).toSize());
-    move( m_settings.value("pos", pos() ).toPoint());
-    m_settings.endGroup();
-    qDebug() << "MainWindow::readSettings(): Reading tabs settings!\n";
-    forEachTab([](BaseSpriteTab * ptab){ptab->readSettings();});
+    resize  (settings.value("size", sizeHint()) .toSize());
+    move    (settings.value("pos",  pos())      .toPoint());
+
+    //Do tabs
+    forEachTab([](BaseSpriteTab * ptab)
+    {
+         ProgramSettings::Instance().ReadSettings(ptab->objectName(), [ptab](QSettings &){ptab->readSettings();});
+    });
 }
 
 void MainWindow::HideAllTabs()
@@ -181,8 +190,10 @@ void MainWindow::DisplayStartScreen()
 
 void MainWindow::SetupUIForNewContainer(BaseContainer * sprcnt)
 {
+    ContentsSelectionManager::Instance().resetModel();
     ContentManager & manager = ContentManager::Instance();
     ui->tv_sprcontent->setModel(&ContentManager::Instance());
+    ui->tv_sprcontent->setSelectionModel(ContentsSelectionManager::SelectionModel());
     ui->tv_sprcontent->setRootIndex(QModelIndex());
     connect(sprcnt, SIGNAL(showProgress(QFuture<void>&)), this, SLOT(ShowProgressDiag(QFuture<void>&)) );
     setupListView();
@@ -419,22 +430,23 @@ void MainWindow::updateActions()
 
 void MainWindow::addMultiItemActions(const QString & itemname)
 {
-    m_pActionAddSprite.reset(ui->menu_Edit->addAction(QString(tr("Add %1..")).arg(itemname),      this, &MainWindow::OnActionAddTopItem));
-    m_pActionRemSprite.reset(ui->menu_Edit->addAction(QString(tr("Remove %1..")).arg(itemname),   this, &MainWindow::OnActionRemTopItem));
+//    m_pActionAddCnt = ui->menu_Edit->addAction(QString(tr("Add %1..")).arg(itemname),      this, &MainWindow::OnActionAddTopItem);
+//    m_pActionRemCnt = ui->menu_Edit->addAction(QString(tr("Remove %1..")).arg(itemname),   this, &MainWindow::OnActionRemTopItem);
 
     //Add container menu
     ContentManager & manager = ContentManager::Instance();
     BaseContainer * cnt = manager.getContainer();
     m_pContainerMenu.reset(cnt->MakeActionMenu(ui->menuBar));
     m_pContainerMenuAction = ui->menuBar->addMenu(m_pContainerMenu.data());
+    ui->menuBar->update();
 }
 
 void MainWindow::remMultiItemActions()
 {
-    ui->menu_Edit->removeAction(m_pActionAddSprite.data());
-    ui->menu_Edit->removeAction(m_pActionRemSprite.data());
-    m_pActionAddSprite.reset(nullptr);
-    m_pActionRemSprite.reset(nullptr);
+//    ui->menu_Edit->removeAction(m_pActionAddCnt.data());
+//    ui->menu_Edit->removeAction(m_pActionRemCnt.data());
+//    m_pActionAddCnt = nullptr;
+//    m_pActionRemCnt = nullptr;
 
     if(m_pContainerMenuAction)
         ui->menuBar->removeAction(m_pContainerMenuAction);
@@ -447,70 +459,60 @@ ContentManager & MainWindow::getManager()
     return ContentManager::Instance();
 }
 
-QSettings &MainWindow::getSettings()
-{
-    return m_settings;
-}
-
-const QSettings &MainWindow::getSettings() const
-{
-    return m_settings;
-}
-
 BaseContainer *MainWindow::getContainer()
 {
     return ContentManager::Instance().getContainer();
 }
 
-void MainWindow::OnActionAddTopItem()
-{
-    try
-    {
-        qInfo() <<"MainWindow::OnActionAddSprite(): Adding sprite!\n";
-        ContentManager & manager = ContentManager::Instance();
+//void MainWindow::OnActionAddTopItem()
+//{
+//    try
+//    {
+//        qInfo() <<"MainWindow::OnActionAddSprite(): Adding sprite!\n";
+//        ContentManager & manager = ContentManager::Instance();
 
-        //Insert at the end if nothing selected, or at the selected item otherwise
-        TreeNode * topnode = manager.getOwnerNode(m_curItem);
-        int insertpos = 0;
-        if(!m_curItem.isValid() || !topnode)
-            insertpos = manager.rowCount();
-        else
-            insertpos = topnode->nodeIndex();
-        manager.insertRow(insertpos);
-    }
-    catch(const std::exception & e)
-    {
-        qWarning() << "MainWindow::OnActionAddTopItem():Adding a new item failed with exception: \'" << e.what() << "\'";
-    }
-}
+//        //Insert at the end if nothing selected, or at the selected item otherwise
+//        TreeNode * topnode = manager.getOwnerNode(m_curItem);
+//        int insertpos = 0;
+//        if(!m_curItem.isValid() || !topnode)
+//            insertpos = manager.rowCount();
+//        else
+//            insertpos = topnode->nodeIndex();
+//        manager.insertRow(insertpos);
+//    }
+//    catch(const std::exception & e)
+//    {
+//        qWarning() << "MainWindow::OnActionAddTopItem():Adding a new item failed with exception: \'" << e.what() << "\'";
+//    }
+//}
 
-void MainWindow::OnActionRemTopItem()
-{
-    try
-    {
-        if(!m_curItem.isValid())
-        {
-            Q_ASSERT(false);
-            return;
-        }
-        qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
-        ContentManager & manager = ContentManager::Instance();
+//void MainWindow::OnActionRemTopItem()
+//{
+//    try
+//    {
+//        if(!m_curItem.isValid())
+//        {
+//            Q_ASSERT(false);
+//            return;
+//        }
+//        qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
+//        ContentManager & manager = ContentManager::Instance();
 
-        //Insert at the end if nothing selected, or at the selected item otherwise
-        TreeNode * topnode = manager.getOwnerNode(m_curItem);
+//        //Insert at the end if nothing selected, or at the selected item otherwise
+//        TreeNode * topnode = manager.getOwnerNode(m_curItem);
 
-        if(!topnode)
-        {
-            Q_ASSERT(false);
-            return ;
-        }
-        manager.removeRow(topnode->nodeIndex());
-    }
-    catch(const std::exception & e)
-    {
-        qWarning() << "MainWindow::OnActionAddTopItem():Adding a new item failed with exception: \'" << e.what() << "\'";
-    }
-}
+//        if(!topnode)
+//        {
+//            Q_ASSERT(false);
+//            return ;
+//        }
+//        manager.removeRow(topnode->nodeIndex());
+//    }
+//    catch(const std::exception & e)
+//    {
+//        qWarning() << "MainWindow::OnActionAddTopItem():Adding a new item failed with exception: \'" << e.what() << "\'";
+//    }
+//}
 
 QPixmap MainWindow::RenderNoImageSvg()
 {
@@ -521,9 +523,9 @@ QPixmap MainWindow::RenderNoImageSvg()
 void MainWindow::on_action_Open_triggered()
 {
     ContentManager & manager = ContentManager::Instance();
-
-    //#TODO: Move that to constant!!
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString(), AllSupportedGameFileFilter());
+    QString currentDir = manager.getContainerParentDir();
+    QString currentCntType = manager.getContainerFileFilter();
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), currentDir, AllSupportedGameFileFilter(), &currentCntType);
 
     if(fileName.isNull())
         return;
@@ -582,6 +584,8 @@ void MainWindow::on_actionSave_As_triggered()
     //QSaveFile;
     ContentManager & manager = ContentManager::Instance();
     const QString & cnttype = manager.getContainerType();
+    QString currentDir = manager.getContainerParentDir();
+    QString currentCntType = manager.getContainerFileFilter();
 
     QString filetypestr;
     if(!SupportedFileFiltersByTypename.contains(cnttype))
@@ -591,7 +595,7 @@ void MainWindow::on_actionSave_As_triggered()
         return;
     }
     filetypestr = SupportedFileFiltersByTypename[manager.getContainerType()];
-    QString filename = QFileDialog::getSaveFileName(this, tr("Save File As"), QString(), filetypestr);
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save File As"), currentDir, filetypestr, &currentCntType);
     SaveAs(filename);
 }
 
@@ -635,14 +639,13 @@ void MainWindow::on_actionNewSprite_Pack_File_triggered()
 void MainWindow::setupListView()
 {
     ContentManager & manager = ContentManager::Instance();
+    ui->tv_sprcontent->setRootIsDecorated(true);
     if(manager.isMultiItemContainer())
     {
-        ui->tv_sprcontent->setRootIsDecorated(true);
         ui->tv_sprcontent->viewport()->update();
     }
     else
     {
-        ui->tv_sprcontent->setRootIsDecorated(true);
         ui->tv_sprcontent->collapseAll();
     }
 }
@@ -822,19 +825,25 @@ AnimSequence *MainWindow::currentAnimSequence()
     return elem;
 }
 
-eTreeElemDataType MainWindow::currentEntryType()
+eTreeElemDataType MainWindow::currentEntryType()const
 {
-    TreeNode * elem = reinterpret_cast<TreeNode*>(ui->tv_sprcontent->currentIndex().internalPointer());
+    const TreeNode * elem = reinterpret_cast<TreeNode*>(ui->tv_sprcontent->currentIndex().internalPointer());
     if(elem)
         return elem->nodeDataTy();
     return eTreeElemDataType::None;
+}
+
+QModelIndexList MainWindow::currentlySelectedItems()const
+{
+    QItemSelectionModel * pmodel = ui->tv_sprcontent->selectionModel();
+    return pmodel->selectedRows();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     //        if (userReallyWantsToQuit())
     //        {
-    writeSettings();
+    ProgramSettings::Instance().ReadSettings(objectName(), std::bind(&MainWindow::writeSettings, this, std::placeholders::_1) );
     event->accept();
     //        }
     //        else
@@ -846,13 +855,69 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::ShowProgressDiag(QFuture<void> &task)
 {
     m_progress.setFuture(task);
-    m_progress.setModal(true);
-    m_progress.show();
+    m_progress.exec();
 }
 
 void MainWindow::updateCoordinateBar(const QPointF &pos)
 {
     m_pStatusCoordinates->setText(QString{"( %1, %2 )"}.arg(qRound(pos.x())).arg(qRound(pos.y())));
+}
+
+void MainWindow::updateCurrentTab()
+{
+    ui->stkEditor->currentWidget()->update();
+}
+
+void MainWindow::OnContentRowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
+{
+    QModelIndex newindex;
+    if(!parent.isValid())
+    {
+        //Deleting a top level sub-item
+        if( !(m_curItem.row() >= first) && !(m_curItem.row() <= last)) //De-select if we removed the current item
+            return; //Do nothing
+    }
+    else
+    {
+        //Deleting a child of a top level sub-item
+        newindex = parent; //Just select the parent node
+    }
+    selectTreeViewNode(newindex);
+    if(newindex.isValid())
+        DisplayTabForElement(newindex);
+    else
+        HideAllTabs();
+}
+
+void MainWindow::OnContentRowsAboutToBeMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int row)
+{
+    QModelIndex newindex;
+    if(!parent.isValid())
+    {
+        //Moving a top level sub-item
+        if( !(m_curItem.row() >= start && m_curItem.row() <= end) ||
+            !(destination == parent && m_curItem.row() >= row)) //De-select if we moved the current item
+            return; //Do nothing
+    }
+    else
+    {
+        //Moving a child of a top level sub-item
+        newindex = parent; //Just select the parent node
+    }
+    selectTreeViewNode(newindex);
+    if(newindex.isValid())
+        DisplayTabForElement(newindex);
+    else
+        HideAllTabs();
+}
+
+void MainWindow::OnRowInserted(const QModelIndex &parent, int /*first*/, int last)
+{
+    ContentManager & manager = ContentManager::Instance();
+    QModelIndex newcurrent = manager.index(last, 0, parent);
+    selectTreeViewNode(newcurrent);
+    if(newcurrent.isValid())
+        DisplayTabForElement(newcurrent);
 }
 
 void MainWindow::selectTreeViewNode(const TreeNode * node)
@@ -892,4 +957,13 @@ void MainWindow::on_actionAdvanced_triggered()
     {
         qWarning() << "MainWindow::on_actionAdvanced_triggered(): failed with exception: \'" << e.what() << "\'";
     }
+}
+
+void MainWindow::on_action_Settings_triggered()
+{
+    DialogSettings diag(this);
+    diag.exec();
+    update();
+    updateActions();
+    ui->stkEditor->currentWidget()->update();
 }

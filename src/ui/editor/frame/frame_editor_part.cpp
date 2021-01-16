@@ -58,6 +58,11 @@ const MFramePart *FramePart::getPart() const
     return m_pPart;
 }
 
+bool FramePart::matchPart(const MFramePart* part)const
+{
+    return part == m_pPart;
+}
+
 void FramePart::updateOffset()
 {
     setPos(m_pPart->getXOffset(), m_pPart->getYOffset());
@@ -66,8 +71,8 @@ void FramePart::updateOffset()
 void FramePart::commitOffset(QAbstractItemModel *model)
 {
     QModelIndex myidx = model->index(m_pPart->nodeIndex(), 0);
-    model->setData(myidx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_XOffset)), {qRound(pos().x())}, Qt::EditRole);
-    model->setData(myidx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::direct_YOffset)), {qRound(pos().y())}, Qt::EditRole);
+    model->setData(myidx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::XOffset)), {qRound(pos().x())}, Qt::EditRole);
+    model->setData(myidx.siblingAtColumn(static_cast<int>(eFramePartColumnsType::YOffset)), {qRound(pos().y())}, Qt::EditRole);
 }
 
 //QModelIndex FramePart::partID() const

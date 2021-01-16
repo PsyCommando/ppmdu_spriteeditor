@@ -100,7 +100,7 @@ const QString
 XML_ELEM_PALIS256 = "Is256Colors",
 XML_ELEM_MOSAIC = "IsMosaicModeEnabled",
 XML_ELEM_DISABLED = "IsDisabled",
-XML_ELEM_DOUBLE = "IsDoubleSize",
+XML_ELEM_ROT_CANVAS = "IsRotCanvas",
 XML_ELEM_RNS = "IsRotationAndScalingOn",
 XML_ELEM_RNS_PARAM = "RotationAndScalingParam",
 XML_ELEM_XOFF = "X",
@@ -192,7 +192,6 @@ public:
         writer.writeTextElement(XML_ELEM_PALIS256,  QString("%1").arg(m_spr.is256Colors()));
         writer.writeTextElement(XML_ELEM_UNK11,     QString("%1").arg(m_spr.unk11()));
 
-        writer.writeTextElement(XML_ELEM_UNK6,     QString("%1").arg(m_spr.unk6()));
         writer.writeTextElement(XML_ELEM_UNK7,     QString("%1").arg(m_spr.unk7()));
         writer.writeTextElement(XML_ELEM_UNK8,     QString("%1").arg(m_spr.unk8()));
         writer.writeTextElement(XML_ELEM_UNK9,     QString("%1").arg(m_spr.unk9()));
@@ -242,7 +241,7 @@ public:
             writer.writeTextElement(XML_ELEM_PALIS256,  QString("%1").arg(p->isColorPal256()));
             writer.writeTextElement(XML_ELEM_MOSAIC,    QString("%1").arg(p->isMosaicOn()));
             writer.writeTextElement(XML_ELEM_DISABLED,  QString("%1").arg(p->isDisabled()));
-            writer.writeTextElement(XML_ELEM_DOUBLE,    QString("%1").arg(p->isDoubleSize()));
+            writer.writeTextElement(XML_ELEM_ROT_CANVAS,QString("%1").arg(p->isRnSRotCanvas()));
             writer.writeTextElement(XML_ELEM_RNS,       QString("%1").arg(p->isRotAndScalingOn()));
             writer.writeTextElement(XML_ELEM_RNS_PARAM, QString("%1").arg(p->getRnSParam())),
             writer.writeEndElement();

@@ -431,7 +431,7 @@
        <property name="title">
         <string/>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,1,0,0">
+       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="2,1,0">
         <property name="sizeConstraint">
          <enum>QLayout::SetMinAndMaxSize</enum>
         </property>
@@ -559,16 +559,6 @@
            </widget>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkAutoPlay">
-          <property name="text">
-           <string>Auto Play Preview</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
         </item>
         <item>
          <widget class="QCheckBox" name="chkPreviewLoop">

@@ -26,6 +26,7 @@ extern const QString ContentName_Sprite;
 class SpriteContainer;
 class SpriteContainerMenu : public QMenu
 {
+    Q_OBJECT
 public:
     SpriteContainerMenu(SpriteContainer * container, QWidget * parent = nullptr);
     virtual ~SpriteContainerMenu();
@@ -33,9 +34,17 @@ public:
     void InitContent();
 
 public slots:
+    void updateMenu();
+    void OnCompressionChanged(QAction * selected);
+    void OnAddSprite();
+    void OnRemSprite();
+
+signals:
+    void compressionChanged(eCompressionFmtOptions fmt);
 
 private:
-    SpriteContainer * m_container {nullptr};
+    SpriteContainer *               m_container {nullptr};
+    QScopedPointer<QActionGroup>    m_actionGrp {nullptr};
 };
 
 /*
@@ -113,8 +122,11 @@ public:
     void ExportContainer(const QString & path, const QString & exportype)const override;
 
     //
-    Sprite * GetSprite( sprid_t idx );
+    Sprite * GetSprite(sprid_t idx);
     sprid_t  AddSprite();
+    sprid_t  AddSprite(sprid_t idx);
+    void     RemSprite();
+    void     RemSprites(const QModelIndexList & remove);
 
     //
     eCompressionFmtOptions GetExpectedCompression()const;
@@ -252,6 +264,8 @@ signals:
     void startThread();
     void showProgress(QFuture<void>&)const;
     void showProgress(QFuture<void>&,QFuture<void>&)const;
+
+    void compressionChanged(eCompressionFmtOptions fmt);
 };
 
 #endif // SPRITECONTAINER_H

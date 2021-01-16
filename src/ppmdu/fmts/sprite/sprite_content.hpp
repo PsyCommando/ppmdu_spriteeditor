@@ -19,13 +19,15 @@ namespace fmt
     **********************************************************************/
     struct ImageDB
     {
+        static const int FRAME_TILE_SZ_BYTES; //Size of a frame in the loaded image data. Fixed, since we force 8bpp during import
+        static const int FRAME_TILE_SZ_PIXELS; //Size of a single tile loaded in pixel
         struct img_t
         {
             std::vector<uint8_t> data;
             uint16_t             unk2;
             uint16_t             unk14;
         };
-        typedef std::list<step_t>       frm_t;
+        typedef std::list<step_t>       frm_t;      //"Meta-Frame", a sequence of oam entries to assemble an image
         typedef std::vector<img_t>      imgtbl_t;
         typedef std::vector<frm_t>      frmtbl_t;
         imgtbl_t        m_images;    //contains decoded raw linear images
@@ -455,8 +457,8 @@ namespace fmt
         template<class _init>
             uint32_t CalculateFrameRefTblEnd(_init itsrcbeg, _init itsrcend, const hdr_animfmtinfo & animinf)
         {
-            if( animinf.ptrefxtbl != 0 )
-                return animinf.ptrefxtbl;
+            if( animinf.ptrattachtbl != 0 )
+                return animinf.ptrattachtbl;
             else
             {
                 uint32_t seqref = GetFirstNonNullAnimSequenceRefTblEntry(itsrcbeg, itsrcend, animinf);
@@ -497,6 +499,29 @@ namespace fmt
             return begAniSeq;
         }
 
+        uint32_t getNbFrames()const
+        {
+            return m_frames.size();
+        }
+
+        uint16_t calculateLargestFrameSize()const //As nb of tiles
+        {
+            uint16_t largest = 0; // the largest amount of tiles used out of all frames
+            for(const frm_t & frm : m_frames)
+            {
+                uint16_t curfrmtotalsz = 0; //highest tile number + size used out of all steps
+                for(const step_t & stp : frm)
+                {
+                    const uint16_t curmax = stp.getTileNum() + stp.calculateTileSize();
+                    if(curmax > curfrmtotalsz)
+                        curfrmtotalsz = curmax;
+                }
+                if(curfrmtotalsz > largest)
+                    largest = curfrmtotalsz;
+            }
+            assert(largest != 0);
+            return largest;
+        }
     };
 
 //-----------------------------------------------------------------------------
@@ -528,18 +553,15 @@ namespace fmt
         typedef std::map<animseqid_t, animseq_t>    animseqtbl_t;
         typedef std::vector<frameoffsets_t>         frmoffslst_t;
 
-        //static const animseqid_t NullSeq;  //Represents an entry not refering to any sequence
-        //static const animgrpid_t NullGrp;  //Represents an entry not refering to any group
-
         animseqtbl_t  m_animsequences;  //A table containing all uniques animation sequences
         animgrptbl_t  m_animgrps;       //A table of all the unique animation groups
         animtbl_t     m_animtbl;        //A table of pointers to the animation group associated to an animation
-        frmoffslst_t  m_frmoffsets;     //A table of 16bits X,Y coordinates indicating where on the sprite some effects are drawn! In groups of 4, one group for each "frame".
+        frmoffslst_t  m_attachPoints;     //A table of 16bits X,Y coordinates indicating where on the sprite some effects are drawn! In groups of 4, one group for each "frame".
 
     public:
         template<class _writerhelper_t> void WriteEffectsTbl(_writerhelper_t & sir0hlpr)const
         {
-            for( const frameoffsets_t & ofs : m_frmoffsets )
+            for( const frameoffsets_t & ofs : m_attachPoints )
                 ofs.Write(sir0hlpr);
         }
 
@@ -576,7 +598,6 @@ namespace fmt
              * grpentry groups[];
             */
 
-
             for(size_t idxanim = 0; idxanim <  m_animtbl.size(); ++idxanim )
             {
                 if(m_animtbl[idxanim] == NullGrpIndex)
@@ -595,33 +616,6 @@ namespace fmt
                     }
                 }
             }
-
-
-
-
-//            size_t cntgrp = 0;
-//            //Writing the first table!
-//            for( const auto & grp : m_animgrps )
-//            {
-//                //fill empty groups
-//                for( ; cntgrp <  m_animtbl.size() && m_animtbl[cntgrp] == NullGrp; ++cntgrp )
-//                {
-//                    //For empty groups, we have to insert 4 bytes of 0!
-//                    sir0hlpr.writePtr(static_cast<uint32_t>(0));
-//                }
-
-//                //Then we can put the data for our valid group!
-//                ptrgrpslst.push_back(std::make_pair( sir0hlpr.getCurOffset(),
-//                                                     grp.second.seqs.size())); //add to the list of group array pointers + sizes
-//                for( const auto & seq : grp.second.seqs )
-//                {
-//                    if(seq >= static_cast<int>(ptrseqs.size()))
-//                        throw std::out_of_range("AnimDB::WriteAnimGroups(): Sequence ID is out of bound!!");
-//                    sir0hlpr.writePtr(ptrseqs.at(seq)); //mark the pointer position for the SIR0 later!
-//                }
-
-//                ++cntgrp;
-//            }
         }
 
         template<class _writerhelper_t> void WriteAnimTbl( _writerhelper_t                                 & sir0hlpr,
@@ -730,15 +724,13 @@ namespace fmt
         }
 
         template<class _init>
-            void ParseAnimTbl(_init itsrcbeg, _init itsrcend, const hdr_animfmtinfo & animinf, uint32_t & begseqptrtbl )
+            void ParseAnimTbl(_init itsrcbeg, _init itsrcend, const hdr_animfmtinfo & animinf)
         {
             using namespace std;
             curgrpid = 0;
             curseqid = 0;
             unordered_map<uint32_t,animgrpid_t> animgrpreftable; //(pointer, assignedid) used to avoid duplicating groups when the same group is refered to in multiple locations
             unordered_map<uint32_t,animgrpid_t> animseqreftable; //(pointer, assignedid) used to avoid duplicate sequences
-            begseqptrtbl = std::numeric_limits<uint32_t>::max();
-
 
             //Parse anim table first!
             if( animinf.ptranimtbl != 0 )
@@ -755,10 +747,6 @@ namespace fmt
                     animtblbeg = utils::readBytesAs( animtblbeg, itsrcend, grplen );
                     animtblbeg = utils::readBytesAs( animtblbeg, itsrcend, unk16 );
 
-                    //Track the smallest pointer, to find the start of the groups sequence array table!
-                    if( curptr != 0 && begseqptrtbl > curptr )
-                        begseqptrtbl = curptr;
-
                     //Parse it
                     m_animtbl[cntptr] = ParseAnimGroup( animgrpreftable, animseqreftable, itsrcbeg, itsrcend, curptr, grplen, unk16 );
                 }
@@ -766,21 +754,26 @@ namespace fmt
         }
 
         template<class _init>
-            void ParseEfxOffsets(_init itsrcbeg, _init /*itsrcend*/, const hdr_animfmtinfo & /*animinf*/, uint32_t & offsbegefx, uint32_t & offsbeganimseqtbl)
+            void ParseAttachmentOffsets(_init itsrcbeg, _init itsrcend, const hdr_animfmtinfo & animinf, uint32_t nbframes)
         {
-            if(offsbegefx == 0)
+            if(animinf.ptrattachtbl == 0)
                 return;
+            assert(itsrcbeg != itsrcend);
+
+            const uint32_t lenAttachmentsSet = nbframes * frameoffsets_t::LEN;
+            const uint32_t ofsEndAttchments = animinf.ptrattachtbl + lenAttachmentsSet;
 
             //#NOTE: Its possible that on other sprite types this pointer is used for something else!
 
-            auto tblbeg = std::next(itsrcbeg, offsbegefx);
-            auto tblend = std::next(itsrcbeg, offsbeganimseqtbl);
+            auto tblbeg = std::next(itsrcbeg, animinf.ptrattachtbl);
+            auto tblend = std::next(itsrcbeg, ofsEndAttchments);
 
             for( ; tblbeg != tblend; )
             {
+                assert(tblbeg != itsrcend);
                 frameoffsets_t ofs;
                 tblbeg = ofs.Read(tblbeg, tblend);
-                m_frmoffsets.push_back(ofs);
+                m_attachPoints.push_back(ofs);
             }
         }
 
@@ -788,7 +781,6 @@ namespace fmt
         animgrpid_t curgrpid;
         animseqid_t curseqid;
     };
-
 
 };
 

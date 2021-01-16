@@ -4,6 +4,7 @@
 #include <src/data/sprite/models/framepart_model.hpp>
 #include <src/ui/editor/frame/frame_editor_part.hpp>
 #include <src/utility/randomgenhelper.hpp>
+#include <src/utility/program_settings.hpp>
 #include <QKeyEvent>
 #include <QPointer>
 #include <QGraphicsView>
@@ -70,7 +71,8 @@ void FrameEditor::initScene()
     {
         for(int i = 0; i < m_attachModel->rowCount(QModelIndex()); ++i)
         {
-            AttachMarker * mark = new AttachMarker(this, m_attachModel->index(i, 0, QModelIndex()));
+            QModelIndex idx = m_attachModel->index(i, 0, QModelIndex());
+            AttachMarker * mark = new AttachMarker(this, idx, nullptr);
             addItem(mark);
             m_markers.push_back(mark);
             connect(mark, &EditableItem::dragBegin, this, &FrameEditor::onItemDragBegin);
@@ -92,7 +94,8 @@ void FrameEditor::initScene()
     QColor midcolor(QColor::fromHsv(40,250,180, 128));
     QPen   midpen(QBrush(midcolor), 0.5, Qt::DotLine );
 
-    QGraphicsView * gv = (!views().empty())? views().first() : nullptr;
+    const QList<QGraphicsView*> & viewlist = views();
+    QGraphicsView * gv = (!viewlist.empty())? viewlist.first() : nullptr;
     int linebottom = (gv)? gv->rect().bottom() : FrameEditorSceneHeight * 2;
 
     QGraphicsLineItem * ln = addLine(FrameEditorSceneWidth/2, 0, FrameEditorSceneWidth/2, linebottom);
@@ -132,7 +135,6 @@ void FrameEditor::onItemDragBegin(EditableItem * item)
 void FrameEditor::onItemDragEnd(EditableItem * item)
 {
     clearRulers();
-    //QModelIndex idx = item->getItemIndex();
     if(item->getDataType() == eTreeElemDataType::effectOffset)
     {
         item->commitOffset(m_attachModel);
@@ -151,6 +153,31 @@ void FrameEditor::OnSelectionChanged()
     QList<EditableItem*> casted;
     for(QGraphicsItem* p : items)
         casted.push_back(static_cast<EditableItem*>(p));
+    emit selectionChanged(casted);
+}
+
+void FrameEditor::OnViewPartsSelected(const QModelIndexList & selected)
+{
+    QList<EditableItem*> casted;
+    for(QModelIndex idx : selected)
+    {
+        const MFramePart * ppart = static_cast<MFramePart*>(idx.internalPointer());
+        auto itf = std::find_if(m_parts.begin(), m_parts.end(), [ppart](const QPointer<FramePart> & ptr){return ptr->matchPart(ppart);});
+        if(itf != m_parts.end())
+            casted.push_back(itf->data());
+    }
+    emit selectionChanged(casted);
+}
+void FrameEditor::OnViewMarkersSelected(const QModelIndexList & selected)
+{
+    QList<EditableItem*> casted;
+    for(QModelIndex idx : selected)
+    {
+        const EffectOffset * pattach = static_cast<EffectOffset*>(idx.internalPointer());
+        auto itf = std::find_if(m_markers.begin(), m_markers.end(), [pattach](const QPointer<AttachMarker> & ptr){return ptr->matchAttachementOffset(pattach);});
+        if(itf != m_markers.end())
+            casted.push_back(itf->data());
+    }
     emit selectionChanged(casted);
 }
 
@@ -312,7 +339,9 @@ void FrameEditor::selectMarker(QModelIndex marker)
     clearSelection();
     if(marker.isValid())
     {
-        m_markers[marker.row()]->setSelected(true);
+        AttachMarker * pmark = m_markers[marker.row()];
+        pmark->setSelected(true);
+        emit selectionChanged(QList<EditableItem*>{pmark});
     }
 }
 
@@ -326,9 +355,9 @@ void FrameEditor::drawGrid(QPainter * painter, const QRectF & rect)
     QPen penh(QColor::fromHsv( 220, 40, 80 ), 0.4);
 
     //=== Draw minor lines every 8 pixels ===
-    for (qreal x = left; x < rect.right(); x += m_gridsz)
+    for (int x = left; x < rect.right(); x += m_gridsz)
         linesx.append(QLineF(x, rect.top(), x, rect.bottom()));
-    for (qreal y = top; y < rect.bottom(); y += m_gridsz)
+    for (int y = top; y < rect.bottom(); y += m_gridsz)
         linesy.append(QLineF(rect.left(), y, rect.right(), y));
 
     painter->setPen(penv);
@@ -344,9 +373,9 @@ void FrameEditor::drawGrid(QPainter * painter, const QRectF & rect)
     penh.setWidthF(0.6);
     linesx.clear();
     linesy.clear();
-    for (qreal x = left; x < rect.right(); x += m_gridsz*2)
+    for (int x = left; x < rect.right(); x += m_gridsz*2)
         linesx.append(QLineF(x, rect.top(), x, rect.bottom()));
-    for (qreal y = top; y < rect.bottom(); y += m_gridsz*2)
+    for (int y = top; y < rect.bottom(); y += m_gridsz*2)
         linesy.append(QLineF(rect.left(), y, rect.right(), y));
 
     painter->setPen(penv);
@@ -382,14 +411,14 @@ void FrameEditor::drawBackground(QPainter *painter, const QRectF &rect)
 void FrameEditor::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
     /*
-        Returns the distance that the wheel is rotated, in eighths (1/8s) of a degree.
+        Returns the distance that the mouse wheel is rotated, in eighths (1/8s) of a degree.
         A positive value indicates that the wheel was rotated forwards away from the user;
         a negative value indicates that the wheel was rotated backwards toward the user.
         Most mouse types work in steps of 15 degrees, in which case the delta value is a multiple of 120 (== 15 * 8).
     */
     int degrees = event->delta() / 8;
     event->accept();
-    emit zoom(qRound(degrees/15.0 * 50.0));
+    emit zoom(qRound(degrees/15.0 * 25.0));
     invalidate();
 }
 

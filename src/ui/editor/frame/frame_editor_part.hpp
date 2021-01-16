@@ -40,6 +40,8 @@ public:
 
     MFramePart * getPart();
     const MFramePart * getPart()const;
+
+    bool matchPart(const MFramePart* part)const;
     //QModelIndex partID()const;
 
     //Update the position of the item from the model's data

@@ -3,6 +3,7 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <src/utility/file_support.hpp>
+#include <src/utility/program_settings.hpp>
 
 const QString DEFAULT_PLAYTIME_VALUE = "----- t";
 
@@ -37,7 +38,7 @@ void TabAnimSequence::OnShowTab(QPersistentModelIndex element)
             ConnectSceneRenderer();
             OnPreviewRangeChanged(0, m_previewrender.getAnimationLength()); //Force set the preview range
             qDebug() << "TabAnimSequence::ShowTab(): Scene set!\n";
-            if(ui->chkAutoplay->isChecked())
+            if(ProgramSettings::Instance().isAutoplayEnabled())
                 m_previewrender.beginAnimationPlayback();
         }
     }
@@ -477,20 +478,8 @@ const QString TabAnimSequence_Autoplay = "Autoplay";
 
 void TabAnimSequence::writeSettings()
 {
-    QSettings & settings = getSettings();
-    settings.beginGroup(TabAnimSequence_GroupName);
-    settings.setValue(TabAnimSequence_Autoplay, ui->chkAutoplay->isChecked());
-    settings.endGroup();
 }
 
 void TabAnimSequence::readSettings()
 {
-    QSettings & settings = getSettings();
-    settings.beginGroup(TabAnimSequence_GroupName);
-
-    //Set autoplay, without triggering an update
-    ui->chkAutoplay->blockSignals(true);
-    ui->chkAutoplay->setChecked(settings.value(TabAnimSequence_Autoplay, true).toBool());
-    ui->chkAutoplay->blockSignals(false);
-    settings.endGroup();
 }

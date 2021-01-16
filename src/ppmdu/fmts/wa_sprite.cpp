@@ -41,6 +41,13 @@ namespace fmt
 
     //Tiles length
     const int NDS_TILE_SIZE_4BPP = 32; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
-    const int NDS_TILE_SIZE_8BPP = 64; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
+    const int NDS_TILE_SIZE_8BPP = 64;
 
+    const int NDS_OAM_MAX_NB_TILES = 1024;
+    const int NDS_OAM_NB_PIXELS_TILES = 64;
+
+    const int NB_PIXELS_WAN_TILES = 256;
+
+    const int ImageDB::FRAME_TILE_SZ_BYTES  = fmt::NDS_TILE_SIZE_8BPP * 4;
+    const int ImageDB::FRAME_TILE_SZ_PIXELS = fmt::NDS_OAM_NB_PIXELS_TILES * 4;
 };
