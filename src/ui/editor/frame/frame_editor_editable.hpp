@@ -1,6 +1,7 @@
 #ifndef FRAME_EDITOR_EDITABLE_HPP
 #define FRAME_EDITOR_EDITABLE_HPP
 #include <src/data/treeenodetypes.hpp>
+#include <src/ui/editor/frame/frame_editor_shared.hpp>
 #include <QGraphicsItem>
 #include <QPersistentModelIndex>
 #include <QPointer>

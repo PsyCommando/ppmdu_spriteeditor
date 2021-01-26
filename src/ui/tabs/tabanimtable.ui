@@ -22,7 +22,7 @@
     <height>532</height>
    </size>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="2,0,1">
+  <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="4,0,1">
    <item>
     <layout class="QVBoxLayout" name="vlAnimTbl">
      <property name="spacing">
@@ -65,7 +65,7 @@
         <bool>true</bool>
        </property>
        <property name="editTriggers">
-        <set>QAbstractItemView::CurrentChanged|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+        <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
        </property>
        <property name="showDropIndicator" stdset="0">
         <bool>false</bool>
@@ -330,7 +330,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>512</width>
+             <width>256</width>
              <height>256</height>
             </size>
            </property>

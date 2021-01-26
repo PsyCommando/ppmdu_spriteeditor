@@ -21,6 +21,7 @@ public slots:
     void finished();
     void setFuture(QFuture<void> &fut);
     void setFuture(QFuture<void> &fut, QFuture<void> &fut2);
+    void OnProgressChanged(int percent);
 
 private slots:
     void on_btncancel_clicked();

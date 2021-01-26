@@ -2,6 +2,7 @@
 #define ANIMTABLEMODEL_HPP
 #include <src/data/treenodemodel.hpp>
 #include <src/data/sprite/models/animtable_delegate.hpp>
+#include <map>
 
 //====================================================================
 //  AnimTableModel
@@ -12,13 +13,18 @@ class AnimTableModel : public TreeNodeModel
     Q_OBJECT
     using parent_t = TreeNodeModel;
 public:
+    enum struct eColumns : int
+    {
+        GroupID = 0,
+        GroupName,
+        NbSlots,
+        NbColumns  [[maybe_unused]],
+    };
+    static const std::map<AnimTableModel::eColumns, QString> ColumnNames;
+
+public:
     explicit AnimTableModel(AnimTable* ptable, Sprite * powner);
     ~AnimTableModel();
-
-    //Slots naming
-//    void setSlotNames(QVector<QString> && names);
-//    QVector<QString>& getSlotNames();
-//    const QVector<QString>& getSlotNames()const;
 
     // QAbstractItemModel interface
 public:
@@ -35,9 +41,8 @@ public:
     const Sprite *getOwnerSprite()const override{return const_cast<AnimTableModel*>(this)->getOwnerSprite();}
 
 private:
-    //QVector<QString>    m_slotNames;            //Strings for naming the animation slots after. For example running animation would be "Run"
-    AnimTable*          m_root      {nullptr};
-    Sprite*             m_sprite    {nullptr};
+    AnimTable*  m_root  {nullptr};
+    Sprite*     m_sprite{nullptr};
 };
 
 #endif // ANIMTABLEMODEL_HPP

@@ -55,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::SetupContent()
 {
-    setWindowTitle(QString("%1 v%2").arg(QApplication::applicationName()).arg(QString(GIT_MAJORMINOR_VERSION)));
+    setWindowTitle(QString("%1 v%2").arg(QApplication::applicationName(), QString(GIT_MAJORMINOR_VERSION)));
     m_imgNoImg = QPixmap(":/imgs/resources/imgs/noimg.png");
 
     //Setup error helper
@@ -206,6 +206,7 @@ void MainWindow::SetupUIForNewContainer(BaseContainer * sprcnt)
         DisplayTabForElement(m_curItem);
     }
 
+    ui->tv_sprcontent->update();
     ui->tv_sprcontent->repaint();
     setWindowTitle(QString());
     setWindowFilePath(sprcnt->GetContainerSrcPath());
@@ -523,7 +524,7 @@ QPixmap MainWindow::RenderNoImageSvg()
 void MainWindow::on_action_Open_triggered()
 {
     ContentManager & manager = ContentManager::Instance();
-    QString currentDir = manager.getContainerParentDir();
+    QString currentDir = GetFileDialogDefaultPath();
     QString currentCntType = manager.getContainerFileFilter();
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), currentDir, AllSupportedGameFileFilter(), &currentCntType);
 
@@ -552,23 +553,7 @@ void MainWindow::on_action_Quit_triggered()
     qDebug() <<"After exit call!\n";
 }
 
-void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
-{
-    try
-    {
-        TreeNode * pcur = static_cast<TreeNode*>(index.internalPointer());
-        if(!pcur)
-            return;
-        qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Opening proper tab!\n";
-        m_curItem = m_curItem = index;
-        DisplayTabForElement(index);
-        ui->tv_sprcontent->viewport()->update();
-    }
-    catch(const std::exception & e)
-    {
-        qWarning() << "MainWindow::on_tv_sprcontent_expanded(): failed with exception: \'" << e.what() << "\'";
-    }
-}
+
 
 void MainWindow::on_action_Save_triggered()
 {
@@ -648,6 +633,7 @@ void MainWindow::setupListView()
     {
         ui->tv_sprcontent->collapseAll();
     }
+    ui->tv_sprcontent->update();
 }
 
 int MainWindow::AskSaveChanges(bool dosave)
@@ -683,11 +669,13 @@ void MainWindow::Warn(const QString &title, const QString &text)
 
 void MainWindow::ShowStatusMessage(const QString &msg)
 {
+    //#TODO: Make message queue
     ui->statusBar->showMessage( msg, 8000);
 }
 
 void MainWindow::ShowStatusErrorMessage(const QString &msg)
 {
+    //#TODO: Make message queue
     QString errormsg = QString("<span style=\" font-size:9pt; font-weight:600; color:#aa0000;\">%1</span>").arg(msg);
 
     if(!m_pStatusError.isNull()) //don's spam!
@@ -734,9 +722,8 @@ void MainWindow::on_tv_sprcontent_activated(const QModelIndex &index)
     if(!pcur)
         return;
     m_curItem = index;
-
     DisplayTabForElement(index);
-    ui->tv_sprcontent->update();
+    ui->tv_sprcontent->viewport()->update();
 }
 
 void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
@@ -747,11 +734,25 @@ void MainWindow::on_tv_sprcontent_clicked(const QModelIndex &index)
         return;
     m_curItem = index;
     DisplayTabForElement(index);
+    ui->tv_sprcontent->viewport()->update();
+}
 
-//    if(pcur->nodeShouldAutoExpand())
-//        ui->tv_sprcontent->expand(index);
-
-    ui->tv_sprcontent->update();
+void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
+{
+    try
+    {
+        TreeNode * pcur = static_cast<TreeNode*>(index.internalPointer());
+        if(!pcur)
+            return;
+        qDebug() << "MainWindow::on_tv_sprcontent_expanded(): Opening proper tab!\n";
+        m_curItem = index;
+        DisplayTabForElement(index);
+        ui->tv_sprcontent->viewport()->update();
+    }
+    catch(const std::exception & e)
+    {
+        qWarning() << "MainWindow::on_tv_sprcontent_expanded(): failed with exception: \'" << e.what() << "\'";
+    }
 }
 
 void MainWindow::on_tv_sprcontent_customContextMenuRequested(const QPoint &pos)
@@ -966,4 +967,12 @@ void MainWindow::on_action_Settings_triggered()
     update();
     updateActions();
     ui->stkEditor->currentWidget()->update();
+}
+
+void MainWindow::ProcessArguments(const QCommandLineParser &parser)
+{
+    //#TODO: Expand on this
+    QString openFilePath = cmdline_processing::ParseSourceFilepath(parser);
+    if(!openFilePath.isEmpty())
+        LoadContainer(openFilePath);
 }

@@ -200,7 +200,7 @@ QImage MFramePart::drawPart(const Sprite * spr, bool transparencyenabled) const
         auto itTileEnd = tilebuffer.end();
 
         if(frmbytebeg > tilebuffer.size())
-            throw BaseException("WAH");
+            throw BaseException("MFramePart::drawPart(): WAH");
         std::advance(itTileBeg, frmbytebeg);
         if((frmbytelen + frmbytebeg) < tilebuffer.size())
         {

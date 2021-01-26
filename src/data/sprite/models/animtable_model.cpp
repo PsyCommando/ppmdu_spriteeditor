@@ -2,9 +2,16 @@
 #include <src/data/sprite/animtable.hpp>
 #include <src/data/sprite/animgroup.hpp>
 #include <src/data/sprite/sprite.hpp>
+#include <src/utility/ui_helpers.hpp>
 
 const QString ANIMTABLE_NO_SLOTS = "--";
 const QString ANIMTABLE_NO_GRP = "None";
+const std::map<AnimTableModel::eColumns, QString> AnimTableModel::ColumnNames
+{
+    {AnimTableModel::eColumns::GroupID,     "Group ID"},
+    {AnimTableModel::eColumns::GroupName,   "Group Name"},
+    {AnimTableModel::eColumns::NbSlots,     "Nb Group Slots"},
+};
 
 AnimTableModel::AnimTableModel(AnimTable *ptable, Sprite *powner)
     :TreeNodeModel(nullptr)
@@ -19,24 +26,9 @@ AnimTableModel::~AnimTableModel()
     m_sprite = nullptr;
 }
 
-//void AnimTableModel::setSlotNames(QVector<QString> &&names)
-//{
-//    m_slotNames = names;
-//}
-
-//QVector<QString> &AnimTableModel::getSlotNames()
-//{
-//    return m_slotNames;
-//}
-
-//const QVector<QString> &AnimTableModel::getSlotNames() const
-//{
-//    return const_cast<AnimTableModel*>(this)->getSlotNames();
-//}
-
 int AnimTableModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return static_cast<int>(AnimTableSlot::eColumns::NbColumns);
+    return static_cast<int>(ColumnNames.size());
 }
 
 QVariant AnimTableModel::data(const QModelIndex &index, int role) const
@@ -54,9 +46,9 @@ QVariant AnimTableModel::data(const QModelIndex &index, int role) const
     Q_ASSERT(grpref);
     const AnimGroup * pgrp = m_sprite->getAnimGroup(grpref->getGroupRef()); //The group being referenced
 
-    switch(static_cast<AnimTableSlot::eColumns>(index.column()))
+    switch(static_cast<eColumns>(index.column()))
     {
-    case AnimTableSlot::eColumns::GroupId:
+    case eColumns::GroupID:
         {
             if(role == Qt::DecorationRole)
             {
@@ -78,7 +70,7 @@ QVariant AnimTableModel::data(const QModelIndex &index, int role) const
             }
             break;
         }
-    case AnimTableSlot::eColumns::GroupName:
+    case eColumns::GroupName:
         {
             if(role == Qt::DisplayRole || role == Qt::EditRole)
             {
@@ -91,7 +83,7 @@ QVariant AnimTableModel::data(const QModelIndex &index, int role) const
             }
             break;
         }
-    case AnimTableSlot::eColumns::NbSlots:
+    case eColumns::NbSlots:
         {
             if(role == Qt::DisplayRole)
             {
@@ -118,8 +110,8 @@ bool AnimTableModel::setData(const QModelIndex &index, const QVariant &value, in
     AnimTableSlot * grpref = static_cast<AnimTableSlot*>(getItem(index)); //The Reference to the group
     Q_ASSERT(grpref);
 
-    const AnimTableSlot::eColumns columnid = static_cast<AnimTableSlot::eColumns>(index.column());
-    if(columnid == AnimTableSlot::eColumns::GroupId)
+    const eColumns columnid = static_cast<eColumns>(index.column());
+    if(columnid == eColumns::GroupID)
     {
         bool bok = false;
         fmt::animgrpid_t newref = value.toInt(&bok);
@@ -130,7 +122,7 @@ bool AnimTableModel::setData(const QModelIndex &index, const QVariant &value, in
         }
         return bok;
     }
-    else if(columnid == AnimTableSlot::eColumns::GroupName)
+    else if(columnid == eColumns::GroupName)
     {
         grpref->setSlotName(value.toString());
         emitDataChanged(index, index, {role});
@@ -150,26 +142,29 @@ QVariant AnimTableModel::headerData(int section, Qt::Orientation orientation, in
             return QSize(32,32);
         return QVariant(QString("%1").arg(section));
     }
-    else if( orientation == Qt::Orientation::Horizontal &&
-             (section >= 0) && (section < AnimTableSlot::ColumnNames.size()) )
+    else if(orientation == Qt::Orientation::Horizontal)
     {
-        AnimTableSlot::eColumns column = static_cast<AnimTableSlot::eColumns>(section);
-        if(role == Qt::SizeHintRole)
+        eColumns col = static_cast<eColumns>(section);
+        auto itcol = ColumnNames.find(col);
+        if(itcol != ColumnNames.end())
         {
-            switch(column)
+            if(role == Qt::SizeHintRole)
             {
-            case AnimTableSlot::eColumns::GroupId:
-                return QSize(320, 32);
-            case AnimTableSlot::eColumns::GroupName:
-                return QSize(256, 32);
-            case AnimTableSlot::eColumns::NbSlots:
-                return QSize(32, 32);
-            default:
-                break;
+                switch(itcol->first)
+                {
+                case eColumns::GroupID:
+                    return QSize(320, 32);
+                case eColumns::GroupName:
+                    return QSize(256, 32);
+                case eColumns::NbSlots:
+                    return QSize(32, 32);
+                default:
+                    break;
+                }
             }
+            else
+                return itcol->second;
         }
-        else if(role == Qt::DisplayRole)
-            return AnimTableSlot::ColumnNames.value(column);
     }
     return parent_t::headerData(section, orientation, role);
 }

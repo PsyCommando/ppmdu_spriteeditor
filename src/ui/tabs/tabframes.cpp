@@ -9,6 +9,7 @@
 #include <src/data/sprite/framepart.hpp>
 #include <src/data/sprite/models/framepart_delegate.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/utility/graphics_util.hpp>
 
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
@@ -170,9 +171,6 @@ void TabFrames::OnShowTab(QPersistentModelIndex element)
         throw ExBadFrame("TabFrames::OnShowTab(): Bad frame index!");
     }
     MFrame * frm = static_cast<MFrame*>(element.internalPointer());
-    ui->spbFrmPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
-    ui->spbFrmPartYOffset->setRange(0, fmt::step_t::YOFFSET_MAX);
-
     setupFramePartTable();
     qDebug() << "MainWindow::DisplayMFramePage(): Showing frame page!\n";
 
@@ -186,6 +184,7 @@ void TabFrames::OnShowTab(QPersistentModelIndex element)
     setupMappedControls();
     setupAttachTable();
     ConnectSignals();
+    selectPart(ui->tblframeparts->model()->index(0, 0, QModelIndex()));
     BaseSpriteTab::OnShowTab(element);
 }
 
@@ -303,56 +302,50 @@ void TabFrames::on_btnFrmAdPart_clicked()
     updateListAndEditor();
 }
 
-void TabFrames::on_btnFrmMvUp_clicked()
+void TabFrames::_MovePart(bool up)
 {
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    MFrame      *curframe = currentFrame();
-    Q_ASSERT(curframe);
-    if(!ind.isValid())
+    MFrame * curframe = currentFrame();
+    if(!curframe){Q_ASSERT(false); throw BaseException("TabFrames::_MovePart(): No currently active frame!");}
+    const QItemSelectionModel * selmodel = ui->tblframeparts->selectionModel();
+    const QModelIndexList       selected = selmodel->selectedRows();
+
+    if(!selmodel->hasSelection())
     {
         ShowStatusErrorMessage(tr("No part selected!"));
         return;
     }
-
-    int destrow = (ind.row() > 0)? ind.row() - 1 : ind.row();
-    if(destrow != ind.row())
+    //Don't move if first item is at top already
+    if(up && selected.front().row() == 0)
     {
-        if(m_frmModel->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
-            ShowStatusMessage(tr("Part moved up!"));
-        else
-            ShowStatusErrorMessage(tr("Failed to move part!"));
+        ShowStatusErrorMessage(tr("Can't move selection up!"));
+        return;
     }
+    //Don't move if last item is at end already
+    if(!up && selected.back().row() == (m_frmModel->rowCount()-1))
+    {
+        ShowStatusErrorMessage(tr("Can't move selection down!"));
+        return;
+    }
+
+    const int destRow = up? selected.front().row() - 1 : selected.back().row() + 1;
+    if(m_frmModel->moveRows(selected, destRow))
+        ShowStatusMessage(tr("Part moved!"));
+    else
+        ShowStatusErrorMessage(tr("Failed to move part due to internal issue!"));
 
     //Gotta re-calc each times things move
     curframe->optimizeTileUsage();
-
     updateListAndEditor();
+}
+
+void TabFrames::on_btnFrmMvUp_clicked()
+{
+    _MovePart(true);
 }
 
 void TabFrames::on_btnFrmMvDown_clicked()
 {
-    QModelIndex ind = ui->tblframeparts->currentIndex();
-    MFrame      *curframe = currentFrame();
-    Q_ASSERT(curframe);
-    if(!ind.isValid())
-    {
-        ShowStatusErrorMessage(tr("No part selected!"));
-        return;
-    }
-
-    int destrow = (ind.row() < curframe->nodeChildCount()-2 )? ind.row() + 1 : ind.row();
-    if(destrow != ind.row())
-    {
-        if(m_frmModel->moveRow(ind.parent(), ind.row(), ind.parent(), destrow))
-            ShowStatusMessage(tr("Part moved down!"));
-        else
-            ShowStatusErrorMessage(tr("Failed to move part!"));
-    }
-
-    //Gotta re-calc each times things move
-    curframe->optimizeTileUsage();
-
-    updateListAndEditor();
+    _MovePart(false);
 }
 
 void TabFrames::on_btnFrmDup_clicked()
@@ -368,7 +361,7 @@ void TabFrames::on_btnFrmDup_clicked()
 
     MFramePart tmppart = *(static_cast<MFramePart*>(ind.internalPointer()));
 
-    int insertpos = ind.row();
+    int insertpos = ind.row() + 1; //We must insert references after
     if(m_frmModel->insertRow(insertpos))
     {
         MFramePart * pnewfrm = static_cast<MFramePart *>(m_frmModel->getItem( m_frmModel->index(insertpos, 0, QModelIndex()) ));
@@ -377,7 +370,7 @@ void TabFrames::on_btnFrmDup_clicked()
         //A copy should be a -1 frame by default!!
         if(pnewfrm->getFrameIndex() != -1)
             pnewfrm->setFrameIndex(-1);
-        ShowStatusMessage(tr("Duplicated part!"));
+        ShowStatusMessage(tr("Created reference to original!"));
     }
     else
         ShowStatusErrorMessage(tr("Duplication failed!"));
@@ -385,38 +378,35 @@ void TabFrames::on_btnFrmDup_clicked()
     updateListAndEditor();
 }
 
-void TabFrames::on_cmbFrmQuickPrio_currentIndexChanged(int index)
-{
-    Q_ASSERT(false); //#TODO: Make this work!
-
-    //Update
-    Q_ASSERT(m_frmeditor);
-    m_frmeditor->updateScene();
-    ui->gvFrame->update();
-    ui->tblframeparts->update();
-}
-
 void TabFrames::setupMappedControls()
 {
+    ui->spbPartXOffset->setRange(0, fmt::step_t::XOFFSET_MAX);
+    ui->spbPartYOffset->setRange(0, fmt::step_t::YOFFSET_MAX);
+
     //Map model's columns to some of the controls
     m_frmdatmapper.reset(new QDataWidgetMapper);
     m_frmdatmapper->setModel(m_frmModel.data());
-    m_frmdatmapper->addMapping(ui->spbFrmPartXOffset,  static_cast<int>(eFramePartColumnsType::XOffset) );
-    m_frmdatmapper->addMapping(ui->spbFrmPartYOffset,  static_cast<int>(eFramePartColumnsType::YOffset) );
-    m_frmdatmapper->addMapping(ui->btnFrmVFlip,        static_cast<int>(eFramePartColumnsType::VFlip) );
-    m_frmdatmapper->addMapping(ui->btnFrmHFlip,        static_cast<int>(eFramePartColumnsType::HFlip) );
-    m_frmdatmapper->toFirst();
+    m_frmdatmapper->setItemDelegate(m_frmDelegate.data());
+    m_frmdatmapper->setSubmitPolicy(QDataWidgetMapper::SubmitPolicy::AutoSubmit);
+
+    m_frmdatmapper->addMapping(ui->cmbPartImage,    static_cast<int>(eFramePartColumnsType::ImgID));
+    FillComboBoxWithSpriteImages(currentSprite(), *ui->cmbPartImage);
+    m_frmdatmapper->addMapping(ui->cmbPartPal,      static_cast<int>(eFramePartColumnsType::PaletteID));
+    m_frmdatmapper->addMapping(ui->spbPartXOffset,  static_cast<int>(eFramePartColumnsType::XOffset));
+    m_frmdatmapper->addMapping(ui->spbPartYOffset,  static_cast<int>(eFramePartColumnsType::YOffset));
+    m_frmdatmapper->addMapping(ui->btnPartVFlip,    static_cast<int>(eFramePartColumnsType::VFlip));
+    m_frmdatmapper->addMapping(ui->btnPartHFlip,    static_cast<int>(eFramePartColumnsType::HFlip));
+    m_frmdatmapper->addMapping(ui->cmbPartPriority, static_cast<int>(eFramePartColumnsType::Priority));
+    FillComboBoxWithFramePartPriorities(*ui->cmbPartPriority);
 }
 
 void TabFrames::setupFramePartTable()
 {
     ui->tblframeparts->setModel(m_frmModel.data());
     ui->tblframeparts->setItemDelegate(m_frmDelegate.data());
-//    ui->tblframeparts->setEditTriggers(QTableView::EditTrigger::AllEditTriggers);
-//    ui->tblframeparts->setSizeAdjustPolicy(QTableView::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
     ui->tblframeparts->resizeRowsToContents();
     ui->tblframeparts->resizeColumnsToContents();
-    ui->tblframeparts->setCurrentIndex(ui->tblframeparts->model()->index(0, 0, QModelIndex()));
+    ui->tblframeparts->horizontalHeader()->setStretchLastSection(true);
 }
 
 void TabFrames::setupAttachTable()
@@ -437,7 +427,7 @@ void TabFrames::on_btnFrmExport_clicked()
 
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image"),
-                        QString(),
+                        GetFileDialogDefaultPath(),
                         AllSupportedImagesFilesFilter());
 
     if(filename.isNull())
@@ -452,32 +442,22 @@ void TabFrames::on_btnFrmExport_clicked()
 
 void TabFrames::OnEditorSelectionChanged(QList<EditableItem *> parts)
 {
-    try
+    for(EditableItem * p : parts)
     {
-        for(EditableItem * p : parts)
+        if(p->getDataType() == eTreeElemDataType::framepart)
         {
-            if(p->getDataType() == eTreeElemDataType::framepart)
-            {
-                ui->tblframeparts->blockSignals(true);
-                ui->tblframeparts->selectRow(p->getItemIndex().row());
-                ui->tblframeparts->blockSignals(false);
-                ui->tvAttachments->update();
-            }
-            else if(p->getDataType() == eTreeElemDataType::effectOffset)
-            {
-                ui->tvAttachments->blockSignals(true);
-                ui->tvAttachments->selectRow(p->getItemIndex().row());
-                ui->tvAttachments->blockSignals(false);
-                ui->tvAttachments->update();
-            }
+            QSignalBlocker blk(ui->tblframeparts);
+            selectPart(p->getItemIndex());
+            //ui->tblframeparts->selectRow(p->getItemIndex().row());
+        }
+        else if(p->getDataType() == eTreeElemDataType::effectOffset)
+        {
+            QSignalBlocker blk(ui->tvAttachments);
+            ui->tvAttachments->selectRow(p->getItemIndex().row());
         }
     }
-    catch(...)
-    {
-        ui->tblframeparts->blockSignals(false);
-        ui->tvAttachments->blockSignals(false);
-        throw;
-    }
+    ui->tblframeparts->update();
+    ui->tvAttachments->update();
 }
 
 void TabFrames::OnOffsetSelected(QModelIndex selected)
@@ -487,18 +467,12 @@ void TabFrames::OnOffsetSelected(QModelIndex selected)
 
 void TabFrames::on_btnEditAttachments_toggled(bool checked)
 {
-    m_frmeditor->setEditorMode(checked? FrameEditor::eEditorMode::AttachmentPoints : FrameEditor::eEditorMode::FrameParts);
+    m_frmeditor->setEditorMode(checked? eEditorMode::AttachmentPoints : eEditorMode::FrameParts);
 }
 
 void TabFrames::on_tblframeparts_clicked(const QModelIndex &index)
 {
-    ui->tvAttachments->clearSelection();
-    if(!index.isValid())
-    {
-        ui->tblframeparts->clearSelection();
-        return;
-    }
-    emit partSelected(ui->tblframeparts->selectionModel()->selectedRows());
+    selectPart(index);
 }
 
 void TabFrames::on_chkGridSnap_toggled(bool checked)
@@ -515,4 +489,23 @@ void TabFrames::on_tvAttachments_clicked(const QModelIndex &index)
         return;
     }
     emit markerSelected(ui->tvAttachments->selectionModel()->selectedRows());
+}
+
+void TabFrames::selectPart(const QModelIndex & index)
+{
+    ui->tvAttachments->clearSelection();
+    if(!index.isValid())
+    {
+        ui->tblframeparts->clearSelection();
+        m_frmdatmapper->setCurrentModelIndex(QModelIndex());
+        ui->tabPartProps->setEnabled(false);
+        emit partSelected(ui->tblframeparts->selectionModel()->selectedRows());
+        return;
+    }
+    ui->tabPartProps->setEnabled(true);
+    MFramePart * part = static_cast<MFramePart*>(index.internalPointer());
+    FillComboBoxWithSpritePalettes(currentSprite(), *ui->cmbPartPal, part->isColorPal256());
+    m_frmdatmapper->setCurrentModelIndex(index);
+    ui->tblframeparts->setCurrentIndex(index);
+    emit partSelected(ui->tblframeparts->selectionModel()->selectedRows());
 }

@@ -2,25 +2,7 @@
 #define ANIMFRAMESMODEL_HPP
 #include <src/data/sprite/animsequence.hpp>
 #include <src/data/treenodemodel.hpp>
-
-//NOTE: Be sure to update ColumnNames when changing this!
-enum struct eAnimFrameColumnsType : int
-{
-    Frame = 0,
-    Duration,
-    Offset,
-    ShadowOffset,
-    Flags,
-    NBColumns [[maybe_unused]],
-    //Everything below this is not displayed as header column
-
-    //To acces some of the merged data individually via model data! Since we merged both x/y param entry into a single one for each categories
-    Direct_XOffset [[maybe_unused]],
-    Direct_YOffset [[maybe_unused]],
-    Direct_ShadowXOffset [[maybe_unused]],
-    Direct_ShadowYOffset [[maybe_unused]],
-};
-extern const QStringList AnimFrameColumnNames;
+#include <map>
 
 //*******************************************************************
 //  AnimFramesModel
@@ -29,6 +11,21 @@ extern const QStringList AnimFrameColumnNames;
 class AnimFramesModel : public TreeNodeModel
 {
     Q_OBJECT
+public:
+    enum struct eColumns : int
+    {
+        Frame = 0,
+        Duration,
+        OffsetX,
+        OffsetY,
+        ShadowX,
+        ShadowY,
+        Flags,
+        //Everything below this is not displayed as header column
+        NBColumns [[maybe_unused]],
+    };
+    static const std::map<eColumns, QString> ColumnNames;
+
 public:
     explicit AnimFramesModel(AnimSequence* pseq, Sprite* pspr);
     ~AnimFramesModel();
@@ -47,8 +44,6 @@ public:
     const node_t *getRootNode()const override;
     const Sprite *getOwnerSprite()const override;
 
-private:
-    static QSize calcTextSize(const QString & text);
 private:
     AnimSequence*   m_root      {nullptr};
     Sprite*         m_sprite    {nullptr};

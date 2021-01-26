@@ -133,6 +133,7 @@ public:
 
     virtual bool removeRows(QModelIndexList & indices, const QModelIndex &parent = QModelIndex())
     {
+        struct autolayoutchange{QAbstractItemModel * model; autolayoutchange(QAbstractItemModel * pmod):model(pmod){model->layoutAboutToBeChanged();} ~autolayoutchange(){model->layoutChanged();}};
         node_t *parentItem = getItem(parent);
         bool success = false;
 
@@ -142,8 +143,7 @@ public:
             QModelIndexList origIndices = persistentIndexList(); /////#FIXME!!!!: not the entire list of indices!!!
             QModelIndexList changedIndices = origIndices;
             QList<TreeNode*> toremove;
-
-            layoutAboutToBeChanged();
+            autolayoutchange autolay(this);
 
             //Make a list of things to remove, and clear the index from the
             for(int i = 0; i < changedIndices.size(); ++i)
@@ -185,7 +185,6 @@ public:
 
             //Update the persistent indices from the lists of changed indices
             changePersistentIndexList(origIndices, changedIndices);
-            layoutChanged();
         }
         return success;
     }
@@ -222,7 +221,7 @@ public:
         return true;
     }
 
-    virtual bool moveRows(QModelIndexList & indices, int destrow, QModelIndex destparent = QModelIndex() )
+    virtual bool moveRows(const QModelIndexList & indices, int destrow, QModelIndex destparent = QModelIndex() )
     {
         if(indices.empty())
             return false;

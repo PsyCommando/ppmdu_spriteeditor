@@ -100,6 +100,7 @@ public:
     bool                nodeShouldAutoExpand()const override                {return true;}
     bool                nodeAllowFetchMore()const override                  {return true;}
     QString             nodeDisplayName()const override;
+    QVariant            nodeDecoration()const override;
 
 protected:
     bool _insertChildrenNode(TreeNode *node, int destrow) override;
@@ -115,7 +116,7 @@ protected:
     bool _deleteChildrenNodes(const QList<TreeNode*> & nodes)override;
 
     bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode)override;
-    bool _moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent) override;
+    bool _moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent) override;
     bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override;
 
 public:
@@ -233,11 +234,10 @@ public:
     typedef QVector<imgparts_t>         imgseq_t; //All the images part of a sequence
     typedef QVector<imgseq_t>           imgseqs_t; //A set of sequences
 
-
-    bool isImageDoubleSize(const QImage & img);
     fmt::frmid_t importImageParts(const imgparts_t & img); //returns img ids of the imported parts in the same order!
     fmt::animseqid_t importImageSequence(const imgseq_t & seq, uint8_t frmduration = 1);
     void importImageSequences(const imgseqs_t & sequences, uint8_t frmduration = 1);
+
 
 private:
     bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const;

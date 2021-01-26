@@ -2,6 +2,7 @@
 #define TABANIMSEQUENCE_HPP
 
 #include <QWidget>
+#include <QDataWidgetMapper>
 #include <src/ui/mainwindow.hpp>
 #include <src/ui/tabs/basespritetab.hpp>
 #include <src/ui/rendering/sprite_scene.hpp>
@@ -38,6 +39,9 @@ private:
     void setupAnimSeq(QPersistentModelIndex seq, Sprite * spr);
     void clearAnimSeq();
     void RefreshTable(); //Refresh and redraw the table
+
+    void SetupMappings();
+    void ClearMappings();
 
 private slots:
     //Elements callbacks
@@ -77,6 +81,7 @@ private:
     QPersistentModelIndex               m_curAnimSeq;
     QScopedPointer<AnimFramesModel>     m_curSeqFramesModel;
     QScopedPointer<AnimFrameDelegate>   m_curSeqFramesDelegate;
+    QScopedPointer<QDataWidgetMapper>   m_frmMapper;
 };
 
 #endif // TABANIMSEQUENCE_HPP

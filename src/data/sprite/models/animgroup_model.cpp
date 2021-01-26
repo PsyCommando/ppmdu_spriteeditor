@@ -5,11 +5,11 @@
 #include <src/data/sprite/models/animsequences_list_model.hpp>
 #include <src/data/sprite/animgroup.hpp>
 
-const QStringList AnimGroupModel::ColumnNames
+const std::map<AnimGroupModel::eColumns, QString> AnimGroupModel::ColumnNames
 {
-    {"Sequence ID"},
-    {"Slot Name"},
-    {"Nb Frames"},
+    {AnimGroupModel::eColumns::SequenceId,  "Sequence ID"},
+    {AnimGroupModel::eColumns::SlotName,    "Slot Name"},
+    {AnimGroupModel::eColumns::NbFrames,    "Nb Frames"},
 };
 
 //******************************************************************************
@@ -36,7 +36,7 @@ QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
         role != Qt::DecorationRole )
         return QVariant();
 
-    if(index.row() > m_root->nodeChildCount())
+    if(index.row() >= m_root->nodeChildCount())
     {
         Q_ASSERT(false);
         return QVariant();
@@ -49,7 +49,7 @@ QVariant AnimGroupModel::data(const QModelIndex &index, int role) const
 
     switch(static_cast<eColumns>(index.column()))
     {
-    case eColumns::Preview:
+    case eColumns::SequenceId:
         {
             if(role == Qt::DisplayRole)
             {
@@ -108,10 +108,12 @@ QVariant AnimGroupModel::headerData(int section, Qt::Orientation orientation, in
         {
             return section;
         }
-        else if(orientation == Qt::Orientation::Horizontal &&
-                section >= 0 && section < ColumnNames.size())
+        else if(orientation == Qt::Orientation::Horizontal)
         {
-            return ColumnNames[section];
+            eColumns col = static_cast<eColumns>(section);
+            auto itcol = ColumnNames.find(col);
+            if(itcol != ColumnNames.end())
+                return itcol->second;
         }
     }
     return TreeNodeModel::headerData(section, orientation, role);
@@ -122,7 +124,7 @@ bool AnimGroupModel::setData(const QModelIndex &index, const QVariant &value, in
     if(role != Qt::EditRole)
         return false;
 
-    if(index.row() > m_root->nodeChildCount())
+    if(index.row() >= m_root->nodeChildCount())
     {
         Q_ASSERT(false);
         return false;
@@ -193,7 +195,7 @@ Sprite *AnimGroupModel::getOwnerSprite()
 
 void AnimGroupModel::setSlotSequenceID(int slot, fmt::animseqid_t id)
 {
-    if(slot > m_root->nodeChildCount() || slot < 0)
+    if(slot >= m_root->nodeChildCount() || slot < 0)
         throw std::out_of_range("AnimGroupModel::setSlotSequenceID(): Slot out of range!");
     AnimSequenceReference * ref = static_cast<AnimSequenceReference *>(m_root->nodeChild(slot));
     ref->setSeqRefID(id);
@@ -201,7 +203,7 @@ void AnimGroupModel::setSlotSequenceID(int slot, fmt::animseqid_t id)
 
 fmt::animseqid_t AnimGroupModel::getSlotSequenceID(int slot) const
 {
-    if(slot > m_root->nodeChildCount() || slot < 0)
+    if(slot >= m_root->nodeChildCount() || slot < 0)
         throw std::out_of_range("AnimGroupModel::getSlotSequenceID(): Slot out of range!");
     const AnimSequenceReference * ref = static_cast<const AnimSequenceReference *>(m_root->nodeChild(slot));
     return ref->getSeqRefID();
@@ -214,7 +216,7 @@ int AnimGroupModel::columnCount(const QModelIndex &/*parent*/) const
 
 QString AnimGroupModel::getSlotName(int index)const
 {
-    if(index > m_slotNames.size())
+    if(index >= m_slotNames.size())
         return QString();
     return m_slotNames[index];
 }

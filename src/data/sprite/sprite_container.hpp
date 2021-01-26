@@ -69,7 +69,7 @@ public:
         PACK,
     };
     static const QMap<eContainerType, QString> ContainerTypeNames;
-    static const QList<QString> SpriteContentCategories;
+    //static const QList<QString> SpriteContentCategories;
 
     //
     SpriteContainer(QObject * parent = nullptr);
@@ -233,7 +233,7 @@ public:
 
     //Move children nodes between postions
     bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode)override;
-    bool _moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent) override;
+    bool _moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent) override;
     bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override;
 private:
     bool _removeChildrenNode(TreeNode *node, bool bdeleteptr = false); //Helper override, to avoid repeating code

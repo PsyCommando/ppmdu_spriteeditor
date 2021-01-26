@@ -45,14 +45,6 @@ class AnimGroup : public TreeNodeWithChilds<AnimSequenceReference>
     typedef TreeNodeWithChilds<AnimSequenceReference> parent_t ;
 public:
     using animseqid_t = fmt::animseqid_t;
-    enum struct eColumns : int
-    {
-        GroupID = 0,
-        GroupName,
-        NbSlots,
-        NbColumns,
-    };
-    static const QStringList ColumnNames;
 
     AnimGroup(TreeNode * parent);
     AnimGroup(AnimGroup && mv);

@@ -12,6 +12,7 @@ Helper for managing the QGraphicsScene used for displaying and editing the parts
 #include <src/data/sprite/models/effect_set_model.hpp>
 #include <src/ui/editor/frame/frame_editor_marker.hpp>
 #include <src/ui/editor/frame/frame_editor_editable.hpp>
+#include <src/ui/editor/frame/frame_editor_shared.hpp>
 
 //===================================================================
 //  FrameEditor
@@ -21,16 +22,6 @@ class FrameEditor : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    //Operation modes for the frame editor
-    enum struct eEditorMode : int
-    {
-        FrameParts,
-        AttachmentPoints,
-
-        NbModes [[maybe_unused]],
-        Invalid [[maybe_unused]],
-    };
-
     explicit FrameEditor(MFrame * frm, Sprite * pspr, MFramePartModel * ppartmdl, EffectSetModel * psetmdl, QObject *parent = nullptr);
     void initScene();
     void initScene(bool bdrawoutline, bool bdrawmarker, bool btransparency);
@@ -44,6 +35,8 @@ public:
 
     //Returns the middle XY coordinate of the center of the scene
     QPointF getSceneCenter()const;
+
+    inline eEditorMode getEditorMode()const {return m_mode;}
 
 private:
     void drawGrid(QPainter * painter, const QRectF & rect);
@@ -103,6 +96,8 @@ signals:
 
     void markerWasSelected(EditableItem * pmarker);
 
+    void editorModeChanged(eEditorMode mode);
+
 private:
     QRectF                              m_bgarea;
 
@@ -120,7 +115,8 @@ private:
     EditableItem *                      m_rulerItem         {nullptr};  //Item the rulers are following
 
     int                                 m_midmarkZ          {99};       //Z-level of the middle markers
-    int                                 m_gridsz            {8};        //Z-level for the grids to be drawn on
+    int                                 m_gridZ             {0};        //Z-level for the grids to be drawn on
+    int                                 m_gridsz            {1};        //len of a side of the squares that make up the grid
     bool                                m_bDrawMiddleMarker {true};
     bool                                m_bTransparency     {false};
     bool                                m_bDrawOutline      {true};

@@ -2,17 +2,7 @@
 #define ANIMSEQUENCES_LIST_MODEL_HPP
 #include <QAbstractItemModel>
 #include <src/data/treenodemodel.hpp>
-
-//*******************************************************************
-//Shared Sequences Code:
-//*******************************************************************
-enum struct eAnimationSequenceColumns : int
-{
-    Preview = 0,
-    NbFrames,
-    NbColumns [[maybe_unused]],
-};
-extern const QStringList ANIMATION_SEQUENCE_HEADER_COLUMNS;
+#include <map>
 
 //*******************************************************************
 //  AnimSequencesModel
@@ -22,6 +12,15 @@ class AnimSequences;
 class AnimSequencesListModel : public TreeNodeModel
 {
     Q_OBJECT
+public:
+    enum struct eColumns : int
+    {
+        Preview = 0,
+        NbFrames,
+        NbColumns [[maybe_unused]],
+    };
+    static const std::map<eColumns, QString> ColumnNames;
+
 public:
     explicit AnimSequencesListModel(AnimSequences * pseqs, Sprite * owner);
     virtual ~AnimSequencesListModel(){}

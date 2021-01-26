@@ -17,14 +17,6 @@ extern const QString ElemName_AnimTable;
 class AnimTableSlot : public TreeNodeTerminal
 {
 public:
-    enum struct eColumns : int
-    {
-        GroupId,
-        GroupName,
-        NbSlots,
-        NbColumns [[maybe_unused]],
-    };
-    static const QMap<eColumns,QString> ColumnNames;
     using parent_t = TreeNodeTerminal;
     AnimTableSlot(TreeNode * parent);
     AnimTableSlot(const AnimTableSlot & cp);

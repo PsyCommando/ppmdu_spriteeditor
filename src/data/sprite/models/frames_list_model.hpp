@@ -11,6 +11,14 @@ class FramesListModel : public TreeNodeModel
 {
     Q_OBJECT
 public:
+    enum struct eColumns:int
+    {
+        Preview = 0,
+        Id = 0,
+        NbColumns [[maybe_unused]],
+    };
+    static const std::map<eColumns, QString> ColumnNames;
+public:
     explicit FramesListModel(FramesContainer * parent, Sprite * parentsprite);
      ~FramesListModel();
 

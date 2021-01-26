@@ -3,6 +3,7 @@
 #include <QAbstractItemModel>
 #include <src/data/treenodemodel.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
+#include <map>
 
 //*******************************************************************
 //  AnimGroupModel
@@ -15,13 +16,13 @@ class AnimGroupModel : public TreeNodeModel
 public:
     enum struct eColumns : int
     {
-        Preview = 0,
+        SequenceId = 0,
         SlotName,
         NbFrames,
     };
+    static const std::map<eColumns, QString> ColumnNames;
 
-    static const QStringList ColumnNames;
-
+public:
     explicit AnimGroupModel(AnimGroup * pgrp, Sprite * owner);
     ~AnimGroupModel();
 

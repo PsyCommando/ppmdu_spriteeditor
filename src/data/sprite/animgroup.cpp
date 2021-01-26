@@ -69,13 +69,6 @@ const QString &AnimSequenceReference::nodeDataTypeName() const
 //**********************************************************************************
 //  AnimGroup
 //**********************************************************************************
-const QStringList AnimGroup::ColumnNames
-{
-    "Group ID",
-    "Group Name",
-    "Nb Slots",
-};
-
 AnimGroup::AnimGroup(TreeNode *parent)
     :parent_t(parent)
 {
@@ -84,11 +77,13 @@ AnimGroup::AnimGroup(TreeNode *parent)
 AnimGroup::AnimGroup(AnimGroup &&mv)
     :parent_t(mv)
 {
+    m_unk16 = mv.m_unk16;
 }
 
 AnimGroup::AnimGroup(const AnimGroup &cp)
     :parent_t(cp)
 {
+    m_unk16 = cp.m_unk16;
 }
 
 AnimGroup & AnimGroup::operator=(AnimGroup &&mv)
@@ -108,53 +103,6 @@ AnimGroup & AnimGroup::operator=(const AnimGroup &cp)
 AnimGroup::~AnimGroup()
 {
 }
-
-//QVariant AnimGroup::nodeData(int column, int role) const
-//{
-//    if( role != Qt::DisplayRole  &&
-//        role != Qt::EditRole     &&
-//        role != Qt::SizeHintRole &&
-//        role != Qt::DecorationRole)
-//        return QVariant();
-
-//    if(role == Qt::SizeHintRole)
-//    {
-//        QFontMetrics fm(QFont("Sergoe UI", 9));
-//        QString str(nodeData(column,Qt::DisplayRole).toString());
-//        return QSize(fm.horizontalAdvance(str), fm.height());
-//    }
-
-//    switch(static_cast<eColumns>(column))
-//    {
-//    case eColumns::GroupID:
-//        {
-//            if(role == Qt::DisplayRole || role == Qt::EditRole)
-//                return getGroupUID();
-//            break;
-//        }
-//    case eColumns::GroupName:
-//        {
-//            if(role == Qt::DisplayRole || role == Qt::EditRole)
-//            {
-//                const AnimTable * tbl = static_cast<const AnimTable*>(parentNode());
-//                Q_ASSERT(tbl);
-//                return tbl->data( tbl->getModel()->index(nodeIndex(), column, QModelIndex()), role);
-//            }
-//            break;
-//        }
-//    case eColumns::NbSlots:
-//        {
-//            if(role == Qt::DisplayRole || role == Qt::EditRole)
-//                return m_seqlist.size();
-//            break;
-//        }
-//    default:
-//        {
-//            break;
-//        }
-//    };
-//    return QVariant();
-//}
 
 void AnimGroup::importGroup(const fmt::AnimDB::animgrp_t &grp)
 {

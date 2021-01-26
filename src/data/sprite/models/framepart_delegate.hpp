@@ -43,6 +43,9 @@ public:
 
     QSize sizeHint( const QStyleOptionViewItem & /*option*/, const QModelIndex & index ) const override;
 
+    //void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+
 private:
 
     static constexpr const char * ImgSelCmbBoxName()    {return "cmbImgSelect";}
@@ -65,6 +68,7 @@ private:
 private:
     MFrame *m_pfrm{nullptr};
     QImage  m_minusone;
+
 };
 
 #endif // FRAME_PART_DELEGATE_HPP

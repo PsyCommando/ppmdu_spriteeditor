@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.14.0, 2021-01-16T01:32:38. -->
+<!-- Written by QtCreator 4.14.0, 2021-01-26T01:49:20. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -293,7 +293,7 @@
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/ppmdu_spriteeditor.pro</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/ppmdu_spriteeditor.pro</value>
-    <value type="QString" key="RunConfiguration.Arguments">&quot;D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/EoSRomRoot/data/MONSTER/m_ground.bin&quot;</value>
+    <value type="QString" key="RunConfiguration.Arguments">&quot;D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/EoSRomRoot/data/MONSTER/m_attack.bin&quot;</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>

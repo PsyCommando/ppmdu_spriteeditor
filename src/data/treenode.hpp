@@ -73,6 +73,7 @@ public:
 
     //Name displayed in the main tree view for this node.
     virtual QString nodeDisplayName()const {return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());}
+    virtual QVariant nodeDecoration()const {return QVariant();}
 
     //Item specific flags
     virtual Qt::ItemFlags     nodeFlags(int column = 0)const    {Q_UNUSED(column); return m_flags;}
@@ -106,7 +107,7 @@ public:
 
     //Move children nodes between postions
     virtual bool _moveChildrenNodes(int row, int count, int destrow, TreeNode* destnode) = 0;
-    virtual bool _moveChildrenNodes(QModelIndexList & indices, int destrow, QModelIndex destparent = QModelIndex()) = 0;
+    virtual bool _moveChildrenNodes(const QModelIndexList & indices, int destrow, QModelIndex destparent = QModelIndex()) = 0;
     virtual bool _moveChildrenNodes(const QList<TreeNode*> & nodes, int destrow, QModelIndex destparent = QModelIndex()) = 0;
 
 protected:

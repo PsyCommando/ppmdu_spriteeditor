@@ -21,7 +21,7 @@ int MFramePartModel::columnCount(const QModelIndex &/*parent*/) const
     if(ProgramSettings::Instance().isAdvancedMode())
         return static_cast<int>(eFramePartColumnsType::NBColumns);
     else
-        return static_cast<int>(eFramePartColumnsType::NBColumnsBasicMode);
+        return static_cast<int>(eFramePartColumnsType::LastColumnsBasicMode) + 1; //Add one since its a count
 }
 
 QVariant MFramePartModel::data(const QModelIndex &index, int role) const
@@ -276,7 +276,10 @@ QVariant MFramePartModel::dataImgId(const MFramePart * part, int role) const
 {
     if(role == Qt::DisplayRole)
     {
-        return QString("Img#%1").arg(static_cast<int>(part->getFrameIndex()));
+        if(part->isPartReference())
+            return QString("Tile Reference");
+        else
+            return QString("Img#%1").arg(static_cast<int>(part->getFrameIndex()));
     }
     else if(role == Qt::EditRole)
     {

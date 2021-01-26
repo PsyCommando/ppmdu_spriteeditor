@@ -1,6 +1,7 @@
 #ifndef SEQUENTIALGENERATOR_HPP
 #define SEQUENTIALGENERATOR_HPP
 #include <queue>
+#include <mutex>
 
 namespace utils
 {
@@ -26,6 +27,12 @@ namespace utils
         typedef _IDTY     id_t;
         typedef BaseSequentialIDGen<_PARENTTY,_IDTY> my_t;
 
+        static std::mutex & GetGeneratorMutex()
+        {
+            static std::mutex s_GenMutex;
+            return s_GenMutex;
+        }
+
         static id_t & GetCounter()
         {
             static CounterWrap<id_t> s_IDCounter;
@@ -40,6 +47,7 @@ namespace utils
 
         static id_t AssignID()
         {
+            std::lock_guard<std::mutex> lk(GetGeneratorMutex());
             id_t outid = 0;
             if(GetRecycler().empty())
             {
@@ -56,6 +64,7 @@ namespace utils
 
         static void ResignID(id_t id)
         {
+            std::lock_guard<std::mutex> lk(GetGeneratorMutex());
             GetRecycler().push(id);
         }
 

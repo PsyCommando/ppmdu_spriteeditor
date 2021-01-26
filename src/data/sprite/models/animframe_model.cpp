@@ -2,15 +2,18 @@
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/frame.hpp>
 #include <src/data/sprite/animframe.hpp>
+#include <src/utility/ui_helpers.hpp>
 
 //Name displayed in the column header for each properties of the frame! Is tied to eColumnsType
-const QStringList AnimFrameColumnNames
+const std::map<AnimFramesModel::eColumns, QString> AnimFramesModel::ColumnNames
 {
-    "Frame",
-    "Duration",
-    "Offset",
-    "Shadow Offset",
-    "Flags",
+    {eColumns::Frame,       "Frame"     },
+    {eColumns::Duration,    "Duration"  },
+    {eColumns::OffsetX,     "X"         },
+    {eColumns::OffsetY,     "Y"         },
+    {eColumns::ShadowX,     "Shadow X"  },
+    {eColumns::ShadowY,     "Shadow Y"  },
+    {eColumns::Flags,       "Flags"     },
 };
 
 //***********************************************************************************
@@ -29,9 +32,9 @@ AnimFramesModel::~AnimFramesModel()
     m_sprite = nullptr;
 }
 
-int AnimFramesModel::columnCount(const QModelIndex &parent) const
+int AnimFramesModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return AnimFrameColumnNames.size();//static_cast<int>(eAnimFrameColumnsType::NBColumns);
+    return ColumnNames.size();
 }
 
 QVariant AnimFramesModel::data(const QModelIndex &index, int role) const
@@ -44,9 +47,9 @@ QVariant AnimFramesModel::data(const QModelIndex &index, int role) const
 
     const AnimFrame * animfrm = static_cast<const AnimFrame*>(getItem(index));
 
-    switch(static_cast<eAnimFrameColumnsType>(index.column()))
+    switch(static_cast<eColumns>(index.column()))
     {
-    case eAnimFrameColumnsType::Frame: //Frame
+        case eColumns::Frame: //Frame
         {
             if( role == Qt::DisplayRole )
                 return QVariant(QString("FrameID: %1").arg( static_cast<int>(animfrm->frmidx()) ));
@@ -61,90 +64,60 @@ QVariant AnimFramesModel::data(const QModelIndex &index, int role) const
             }
             else if( role == Qt::SizeHintRole )
             {
-                QSize sz = calcTextSize(data(index, Qt::DisplayRole).toString());
-                sz.setWidth( sz.width() + 64 ); //Compensate for thumbnail
+                QSize sz = CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
+                sz.setWidth(sz.width() + 64); //Compensate for thumbnail
                 return sz;
             }
             break;
         }
-    case eAnimFrameColumnsType::Duration: //duration
+        case eColumns::Duration: //duration
         {
             if( role == Qt::DisplayRole )
                 return QString("%1t").arg( static_cast<int>(animfrm->duration()) );
             else if(role == Qt::EditRole)
                 return QVariant(static_cast<int>(animfrm->duration()));
             else if( role == Qt::SizeHintRole )
-                return calcTextSize(data(index, Qt::DisplayRole).toString());
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
             break;
         }
-    case eAnimFrameColumnsType::Offset:
+        case eColumns::OffsetX:
         {
-            if(role == Qt::DisplayRole)
-                return QString("(%1, %2)").arg(animfrm->xoffset()).arg(animfrm->yoffset());
-            else if(role == Qt::EditRole)
-            {
-                QVariant var;
-                var.setValue<QPair<int,int>>( qMakePair(animfrm->xoffset(), animfrm->yoffset()) );
-                return var;
-            }
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                return QVariant(static_cast<int>(animfrm->xoffset()));
             else if( role == Qt::SizeHintRole )
-            {
-                QSize sz = calcTextSize( data(index, Qt::DisplayRole).toString() );
-                sz.setWidth( qMax( 100, sz.width() ) );
-                return sz;
-            }
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
             break;
         }
-    case eAnimFrameColumnsType::ShadowOffset:
+        case eColumns::OffsetY:
         {
-            if(role == Qt::DisplayRole)
-                return QString("(%1, %2)").arg(animfrm->shadowx()).arg(animfrm->shadowy());
-            else if(role == Qt::EditRole)
-            {
-                QVariant var;
-                var.setValue<QPair<int,int>>( qMakePair(animfrm->shadowx(), animfrm->shadowy()) );
-                return var;
-            }
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                return QVariant(static_cast<int>(animfrm->yoffset()));
             else if( role == Qt::SizeHintRole )
-            {
-                QSize sz = calcTextSize( data(index, Qt::DisplayRole).toString() );
-                sz.setWidth( qMax( 100, sz.width() ) );
-                return sz;
-            }
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
             break;
         }
-    case eAnimFrameColumnsType::Flags: //flag
+        case eColumns::ShadowX:
+        {
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                return QVariant(static_cast<int>(animfrm->shadowx()));
+            else if( role == Qt::SizeHintRole )
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
+            break;
+        }
+        case eColumns::ShadowY:
+        {
+            if( role == Qt::DisplayRole || role == Qt::EditRole )
+                return QVariant(static_cast<int>(animfrm->shadowy()));
+            else if( role == Qt::SizeHintRole )
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
+            break;
+        }
+        case eColumns::Flags: //flag
         {
             if( role == Qt::DisplayRole || role == Qt::EditRole )
                 return QVariant(animfrm->flags());
             else if( role == Qt::SizeHintRole )
-                return calcTextSize( data(index, Qt::DisplayRole).toString() );
-            break;
-        }
-
-    // -- Direct acces via nodedate! --
-    case eAnimFrameColumnsType::Direct_ShadowXOffset:
-        {
-            if( role == Qt::DisplayRole || role == Qt::EditRole )
-                return QVariant(static_cast<int>(animfrm->shadowx()));
-            break;
-        }
-    case eAnimFrameColumnsType::Direct_ShadowYOffset:
-        {
-            if( role == Qt::DisplayRole || role == Qt::EditRole )
-                return QVariant(static_cast<int>(animfrm->shadowy()));
-            break;
-        }
-    case eAnimFrameColumnsType::Direct_XOffset:
-        {
-            if( role == Qt::DisplayRole || role == Qt::EditRole )
-                return QVariant(static_cast<int>(animfrm->xoffset()));
-            break;
-        }
-    case eAnimFrameColumnsType::Direct_YOffset:
-        {
-            if( role == Qt::DisplayRole || role == Qt::EditRole )
-                return QVariant(static_cast<int>(animfrm->yoffset()));
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
             break;
         }
     default:
@@ -163,84 +136,49 @@ bool AnimFramesModel::setData(const QModelIndex &index, const QVariant &value, i
     Q_ASSERT(pfrm);
     bool bok = false;
 
-    switch(static_cast<eAnimFrameColumnsType>(index.column()))
+    switch(static_cast<eColumns>(index.column()))
     {
-    case eAnimFrameColumnsType::Frame:
+        case eColumns::Frame:
         {
             pfrm->setFrmidx(static_cast<int16_t>(value.toInt(&bok)));
             break;
         }
-    case eAnimFrameColumnsType::Duration:
+        case eColumns::Duration:
         {
             pfrm->setDuration(static_cast<uint8_t>(value.toInt(&bok)));
             break;
         }
-    case eAnimFrameColumnsType::Offset:
-        {
-            bok = value.canConvert<QPair<int,int>>();
-            if(bok)
-            {
-                QPair<int,int> offs = value.value<QPair<int,int>>();
-                pfrm->setXoffset(offs.first);
-                pfrm->setYoffset(offs.second);
-            }
-            else
-                qDebug("AnimSequence::setData(): Couldn't convert offset value to a QPair!\n");
-            break;
-        }
-    case eAnimFrameColumnsType::ShadowOffset:
-        {
-            bok = value.canConvert<QPair<int,int>>();
-            if(bok)
-            {
-                QPair<int,int> offs = value.value<QPair<int,int>>();
-                pfrm->setShadowx(offs.first);
-                pfrm->setShadowy(offs.second);
-            }
-            else
-                qDebug("AnimSequence::setData(): Couldn't convert shadow offset value to a QPair!\n");
-            break;
-        }
-    case eAnimFrameColumnsType::Flags:
-        {
-            pfrm->setFlags(static_cast<uint8_t>(value.toInt(&bok)));
-            break;
-        }
-
-    //direct access columns
-    case eAnimFrameColumnsType::Direct_XOffset:
+        case eColumns::OffsetX:
         {
             pfrm->setXoffset(static_cast<int16_t>(value.toInt(&bok)));
             break;
         }
-    case eAnimFrameColumnsType::Direct_YOffset:
+        case eColumns::OffsetY:
         {
             pfrm->setYoffset(static_cast<int16_t>(value.toInt(&bok)));
             break;
         }
-    case eAnimFrameColumnsType::Direct_ShadowXOffset:
+        case eColumns::ShadowX:
         {
             pfrm->setShadowx(static_cast<int16_t>(value.toInt(&bok)));
             break;
         }
-    case eAnimFrameColumnsType::Direct_ShadowYOffset:
+        case eColumns::ShadowY:
         {
             pfrm->setShadowy(static_cast<int16_t>(value.toInt(&bok)));
             break;
         }
-    //Undefined cases
-    default:
-        return false; //Return early
+        case eColumns::Flags:
+        {
+            pfrm->setFlags(static_cast<uint8_t>(value.toInt(&bok)));
+            break;
+        }
+        default:
+            return false; //Return early
     };
 
-    if(bok/* && index.model()*/)
-    {
-//        QAbstractItemModel* pmod = const_cast<QAbstractItemModel*>(index.model());
-//        if(!pmod)
-//            throw std::runtime_error("Model is null!");
-
+    if(bok)
         emit dataChanged(index, index, QVector<int>{role});
-    }
     return bok;
 }
 
@@ -258,14 +196,20 @@ QVariant AnimFramesModel::headerData(int section, Qt::Orientation orientation, i
         }
         return QVariant(rownum);
     }
-    else if( orientation == Qt::Orientation::Horizontal && section < AnimFrameColumnNames.size() )
+    else if( orientation == Qt::Orientation::Horizontal)
     {
-        if(role == Qt::SizeHintRole)
+        eColumns col = static_cast<eColumns>(section);
+        auto itcol = ColumnNames.find(col);
+        if(itcol != ColumnNames.end())
         {
-            QSize sz = calcTextSize(AnimFrameColumnNames[section]);
-            return sz.grownBy(QMargins(8,0,8,0));
+            if(role == Qt::SizeHintRole)
+            {
+                QSize sz = CalculateTextSizeForView(itcol->second);
+                return sz.grownBy(QMargins(8,0,8,0));
+            }
+            else
+                return itcol->second;
         }
-        return AnimFrameColumnNames[section];
     }
     return QVariant();
 }
@@ -290,8 +234,3 @@ const Sprite *AnimFramesModel::getOwnerSprite() const
     return const_cast<AnimFramesModel*>(this)->getOwnerSprite();
 }
 
-QSize AnimFramesModel::calcTextSize(const QString &text)
-{
-    static QFontMetrics fm(QFont("Sergoe UI", 9));
-    return QSize(fm.horizontalAdvance(text) + 4, fm.height() + 4);
-}

@@ -101,7 +101,7 @@ public:
     bool _deleteChildrenNodes(int row, int count) override;
     bool _deleteChildrenNodes(const QList<TreeNode *> &nodes) override;
     bool _moveChildrenNodes(int row, int count, int destrow, TreeNode *destnode) override;
-    bool _moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent) override;
+    bool _moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent) override;
     bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override;
 
 private:

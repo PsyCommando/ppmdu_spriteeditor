@@ -41,7 +41,7 @@ void FrameEditor::initScene(bool bdrawoutline, bool bdrawmarker, bool btranspare
     m_bDrawMiddleMarker = bdrawmarker;
     m_bTransparency     = btransparency;
     m_bDrawOutline      = bdrawoutline;
-    for( auto & part : m_parts )
+    Q_FOREACH( auto & part, m_parts )
         part->setShowOutline(m_bDrawOutline);
     initScene();
 }
@@ -149,36 +149,51 @@ void FrameEditor::onItemDragEnd(EditableItem * item)
 void FrameEditor::OnSelectionChanged()
 {
     //Make sure to notify the tab we need to update our selection
-    QList<QGraphicsItem*> items = selectedItems();
-    QList<EditableItem*> casted;
-    for(QGraphicsItem* p : items)
-        casted.push_back(static_cast<EditableItem*>(p));
-    emit selectionChanged(casted);
+//    QList<QGraphicsItem*> items = selectedItems();
+//    QList<EditableItem*> casted;
+//    for(QGraphicsItem* p : items)
+//        casted.push_back(static_cast<EditableItem*>(p));
+    //emit selectionChanged(casted);
 }
 
 void FrameEditor::OnViewPartsSelected(const QModelIndexList & selected)
 {
-    QList<EditableItem*> casted;
-    for(QModelIndex idx : selected)
     {
-        const MFramePart * ppart = static_cast<MFramePart*>(idx.internalPointer());
-        auto itf = std::find_if(m_parts.begin(), m_parts.end(), [ppart](const QPointer<FramePart> & ptr){return ptr->matchPart(ppart);});
-        if(itf != m_parts.end())
-            casted.push_back(itf->data());
+        QSignalBlocker blk(this);
+        clearSelection();
+        //QList<EditableItem*> casted;
+        Q_FOREACH(const QModelIndex & idx, selected)
+        {
+            if(!idx.isValid())
+                continue;
+            const MFramePart * ppart = static_cast<MFramePart*>(idx.internalPointer());
+            auto itf = std::find_if(m_parts.begin(), m_parts.end(), [ppart](const QPointer<FramePart> & ptr){return ptr->matchPart(ppart);});
+            if(itf != m_parts.end())
+            {
+                itf->data()->setSelected(true);
+                //casted.push_back(itf->data());
+            }
+        }
     }
-    emit selectionChanged(casted);
+    updateScene(); //so the seleection updates after we re-enable signals
 }
 void FrameEditor::OnViewMarkersSelected(const QModelIndexList & selected)
 {
-    QList<EditableItem*> casted;
-    for(QModelIndex idx : selected)
     {
-        const EffectOffset * pattach = static_cast<EffectOffset*>(idx.internalPointer());
-        auto itf = std::find_if(m_markers.begin(), m_markers.end(), [pattach](const QPointer<AttachMarker> & ptr){return ptr->matchAttachementOffset(pattach);});
-        if(itf != m_markers.end())
-            casted.push_back(itf->data());
+        QSignalBlocker blk(this);
+        clearSelection();
+        //QList<EditableItem*> casted;
+        Q_FOREACH(const QModelIndex & idx, selected)
+        {
+            if(!idx.isValid())
+                continue;
+            const EffectOffset * pattach = static_cast<EffectOffset*>(idx.internalPointer());
+            auto itf = std::find_if(m_markers.begin(), m_markers.end(), [pattach](const QPointer<AttachMarker> & ptr){return ptr->matchAttachementOffset(pattach);});
+            if(itf != m_markers.end())
+                itf->data()->setSelected(true);
+        }
     }
-    emit selectionChanged(casted);
+    updateScene(); //so the seleection updates after we re-enable signals
 }
 
 //void FrameEditor::onPartMoved()
@@ -222,11 +237,11 @@ void FrameEditor::updateScene()
     }
 
     //update image part items
-    for(auto & p : m_parts)
+    Q_FOREACH(auto & p, m_parts)
         p->updateOffset();
 
     //Do markers updates
-    for(auto & m : m_markers)
+    Q_FOREACH(auto & m, m_markers)
         m->updateOffset();
 }
 
@@ -253,7 +268,7 @@ void FrameEditor::setDrawMiddleGuide(bool bdraw)
 void FrameEditor::setDrawOutlines(bool bdraw)
 {
     m_bDrawOutline = bdraw;
-    for( auto & part : m_parts )
+    Q_FOREACH( auto & part, m_parts )
         part->setShowOutline(m_bDrawOutline);
     update();
 }
@@ -261,7 +276,7 @@ void FrameEditor::setDrawOutlines(bool bdraw)
 void FrameEditor::setTransparencyEnabled(bool benabled)
 {
     m_bTransparency = benabled;
-    for( auto & part : m_parts )
+    Q_FOREACH( auto & part, m_parts )
         part->setTransparencyEnabled(benabled);
     initScene();
     update();
@@ -275,12 +290,12 @@ void FrameEditor::setEditorMode(eEditorMode mode)
     m_mode = mode;
     //Toggle part states depending on the mode
     bool bpartsEnabled = m_mode == eEditorMode::FrameParts;
-    for(auto & p : m_parts)
+    Q_FOREACH(auto & p, m_parts)
     {
         p->setEnabled(bpartsEnabled);
     }
     bool bmarkerEnabled = m_mode == eEditorMode::AttachmentPoints;
-    for(auto & p : m_markers)
+    Q_FOREACH(auto & p, m_markers)
     {
         p->setEnabled(bmarkerEnabled);
     }
@@ -351,10 +366,10 @@ void FrameEditor::drawGrid(QPainter * painter, const QRectF & rect)
     qreal top  = rect.top()  - (qRound(rect.top())  % m_gridsz );
     QVarLengthArray<QLineF, 256> linesx;
     QVarLengthArray<QLineF, 256> linesy;
-    QPen penv(QColor::fromHsv( 200, 30, 70 ), 0.4);
-    QPen penh(QColor::fromHsv( 220, 40, 80 ), 0.4);
+    QPen penv(QColor::fromHsv( 200, 30, 70 ), 0.2);
+    QPen penh(QColor::fromHsv( 220, 40, 80 ), 0.2);
 
-    //=== Draw minor lines every 8 pixels ===
+    //=== Draw minor lines every m_gridsz pixels ===
     for (int x = left; x < rect.right(); x += m_gridsz)
         linesx.append(QLineF(x, rect.top(), x, rect.bottom()));
     for (int y = top; y < rect.bottom(); y += m_gridsz)
@@ -366,7 +381,7 @@ void FrameEditor::drawGrid(QPainter * painter, const QRectF & rect)
     painter->setPen(penh);
     painter->drawLines(linesy.data(), linesy.size());
 
-    //=== Draw major lines every 16 pixels ===
+    //=== Draw major lines every m_gridsz*2 pixels ===
     penv.setColor(QColor::fromHsv( 5, 50, 70 ));
     penh.setColor(QColor::fromHsv( 10, 60, 80 ));
     penv.setWidthF(0.6);
@@ -418,7 +433,7 @@ void FrameEditor::wheelEvent(QGraphicsSceneWheelEvent *event)
     */
     int degrees = event->delta() / 8;
     event->accept();
-    emit zoom(qRound(degrees/15.0 * 25.0));
+    emit zoom(qRound(degrees/15.0 * ProgramSettings::Instance().editorZoomIncrements()));
     invalidate();
 }
 

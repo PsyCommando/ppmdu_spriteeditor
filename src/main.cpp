@@ -9,16 +9,10 @@
 #include <QTime>
 #include <src/utility/randomgenhelper.hpp>
 #include <src/utility/program_settings.hpp>
+#include <src/ui/arguments_handler.hpp>
 
-const QString OPT_Export = "e";
-const QString OPT_Import = "i";
-
-
-const QList<QCommandLineOption> PGRM_Options
-{
-    QCommandLineOption(OPT_Import, "Application will run in import mode!"),
-    QCommandLineOption(OPT_Export, "Application will run in export mode!"),
-};
+const char * ORG_NAME = "PPMDU";
+const char * APP_NAME = "Sprite Cruncher";
 
 /*
  * Because Qt doesn't handle exceptions from its message handlers by default,
@@ -52,14 +46,14 @@ public:
 
 inline bool ShouldDisplayUI(const QCommandLineParser & parser)
 {
-    return !(parser.isSet(OPT_Import) || parser.isSet(OPT_Export));
+    return cmdline_processing::ParseProcessingMode(parser) == cmdline_processing::eProcessingMode::None;
 }
 
 void SetupApplication()
 {
     //App constants
-    QCoreApplication::setOrganizationName("PPMDU");
-    QCoreApplication::setApplicationName("Sprite Crunsher");
+    QCoreApplication::setOrganizationName(ORG_NAME);
+    QCoreApplication::setApplicationName(APP_NAME);
 
     //RNG seed init
     GetRandomGenerator().seed(QTime(0,0,0).secsTo(QTime::currentTime()));
@@ -68,7 +62,7 @@ void SetupApplication()
 QCommandLineParser & SetupApplicationOptions(ApplicationNoExcept & /*app*/, QCommandLineParser & parser)
 {
     //Options
-    parser.addOptions(PGRM_Options);
+    parser.addOptions(cmdline_processing::PGRM_Options);
 
     //Positional
     parser.addPositionalArgument("filepath", "File to open with the program!");
@@ -83,36 +77,30 @@ int main(int argc, char *argv[])
     SetupApplication();
     SetupApplicationOptions(app, parser).process(app);
 
-    QString openFilePath;
-    const QStringList positionalArguments = parser.positionalArguments();
-    if(!positionalArguments.empty())
-        openFilePath = positionalArguments.first();
-
+    cmdline_processing::ArgumentsHandler *  phndlr  = nullptr;  //Interface pointer for handling arguments
+    QScopedPointer<QMainWindow>             pmainw;             //Keeps the instance of the main window alive, and properly deletes
     try
     {
         //Should we display the UI?
-        if( ShouldDisplayUI(parser) )
+        if(ShouldDisplayUI(parser))
         {
             qInfo() <<"Staring in GUI mode!\n";
-            MainWindow w;
-            w.show();
-            w.setFocus();
-            if(!openFilePath.isEmpty())
-                w.LoadContainer(openFilePath);
-            return app.exec();
+            MainWindow * pm = new MainWindow;
+            pmainw.reset(pm);
+            phndlr = pm;
         }
         else
         {
             qInfo() <<"Staring in console mode!\n";
             //If not, we're always in processing mode!
-            ProcessingConsole w;
-            w.show();
-
-            //##TODO##
-            //Execute the tasks here!
-            w.WriteLine( "AYY LMAO!" );
-            return app.exec();
+            ProcessingConsole * pc = new ProcessingConsole;
+            pmainw.reset(pc);
+            phndlr = pc;
         }
+        pmainw->show();
+        pmainw->setFocus();
+        phndlr->ProcessArguments(parser);
+        return app.exec();
     }
     catch(const std::exception & e)
     {

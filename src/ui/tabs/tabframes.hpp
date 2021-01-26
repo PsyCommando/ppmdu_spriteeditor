@@ -44,6 +44,7 @@ private:
     bool setFrame(QPersistentModelIndex element, Sprite* spr);
     void clearFrame();
     void updateListAndEditor();
+    void _MovePart(bool up);
 
 private slots:
     void OnFrameEditorZoom(int diff);
@@ -62,9 +63,10 @@ private slots:
     void on_btnFrmMvUp_clicked();
     void on_btnFrmMvDown_clicked();
     void on_btnFrmDup_clicked();
-    void on_cmbFrmQuickPrio_currentIndexChanged(int index);
 
     void on_tvAttachments_clicked(const QModelIndex &index);
+
+    void selectPart(const QModelIndex & index);
 
 signals:
     void partSelected(const QModelIndexList & selected);

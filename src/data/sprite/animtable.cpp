@@ -11,14 +11,6 @@ const QString ElemName_AnimTable    = "Animation Table";
 //**********************************************************************************
 //  AnimGroupRef
 //**********************************************************************************
-
-const QMap<AnimTableSlot::eColumns,QString> AnimTableSlot::ColumnNames
-{
-    {eColumns::GroupId,     QString("Group ID")},
-    {eColumns::GroupName,   QString("Slot Name")},
-    {eColumns::NbSlots,     QString("Nb Group Slots")},
-};
-
 AnimTableSlot::AnimTableSlot(TreeNode * parent)
     :parent_t(parent)
 {

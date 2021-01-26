@@ -31,8 +31,6 @@ void TabAnimTable::OnShowTab(QPersistentModelIndex element)
     }
     ui->tvAnimTbl->setModel(m_animTableModel.data());
     ui->tvAnimTbl->setItemDelegate(m_animTableDelegate.data());
-    ui->tvAnimTbl->setSizeAdjustPolicy(QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents);
-    ui->tvAnimTbl->resizeColumnsToContents();
     m_previewrender.reset(new SpriteScene);
     ui->btnExtraOptions->setMenu(MakeExtraMenu());
     ConnectControls();
@@ -70,7 +68,6 @@ void TabAnimTable::DisconnectControls()
 {
     if(m_animTable.isValid())
     {
-        //AnimTable * ptable = static_cast<AnimTable *>(m_animTable.internalPointer());
         disconnect(m_animTableModel.data(), &QAbstractItemModel::dataChanged, nullptr, nullptr);
     }
     disconnect(ui->tvAnimTbl,           &QTableView::clicked,   this, &TabAnimTable::OnAnimTableItemActivate);
@@ -117,10 +114,10 @@ void TabAnimTable::OnSelectGroup(const QItemSelection &selection)
         ui->btnStop->setEnabled(true);
 
         //Grow the slider to the appropriate length
-        //const AnimGroup * pgrp = reinterpret_cast<const AnimGroup *>(m_previewedGroup.internalPointer());
-        ui->sldrSubSequence->blockSignals(true);
-        ui->sldrSubSequence->setRange(0, pgrp->nodeChildCount()-1);
-        ui->sldrSubSequence->blockSignals(false);
+        {
+            QSignalBlocker blk(ui->sldrSubSequence);
+            ui->sldrSubSequence->setRange(0, pgrp->nodeChildCount()-1);
+        }
         ui->sldrSubSequence->setValue(0);
         ui->sldrSubSequence->update();
 
@@ -144,9 +141,10 @@ void TabAnimTable::OnDeselectAll()
     ui->btnStop->setEnabled(false);
 
     //Clear the slider
-    ui->sldrSubSequence->blockSignals(true);
-    ui->sldrSubSequence->setRange(0, 1);
-    ui->sldrSubSequence->blockSignals(false);
+    {
+        QSignalBlocker blk(ui->sldrSubSequence);
+        ui->sldrSubSequence->setRange(0, 1);
+    }
     ui->sldrSubSequence->setValue(0);
     ui->sldrSubSequence->update();
 

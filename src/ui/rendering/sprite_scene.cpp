@@ -102,8 +102,7 @@ QColor SpriteScene::getSpriteBGColor() const
 
 void SpriteScene::InstallAnimPreview(QGraphicsView *pview, const Sprite *pspr, const AnimSequence *paniseq)
 {
-    if(!pview || !pspr || !paniseq)
-        Q_ASSERT(false);
+    Q_ASSERT(pview && pspr && paniseq);
 
     Reset();
     //Set the current sprite
@@ -113,8 +112,10 @@ void SpriteScene::InstallAnimPreview(QGraphicsView *pview, const Sprite *pspr, c
 
     qDebug() << "SpriteScene::InstallAnimPreview(): Displaying animation..\n";
     pview->setScene(&getAnimScene());
+
+    //Make sure the sprite is visible in the preview
+    pview->fitInView(getAnimSprite()->getTravelRange(), Qt::AspectRatioMode::KeepAspectRatio);
     pview->ensureVisible(getAnimSprite(), 8, 8);
-    //pview->setBackgroundBrush(QBrush(getSpriteBGColor()));
 }
 
 void SpriteScene::UninstallAnimPreview(QGraphicsView *pview)

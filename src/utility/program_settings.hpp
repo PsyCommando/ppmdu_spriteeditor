@@ -29,6 +29,7 @@ namespace settings_consts
     extern const QString SETTING_EDITOR_ZOOM_INCR;
 
     extern const QString SETTING_ADVANCED_MODE;
+    extern const QString SETTING_LAST_PROJECT_PATH;
 
 };
 
@@ -53,6 +54,8 @@ public:
     int previewFramerate();
     int editorDefaultZoom();
     int editorZoomIncrements();
+
+    QString lastProjectPath();
 
 public slots:
     void WriteSettings(const QString & groupname, std::function<void(QSettings&)> writefun);

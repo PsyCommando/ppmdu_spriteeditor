@@ -288,7 +288,7 @@ void TabAnimGroup::on_btnMoveSlotUp_clicked()
     if(selected.empty())
         return;
     int begrow = selected.first().row();
-    if(begrow == 1)
+    if(begrow == 0)
         return; //Can't move anything up!
     m_pGroupModel->moveRows(selected, begrow-1);
 }

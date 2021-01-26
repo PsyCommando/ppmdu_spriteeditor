@@ -303,7 +303,7 @@ bool EffectOffsetSet::_moveChildrenNodes(int , int , int , TreeNode *)
     return false;
 }
 
-bool EffectOffsetSet::_moveChildrenNodes(QModelIndexList &, int , QModelIndex )
+bool EffectOffsetSet::_moveChildrenNodes(const QModelIndexList &, int , QModelIndex )
 {
     return false;
 }

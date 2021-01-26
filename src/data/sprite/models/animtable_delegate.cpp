@@ -3,6 +3,7 @@
 #include <src/data/sprite/animgroup.hpp>
 #include <src/data/sprite/animgroups_container.hpp>
 #include <src/data/sprite/animtable.hpp>
+#include <src/data/sprite/models/animtable_model.hpp>
 #include <src/data/treenodemodel.hpp>
 #include <QComboBox>
 #include <QLineEdit>
@@ -31,9 +32,9 @@ QSize AnimTableDelegate::sizeHint(const QStyleOptionViewItem &option, const QMod
 QWidget *AnimTableDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &/*option*/, const QModelIndex &index) const
 {
     QWidget * pedit = nullptr;
-    if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupId)
+    if(static_cast<AnimTableModel::eColumns>(index.column()) == AnimTableModel::eColumns::GroupID)
         pedit = makeGroupSelect(parent, index);
-    else if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupName)
+    else if(static_cast<AnimTableModel::eColumns>(index.column()) == AnimTableModel::eColumns::GroupName)
         pedit = makeNameEdit(parent, index);
 
     //Common properties
@@ -52,7 +53,7 @@ void AnimTableDelegate::setEditorData(QWidget *editor, const QModelIndex &index)
         return;
     const AnimTableSlot * pgrp  = static_cast<const AnimTableSlot*>(index.internalPointer());
 
-    if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupId)
+    if(static_cast<AnimTableModel::eColumns>(index.column()) == AnimTableModel::eColumns::GroupID)
     {
         QComboBox *cmb = static_cast<QComboBox*>(editor);
         Q_ASSERT(cmb);
@@ -62,7 +63,7 @@ void AnimTableDelegate::setEditorData(QWidget *editor, const QModelIndex &index)
         else
             cmb->setCurrentIndex(ref + 1); //Since 0 is reserved increment always by one
     }
-    else if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupName)
+    else if(static_cast<AnimTableModel::eColumns>(index.column()) == AnimTableModel::eColumns::GroupName)
     {
         QLineEdit *txtname = dynamic_cast<QLineEdit*>(editor);
         Q_ASSERT(txtname);
@@ -80,13 +81,13 @@ void AnimTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         throw std::runtime_error("AnimTableDelegate::setModelData(): Index is inavalid!\n");
     }
 
-    if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupId)
+    if(static_cast<AnimTableModel::eColumns>(index.column()) == AnimTableModel::eColumns::GroupID)
     {
         QComboBox *cmb = dynamic_cast<QComboBox*>(editor);
         Q_ASSERT(cmb);
         model->setData(index, cmb->currentData(), Qt::EditRole);
     }
-    else if(static_cast<AnimTableSlot::eColumns>(index.column()) == AnimTableSlot::eColumns::GroupName)
+    else if(static_cast<AnimTableModel::eColumns>(index.column()) == AnimTableModel::eColumns::GroupName)
     {
         QLineEdit *txtname = dynamic_cast<QLineEdit*>(editor);
         Q_ASSERT(txtname);

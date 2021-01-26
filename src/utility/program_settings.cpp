@@ -20,6 +20,7 @@ namespace settings_consts
     // Settings Name
     //
     const QString SETTING_ADVANCED_MODE     {"advanced_mode"};
+    const QString SETTING_LAST_PROJECT_PATH {"last_project_path"};
 
     const QString SETTING_EDITOR_ZOOM_DEF   {"editor_zoom_default"};
     const QString SETTING_EDITOR_ZOOM_INCR  {"editor_zoom_increment"};
@@ -112,4 +113,13 @@ int ProgramSettings::editorZoomIncrements()
     int zoomincr = m_settings.value(SETTING_EDITOR_ZOOM_INCR, DV_EDITOR_ZOOM_INCR).toInt();
     m_settings.endGroup();
     return zoomincr;
+}
+
+QString ProgramSettings::lastProjectPath()
+{
+    using namespace settings_consts;
+    m_settings.beginGroup(GeneralSettingsGroupName);
+    QString lastpath = m_settings.value(SETTING_LAST_PROJECT_PATH, "").toString();
+    m_settings.endGroup();
+    return lastpath;
 }

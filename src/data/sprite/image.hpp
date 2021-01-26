@@ -15,18 +15,6 @@ extern const QString ElemName_Image;
 class Image : public TreeNodeTerminal, public utils::BaseSequentialIDGen<TreeNodeTerminal, unsigned int>
 {
     friend class ImageListModel;
-public:
-    enum struct eColumnType : int
-    {
-        Preview = 0,
-        UID,
-        Depth,
-        Resolution,
-        NbColumns [[maybe_unused]],
-
-        direct_Unk2 [[maybe_unused]],    //Extra columns that don't count in the NbColumns
-        direct_Unk14 [[maybe_unused]],
-    };
 
 public:
     Image(TreeNode * parent);
@@ -66,9 +54,6 @@ public:
     const QImage & getImage()const {return m_img;}
 
     QString getImageDescription()const;
-
-    //Reimplemented nodeColumnCount specifically for displaying images in the image list table!
-    virtual int nbimgcolumns()const {return static_cast<int>(eColumnType::NbColumns);}
 
     //Returns the session unique id for this image
     inline id_t getImageUID()const {return getID();}

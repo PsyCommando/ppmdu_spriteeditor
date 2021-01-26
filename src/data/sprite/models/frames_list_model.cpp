@@ -3,10 +3,10 @@
 
 const QString ElemName_Frame = "Frame";
 
-const QList<QString> FramesListHeaderColumnNames
+const std::map<FramesListModel::eColumns, QString> FramesListModel::ColumnNames
 {
-    "preview",
-    "id",
+    {FramesListModel::eColumns::Preview,    "Preview"},
+    {FramesListModel::eColumns::Id,         "Id"},
 };
 
 FramesListModel::FramesListModel(FramesContainer * parent, Sprite *parentsprite)
@@ -27,9 +27,6 @@ int FramesListModel::columnCount(const QModelIndex &/*parent*/) const
 
 QVariant FramesListModel::data(const QModelIndex &index, int role) const
 {
-//    if (!index.isValid())
-//        return QVariant("root");
-
     if (role != Qt::DisplayRole &&
             role != Qt::DecorationRole &&
             role != Qt::SizeHintRole &&
@@ -56,7 +53,7 @@ QVariant FramesListModel::data(const QModelIndex &index, int role) const
     }
 }
 
-bool FramesListModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool FramesListModel::setData(const QModelIndex &/*index*/, const QVariant &/*value*/, int /*role*/)
 {
     return false;
 }
@@ -70,10 +67,12 @@ QVariant FramesListModel::headerData(int section, Qt::Orientation orientation, i
     {
         return QVariant(QString("%1").arg(section));
     }
-    else if( orientation == Qt::Orientation::Horizontal &&
-             section < FramesListHeaderColumnNames.size() )
+    else if( orientation == Qt::Orientation::Horizontal)
     {
-        return FramesListHeaderColumnNames[section];
+        eColumns col = static_cast<eColumns>(section);
+        auto itcol = ColumnNames.find(col);
+        if(itcol != ColumnNames.end())
+            return itcol->second;
     }
     return QVariant();
 }

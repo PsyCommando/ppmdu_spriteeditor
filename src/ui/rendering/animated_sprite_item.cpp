@@ -12,9 +12,35 @@ AnimatedSpriteItem::AnimatedSpriteItem()
 AnimatedSpriteItem::AnimatedSpriteItem(QVector<cachedframe> &&cachedframes, QVector<QColor> && palette)
     : m_cachedframes(cachedframes), m_cachedpal(palette)
 {
-    //compute the duration
-    for(const cachedframe & c : cachedframes )
+    QPoint minTopLeft;
+    QPoint maxBottomRight;
+    Q_FOREACH(const cachedframe & c, m_cachedframes)
+    {
+        //Compute the duration
         m_cachedDuration += c.duration;
+
+        //Compute the area the sprite moves in
+        QPoint topleft = c.area.topLeft();
+        QPoint bottomright = c.area.bottomRight();
+        topleft.setX(topleft.x() + c.offsetx);
+        topleft.setY(topleft.y() + c.offsety);
+        bottomright.setX(bottomright.x() + c.offsetx);
+        bottomright.setY(bottomright.y() + c.offsety);
+
+        if(minTopLeft.x() > topleft.x())
+            minTopLeft.setX(topleft.x());
+        if(minTopLeft.y() > topleft.y())
+            minTopLeft.setY(topleft.y());
+
+        if(maxBottomRight.x() < bottomright.x())
+            maxBottomRight.setX(bottomright.x());
+        if(maxBottomRight.y() < bottomright.y())
+            maxBottomRight.setY(bottomright.y());
+    }
+
+    //Set travel range
+    m_frameTraverse.setTopLeft(minTopLeft);
+    m_frameTraverse.setBottomRight(maxBottomRight);
 }
 
 AnimatedSpriteItem::~AnimatedSpriteItem()

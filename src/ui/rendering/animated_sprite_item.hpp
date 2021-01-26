@@ -59,6 +59,8 @@ public:
 
     inline unsigned int getTimeElapsed()const{return m_tickselapsed;}
 
+    inline QRect getTravelRange()const {return m_frameTraverse;}
+
 // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
@@ -76,6 +78,7 @@ private:
     QVector<cachedframe>    m_cachedframes;     //Cached animation frames
     QVector<QColor>         m_cachedpal;        //The cached color palette for the animation sequence
     QRect                   m_biggestFrame;     //The largest frame of all the cached frames. Used to calculate the center and etc
+    QRect                   m_frameTraverse;    //The area where the frames in this animation will move into
     int                     m_curfrm{0};        //The frame the sprite is currently set to paint
     unsigned int            m_ticksnextfrm{0};  //Amount of ticks to wait for before changing the frame again!
     unsigned int            m_cachedDuration{0};//Amount of ticks the animation lasts for

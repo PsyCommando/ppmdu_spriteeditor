@@ -140,13 +140,10 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
             bounds.setHeight( cropto.height() );
     }
 
-    QVector<QRgb> pal = parentsprite->getPalette();
+    //QVector<QRgb> pal = parentsprite->getPalette();
     //Make first color transparent
     if(makebgtransparent)
     {
-//        QColor firstcol(pal.front());
-//        firstcol.setAlpha(0);
-//        pal.front() = firstcol.rgba();
         painter.setBackgroundMode(Qt::BGMode::TransparentMode);
     }
     else

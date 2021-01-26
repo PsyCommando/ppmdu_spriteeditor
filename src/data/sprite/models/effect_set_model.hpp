@@ -2,6 +2,7 @@
 #define EFFECTCONTAINERMODEL_HPP
 #include <src/data/treenodemodel.hpp>
 #include <src/ppmdu/fmts/wa_sprite.hpp>
+#include <map>
 
 class EffectOffset;
 class EffectOffsetSet;
@@ -16,7 +17,7 @@ public:
         XOffset,
         YOffset,
     };
-    static const QList<QString> ColumnNames;
+    static const std::map<eColumns, QString> ColumnNames;
 
     EffectSetModel(EffectOffsetSet* poffsets, Sprite * powner);
     ~EffectSetModel(){}

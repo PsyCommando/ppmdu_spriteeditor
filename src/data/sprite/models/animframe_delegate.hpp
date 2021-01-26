@@ -29,13 +29,11 @@ public:
 private:
     //Returns the stylesheet used for comboboxes this delegate makes
     static const QString & ComboBoxStyleSheet();
-    static const QString XOffsSpinBoxName;
-    static const QString YOffsSpinBoxName;
     static const char*   UProp_AnimFrameID;
 
     QWidget * makeFrameSelect       (QWidget *parent, Sprite* spr, TreeNodeModel * pmodel)const;
-    QWidget * makeOffsetWidget      (QWidget *parent)const;
-    QWidget * makeShadowOffsetWidget(QWidget *parent)const;
+//    QWidget * makeOffsetWidget      (QWidget *parent)const;
+//    QWidget * makeShadowOffsetWidget(QWidget *parent)const;
 
 signals:
     //Sent when the user used the frame selector to change a frame in the anim sequence

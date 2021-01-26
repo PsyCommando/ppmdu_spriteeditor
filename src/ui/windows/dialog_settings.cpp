@@ -31,7 +31,7 @@ void DialogSettings::writeSettings(QSettings &settings)
 
 void DialogSettings::readSettings(QSettings &/*settings*/)
 {
-    ProgramSettings & ps = ProgramSettings::Instance();
+    ProgramSettings & ps = ProgramSettings::Instance(); //Just use the built-in parser for those
     ui->chkAdvancedSettings->   setChecked  (ps.isAdvancedMode());
     ui->spbFramerate->          setValue    (ps.previewFramerate());
     ui->chkAutoplay->           setChecked  (ps.isAutoplayEnabled());

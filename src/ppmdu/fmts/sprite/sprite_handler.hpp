@@ -18,6 +18,7 @@ namespace fmt
     class WA_SpriteHandler
     {
     public:
+        static const uint8_t PADDING_BYTE;
         typedef std::vector<frameoffsets_t> OffsetsDB;
 
         //Returns whether the sprite is valid or not
@@ -59,13 +60,14 @@ namespace fmt
 
             //#1. Write frame assembly
             amiminf.maxnbusedtiles = m_images.calculateLargestFrameSize();
+            assert(amiminf.maxnbusedtiles != 0 || (amiminf.maxnbusedtiles == 0 && m_images.m_frames.size() == 0)); //Only time tile usage should be 0, is when there are no frames
             m_images.WriteFrames(sw, frameptrs);
 
             //#2. Write animation sequences
             m_animtions.WriteSequences(sw, ptrseqs);
 
             //Need to pad anim sequences on 4 bytes
-            sw.putPadding(4, 0xAA);
+            sw.putPadding(4, PADDING_BYTE);
 
             //#3. Write compressed images
             m_images.WriteImages(sw, imgptrs);
@@ -86,7 +88,13 @@ namespace fmt
                 m_animtions.WriteEffectsTbl(sw);
             }
             else
-                amiminf.ptrattachtbl = 0;                          //Don't write an effect table at all in this case!
+            {
+                //For some reasons when we're writing a character sprites, and there's no attachments, we still need to put the current offset for dummied-out sprites in m_attack.bin
+                if(m_sprty == eSpriteType::Character)
+                    amiminf.ptrattachtbl = sw.getCurOffset();
+                else
+                    amiminf.ptrattachtbl = 0;                          //Don't write an effect table at all in this case!
+            }
 
             //#7. Write animation groups sequences array table
             m_animtions.WriteAnimGroups(sw, ptrseqs, ptrgrps);
@@ -107,11 +115,8 @@ namespace fmt
             WriteAnimInfo(sw, amiminf);
 
             //#10.Write image info chunk
-            if( !m_images.m_frames.empty() )
-            {
-                ptrimginf = sw.getCurOffset();                  //mark chunk position for wan header
-                WriteImageInfo(sw, imginf);
-            }
+            ptrimginf = sw.getCurOffset();                      //mark chunk position for wan header
+            WriteImageInfo(sw, imginf);
 
             //#11.Write wan header
             hdr.ptrsub = sw.getCurOffset();                     //mark header pos in sir0 header
@@ -121,7 +126,7 @@ namespace fmt
             sw.writeVal(m_unk12);
 
             //Padding to align the encoded ptr offset table on 16 bytes
-            sw.putPadding(16, 0xAA);
+            sw.putPadding(16, PADDING_BYTE);
 
             hdr.ptrtranslatetbl = sw.getCurOffset();            //mark ptr offset list pos in sir0 header
 

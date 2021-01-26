@@ -69,7 +69,7 @@ QString GetImagePathFromDialog(const QString & title, QWidget * parent = nullptr
 QString GetXMLOpenFile(const QString & title, QWidget * parent = nullptr);
 QString GetXMLSaveFile(const QString & title, QWidget * parent = nullptr);
 
-
-
+//Helper to obtain the path file dialogs should open at whenever one is opened
+QString GetFileDialogDefaultPath();
 
 #endif // FILE_SUPPORT_HPP

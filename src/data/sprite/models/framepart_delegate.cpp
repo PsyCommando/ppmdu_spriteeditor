@@ -11,9 +11,7 @@
 #include <src/data/sprite/frame.hpp>
 #include <src/data/sprite/framepart.hpp>
 #include <src/data/sprite/imagescontainer.hpp>
-
-const QString MinusOneImgRes {":/resources/imgs/minus_one.png"};
-const QString MFramePart_NoDrawFrame{"ID:-1 No Draw Frame"};
+#include <src/utility/graphics_util.hpp>
 
 //=====================================================================================
 //  MFrameDelegate
@@ -257,26 +255,9 @@ void MFramePartDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptio
 
 QWidget *MFramePartDelegate::makeImgSelect(QWidget *parent, const QModelIndex & index) const
 {
-    const TreeNodeModel     *model      = static_cast<const TreeNodeModel*>(index.model());
-    QComboBox               *imglstb    = new QComboBox(parent);
-    const ImageContainer    *pcnt       = &(model->getOwnerSprite()->getImages());
-    const Sprite            *spr        = model->getOwnerSprite();
-    imglstb->setIconSize( QSize(32,32) );
-    imglstb->setStyleSheet(pcnt->ComboBoxStyleSheet());
-
-    //Fill the combobox!
-
-    //Add nodraw frame
-    imglstb->addItem( QPixmap::fromImage(m_minusone), MFramePart_NoDrawFrame, QVariant(-1)); //Set user data to -1
-    //Add actual images!
-    for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
-    {
-        const Image* pimg = pcnt->getImage(cntimg);
-        QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
-        QString text = pimg->getImageDescription();
-        imglstb->addItem( QIcon(pmap), text, QVariant(pimg->getID()) ); //Set user data to image's UID
-    }
-    imglstb->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    const TreeNodeModel *   model = static_cast<const TreeNodeModel*>(index.model());
+    QComboBox *             imglstb = new QComboBox(parent);
+    FillComboBoxWithSpriteImages(model->getOwnerSprite(), *imglstb);
     return imglstb;
 }
 
@@ -297,35 +278,17 @@ QWidget *MFramePartDelegate::makeYOffsetSelect(QWidget *parent, int /*row*/) con
 QWidget *MFramePartDelegate::makePaletteIDSelect(QWidget *parent, const QModelIndex & index) const
 {
     const TreeNodeModel * model = static_cast<const TreeNodeModel*>(index.model());
-    const MFramePart    * ppart = static_cast<MFramePart *>(index.internalPointer());
     const Sprite        * pspr = model->getOwnerSprite();
     QComboBox           * pcombopal = new QComboBox(parent);
-
-    if(ppart->isColorPal256())
-    {
-        //In 256 mode we don't get to pick a palette other than 0
-        pcombopal->setIconSize(QSize(128,64));
-        pcombopal->setEnabled(false);
-        pcombopal->addItem(pspr->MakePreviewPalette(), "Palette #0", QVariant(0));
-    }
-    else
-    {
-        //In 16 color/16 palettes mode we get to pick a palette
-        pcombopal->setIconSize(QSize(128,16));
-        for(int i = 0; i < fmt::step_t::MAX_NB_PAL; ++i)
-        {
-            pcombopal->addItem(pspr->MakePreviewSubPalette(i), QString("Palette #%1").arg(i), QVariant(i));
-        }
-    }
-    pcombopal->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    const MFramePart    * ppart = static_cast<MFramePart *>(index.internalPointer());
+    FillComboBoxWithSpritePalettes(pspr, *pcombopal, ppart->isColorPal256());
     return pcombopal;
 }
 
 QWidget *MFramePartDelegate::makePrioritySelect(QWidget *parent, int /*row*/) const
 {
     QComboBox *pselect = new QComboBox(parent);
-    pselect->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
-    pselect->addItems(FRAME_PART_PRIORITY_NAMES);
+    FillComboBoxWithFramePartPriorities(*pselect);
     return pselect;
 }
 

@@ -7,6 +7,9 @@
 #include <QtConcurrentMap>
 #include <QFuture>
 #include <QFutureWatcher>
+#include <QFuture>
+#include <list>
+#include <QApplication>
 #include <src/ppmdu/utils/byteutils.hpp>
 #include <src/ppmdu/fmts/packfile.hpp>
 #include <src/ui/windows/dialogprogressbar.hpp>
@@ -49,15 +52,15 @@ bool FileIsSpriteContainer(const QString & filepath)
 //=================================================================================================
 //  SpriteContainer
 //=================================================================================================
-const QList<QString> SpriteContainer::SpriteContentCategories=
-{
-    "Images",
-    "Frames",
-    "Sequences",
-    "Animations",
-    "Palette",
-    "Effects Offsets",
-};
+//const QList<QString> SpriteContainer::SpriteContentCategories=
+//{
+//    "Images",
+//    "Frames",
+//    "Sequences",
+//    "Animations",
+//    "Palette",
+//    "Attachment Offsets",
+//};
 
 const QMap<SpriteContainer::eContainerType, QString> SpriteContainer::ContainerTypeNames
 {
@@ -198,15 +201,17 @@ void SpriteContainer::SetContainerType(SpriteContainer::eContainerType newtype)
 
 void SpriteContainer::LoadContainer()
 {
+    using namespace std::chrono_literals;
     QFile container(m_srcpath);
 
     if( !container.open(QIODevice::ReadOnly) || !container.exists() || container.error() != QFileDevice::NoError )
     {
         //Error can't load file!
-        qWarning( container.errorString().toLocal8Bit().data() );
+        const QString error = container.errorString().toLocal8Bit();
+        qWarning() << error;
         QMessageBox msgBox;
         msgBox.setText("Failed to load file!");
-        msgBox.setInformativeText(container.errorString());
+        msgBox.setInformativeText(error);
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.setDefaultButton(QMessageBox::Ok);
         msgBox.exec();
@@ -228,11 +233,10 @@ void SpriteContainer::LoadContainer()
 
         //Load the raw data into each sprites but don't parse them yet!
         manager.beginInsertRows( QModelIndex(), 0, ldr.size() - 1);
-
         for( size_t cnt = 0; cnt < ldr.size(); ++cnt )
         {
             Sprite * pspr = new Sprite(this);
-            ldr.CopyEntryData( cnt, std::back_inserter(pspr->getRawData()) );
+            ldr.CopyEntryData(cnt, std::back_inserter(pspr->getRawData()));
             m_spr.push_back(pspr);
         }
         manager.endInsertRows();
@@ -265,10 +269,39 @@ void SpriteContainer::LoadContainer()
         if(first)
         {
             if(first->canParse())
+            {
                 first->ParseSpriteData(); //Need to parse first to access type
+                first->MakePreviewFrame();
+            }
             sprComp = CompFmtToCompOption(first->getTargetCompression());
             sprCntType = first->type();
         }
+
+        //qInfo() << "Filling threaded sprite parsing queue...";
+        //std::list<QFuture<void>> ops;
+        //QFutureSynchronizer<void> futsync;
+        Q_FOREACH(Sprite * spr, m_spr)
+        {
+            if(spr->canParse() && !spr->wasParsed())
+            {
+                //futsync.addFuture(QtConcurrent::run(spr, &Sprite::ParseSpriteData));
+                spr->ParseSpriteData();
+            }
+        }
+        //qInfo() << "Started asynchronously " <<ops.size() <<"parsing jobs..\nNow waiting...";
+
+        //Wait for all to complete
+        //futsync.waitForFinished();
+//        while(!ops.empty())
+//        {
+
+//            ops.front().waitForFinished();
+//            if(ops.front().isFinished() || ops.front().isCanceled())
+//                ops.pop_front();
+//            else
+//                std::this_thread::sleep_for(5ms);
+//        }
+        //qInfo() << "Parsed all queued sprites";
     }
     m_cntsprty = sprCntType;
     m_cntCompression = sprComp;
@@ -281,10 +314,11 @@ int SpriteContainer::WriteContainer()const
     if( !pcontainer->open(QIODevice::WriteOnly) || pcontainer->error() != QFileDevice::NoError )
     {
         //Error can't write file!
-        qWarning( pcontainer->errorString().toLocal8Bit() );
+        const QString error = pcontainer->errorString().toLocal8Bit();
+        qWarning() << error;
         QMessageBox msgBox;
         msgBox.setText("Failed to write file!");
-        msgBox.setInformativeText(pcontainer->errorString());
+        msgBox.setInformativeText(error);
         msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.setDefaultButton(QMessageBox::Ok);
         msgBox.exec();
@@ -543,13 +577,13 @@ bool SpriteContainer::_removeChildrenNodes(const QList<TreeNode *> &nodes, bool 
     if(nodes.size() > m_spr.size())
         return false;
     //bool success = true;
-    ContentManager & manager = ContentManager::Instance();
-    QModelIndexList origindices    = manager.persistentIndexList();
-    QModelIndexList changedindices = origindices;
+    //ContentManager & manager = ContentManager::Instance();
+    //QModelIndexList origindices    = manager.persistentIndexList();
+    //QModelIndexList changedindices = origindices;
 
     //manager.layoutAboutToBeChanged();
 
-    for(TreeNode* pnode : nodes)
+    Q_FOREACH(TreeNode* pnode, nodes)
     {
         if(!_removeChildrenNode(pnode, bdeleteptr))
             return false;
@@ -616,7 +650,7 @@ bool SpriteContainer::_deleteChildrenNodes(const QList<TreeNode *> &nodes)
     return _removeChildrenNodes(nodes, true);
 }
 
-bool SpriteContainer::_moveChildrenNodes(QModelIndexList &indices, int destrow, QModelIndex destparent)
+bool SpriteContainer::_moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent)
 {
     QList<TreeNode*> tomove;
     Q_FOREACH(const QModelIndex & idx, indices)
@@ -753,11 +787,17 @@ QVariant SpriteContainer::GetContentData(const QModelIndex &index, int role) con
     if (!index.isValid())
         return QVariant("root");
 
-    if (role != Qt::DisplayRole && role != Qt::EditRole)
-        return QVariant();
-
-    const TreeNode * pnode = static_cast<TreeNode*>(index.internalPointer());
-    return pnode->nodeDisplayName();
+    if(role == Qt::DisplayRole || role == Qt::EditRole)
+    {
+        const TreeNode * pnode = static_cast<TreeNode*>(index.internalPointer());
+        return pnode->nodeDisplayName();
+    }
+    else if(role == Qt::DecorationRole)
+    {
+        const TreeNode * pnode = static_cast<TreeNode*>(index.internalPointer());
+        return pnode->nodeDecoration();
+    }
+    return QVariant();
 }
 
 QVariant SpriteContainer::GetContentHeaderData(int /*section*/, Qt::Orientation /*orientation*/, int /*role*/) const
@@ -780,13 +820,13 @@ bool SpriteContainer::canFetchMore(const QModelIndex &index) const
     if (!index.isValid() || !isContainerLoaded())
         return false;
     TreeNode * node = reinterpret_cast<TreeNode *>(index.internalPointer());
-    if(node->nodeDataTypeName() != ElemName_Sprite)
-        return false;
-    Sprite * pspr = reinterpret_cast<Sprite *>(index.internalPointer());
-    Q_ASSERT(pspr);
-    if(!pspr)
-        return false;
-    return pspr->canParse() && !pspr->wasParsed();
+    return node->nodeAllowFetchMore() && !node->nodeCanFetchMore();
+
+//    Sprite * pspr = reinterpret_cast<Sprite *>(index.internalPointer());
+//    Q_ASSERT(pspr);
+//    if(!pspr)
+//        return false;
+//    return pspr->canParse() && !pspr->wasParsed();
 }
 
 void SpriteContainer::fetchMore(const QModelIndex &index)
@@ -805,7 +845,8 @@ void SpriteContainer::fetchMore(const QModelIndex &index)
 
     const QList<QPersistentModelIndex> changed{index};
     emit manager.layoutAboutToBeChanged(changed);
-    pspr->ParseSpriteData();
+    if(pspr->canParse() && !pspr->wasParsed())
+        pspr->ParseSpriteData();
     emit manager.layoutChanged(changed);
 }
 

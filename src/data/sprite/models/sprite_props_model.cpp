@@ -77,10 +77,8 @@ QModelIndex SpritePropertiesModel::parent(const QModelIndex &) const
     return QModelIndex();
 }
 
-int SpritePropertiesModel::rowCount(const QModelIndex &parent) const
+int SpritePropertiesModel::rowCount(const QModelIndex &/*parent*/) const
 {
-//    if(parent.isValid())
-//        return 0;
     return getNbProperties();
 }
 

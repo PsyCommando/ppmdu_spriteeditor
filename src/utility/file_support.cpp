@@ -6,8 +6,11 @@
 #include <src/extfmt/riff_palette.hpp>
 #include <src/extfmt/text_palette.hpp>
 #include <src/extfmt/gpl_palette.hpp>
+#include <src/data/content_manager.hpp>
+#include <src/utility/program_settings.hpp>
 #include <QFileDialog>
 #include <QWidget>
+#include <QApplication>
 
 const QSize MaxValidCellPartSize {32, 32};
 
@@ -236,22 +239,22 @@ const QString &AllSupportedExportPaletteFilesFilter()
 
 QStringList GetImagesPathsFromDialog(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getOpenFileNames(parent, title, QString(), AllSupportedImagesFilesFilter());
+    return QFileDialog::getOpenFileNames(parent, title, GetFileDialogDefaultPath(), AllSupportedImagesFilesFilter());
 }
 
 QString GetImagePathFromDialog(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getOpenFileName(parent, title, QString(), AllSupportedImagesFilesFilter());
+    return QFileDialog::getOpenFileName(parent, title, GetFileDialogDefaultPath(), AllSupportedImagesFilesFilter());
 }
 
 QString GetXMLOpenFile(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getOpenFileName(parent, title, QString(), XMLFileFilter);
+    return QFileDialog::getOpenFileName(parent, title, GetFileDialogDefaultPath(), XMLFileFilter);
 }
 
 QString GetXMLSaveFile(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getSaveFileName(parent, title, QString(), XMLFileFilter);
+    return QFileDialog::getSaveFileName(parent, title, GetFileDialogDefaultPath(), XMLFileFilter);
 }
 
 bool IsImageResolutionValid(QSize imgres)
@@ -278,3 +281,17 @@ std::optional<QSize> GetNextBestImgPartResolution(QSize srcres)
 }
 
 
+//
+//
+//
+QString GetFileDialogDefaultPath()
+{
+    ContentManager & manager = ContentManager::Instance();
+    if(manager.isContainerLoaded())
+        return manager.getContainerParentDir();
+    ProgramSettings & settings = ProgramSettings::Instance();
+    const QString lastpath = settings.lastProjectPath();
+    if(!lastpath.isNull())
+        return lastpath;
+    return QApplication::applicationDirPath();
+}

@@ -49,6 +49,7 @@ void TVSpritesContextMenu::ShowProperties()
 
 void TVSpritesContextMenu::SaveDump()
 {
+    ContentManager & manager = ContentManager::Instance();
     Q_ASSERT(m_pmainwindow);
     if(m_itemidx.isValid())
     {
@@ -56,7 +57,7 @@ void TVSpritesContextMenu::SaveDump()
         MainWindow *pmain = m_pmainwindow;
         QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
                                                         tr("Save selected as.."),
-                                                        QString(),
+                                                        manager.getContainerParentDir(),
                                                         AllSupportedGameSpritesFileFilter());
         if(!filename.isNull())
         {
@@ -71,13 +72,14 @@ void TVSpritesContextMenu::SaveDump()
 
 void TVSpritesContextMenu::SaveXMLDump()
 {
+    ContentManager & manager = ContentManager::Instance();
     Q_ASSERT(m_pmainwindow);
     if(m_itemidx.isValid())
     {
         Sprite *    spr     = static_cast<Sprite*>(m_itemidx.internalPointer());
         QString filename = QFileDialog::getSaveFileName(m_pmainwindow,
                                                         tr("Save XML as.."),
-                                                        QString(),
+                                                        manager.getContainerParentDir(),
                                                         AllSupportedXMLFileFilter());
         if(!filename.isNull())
         {

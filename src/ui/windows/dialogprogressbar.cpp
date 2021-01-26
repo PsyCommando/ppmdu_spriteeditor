@@ -55,6 +55,11 @@ void DialogProgressBar::setFuture(QFuture<void> & fut, QFuture<void> & fut2 )
     update();
 }
 
+void DialogProgressBar::OnProgressChanged(int percent)
+{
+    ui->progressBar->setValue(percent);
+}
+
 void DialogProgressBar::on_btncancel_clicked()
 {
     m_watcher.cancel();

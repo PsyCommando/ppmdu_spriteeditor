@@ -162,6 +162,13 @@ QString Sprite::nodeDisplayName()const
     return QString("%1#%2").arg(nodeDataTypeName()).arg(nodeIndex());
 }
 
+QVariant Sprite::nodeDecoration()const
+{
+    if(wasParsed() && m_previewImg.isNull())
+        MakePreviewFrame();
+    return m_previewImg;
+}
+
 int Sprite::indexOfChild(const TreeNode * ptr)const
 {
     if(ptr)
@@ -215,6 +222,7 @@ void Sprite::ParseSpriteData()
 
     m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
     m_bparsed = true;
+    MakePreviewFrame(); //Generate preview
 }
 
 void Sprite::CommitSpriteData()
@@ -488,6 +496,7 @@ bool Sprite::nodeCanFetchMore()const
 void Sprite::nodeFetchMore()
 {
     ParseSpriteData();
+    MakePreviewFrame();
 }
 
 bool Sprite::_insertChildrenNode    (TreeNode*, int)                {return false;}
@@ -502,19 +511,14 @@ bool Sprite::_deleteChildrenNode    (TreeNode*)                     {return fals
 bool Sprite::_deleteChildrenNodes   (int, int)                      {return false;}
 bool Sprite::_deleteChildrenNodes   (const QList<TreeNode*> &)      {return false;}
 
-bool Sprite::_moveChildrenNodes     (int, int, int, TreeNode*)      {return false;}
-bool Sprite::_moveChildrenNodes     (QModelIndexList&,int,QModelIndex) {return false;}
+bool Sprite::_moveChildrenNodes     (int, int, int, TreeNode*)                  {return false;}
+bool Sprite::_moveChildrenNodes     (const QModelIndexList&,int,QModelIndex)    {return false;}
 bool Sprite::_moveChildrenNodes     (const QList<TreeNode *>&, int, QModelIndex){return false;}
-
-bool Sprite::isImageDoubleSize(const QImage & img)
-{
-    return img.width() > fmt::MaxFrameResValue.first || img.height() > fmt::MaxFrameResValue.second;
-}
 
 fmt::frmid_t Sprite::importImageParts(const imgparts_t & img)
 {
     MFrame * newfrm = m_frmcnt.appendNewFrame();
-    for(const imgpart_t & part : img)
+    Q_FOREACH(const imgpart_t & part, img)
     {
         Image * newimg = m_imgcnt.appendNewImage();
         //Convert the QImage to raw
@@ -527,7 +531,6 @@ fmt::frmid_t Sprite::importImageParts(const imgparts_t & img)
 
         MFramePart * newpart = newfrm->appendNewFramePart();
         newpart->setColorPal256(is256Colors());
-        //newpart->setRotCanvas(isImageDoubleSize(part.second));
         newpart->setFrameIndex(newimg->getImageUID());
     }
     return newfrm->getFrameUID();
@@ -536,7 +539,7 @@ fmt::frmid_t Sprite::importImageParts(const imgparts_t & img)
 fmt::animseqid_t Sprite::importImageSequence(const imgseq_t & seq, uint8_t frmduration)
 {
     AnimSequence * newseq = m_seqcnt.appendNewSequence();
-    for(const imgparts_t & img : seq)
+    Q_FOREACH(const imgparts_t & img, seq)
     {
         fmt::frmid_t curfrmid = importImageParts(img);
         AnimFrame * newafrm = newseq->appendNewAnimFrame();
@@ -548,7 +551,7 @@ fmt::animseqid_t Sprite::importImageSequence(const imgseq_t & seq, uint8_t frmdu
 
 void Sprite::importImageSequences(const imgseqs_t & sequences, uint8_t frmduration)
 {
-    for(const imgseq_t & seq : sequences)
+    Q_FOREACH(const imgseq_t & seq, sequences)
     {
         importImageSequence(seq, frmduration);
     }

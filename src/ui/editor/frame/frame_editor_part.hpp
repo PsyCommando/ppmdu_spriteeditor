@@ -56,6 +56,7 @@ public:
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)override;
     virtual int type() const override;
     QString getItemDisplayName() const override;
+    bool shouldShowBoundingBox() const override;
 private:
     void paintImage(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
@@ -67,7 +68,6 @@ public slots:
 private:
     QPixmap                 m_pixmap;
     QColor                  m_overlayColor; //color for drawing the bounding box and text for this part!
-    //QPersistentModelIndex   m_partid;
     MFramePart *            m_pPart;
     bool                    m_bshowoutline{true};
     bool                    m_bTransparency{false};

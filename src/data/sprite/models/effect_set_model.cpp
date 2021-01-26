@@ -1,12 +1,13 @@
 #include "effect_set_model.hpp"
 #include <src/data/sprite/effectoffsetcontainer.hpp>
 #include <src/data/sprite/sprite.hpp>
+#include <src/utility/ui_helpers.hpp>
 
-const QList<QString> EffectSetModel::ColumnNames
+const std::map<EffectSetModel::eColumns, QString> EffectSetModel::ColumnNames
 {
-    {"Name"},
-    {"X"},
-    {"Y"},
+    {EffectSetModel::eColumns::Name,    "Name"},
+    {EffectSetModel::eColumns::XOffset, "X"},
+    {EffectSetModel::eColumns::YOffset, "Y"},
 };
 
 EffectSetModel::EffectSetModel(EffectOffsetSet *poffsets, Sprite *powner)
@@ -43,8 +44,6 @@ int EffectSetModel::columnCount(const QModelIndex &) const
 
 QVariant EffectSetModel::data(const QModelIndex &index, int role) const
 {
-    if(role != Qt::DisplayRole && role != Qt::SizeHintRole)
-        return QVariant();
     const EffectOffset * poff = static_cast<const EffectOffset *>(getItem(index));
     Q_ASSERT(poff);
 
@@ -88,7 +87,7 @@ QVariant EffectSetModel::data(const QModelIndex &index, int role) const
             break;
         }
     }
-    return QVariant();
+    return parent_t::data(index, role);
 }
 
 bool EffectSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -124,20 +123,33 @@ bool EffectSetModel::setData(const QModelIndex &index, const QVariant &value, in
 
 QVariant EffectSetModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(section >= ColumnNames.size())
-        return QVariant();
-    if( role != Qt::DisplayRole &&
-        role != Qt::SizeHintRole)
-        return QVariant();
     if(orientation == Qt::Horizontal)
     {
-        if(role == Qt::SizeHintRole)
+        eColumns col = static_cast<eColumns>(section);
+        auto itcol = ColumnNames.find(col);
+        if(itcol != ColumnNames.end())
         {
-            QFontMetrics fm(QFont("Sergoe UI",9));
-            return QSize(96, fm.height());
+            if(role == Qt::SizeHintRole)
+            {
+                QSize sz = CalculateTextSizeForView(itcol->second);
+                sz.setWidth(96);
+                return sz;
+            }
+            else if(role == Qt::DisplayRole)
+                return itcol->second;
         }
-        else if(role == Qt::DisplayRole)
-            return ColumnNames[section];
+    }
+    else if(orientation == Qt::Vertical)
+    {
+        EffectOffset * poff = static_cast<EffectOffset *>(m_root->nodeChild(section));
+        if(role == Qt::DisplayRole)
+        {
+            return poff->nodeDisplayName();
+        }
+        else if(role == Qt::BackgroundRole)
+        {
+            return QBrush(poff->getDisplayColor());
+        }
     }
     return QVariant();
 }

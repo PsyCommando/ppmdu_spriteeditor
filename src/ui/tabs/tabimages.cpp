@@ -14,6 +14,7 @@
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/data/sprite/imagescontainer.hpp>
 #include <src/utility/file_support.hpp>
+#include <src/data/sprite/models/images_list_model.hpp>
 
 const QString TabImages::IMG_FORMAT_IO = "PNG";
 
@@ -76,12 +77,13 @@ void TabImages::SetupMappings(Sprite * spr)
     ui->tblviewImages->setModel(m_imgListModel.data());
     ui->tblviewImages->resizeRowsToContents();
     ui->tblviewImages->resizeColumnsToContents();
+    ui->tblviewImages->horizontalHeader()->setStretchLastSection(true);
 
     //Map model's columns to some of the controls
     m_imgdatmapper.reset(new QDataWidgetMapper);
     m_imgdatmapper->setModel(m_imgListModel.data());
-    m_imgdatmapper->addMapping(ui->spbimgunk2,  static_cast<int>(Image::eColumnType::direct_Unk2) );
-    m_imgdatmapper->addMapping(ui->spbimgunk14,  static_cast<int>(Image::eColumnType::direct_Unk14) );
+    m_imgdatmapper->addMapping(ui->spbimgunk2,  static_cast<int>(ImageListModel::eColumns::direct_Unk2) );
+    m_imgdatmapper->addMapping(ui->spbimgunk14,  static_cast<int>(ImageListModel::eColumns::direct_Unk14) );
     //m_imgdatmapper->toFirst();
     connect(ui->tblviewImages, &QTableView::clicked, m_imgdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
 }
@@ -170,7 +172,7 @@ void TabImages::on_btnAdd_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(this,
                                 tr("Import Images"),
-                                QString(),
+                                GetFileDialogDefaultPath(),
                                 AllSupportedImagesFilesFilter());
 
     if(filenames.empty())
@@ -274,7 +276,7 @@ void TabImages::on_btnExport_clicked()
 
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image(s)"),
-                        QString(),
+                        GetFileDialogDefaultPath(),
                         AllSupportedImagesFilesFilter());
     if(filename.isNull())
         return;
@@ -317,7 +319,7 @@ void TabImages::on_btnExport_clicked()
 
 void TabImages::on_btnImport_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), QString(), AllSupportedImagesFilesFilter());
+    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), GetFileDialogDefaultPath(), AllSupportedImagesFilesFilter());
     if(filenames.isEmpty())
         return;
 

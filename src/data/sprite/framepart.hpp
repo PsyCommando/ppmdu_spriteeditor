@@ -17,7 +17,7 @@ enum struct eFramePartColumnsType : int
     VFlip,
     HFlip,
     Priority,
-    NBColumnsBasicMode = Priority, //So we don't count the nb columns
+    LastColumnsBasicMode = Priority, //So we don't count the nb columns
 
     //Advanced Controls
     Mosaic,

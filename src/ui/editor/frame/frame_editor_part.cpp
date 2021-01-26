@@ -6,6 +6,7 @@
 #include <QGraphicsTextItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QApplication>
+#include <QColorSpace>
 
 //=======================================================================================================
 //  FramePart
@@ -27,7 +28,13 @@ void FramePart::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
 void FramePart::paintImage(QPainter *painter, const QStyleOptionGraphicsItem */*option*/, QWidget */*widget*/)
 {
-    if(isSelected())
+    if(getFrameEditor()->getEditorMode() != eEditorMode::FrameParts)
+    {
+        //Darken the image if in another mode
+        QImage tempimg = m_pixmap.toImage().convertToFormat(QImage::Format::Format_Grayscale8);
+        painter->drawImage(boundingRect(), tempimg, boundingRect());
+    }
+    else if(isSelected())
     {
         //Invert the colors of the part if selected
         QImage tempimg = m_pixmap.toImage();
@@ -106,4 +113,9 @@ void FramePart::onPosChanged()
 QString FramePart::getItemDisplayName() const
 {
     return m_pPart->nodeDisplayName();
+}
+
+bool FramePart::shouldShowBoundingBox() const
+{
+    return m_bshowoutline;
 }

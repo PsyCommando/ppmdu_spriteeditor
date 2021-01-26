@@ -11,8 +11,6 @@
 //**********************************************************************************
 //  AnimSequenceDelegate
 //**********************************************************************************
-const QString AnimFrameDelegate::XOffsSpinBoxName = "XOffs";
-const QString AnimFrameDelegate::YOffsSpinBoxName = "YOffs";
 const char * AnimFrameDelegate::UProp_AnimFrameID = "AnimFrameID";
 
 AnimFrameDelegate::AnimFrameDelegate(AnimSequence *seq, Sprite * spr, QObject *parent)
@@ -39,25 +37,14 @@ QWidget *AnimFrameDelegate::createEditor(QWidget *parent, const QStyleOptionView
     QWidget *pedit = nullptr;
     const AnimFramesModel * pmod = static_cast<const AnimFramesModel*>(index.model());
     Sprite * owner = const_cast<AnimFramesModel*>(pmod)->getOwnerSprite();
-    switch(static_cast<eAnimFrameColumnsType>(index.column()))
+
+    switch(static_cast<AnimFramesModel::eColumns>(index.column()))
     {
-    case eAnimFrameColumnsType::Frame:
+    case AnimFramesModel::eColumns::Frame:
         {
             pedit = makeFrameSelect(parent, owner, m_selectModel.data());
             break;
         }
-    case eAnimFrameColumnsType::Offset:
-        {
-            pedit = makeOffsetWidget(parent);
-            break;
-        }
-    case eAnimFrameColumnsType::ShadowOffset:
-        {
-            pedit = makeOffsetWidget(parent);
-            break;
-        }
-    case eAnimFrameColumnsType::Flags:
-    case eAnimFrameColumnsType::Duration:
     default:
         {
             return QStyledItemDelegate::createEditor(parent,option,index);
@@ -86,35 +73,15 @@ void AnimFrameDelegate::setEditorData(QWidget *editor, const QModelIndex &index)
         throw std::runtime_error("AnimSequenceDelegate::setEditorData(): Index is inavalid!\n");
     }
 
-    switch(static_cast<eAnimFrameColumnsType>(index.column()))
+    switch(static_cast<AnimFramesModel::eColumns>(index.column()))
     {
-    case eAnimFrameColumnsType::Frame:
+    case AnimFramesModel::eColumns::Frame:
         {
             QComboBox * pcmb = static_cast<QComboBox*>(editor);
             Q_ASSERT(pcmb && pfrm->frmidx() >= 0);
             pcmb->setCurrentIndex(pfrm->frmidx());
             break;
         }
-    case eAnimFrameColumnsType::Offset:
-        {
-            QSpinBox *px = editor->findChild<QSpinBox*>(XOffsSpinBoxName);
-            QSpinBox *py = editor->findChild<QSpinBox*>(YOffsSpinBoxName);
-            Q_ASSERT(px && py);
-            px->setValue(pfrm->xoffset());
-            py->setValue(pfrm->yoffset());
-            break;
-        }
-    case eAnimFrameColumnsType::ShadowOffset:
-        {
-            QSpinBox *px = editor->findChild<QSpinBox*>(XOffsSpinBoxName);
-            QSpinBox *py = editor->findChild<QSpinBox*>(YOffsSpinBoxName);
-            Q_ASSERT(px && py);
-            px->setValue(pfrm->shadowx());
-            py->setValue(pfrm->shadowy());
-            break;
-        }
-    case eAnimFrameColumnsType::Flags:
-    case eAnimFrameColumnsType::Duration:
     default:
         {
             QStyledItemDelegate::setEditorData(editor,index);
@@ -134,9 +101,9 @@ void AnimFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         throw std::runtime_error("AnimSequenceDelegate::setModelData(): Index is inavalid!\n");
     }
 
-    switch(static_cast<eAnimFrameColumnsType>(index.column()))
+    switch(static_cast<AnimFramesModel::eColumns>(index.column()))
     {
-    case eAnimFrameColumnsType::Frame:
+    case AnimFramesModel::eColumns::Frame:
         {
             bool        bok  = false;
             QComboBox * pcmb = static_cast<QComboBox*>(editor);
@@ -145,21 +112,6 @@ void AnimFrameDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
             model->setData(index, frmid, Qt::EditRole);
             break;
         }
-    case eAnimFrameColumnsType::Offset:
-    case eAnimFrameColumnsType::ShadowOffset:
-        {
-            QSpinBox *px = editor->findChild<QSpinBox*>(XOffsSpinBoxName);
-            QSpinBox *py = editor->findChild<QSpinBox*>(YOffsSpinBoxName);
-            Q_ASSERT(px && py);
-            px->interpretText();
-            py->interpretText();
-            QVariant val;
-            val.setValue(QPair<int,int>(px->value(), py->value()));
-            model->setData(index, val, Qt::EditRole);
-            break;
-        }
-    case eAnimFrameColumnsType::Flags:
-    case eAnimFrameColumnsType::Duration:
     default:
         {
             QStyledItemDelegate::setModelData(editor,model,index);
@@ -199,32 +151,32 @@ QWidget *AnimFrameDelegate::makeFrameSelect(QWidget *parent, Sprite* spr, TreeNo
     return imglstb;
 }
 
-QWidget *AnimFrameDelegate::makeOffsetWidget(QWidget *parent) const
-{
-    QFrame      *pselect = new QFrame(parent);
-    QBoxLayout  *play    = new QBoxLayout(QBoxLayout::Direction::LeftToRight, pselect);
-    QSpinBox    *pxoff   = new QSpinBox(pselect);
-    QSpinBox    *pyoff   = new QSpinBox(pselect);
+//QWidget *AnimFrameDelegate::makeOffsetWidget(QWidget *parent) const
+//{
+//    QFrame      *pselect = new QFrame(parent);
+//    QBoxLayout  *play    = new QBoxLayout(QBoxLayout::Direction::LeftToRight, pselect);
+//    QSpinBox    *pxoff   = new QSpinBox(pselect);
+//    QSpinBox    *pyoff   = new QSpinBox(pselect);
 
-    pselect->setMinimumWidth(100);
-    pselect->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::Expanding);
-    pxoff->setObjectName(XOffsSpinBoxName);
-    pyoff->setObjectName(YOffsSpinBoxName);
-    pxoff->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
-    pyoff->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+//    pselect->setMinimumWidth(100);
+//    pselect->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::Expanding);
+//    pxoff->setObjectName(XOffsSpinBoxName);
+//    pyoff->setObjectName(YOffsSpinBoxName);
+//    pxoff->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+//    pyoff->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
 
-    pselect->setLayout(play);
-    play->addWidget(pxoff);
-    play->addWidget(pyoff);
-    pselect->setContentsMargins(1, 1, 1, 1);
-    play->setContentsMargins(0,0,0,0);
-    pselect->adjustSize();
-    parent->adjustSize();
-    pselect->setFocusProxy(pxoff);
-    return pselect;
-}
+//    pselect->setLayout(play);
+//    play->addWidget(pxoff);
+//    play->addWidget(pyoff);
+//    pselect->setContentsMargins(1, 1, 1, 1);
+//    play->setContentsMargins(0,0,0,0);
+//    pselect->adjustSize();
+//    parent->adjustSize();
+//    pselect->setFocusProxy(pxoff);
+//    return pselect;
+//}
 
-QWidget *AnimFrameDelegate::makeShadowOffsetWidget(QWidget *parent) const
-{
-    return makeOffsetWidget(parent);
-}
+//QWidget *AnimFrameDelegate::makeShadowOffsetWidget(QWidget *parent) const
+//{
+//    return makeOffsetWidget(parent);
+//}

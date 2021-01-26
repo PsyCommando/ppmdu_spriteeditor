@@ -42,7 +42,7 @@ protected:
     bool _deleteChildrenNodes(int, int)final                                {return false;}
     bool _deleteChildrenNodes(const QList<TreeNode*> &)final                {return false;}
     bool _moveChildrenNodes(int, int, int, TreeNode*)final                  {return false;}
-    bool _moveChildrenNodes(QModelIndexList&,int,QModelIndex) final         {return false;}
+    bool _moveChildrenNodes(const QModelIndexList&,int,QModelIndex) final   {return false;}
     bool _moveChildrenNodes(const QList<TreeNode *>&,int,QModelIndex) final {return false;}
 };
 

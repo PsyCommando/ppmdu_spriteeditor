@@ -74,7 +74,6 @@ QString ContentManager::getContainerFileFilter() const
     QString currentCntType;
     if(isContainerLoaded())
     {
-        QFileInfo finf(getContainerSrcFile());
         currentCntType = SupportedFileFiltersByTypename[getContainerType()]; //Set to the container's format
     }
     return currentCntType;

@@ -16,11 +16,13 @@ AnimFrame::AnimFrame(TreeNode *parent)
 AnimFrame::AnimFrame(const AnimFrame &cp)
     :parent_t(cp)
 {
+    m_data = cp.m_data;
 }
 
 AnimFrame::AnimFrame(AnimFrame &&mv)
     : parent_t(mv)
 {
+    m_data = qMove(mv.m_data);
 }
 
 AnimFrame &AnimFrame::operator=(AnimFrame &&mv)

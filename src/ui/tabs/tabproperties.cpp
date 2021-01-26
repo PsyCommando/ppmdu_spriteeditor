@@ -11,15 +11,6 @@
 
 #include <QFileDialog>
 
-
-//const QVector<QString> PaletteFileFilter
-//{
-//    "Microsoft RIFF palette (*.pal)",
-//    "Text file hex color list (*.txt)",
-//    "GIMP GPL palette (*.gpl)",
-//    "Palette from a PNG image (*.png)",
-//};
-
 TabProperties::TabProperties(QWidget *parent) :
     BaseSpriteTab(parent),
     ui(new Ui::TabProperties)
@@ -32,22 +23,15 @@ TabProperties::~TabProperties()
     delete ui;
 }
 
-//const QString TabProperties::PaletteFilterString()
-//{
-//    static const QString filter = GetPaletteFileFilterString(ePaletteDumpType::RIFF_Pal) +
-//                                  ";;" +
-//                                  GetPaletteFileFilterString(ePaletteDumpType::TEXT_Pal) +
-//                                  ";;" +
-//                                  GetPaletteFileFilterString(ePaletteDumpType::GIMP_PAL);
-//    return filter;
-//}
-
 void TabProperties::OnShowTab(QPersistentModelIndex element)
 {
     qDebug() << "MainWindow::DisplayPropertiesPage(): Showing properties tab!\n";
     ContentManager & manager = ContentManager::Instance();
     Sprite * pspr = dynamic_cast<Sprite*>(manager.getOwnerNode(element));
     Q_ASSERT(pspr);
+
+    //Disable palette export if no palette
+    ui->btnExportPalette->setEnabled(!pspr->getPalette().empty());
 
     //display properties
     m_propHandler.reset(new SpritePropertiesHandler(pspr));
@@ -128,7 +112,7 @@ void TabProperties::on_btnImportPalette_clicked()
     ePaletteDumpType ftype;
     QString filename = QFileDialog::getOpenFileName(this,
                                                     QString(tr("Import Palette File")),
-                                                    QString(),
+                                                    GetFileDialogDefaultPath(),
                                                     AllSupportedImportPaletteFilesFilter(),
                                                     &selectedfilter );
     if(filename.isNull())
@@ -172,7 +156,7 @@ void TabProperties::on_btnExportPalette_clicked()
         qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
         QString filename = QFileDialog::getSaveFileName(this,
                             QString(tr("Save Palette Dump As")),
-                            QString(),
+                            GetFileDialogDefaultPath(),
                             AllSupportedExportPaletteFilesFilter(),
                             &selectedfilter);
 
@@ -209,7 +193,7 @@ QPixmap TabProperties::GenerateSpritePreviewImage()
 QPixmap TabProperties::GenerateSpritePreviewPalette()
 {
     Sprite * pspr = currentSprite();
-    if(!pspr || (pspr && !pspr->hasImageData()))
+    if(!pspr || (pspr && pspr->getPalette().empty()))
         return m_pmainwindow->getDefaultImage();
     return pspr->MakePreviewPalette();
 }

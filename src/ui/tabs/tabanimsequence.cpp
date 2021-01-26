@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <src/utility/file_support.hpp>
 #include <src/utility/program_settings.hpp>
+#include <src/data/sprite/models/animframe_model.hpp>
 
 const QString DEFAULT_PLAYTIME_VALUE = "----- t";
 
@@ -33,6 +34,8 @@ void TabAnimSequence::OnShowTab(QPersistentModelIndex element)
             ui->tblseqfrmlst->setItemDelegate(m_curSeqFramesDelegate.data());
             ui->tblseqfrmlst->resizeRowsToContents();
             ui->tblseqfrmlst->resizeColumnsToContents();
+            ui->tblseqfrmlst->horizontalHeader()->setStretchLastSection(true);
+            SetupMappings();
 
             m_previewrender.InstallAnimPreview(ui->gvAnimSeqViewport, pspr, aniseq);
             ConnectSceneRenderer();
@@ -90,6 +93,7 @@ void TabAnimSequence::OnItemRemoval(const QModelIndex &item)
 void TabAnimSequence::PrepareForNewContainer()
 {
     OnHideTab();
+    ClearMappings();
     ui->tblseqfrmlst->clearSelection();
     ui->tblseqfrmlst->setModel(nullptr);
     ui->tblseqfrmlst->setItemDelegate(nullptr);
@@ -98,15 +102,9 @@ void TabAnimSequence::PrepareForNewContainer()
 
 void TabAnimSequence::setupAnimSeq(QPersistentModelIndex seq, Sprite *spr)
 {
-    if(!seq.isValid())
-    {
-        Q_ASSERT(false);
-    }
+    Q_ASSERT(seq.isValid());
     AnimSequence * pseq = reinterpret_cast<AnimSequence*>(seq.internalPointer());
-    if(!pseq)
-    {
-        Q_ASSERT(false);
-    }
+    Q_ASSERT(pseq);
     m_curAnimSeq = seq;
     m_curSeqFramesModel.reset(new AnimFramesModel(pseq, spr));
     m_curSeqFramesDelegate.reset(new AnimFrameDelegate(pseq, spr));
@@ -125,6 +123,32 @@ void TabAnimSequence::RefreshTable()
     ui->tblseqfrmlst->resizeRowsToContents();
     ui->tblseqfrmlst->repaint();
     ui->tblseqfrmlst->update();
+}
+
+void TabAnimSequence::SetupMappings()
+{
+    ui->spbXOff->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+    ui->spbYOff->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+    ui->spbXShadow->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+    ui->spbYShadow->setRange(std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+
+    m_frmMapper.reset(new QDataWidgetMapper);
+    m_frmMapper->setModel(m_curSeqFramesModel.data());
+    m_frmMapper->setItemDelegate(m_curSeqFramesDelegate.data());
+    m_frmMapper->setSubmitPolicy(QDataWidgetMapper::SubmitPolicy::AutoSubmit);
+
+    m_frmMapper->addMapping(ui->spbXOff,        static_cast<int>(AnimFramesModel::eColumns::OffsetX));
+    m_frmMapper->addMapping(ui->spbYOff,        static_cast<int>(AnimFramesModel::eColumns::OffsetY));
+    m_frmMapper->addMapping(ui->spbXShadow,     static_cast<int>(AnimFramesModel::eColumns::ShadowX));
+    m_frmMapper->addMapping(ui->spbYShadow,     static_cast<int>(AnimFramesModel::eColumns::ShadowY));
+    m_frmMapper->addMapping(ui->spbDuration,    static_cast<int>(AnimFramesModel::eColumns::Duration));
+
+    m_frmMapper->setCurrentModelIndex(m_curAnimSeq);
+}
+
+void TabAnimSequence::ClearMappings()
+{
+    m_frmMapper.reset();
 }
 
 void TabAnimSequence::ConnectSceneRenderer()
@@ -163,16 +187,15 @@ void TabAnimSequence::DisconnectSceneRenderer()
         disconnect( m_curSeqFramesModel.data(), &AnimFramesModel::dataChanged, &m_previewrender, &SpriteScene::OnAnimDataChaged);
 }
 
-void TabAnimSequence::OnPreviewRangeChanged(int beg, int length)
+void TabAnimSequence::OnPreviewRangeChanged(int /*beg*/, int length)
 {
     //Block signals so we don't end up with infinite recursion and stuff!
-    ui->spinCurFrm->blockSignals(true);
-    ui->spinCurFrm->setRange(0, length - 1); //since we start at 0, subtract 1
-    ui->spinCurFrm->blockSignals(false);
-
-    ui->sldrAnimSeq->blockSignals(true);
-    ui->sldrAnimSeq->setRange(0, length - 1); //since we start at 0, subtract 1
-    ui->sldrAnimSeq->blockSignals(false);
+    {
+        QSignalBlocker blockspb(ui->spinCurFrm);
+        QSignalBlocker blocksldr(ui->sldrAnimSeq);
+        ui->spinCurFrm->setRange(0, length - 1); //since we start at 0, subtract 1
+        ui->sldrAnimSeq->setRange(0, length - 1); //since we start at 0, subtract 1
+    }
     UpdateTickCounter();
     ui->gvAnimSeqViewport->updateScene(QList{ui->gvAnimSeqViewport->sceneRect()});
 }
@@ -207,15 +230,15 @@ void TabAnimSequence::SetCurrentFrame(int frameidx, bool bupdatescene)
     if(bupdatescene)
         m_previewrender.setCurrentFrame(frameidx);
 
-    //Update the spinner
-    ui->spinCurFrm->blockSignals(true);
-    ui->spinCurFrm->setValue(frameidx);
-    ui->spinCurFrm->blockSignals(false);
+    {
+        QSignalBlocker blkspb(ui->spinCurFrm);
+        QSignalBlocker blksldr(ui->sldrAnimSeq);
+        ui->spinCurFrm->setValue(frameidx); //Update the spinner
+        ui->sldrAnimSeq->setValue(frameidx); //Update the slider
+    }
 
-    //Update the slider
-    ui->sldrAnimSeq->blockSignals(true);
-    ui->sldrAnimSeq->setValue(frameidx);
-    ui->sldrAnimSeq->blockSignals(false);
+    if(m_frmMapper)
+        m_frmMapper->setCurrentIndex(frameidx);
 
     //Select the frame in the table view
 //    AnimSequence * curseq = currentAnimSequence();

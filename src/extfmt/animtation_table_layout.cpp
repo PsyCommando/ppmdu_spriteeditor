@@ -78,7 +78,7 @@ void ImportAnimTableLayout(AnimTableModel *dst, const QString &filepath)
     {
         dst->setData(dst->index(i,
                                0,
-                               QModelIndex()).siblingAtColumn(static_cast<int>(AnimGroup::eColumns::GroupName)),
+                               QModelIndex()).siblingAtColumn(static_cast<int>(AnimTableModel::eColumns::GroupName)),
                     slotsnames[i],
                     Qt::EditRole);
     }
@@ -103,7 +103,7 @@ void ExportAnimTableLayout(const AnimTableModel *src, const QString &filepath)
     for(int i = 0; i < src->rowCount(); ++i)
     {
         xml.writeEmptyElement(XML_NODE_SLOT);
-        QModelIndex curslot = src->index(i, static_cast<int>(AnimGroup::eColumns::GroupName), QModelIndex());
+        QModelIndex curslot = src->index(i, static_cast<int>(AnimTableModel::eColumns::GroupName), QModelIndex());
         QString name = src->data(curslot, Qt::EditRole).toString();
         xml.writeAttribute(XML_ATTR_NAME, name);
     }

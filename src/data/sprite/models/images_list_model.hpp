@@ -1,15 +1,30 @@
 #ifndef IMAGES_LIST_MODEL_HPP
 #define IMAGES_LIST_MODEL_HPP
 #include <src/data/treenodemodel.hpp>
+#include <map>
 
 //*******************************************************************
-//  ImagesManager
+//  ImageListModel
 //*******************************************************************
 //Model for displaying the image list on the image list tab!
 class ImageContainer;
 class ImageListModel : public TreeNodeModel
 {
     Q_OBJECT;
+public:
+    enum struct eColumns : int
+    {
+        Preview = 0,
+        UID,
+        Depth,
+        Resolution,
+        NbColumns [[maybe_unused]],
+
+        direct_Unk2 [[maybe_unused]],    //Extra columns that don't count in the NbColumns
+        direct_Unk14 [[maybe_unused]],
+    };
+    static const std::map<eColumns, QString> ColumnNames;
+
 public:
     explicit ImageListModel(ImageContainer * imgcnt, Sprite* psprite);
     ~ImageListModel();
@@ -21,15 +36,10 @@ public:
 
     // QAbstractItemModel interface
 public:
-    //int rowCount(const QModelIndex &parent) const override;
     int columnCount(const QModelIndex &parent) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-//    bool insertRows(int row, int count, const QModelIndex &parent) override;
-//    bool removeRows(int row, int count, const QModelIndex &parent) override;
-//    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
-//    Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 private:
     ImageContainer * m_root  {nullptr};

@@ -272,11 +272,15 @@ namespace fmt
             //write colors!
             for( const rgbx_t & color : m_pal.colors )
                 hlpr.writeVal(color,false);
+            const uint16_t nbcolors = static_cast<uint16_t>(m_pal.colors.size());
 
             offsetpalette = hlpr.getCurOffset();
             hlpr.writePtr(palbeg);
             hlpr.writeVal(m_pal.unk3);
-            hlpr.writeVal(static_cast<uint16_t>(m_pal.colors.size()));
+            if(m_images.empty())
+                hlpr.writeVal(static_cast<uint16_t>(0)); //The original files set this to 0 if there's no image, even though it wrote the color table.
+            else
+                hlpr.writeVal(nbcolors);
             hlpr.writeVal(m_pal.unk4);
             hlpr.writeVal(m_pal.unk5);
             hlpr.writeVal(static_cast<uint32_t>(0));
@@ -375,7 +379,7 @@ namespace fmt
         {
             using namespace std;
             uint32_t endFrmTable = CalculateFrameRefTblEnd(itsrcbeg, itsrcend, animinf);
-            uint32_t endFrmParts = CalculateFramePartsEnd(itsrcbeg, itsrcend, animinf);
+            uint32_t endFrmParts = CalculateFramePartsEnd(itsrcbeg, itsrcend, animinf, imginf);
             assert(endFrmTable != 0);   //Shouldn't happen
             assert(endFrmParts != 0);   //Shouldn't happen
 
@@ -442,8 +446,7 @@ namespace fmt
                     return seqlistptr;  //Return the offset of the first sequence list we have. That's the start of the table!
                 std::advance(itanim, 4); //skip the rest of the entry
             }
-            //assert(false); //This shouldn't happen
-            return 0; //This shouldn't ever happen
+            return 0; //This can happen sometimes in m_attack.bin sprites
         }
 
         /*
@@ -476,27 +479,48 @@ namespace fmt
                 If it can't find that, it'll return 0!
         */
         template<class _init>
-            uint32_t CalculateFramePartsEnd(_init itsrcbeg, _init itsrcend, const hdr_animfmtinfo & animinf)
+            uint32_t CalculateFramePartsEnd(_init itsrcbeg, _init itsrcend, const hdr_animfmtinfo & animinf, const hdr_imgfmtinfo & imginf)
         {
             //We want the address of the first animation sequence's frame entry
-            uint32_t begAniSeq = 0;
-
+            uint32_t endfrmparts = 0;
             uint32_t seqref = GetFirstNonNullAnimSequenceRefTblEntry(itsrcbeg, itsrcend, animinf);
             if(seqref != 0)
             {
                 auto itseqref = std::next(itsrcbeg, seqref);
                 if(itseqref != itsrcend)
                 {
-                    begAniSeq = utils::readBytesAs<uint32_t>(itseqref, itsrcend);
+                    endfrmparts = utils::readBytesAs<uint32_t>(itseqref, itsrcend);
                 }
             }
-//            else
-//            {
-//                assert(false); //Should never happen!
-//                //Otherwise we'd want to get the start of the compressed images block..
-//            }
+            else
+            {
+                //Otherwise we'd want to get the start of the compressed images block..
+                endfrmparts = getStartOffsetImageData(itsrcbeg, itsrcend, imginf);
+            }
 
-            return begAniSeq;
+            //If we still can't get the end, the next block is the palette
+            if(endfrmparts == 0)
+            {
+                auto itpal = std::next(itsrcbeg, imginf.ptrpal);
+                uint32_t ptrpaldat = utils::readBytesAs<uint32_t>(itpal, itsrcend); //The first value at the palette pointer is the beginning of palette data
+                endfrmparts = ptrpaldat;
+            }
+            assert(endfrmparts != 0);
+            return endfrmparts;
+        }
+
+        template<class _init>
+            uint32_t getStartOffsetImageData(_init itsrcbeg, _init itsrcend, const hdr_imgfmtinfo & imginf)
+        {
+            uint32_t ofsimgdat = 0;
+            auto itimgtbl = std::next(itsrcbeg, imginf.ptrimgtable);
+            for(size_t cntimg = 0; cntimg < imginf.nbimgs; ++cntimg)
+            {
+                uint32_t ptrimgdat = utils::readBytesAs<uint32_t>(itimgtbl, itsrcend);
+                if(ofsimgdat == 0 || ptrimgdat < ofsimgdat)
+                    ofsimgdat = ptrimgdat;
+            }
+            return ofsimgdat;
         }
 
         uint32_t getNbFrames()const
@@ -519,7 +543,6 @@ namespace fmt
                 if(curfrmtotalsz > largest)
                     largest = curfrmtotalsz;
             }
-            assert(largest != 0);
             return largest;
         }
     };

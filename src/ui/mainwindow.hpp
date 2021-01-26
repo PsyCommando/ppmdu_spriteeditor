@@ -25,6 +25,7 @@
 #include <src/ui/rendering/sprite_scene.hpp>
 #include <src/ui/windows/dialogabout.hpp>
 #include <src/ui/windows/dialogprogressbar.hpp>
+#include <src/ui/arguments_handler.hpp>
 #include <atomic>
 
 class BaseSpriteTab;
@@ -32,7 +33,7 @@ namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow, public cmdline_processing::ArgumentsHandler
 {
     Q_OBJECT
     friend class TVSpritesContextMenu;
@@ -146,12 +147,12 @@ private slots:
     void on_action_Open_triggered();
 
     void on_actionSprite_Sheet_Auto_Importer_triggered();
-
     void on_actionAdvanced_triggered();
-
     void on_action_Settings_triggered();
 
-
+    // ArgumentsHandler interface
+public:
+    void ProcessArguments(const QCommandLineParser &parser) override;
 
 private:
     Ui::MainWindow          *ui;

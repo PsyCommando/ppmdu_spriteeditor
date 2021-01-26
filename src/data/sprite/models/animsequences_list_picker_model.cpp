@@ -1,11 +1,6 @@
 #include "animsequences_list_picker_model.hpp"
 #include <src/data/sprite/animsequences.hpp>
-
-QSize CalcTextSize(const QString & text )
-{
-    static const QFontMetrics fm(QFont("Sergoe UI",9));
-    return QSize(fm.horizontalAdvance(text), fm.height());
-}
+#include <src/utility/ui_helpers.hpp>
 
 //*******************************************************************
 //  AnimSequencesPickerModel
@@ -22,7 +17,7 @@ AnimSequencesListPickerModel::~AnimSequencesListPickerModel()
 
 int AnimSequencesListPickerModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return ANIMATION_SEQUENCE_HEADER_COLUMNS.size();
+    return AnimSequencesListModel::ColumnNames.size();
 }
 
 QVariant AnimSequencesListPickerModel::data(const QModelIndex &index, int role) const
@@ -35,24 +30,24 @@ QVariant AnimSequencesListPickerModel::data(const QModelIndex &index, int role) 
     AnimSequence * pseq = m_root->getSequenceByID(index.row());
     Q_ASSERT(pseq);
 
-    switch(static_cast<eAnimationSequenceColumns>(index.column()))
+    switch(static_cast<AnimSequencesListModel::eColumns>(index.column()))
     {
-    case eAnimationSequenceColumns::Preview:
+        case AnimSequencesListModel::eColumns::Preview:
         {
             if(role == Qt::DecorationRole)
                 return QVariant(pseq->makePreview(getOwnerSprite()));
             else if(role == Qt::DisplayRole)
                 return QString("Sequence#%1").arg(index.row());
             else if(role == Qt::SizeHintRole)
-                return CalcTextSize(data(index, Qt::DisplayRole).toString());
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
             break;
         }
-    case eAnimationSequenceColumns::NbFrames:
+        case AnimSequencesListModel::eColumns::NbFrames:
         {
             if(role == Qt::DisplayRole)
                 return QString("%1 frames").arg(pseq->nodeChildCount());
             else if(role == Qt::SizeHintRole)
-                return CalcTextSize(data(index, Qt::DisplayRole).toString());
+                return CalculateTextSizeForView(data(index, Qt::DisplayRole).toString());
             break;
         }
     default:
@@ -64,13 +59,9 @@ QVariant AnimSequencesListPickerModel::data(const QModelIndex &index, int role) 
 QVariant AnimSequencesListPickerModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if(orientation == Qt::Vertical && role == Qt::DisplayRole)
-    {
         return QString("%1").arg(section);
-    }
-    else if(orientation == Qt::Horizontal && role == Qt::DisplayRole && section < ANIMATION_SEQUENCE_HEADER_COLUMNS.size())
-    {
-        return {ANIMATION_SEQUENCE_HEADER_COLUMNS[section]};
-    }
+    else if(orientation == Qt::Horizontal && role == Qt::DisplayRole && static_cast<size_t>(section) < AnimSequencesListModel::ColumnNames.size())
+        return {AnimSequencesListModel::ColumnNames.at(static_cast<AnimSequencesListModel::eColumns>(section))};
     return TreeNodeModel::headerData(section, orientation, role);
 }
 
