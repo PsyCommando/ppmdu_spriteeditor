@@ -89,6 +89,7 @@ SOURCES += src/main.cpp\
     src/utility/container_threaded_writer.cpp \
     src/utility/file_support.cpp \
     src/utility/graphics_util.cpp \
+    src/utility/long_task_helper.cpp \
     src/utility/palette_helpers.cpp \
     src/utility/program_settings.cpp \
     src/utility/randomgenhelper.cpp \
@@ -189,6 +190,7 @@ HEADERS  += \
     src/utility/container_threaded_writer.hpp \
     src/utility/file_support.hpp \
     src/utility/graphics_util.hpp \
+    src/utility/long_task_helper.hpp \
     src/utility/palette_helpers.hpp \
     src/utility/program_settings.hpp \
     src/utility/randomgenhelper.hpp \
