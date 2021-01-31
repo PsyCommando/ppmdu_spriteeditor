@@ -53,6 +53,14 @@ namespace fmt
     //Human readable names for the sprite types
     extern const std::vector<std::string> SpriteTypeNames;
 
+    //Tile mapping modes helper
+    enum struct eSpriteTileMappingModes : uint8_t
+    {
+        Mapping2D = 0,
+        Mapping1D = 1,
+    };
+    //Human readable names for mapping modes
+    extern const std::map<eSpriteTileMappingModes, std::string> SpriteMappingModeNames;
     //Tiles length
     extern const int NDS_TILE_SIZE_4BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
     extern const int NDS_TILE_SIZE_8BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp

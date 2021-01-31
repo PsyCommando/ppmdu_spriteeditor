@@ -114,7 +114,7 @@ XML_ELEM_PAL = "PaletteId",
 XML_ELEM_TILE = "Tile",
 XML_ELEM_OBJM = "ObjectMode",
 
-XML_ELEM_UNK13 = "Unk13",
+XML_ELEM_TILE_MAPPING_MODE = "Unk13",
 XML_ELEM_UNK11 = "Unk11",
 XML_ELEM_UNK6 = "Unk6",
 XML_ELEM_UNK7 = "Unk7",
@@ -188,7 +188,7 @@ public:
         writer.writeStartElement(XML_NODE_PROPERTIES);
         writer.writeTextElement(XML_ELEM_COMP,      QString("%1").arg(static_cast<int>(m_spr.getTargetCompression())));
         writer.writeTextElement(XML_ATTR_SPRTYPE,   QString("%1").arg(static_cast<int>(m_spr.type())));
-        writer.writeTextElement(XML_ELEM_UNK13,     QString("%1").arg(m_spr.unk13()));
+        writer.writeTextElement(XML_ELEM_TILE_MAPPING_MODE,     QString("%1").arg(static_cast<int>(m_spr.getTileMappingMode())));
         writer.writeTextElement(XML_ELEM_PALIS256,  QString("%1").arg(m_spr.is256Colors()));
         writer.writeTextElement(XML_ELEM_UNK11,     QString("%1").arg(m_spr.unk11()));
 

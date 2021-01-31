@@ -66,13 +66,24 @@ QWidget *SpritePropertiesDelegate::createEditor(QWidget *parent, const QStyleOpt
                 pcolmode->addItem(s);
             return pcolmode;
         }
-    case eSpriteProperties::Unk7:   [[fallthrough]];
-    case eSpriteProperties::Unk8:   [[fallthrough]];
-    case eSpriteProperties::Unk9:   [[fallthrough]];
-    case eSpriteProperties::Unk10:  [[fallthrough]];
-    case eSpriteProperties::Unk11:  [[fallthrough]];
-    case eSpriteProperties::Unk12:  [[fallthrough]];
-    case eSpriteProperties::Unk13:  [[fallthrough]];
+    case eSpriteProperties::TileMappingMode:
+        {
+            QComboBox * cmbtmap = new QComboBox(parent);
+            cmbtmap->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Fixed );
+            cmbtmap->setAutoFillBackground(true);
+            cmbtmap->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
+            for(const auto & s : fmt::SpriteMappingModeNames)
+            {
+                cmbtmap->addItem(QString::fromStdString(s.second), static_cast<uint8_t>(s.first));
+            }
+            return cmbtmap;
+        }
+    case eSpriteProperties::Unk7:
+    case eSpriteProperties::Unk8:
+    case eSpriteProperties::Unk9:
+    case eSpriteProperties::Unk10:
+    case eSpriteProperties::Unk11:
+    case eSpriteProperties::Unk12:
     default:
         break; //Avoid warnings remove when attributes properly supported
     };
@@ -112,13 +123,19 @@ void SpritePropertiesDelegate::setEditorData(QWidget *editor, const QModelIndex 
             pcolmode->setCurrentIndex((m_spr->is256Colors())? 1 : 0);
             return;
         }
-    case eSpriteProperties::Unk7:   [[fallthrough]];
-    case eSpriteProperties::Unk8:   [[fallthrough]];
-    case eSpriteProperties::Unk9:   [[fallthrough]];
-    case eSpriteProperties::Unk10:  [[fallthrough]];
-    case eSpriteProperties::Unk11:  [[fallthrough]];
-    case eSpriteProperties::Unk12:  [[fallthrough]];
-    case eSpriteProperties::Unk13:  [[fallthrough]];
+    case eSpriteProperties::TileMappingMode:
+        {
+            QComboBox * cmbtmap = static_cast<QComboBox*>(editor);
+            Q_ASSERT(cmbtmap);
+            cmbtmap->setCurrentIndex(static_cast<int>(m_spr->getTileMappingMode()));
+            return;
+        }
+    case eSpriteProperties::Unk7:
+    case eSpriteProperties::Unk8:
+    case eSpriteProperties::Unk9:
+    case eSpriteProperties::Unk10:
+    case eSpriteProperties::Unk11:
+    case eSpriteProperties::Unk12:
     default:
         break; //Avoid warnings remove when attributes properly supported
     };
@@ -156,13 +173,19 @@ void SpritePropertiesDelegate::setModelData(QWidget *editor, QAbstractItemModel 
             model->setData(index, pcolmode->currentIndex());
             return;
         }
-    case eSpriteProperties::Unk7:   [[fallthrough]];
-    case eSpriteProperties::Unk8:   [[fallthrough]];
-    case eSpriteProperties::Unk9:   [[fallthrough]];
-    case eSpriteProperties::Unk10:  [[fallthrough]];
-    case eSpriteProperties::Unk11:  [[fallthrough]];
-    case eSpriteProperties::Unk12:  [[fallthrough]];
-    case eSpriteProperties::Unk13:  [[fallthrough]];
+    case eSpriteProperties::TileMappingMode:
+        {
+            QComboBox * cmbtmap = static_cast<QComboBox*>(editor);
+            Q_ASSERT(cmbtmap);
+            model->setData(index, index.data(Qt::UserRole));
+            return;
+        }
+    case eSpriteProperties::Unk7:
+    case eSpriteProperties::Unk8:
+    case eSpriteProperties::Unk9:
+    case eSpriteProperties::Unk10:
+    case eSpriteProperties::Unk11:
+    case eSpriteProperties::Unk12:
     default:
         break; //Avoid warnings remove when attributes properly supported
     };

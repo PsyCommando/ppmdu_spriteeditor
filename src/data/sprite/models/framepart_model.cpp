@@ -34,7 +34,6 @@ QVariant MFramePartModel::data(const QModelIndex &index, int role) const
     case eFramePartColumnsType::Preview:        return dataImgPreview   (part, role);
     case eFramePartColumnsType::ImgID:          return dataImgId        (part, role);
     case eFramePartColumnsType::ImgSz:          return dataImgSize      (part, role);
-    case eFramePartColumnsType::TileNum:        return dataTileNum      (part, role);
     case eFramePartColumnsType::PaletteID:      return dataPaletteID    (part, role);
     case eFramePartColumnsType::VFlip:          return dataVFlip        (part, role);
     case eFramePartColumnsType::HFlip:          return dataHFlip        (part, role);
@@ -43,6 +42,7 @@ QVariant MFramePartModel::data(const QModelIndex &index, int role) const
     case eFramePartColumnsType::Priority:       return dataPriority     (part, role);
 
     //Advanced stuff
+    case eFramePartColumnsType::TileNum:        return dataTileNum      (part, role);
     case eFramePartColumnsType::Mosaic:         return dataMosaic       (part, role);
     case eFramePartColumnsType::Mode:           return dataMode         (part, role);
 

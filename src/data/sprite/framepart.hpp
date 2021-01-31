@@ -10,7 +10,6 @@ enum struct eFramePartColumnsType : int
     Preview = 0,
     ImgID,
     ImgSz,
-    TileNum,
     PaletteID,
     XOffset,
     YOffset,
@@ -20,6 +19,7 @@ enum struct eFramePartColumnsType : int
     LastColumnsBasicMode = Priority, //So we don't count the nb columns
 
     //Advanced Controls
+    TileNum,
     Mosaic,
     Mode,
 

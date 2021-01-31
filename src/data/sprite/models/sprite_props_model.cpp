@@ -20,7 +20,7 @@ const QStringList SpritePropertiesNames
     "Unk#10",
     "Unk#11",
     "Unk#12",
-    "Unk#13",
+    "Tile Mapping Mode",
 };
 
 const QStringList SpritePropertiesDescriptions
@@ -34,7 +34,7 @@ const QStringList SpritePropertiesDescriptions
     "##UNKNOWN##",
     "##UNKNOWN## This far 0, 1, 3(d79p41a1.wan), 4(as001.wan).. Seems to deal with the palette slot in-game.",
     "##UNKNOWN##",
-    "##UNKNOWN## Possibly VRAM Character Mapping. 0 = 2D Mapping(Tiles placed on a 32x32 matrix), 1 = 1D Mapping(Tiles loaded one after another).",
+    "Possibly VRAM Character Mapping. 0 = 2D Mapping(Tiles placed on a 32x32 matrix), 1 = 1D Mapping(Tiles loaded one after another).",
 };
 
 const QString   ElemName_SpriteProperty = "Property";
@@ -170,8 +170,8 @@ QVariant SpritePropertiesModel::getNameForProperty(int propid) const
         return tr("Unk#11");
     case eSpriteProperties::Unk12:
         return tr("Unk#12");
-    case eSpriteProperties::Unk13:
-        return tr("Unk#13");
+    case eSpriteProperties::TileMappingMode:
+        return tr("Tile Mapping Mode");
     default:
         Q_ASSERT(false);
     };
@@ -244,10 +244,16 @@ QVariant SpritePropertiesModel::getDataForProperty(int propid, int role) const
                 return m_spr->unk12();
             break;
         }
-    case eSpriteProperties::Unk13:
+    case eSpriteProperties::TileMappingMode:
         {
-            if(role == Qt::DisplayRole || role == Qt::EditRole)
-                return m_spr->unk13();
+            if(role == Qt::DisplayRole)
+            {
+                return QString::fromStdString(fmt::SpriteMappingModeNames.at(m_spr->getTileMappingMode()));
+            }
+            else if(role == Qt::EditRole)
+            {
+                return static_cast<uint8_t>(m_spr->getTileMappingMode());
+            }
             break;
         }
     default:
@@ -310,9 +316,9 @@ void SpritePropertiesModel::setDataForProperty(eSpriteProperties propid, const Q
             m_spr->unk12(data.toUInt());
             break;
         }
-    case eSpriteProperties::Unk13:
+    case eSpriteProperties::TileMappingMode:
         {
-            m_spr->unk13(data.toUInt());
+            m_spr->setTileMappingMode(static_cast<fmt::eSpriteTileMappingModes>(data.toUInt()));
             break;
         }
     default:

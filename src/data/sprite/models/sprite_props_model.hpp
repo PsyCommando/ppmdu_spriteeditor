@@ -15,7 +15,7 @@ enum struct eSpriteProperties : int
     Unk10,
     Unk11,
     Unk12,
-    Unk13,
+    TileMappingMode, //unk#13
 
     NbProperties [[maybe_unused]],
 };

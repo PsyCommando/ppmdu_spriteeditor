@@ -17,23 +17,19 @@ namespace fmt
     **********************************************************************/
     struct hdr_imgfmtinfo
     {
-        uint32_t ptrimgtable;   //pointer to the image data pointer table
-        uint32_t ptrpal;        //pointer to palette data
-        uint16_t unk13;         //VRAM Character Mapping. 0 = 2D Mapping(Tiles placed on a 32x32 matrix), 1 = 1D Mapping(Tiles loaded one after another).
-        uint16_t colordepth;    //1 == 256 colors, 0 == 16 colors
-        uint16_t unk11;         //palette slot?
-        uint16_t nbimgs;        //nb images in the img data table
-
-        hdr_imgfmtinfo()
-            :ptrimgtable(0), ptrpal(0), unk13(0), colordepth(0), unk11(0), nbimgs(0)
-        {}
+        uint32_t ptrimgtable    {0};    //pointer to the image data pointer table
+        uint32_t ptrpal         {0};    //pointer to palette data
+        uint16_t mappingmode    {0};    //VRAM Character Mapping. 0 = 2D Mapping(Tiles placed on a 32x32 matrix), 1 = 1D Mapping(Tiles loaded one after another).
+        uint16_t colordepth     {0};    //1 == 256 colors, 0 == 16 colors
+        uint16_t unk11          {0};    //palette slot?
+        uint16_t nbimgs         {0};    //nb images in the img data table
 
         template<class _init>
         _init read( _init beg, _init end )
         {
             beg = utils::readBytesAs( beg, end, ptrimgtable );
             beg = utils::readBytesAs( beg, end, ptrpal );
-            beg = utils::readBytesAs( beg, end, unk13 );
+            beg = utils::readBytesAs( beg, end, mappingmode );
             beg = utils::readBytesAs( beg, end, colordepth );
             beg = utils::readBytesAs( beg, end, unk11 );
             beg = utils::readBytesAs( beg, end, nbimgs );
@@ -45,7 +41,7 @@ namespace fmt
         {
             sir0hlpr.writePtr(ptrimgtable);
             sir0hlpr.writePtr(ptrpal);
-            sir0hlpr.writeVal(unk13);
+            sir0hlpr.writeVal(mappingmode);
             sir0hlpr.writeVal(colordepth);
             sir0hlpr.writeVal(unk11);
             sir0hlpr.writeVal(nbimgs);

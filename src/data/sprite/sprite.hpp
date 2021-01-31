@@ -204,28 +204,31 @@ public:
     }
 
     //0 == 2D mapping, 1 == 1D mapping
-    inline bool     isTiled()const              {return unk13() == 0;}
-    inline void     SetIsTiled(bool state)      {return unk13(state);}
+    inline fmt::eSpriteTileMappingModes     getTileMappingMode()const                               {return static_cast<fmt::eSpriteTileMappingModes>(mappingMode());}
+    inline void                             setTileMappingMode(fmt::eSpriteTileMappingModes mode)   {mappingMode(static_cast<bool>(mode));}
+    inline bool                             is2DMapped()const                                       {return mappingMode() == static_cast<int>(fmt::eSpriteTileMappingModes::Mapping2D);}
+    inline bool                             is1DMapped()const                                       {return mappingMode() == static_cast<int>(fmt::eSpriteTileMappingModes::Mapping1D);}
+    uint16_t                                getMaxTileUsage()const;
 
     void                                    setTargetCompression(filetypes::eCompressionFormats fmt){ m_targetgompression = fmt;}
     inline filetypes::eCompressionFormats   getTargetCompression()const                             {return m_targetgompression;}
 
-    uint16_t getMaxTileUsage()const;
 
-    inline uint16_t unk7()const         {return m_sprhndl.getAnimFmtInfo().unk7;}
-    inline void     unk7(uint16_t v)    {m_sprhndl.getAnimFmtInfo().unk7 = v;}
-    inline uint16_t unk8()const         {return m_sprhndl.getAnimFmtInfo().unk8;}
-    inline void     unk8(uint16_t v)    {m_sprhndl.getAnimFmtInfo().unk8 = v;}
-    inline uint16_t unk9()const         {return m_sprhndl.getAnimFmtInfo().unk9;}
-    inline void     unk9(uint16_t v)    {m_sprhndl.getAnimFmtInfo().unk9 = v;}
-    inline uint16_t unk10()const        {return m_sprhndl.getAnimFmtInfo().unk10;}
-    inline void     unk10(uint16_t v)   {m_sprhndl.getAnimFmtInfo().unk10 = v;}
-    inline uint16_t unk11()const        {return m_sprhndl.getImageFmtInfo().unk11;}
-    inline void     unk11(uint16_t v)   {m_sprhndl.getImageFmtInfo().unk11 = v;}
-    inline uint16_t unk12()const        {return m_sprhndl.getUnk12();}
-    inline void     unk12(uint16_t v)   {m_sprhndl.getUnk12() = v;}
-    inline uint16_t unk13()const        {return m_sprhndl.getImageFmtInfo().unk13;}
-    inline void     unk13(uint16_t v)   {m_sprhndl.getImageFmtInfo().unk13 = v;}
+
+    inline uint16_t unk7()const                 {return m_sprhndl.getAnimFmtInfo().unk7;}
+    inline void     unk7(uint16_t v)            {m_sprhndl.getAnimFmtInfo().unk7 = v;}
+    inline uint16_t unk8()const                 {return m_sprhndl.getAnimFmtInfo().unk8;}
+    inline void     unk8(uint16_t v)            {m_sprhndl.getAnimFmtInfo().unk8 = v;}
+    inline uint16_t unk9()const                 {return m_sprhndl.getAnimFmtInfo().unk9;}
+    inline void     unk9(uint16_t v)            {m_sprhndl.getAnimFmtInfo().unk9 = v;}
+    inline uint16_t unk10()const                {return m_sprhndl.getAnimFmtInfo().unk10;}
+    inline void     unk10(uint16_t v)           {m_sprhndl.getAnimFmtInfo().unk10 = v;}
+    inline uint16_t unk11()const                {return m_sprhndl.getImageFmtInfo().unk11;}
+    inline void     unk11(uint16_t v)           {m_sprhndl.getImageFmtInfo().unk11 = v;}
+    inline uint16_t unk12()const                {return m_sprhndl.getUnk12();}
+    inline void     unk12(uint16_t v)           {m_sprhndl.getUnk12() = v;}
+    inline uint16_t mappingMode()const          {return m_sprhndl.getImageFmtInfo().mappingmode;}
+    inline void     mappingMode(uint16_t v)     {m_sprhndl.getImageFmtInfo().mappingmode = v;}
 
     //Utilities
 public:
