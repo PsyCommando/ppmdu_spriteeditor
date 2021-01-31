@@ -12,7 +12,6 @@
 
 namespace utils
 {
-
     //
     QVector<QRgb> ConvertSpritePalette(std::vector<uint32_t> & colors);
     std::vector<uint32_t> ConvertSpritePaletteFromQt(const QVector<QRgb> & colors);
@@ -27,7 +26,8 @@ namespace utils
     std::vector<uint8_t> Reduce8bppTo4bpp( const std::vector<uint8_t> & src );
     std::vector<uint8_t> Reduce8bppTo4bpp(const QImage &src );
 
-    //Assumes 8bpp
+
+    //!!!! Assumes 8bpp !!!!!!
     //QPixmap UntileIntoImg( unsigned int pixwidth, unsigned int pixheight, const QByteArray & src, const QVector<QRgb> & colors );
     template<class _ByteCntTy>
         _ByteCntTy Untile( unsigned int pixwidth, unsigned int pixheight, const _ByteCntTy & src, const QVector<QRgb> & /*colors*/ = QVector<QRgb>() )

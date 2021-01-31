@@ -10,6 +10,7 @@
 #include <src/utility/randomgenhelper.hpp>
 #include <src/utility/program_settings.hpp>
 #include <src/ui/arguments_handler.hpp>
+#include <src/utility/ui_helpers.hpp>
 
 const char * ORG_NAME = "PPMDU";
 const char * APP_NAME = "Sprite Cruncher";
@@ -33,7 +34,7 @@ public:
         }
         catch(const std::exception & e)
         {
-            qWarning() << "<!>-Exception: " <<e.what();
+            qWarning() << "<!>-Exception: " << GetNestedExceptionsText(e);
             return false;
         }
         catch(...)
@@ -43,6 +44,8 @@ public:
         }
     }
 };
+
+
 
 inline bool ShouldDisplayUI(const QCommandLineParser & parser)
 {

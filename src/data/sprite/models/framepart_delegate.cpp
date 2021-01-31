@@ -185,7 +185,7 @@ void MFramePartDelegate::setEditorData(QWidget *editor, const QModelIndex &index
         {
             QSpinBox *ptid = static_cast<QSpinBox*>(editor);
             Q_ASSERT(ptid);
-            ptid->setValue(part->getTileNum());
+            ptid->setValue(part->getCharBlockNum());
             break;
         }
         case eFramePartColumnsType::RnSParam:

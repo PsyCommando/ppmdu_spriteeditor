@@ -27,6 +27,7 @@ enum struct [[maybe_unused]] eTreeElemDataType
     effectOffsetSet,
     effectOffset,
 
+    unknown_item, //For unknown format stored alongside sprites
     INVALID,
 };
 

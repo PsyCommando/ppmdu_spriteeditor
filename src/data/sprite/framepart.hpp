@@ -87,7 +87,7 @@ public:
     bool isPartReference()const;
 
     //Returns the length in tiles this part is
-    uint16_t getTileLen()const;
+    uint16_t getCharBlockLen()const;
 
     //Returns the right sub-palette from the src that matches the palette number of the framepart
     QVector<QRgb> getPartPalette(const QVector<QRgb> & src)const;
@@ -112,7 +112,7 @@ public:
 
     inline uint8_t          getPalNb()const                 {return m_data.getPalNb();}
     inline uint8_t          getPriority()const              {return m_data.getPriority();}
-    inline uint16_t         getTileNum()const               {return m_data.getTileNum();}
+    inline uint16_t         getCharBlockNum()const               {return m_data.getCharBlockNum();}
     inline fmt::eFrameRes   getResolutionType()const        {return m_data.getResolutionType();}
     inline fmt::frmid_t     getFrameIndex()const            {return m_data.getFrameIndex();}
     inline std::pair<uint16_t,uint16_t> GetResolution()const {return m_data.GetResolution();}
@@ -133,7 +133,7 @@ public:
 
     inline void setPalNb            (uint8_t palnb)         {m_data.setPalNb(palnb);}
     inline void setPriority         (uint8_t prio)          {m_data.setPriority(prio);}
-    inline void setTileNum          (uint16_t tnum)         {m_data.setTileNum(tnum);}
+    inline void setTileNum          (uint16_t tnum)         {m_data.setCharBlockNum(tnum);}
     inline void setFrameIndex       (fmt::frmid_t id)       {m_data.setFrameIndex(id);}
     inline void setResolutionType   (fmt::eFrameRes res)    {m_data.setResolutionType(res);}
 private:

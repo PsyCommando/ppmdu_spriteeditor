@@ -4,6 +4,34 @@
 
 const QString ElemName_FrameCnt = "Frames";
 
+FramesContainer::FramesContainer(TreeNode *sprite)
+    :TreeNodeWithChilds(sprite)
+{}
+
+FramesContainer::FramesContainer(const FramesContainer &cp)
+    :TreeNodeWithChilds(cp)
+{
+    operator=(cp);
+}
+
+FramesContainer::FramesContainer(FramesContainer &&mv)
+    :TreeNodeWithChilds(mv)
+{
+    operator=(mv);
+}
+
+FramesContainer &FramesContainer::operator=(const FramesContainer &cp)
+{
+    TreeNodeWithChilds::operator=(cp);
+    return *this;
+}
+
+FramesContainer &FramesContainer::operator=(FramesContainer &&mv)
+{
+    TreeNodeWithChilds::operator=(mv);
+    return *this;
+}
+
 FramesContainer::~FramesContainer()
 {
 }
@@ -38,6 +66,8 @@ fmt::ImageDB::frmtbl_t FramesContainer::exportFrames()
     return frms;
 }
 
+bool FramesContainer::nodeIsMutable() const {return false;}
+
 MFrame *FramesContainer::getFrame(fmt::frmid_t id)
 {
     return static_cast<MFrame*>(nodeChild(id));
@@ -66,7 +96,7 @@ uint16_t FramesContainer::getMaxTileUsage() const
         uint16_t curfrmtotalsz = 0; //highest tile number + size used out of all steps
         for(const MFramePart * part : *frm)
         {
-            const uint16_t curmax = part->getTileNum() + part->getTileLen();
+            const uint16_t curmax = part->getCharBlockNum() + part->getCharBlockLen();
             if(curmax > curfrmtotalsz)
                 curfrmtotalsz = curmax;
         }

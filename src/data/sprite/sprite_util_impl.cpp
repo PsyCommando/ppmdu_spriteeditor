@@ -228,7 +228,7 @@ public:
         {
             writer.writeStartElement(XML_NODE_FRAMEPART);
             writer.writeTextElement(XML_ELEM_IMG,       QString("%1").arg(p->getFrameIndex()));
-            writer.writeTextElement(XML_ELEM_TILE,      QString("%1").arg(p->getTileNum()));
+            writer.writeTextElement(XML_ELEM_TILE,      QString("%1").arg(p->getCharBlockNum()));
             writer.writeTextElement(XML_ELEM_PAL,       QString("%1").arg(p->getPalNb()));
             writer.writeTextElement(XML_ELEM_XOFF,      QString("%1").arg(p->getXOffset()));
             writer.writeTextElement(XML_ELEM_YOFF,      QString("%1").arg(p->getYOffset()));

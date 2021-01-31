@@ -134,7 +134,7 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
                 const int tileid = value.toInt(&bok);
                 if(!bok)
                     break;
-                part.setTileNum(tileid);
+                part.setCharBlockNum(tileid);
             }
             break;
         }
@@ -301,7 +301,7 @@ QVariant MFramePartModel::dataImgSize(const MFramePart * part, int role)const
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
         auto res = part->GetResolution();
-        return QString("%1x%2 (%3 tiles)").arg(res.first).arg(res.second).arg(part->getTileLen());
+        return QString("%1x%2 (%3 blocks)").arg(res.first).arg(res.second).arg(part->getCharBlockLen());
     }
     else if(role == Qt::SizeHintRole)
     {
@@ -449,13 +449,16 @@ QVariant MFramePartModel::dataPaletteID(const MFramePart * part, int role) const
     if(role == Qt::DecorationRole)
     {
         if(part->isColorPal256())
-            return m_sprite->MakePreviewPalette();
+            return QVariant(); //Don't display the whole thing
         else
             return m_sprite->MakePreviewSubPalette(part->getPalNb());
     }
     if(role == Qt::DisplayRole)
     {
-        return QString("Palette #%1").arg(part->getPalNb());
+        if(part->isColorPal256())
+            return QVariant();
+        else
+            return QString("Palette #%1").arg(part->getPalNb());
     }
     else if(role == Qt::EditRole)
     {
@@ -489,7 +492,7 @@ QVariant MFramePartModel::dataTileNum(const MFramePart * part, int role) const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
-        return static_cast<int>(part->getTileNum());
+        return static_cast<int>(part->getCharBlockNum());
     }
     else if(role == Qt::SizeHintRole)
     {

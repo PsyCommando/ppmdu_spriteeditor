@@ -72,6 +72,9 @@
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
        </property>
+       <property name="autoScroll">
+        <bool>false</bool>
+       </property>
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
        </property>
@@ -123,7 +126,7 @@
         <enum>QFrame::StyledPanel</enum>
        </property>
        <property name="currentIndex">
-        <number>5</number>
+        <number>7</number>
        </property>
        <widget class="TabEmpty" name="tabEmpty">
         <property name="minimumSize">
@@ -151,6 +154,7 @@
          </size>
         </property>
        </widget>
+       <widget class="TabUnknown" name="tabUnknown"/>
        <widget class="TabAnimTable" name="tabAnimTable">
         <property name="minimumSize">
          <size>
@@ -557,6 +561,12 @@
    <class>TabAnimGroup</class>
    <extends>QWidget</extends>
    <header location="global">src/ui/tabs/tabanimgroup.hpp</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TabUnknown</class>
+   <extends>QWidget</extends>
+   <header location="global">src/ui/tabs/tab_unknown.hpp</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

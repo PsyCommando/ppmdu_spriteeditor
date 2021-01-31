@@ -55,9 +55,6 @@ Image *ImageContainer::appendNewImage()
 
 void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt::ImageDB::frmtbl_t &frms)
 {
-    static const int TileWidth  = 8;
-    static const int TileHeight = 8;
-    static const int TileLength = 64;
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
 
@@ -65,38 +62,112 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
     _removeChildrenNodes(0, nodeChildCount());
     _insertChildrenNodes(0, imgs.size());
 
+    int newimgcharblock = 0;
+    for(int cntimage = 0;cntimage < m_container.size(); ++cntimage)
+        newimgcharblock += m_container[cntimage]->getCharBlockLen();
+
     for( size_t cntid = 0; cntid < imgs.size(); ++cntid )
     {
-        int NbTiles     = imgs[cntid].data.size() / TileLength;
-        if(imgs[cntid].data.size() % TileLength != 0)
-            NbTiles += 1;
-        int nbtilessqrt = qRound(sqrt(NbTiles));
-        int w = (nbtilessqrt + (NbTiles % nbtilessqrt)) * TileWidth;
-        int h = (nbtilessqrt) * TileHeight;
-        const fmt::step_t * pstep = nullptr;
+        const auto & imgref = imgs[cntid];
+        const int imgbytelen = imgref.data.size();
+        bool is256col = spr->is256Colors();
+        int TileByteLen = is256col? fmt::NDS_TILE_SIZE_8BPP : fmt::NDS_TILE_SIZE_4BPP;
+        int NbTiles  = imgbytelen / TileByteLen;
 
-        for( size_t frmid = 0; frmid < frms.size(); ++frmid )
+        if(imgbytelen % TileByteLen != 0)
+        {
+            qWarning() << "ImageContainer::importImages(): Encountered an image with less bytes than the expected tile size!"
+                       << "Expected tiles: " << TileByteLen <<" bytes, " <<(is256col? "8bpp" : "4bpp" ) <<" bpp."
+                       << "Got image that's " <<imgbytelen <<" bytes long.."
+                       << "Unk14: " << imgref.unk14 <<", Unk2: " <<imgref.unk2 <<"!";
+            //Somtimes some sprites are smaller than a single tile with the expected image depth..
+            //mainly in effect sprites
+            if(is256col && (imgbytelen * 2) == TileByteLen)
+            {
+                TileByteLen = fmt::NDS_TILE_SIZE_4BPP; //If its just a 4bpp image in a 8bpp sprite, handle it as 4bpp
+                is256col = false;
+            }
+            else
+            {
+                //Import but mark it as broken
+                m_container[cntid]->importBrokenImage(imgs[cntid]);
+                newimgcharblock += fmt::TilesToCharBlocks(NbTiles);
+                continue;
+            }
+        }
+
+        int w = 0;//((nbtilessqrt + (NbTiles % nbtilessqrt)) * fmt::NDS_TILE_PIXEL_WIDTH);
+        int h = 0;//(nbtilessqrt) * TileHeight;
+
+        //1. Try to get the resolution from any frame using the image
+        //const fmt::step_t * pstep = nullptr;
+        for( size_t frmid = 0; frmid < frms.size() && w == 0 && h == 0; ++frmid )
         {
             auto itstep = frms[frmid].begin();
             //Look through all the frame's parts
-            for( size_t stepid= 0; stepid < frms[frmid].size(); ++stepid, ++itstep )
+            for( size_t stepid= 0; stepid < frms[frmid].size() && w == 0 && h == 0; ++stepid, ++itstep )
             {
                 auto res = itstep->GetResolution();
-                if( static_cast<size_t>(itstep->frmidx) == cntid)
+                if(static_cast<size_t>(itstep->frmidx) == cntid ||
+                    (spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D && itstep->isReference() && itstep->getCharBlockNum() == newimgcharblock))
                 {
-                    pstep = &(*itstep);
+                    //pstep = &(*itstep);
                     w = res.first;
                     h = res.second;
+                    break;
                 }
             }
         }
 
-        //Depending on the format of the parent sprite, we'll import the image in 8bpp or 4bpp format
-        if( (pstep && pstep->isColorPal256()) ||
-            (!pstep && spr->is256Colors()) ) //Assume 8bpp when the sprite is set to 256
-            m_container[cntid]->importImage8bpp(imgs[cntid], w, h, spr->isTiled());
+        const int testbytesz = (is256col)? (w * h) : (w * h) / 2; //Make sure the obtained value is sane
+        if(testbytesz > static_cast<int>(imgbytelen))
+        {
+            qDebug() <<"ImageContainer::importImages() : An image has a meta-frame refering to it with a too large resolution for its content!!"
+                     <<w <<" x " <<h << " pixels, " << (is256col? "8bpp" : "4bpp" )
+                     << ". Byte size: " <<testbytesz <<", available bytes: " <<imgbytelen
+                     <<".. Reverting to default size value!";
+            w = 0;
+            h = 0;
+        }
+
+        //2. Attempt to guess resolution if we don't have a frame
+        if(w == 0 && h == 0)
+        {
+            if(spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D)
+            {
+                //In 1d mapping mode we just lay everything down in the 256x256 virtual char block
+                const int totalpixelwidth = NbTiles * fmt::NDS_TILE_PIXEL_WIDTH; //total width of all tiles one next to the other
+                //const int nbtilesrows = (totalpixelwidth / 256) + ((totalpixelwidth % 256 > 0)? 1 : 0); //nb of tiles vertically
+                w = totalpixelwidth;
+                h = fmt::NDS_TILE_PIXEL_HEIGHT;
+                qDebug() << "ImageContainer::importImages(): Importing image in 1D mode with no frame assigned!!!";
+            }
+            else if(spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping2D)
+            {
+                //Make the image square if the nb of tiles is a integer square root
+                double sqrttnb = sqrt(NbTiles);
+                if((trunc(sqrttnb) - sqrttnb) == 0)
+                {
+                    //No decimal part, make it square
+                    w = static_cast<int>(sqrttnb) * fmt::NDS_TILE_PIXEL_WIDTH;
+                    h = static_cast<int>(sqrttnb) * fmt::NDS_TILE_PIXEL_HEIGHT;
+                    qDebug() << "ImageContainer::importImages(): Importing image in 2D mode with no frame assigned, and a square amount of tiles!!!";
+                }
+                else
+                {
+                    //has decimal part so cannot be square
+                    qDebug() << "ImageContainer::importImages(): Importing image in 2D mode with no frame assigned and a rectangular shape!!!";
+                }
+            }
+        }
+
+        //3. Depending on the format of the parent sprite, we'll import the image in 8bpp or 4bpp format
+        //const bool is256col = (pstep && pstep->isColorPal256()) || (!pstep && spr->is256Colors());
+        if(is256col)
+            m_container[cntid]->importImage8bpp(imgs[cntid], w, h, true);
         else
-            m_container[cntid]->importImage4bpp(imgs[cntid], w, h, spr->isTiled()); //default to 16 colors
+            m_container[cntid]->importImage4bpp(imgs[cntid], w, h, true);
+        newimgcharblock += fmt::TilesToCharBlocks(NbTiles);
     }
 }
 
@@ -109,7 +180,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages()
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-        images[cntid] = m_container[cntid]->exportImage4bpp(w, h, spr->isTiled());
+        images[cntid] = m_container[cntid]->exportImage4bpp(w, h, true);
     return images;
 }
 
@@ -121,7 +192,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages4bpp()
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-        images[cntid] = m_container[cntid]->exportImage4bpp(w, h, spr->isTiled());
+        images[cntid] = m_container[cntid]->exportImage4bpp(w, h, true);
     return images;
 }
 
@@ -133,8 +204,126 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages8bpp()
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-        images[cntid] = m_container[cntid]->exportImage8bpp(w, h, spr->isTiled());
+        images[cntid] = m_container[cntid]->exportImage8bpp(w, h, true);
     return images;
+}
+
+QVector<uint8_t> ImageContainer::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const
+{
+    QVector<uint8_t> tiles;
+    auto itinsert = std::back_inserter(tiles);
+    int cntTotalTiles = 0;
+    bool iscopying = false;
+
+    for(int cntimg = 0; cntimg < m_container.size() && len != 0; ++cntimg)
+    {
+        Image * pcur = m_container[cntimg];
+        int imgtilelen = pcur->getTileSize();
+        if(!iscopying && tilenum < (cntTotalTiles + imgtilelen))
+        {
+            iscopying = true;
+            //We start copying tiles from this image!
+            for(int i = tilenum - cntTotalTiles; i < imgtilelen && len != 0; ++i, --len)
+            {
+                std::copy(pcur->getTileBeg(i), pcur->getTileEnd(i), itinsert);
+            }
+        }
+        else if((cntTotalTiles + imgtilelen) > tilenum)
+        {
+            //We're currently copying tiles over, so keep going with this new image!
+            for(int i = 0; i < imgtilelen && len != 0; ++i, --len)
+            {
+                std::copy(pcur->getTileBeg(i), pcur->getTileEnd(i), itinsert);
+            }
+        }
+        cntTotalTiles += imgtilelen;
+    }
+
+
+//    Image * pfound = nullptr;
+//    int cntimg = 0;
+//    int cnttile = 0;
+//    bool copyingtiles = false;
+//    for(; tiles.size() < len && cntimg < m_container.size(); ++cntimg)
+//    {
+//        Image * pcur = m_container[cntimg];
+//        if(cnttile == tilenum)
+//        {
+//            copyingtiles = true;
+//            pcur->getTiles();
+//        }
+//        else if((cnttile + pcur->getTileSize()) > tilenum)
+//        {
+//            //the tile we want is inside this image..
+//            qDebug()<<"Requested to get tile within an image! tilenum: " << tilenum <<", imgid: " << cntimg;
+//        }
+//        cnttile += pcur->getTileSize();
+//    }
+    return tiles;
+}
+
+QVector<uint8_t> ImageContainer::getCharBlocks(fmt::frmid_t num, fmt::frmid_t len) const
+{
+    //return getTiles(fmt::CharBlocksToTiles(num), fmt::CharBlocksToTiles(len));
+
+
+    QVector<uint8_t> blocks;
+    auto itinsert = std::back_inserter(blocks);
+    int cntTotalBlocks = 0;
+    bool iscopying = false;
+
+    for(int cntimg = 0; cntimg < m_container.size() && len != 0; ++cntimg)
+    {
+        Image * pcur = m_container[cntimg];
+        int imgBlockLen = pcur->getCharBlockLen();
+        if(!iscopying && num < (cntTotalBlocks + imgBlockLen))
+        {
+            iscopying = true;
+            //We start copying tiles from this image!
+            for(int i = num - cntTotalBlocks; i < imgBlockLen && len != 0; ++i, --len)
+            {
+                std::copy(pcur->getCharBlockBeg(i), pcur->getCharBlockEnd(i), itinsert);
+            }
+        }
+        else if((cntTotalBlocks + imgBlockLen) > num)
+        {
+            //We're currently copying tiles over, so keep going with this new image!
+            for(int i = 0; i < imgBlockLen && len != 0; ++i, --len)
+            {
+                std::copy(pcur->getCharBlockBeg(i), pcur->getCharBlockEnd(i), itinsert);
+            }
+        }
+        cntTotalBlocks += imgBlockLen;
+    }
+    return blocks;
+}
+
+Image *ImageContainer::getImageByTileNum(fmt::frmid_t tilenum)
+{
+    Image * pfound = nullptr;
+    int cntimg = 0;
+    int cnttile = 0;
+    for(; cnttile < tilenum && cntimg < m_container.size(); ++cntimg)
+    {
+        Image * pcur = m_container[cntimg];
+        if(cnttile == tilenum)
+        {
+            pfound = pcur;
+            break;
+        }
+        else if((cnttile + pcur->getTileSize()) > tilenum)
+        {
+            //the tile we want is inside this image..
+            qDebug()<<"Requested to get tile within an image! tilenum: " << tilenum <<", imgid: " << cntimg;
+        }
+        cnttile += pcur->getTileSize();
+    }
+    return pfound;
+}
+
+const Image *ImageContainer::getImageByTileNum(fmt::frmid_t tilenum) const
+{
+    return const_cast<ImageContainer*>(this)->getImageByTileNum(tilenum);
 }
 
 QVector<uint8_t> ImageContainer::getTileData(int id, int len) const
@@ -326,5 +515,4 @@ QVector<uint8_t> ImageContainer::getTileDataFromImage(int imgidx, int id, int le
 //    }
 //    return QVariant();
 //}
-
 

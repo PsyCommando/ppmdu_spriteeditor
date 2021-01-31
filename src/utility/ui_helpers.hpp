@@ -13,4 +13,7 @@ extern const QFont DefaultModelViewFont;
 //Helper for SizeHint in the gui's view
 QSize CalculateTextSizeForView(const QString &text, const QFont * font = nullptr);
 
+
+QString GetNestedExceptionsText(const std::exception & e);
+
 #endif // UI_HELPERS_HPP

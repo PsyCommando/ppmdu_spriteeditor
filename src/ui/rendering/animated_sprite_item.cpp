@@ -112,7 +112,8 @@ void AnimatedSpriteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     //painter->fillRect(painter->viewport(), m_cachedpal.front());
     //painter->setCompositionMode( QPainter::CompositionMode_SourceOver );
 
-    painter->setBackground(QBrush(m_cachedpal.front()));
+    if(!m_cachedpal.empty())
+        painter->setBackground(QBrush(m_cachedpal.front()));
     //painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
 
     int xdiff = 0;// (m_cachedframes[curfrm].area.x() - m_biggestFrame.x());

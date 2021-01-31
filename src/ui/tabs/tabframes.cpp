@@ -185,6 +185,10 @@ void TabFrames::OnShowTab(QPersistentModelIndex element)
     setupAttachTable();
     ConnectSignals();
     selectPart(ui->tblframeparts->model()->index(0, 0, QModelIndex()));
+    if(spr->is256Colors())
+        ui->tblframeparts->hideColumn(static_cast<int>(eFramePartColumnsType::PaletteID));
+    else
+        ui->tblframeparts->showColumn(static_cast<int>(eFramePartColumnsType::PaletteID));
     BaseSpriteTab::OnShowTab(element);
 }
 
@@ -278,7 +282,7 @@ void TabFrames::on_btnFrmAdPart_clicked()
         insertpos = (curframe->nodeChildCount() > 0)? (curframe->nodeChildCount() - 1) : 0;   
 
     //Do the insertion
-    const int oldtilelen = curframe->calcTileLen();
+    const int oldtilelen = curframe->calcCharBlocksLen();
     if(m_frmModel->insertRow(insertpos))
     {
         ShowStatusMessage(tr("Appended part!"));
@@ -296,7 +300,7 @@ void TabFrames::on_btnFrmAdPart_clicked()
     else
     {
         //If inserted anywhere else, recalculate tile usage for all parts
-        curframe->optimizeTileUsage();
+        curframe->optimizeCharBlocksUsage();
     }
 
     updateListAndEditor();
@@ -334,7 +338,7 @@ void TabFrames::_MovePart(bool up)
         ShowStatusErrorMessage(tr("Failed to move part due to internal issue!"));
 
     //Gotta re-calc each times things move
-    curframe->optimizeTileUsage();
+    curframe->optimizeCharBlocksUsage();
     updateListAndEditor();
 }
 

@@ -375,14 +375,9 @@ namespace fmt
         }
 
         template<class _init>
-            void ParseImgData( _init itsrcbeg, _init itsrcend, const hdr_imgfmtinfo & imginf, const hdr_animfmtinfo & animinf  )
+            void ParseImgData(_init itsrcbeg, _init itsrcend, const hdr_imgfmtinfo & imginf, const hdr_animfmtinfo & animinf)
         {
             using namespace std;
-            uint32_t endFrmTable = CalculateFrameRefTblEnd(itsrcbeg, itsrcend, animinf);
-            uint32_t endFrmParts = CalculateFramePartsEnd(itsrcbeg, itsrcend, animinf, imginf);
-            assert(endFrmTable != 0);   //Shouldn't happen
-            assert(endFrmParts != 0);   //Shouldn't happen
-
             if( imginf.ptrimgtable != 0 )
             {
                 //Grab the images
@@ -404,6 +399,11 @@ namespace fmt
 
             if( animinf.ptroamtbl != 0 )
             {
+                uint32_t endFrmTable = CalculateFrameRefTblEnd(itsrcbeg, itsrcend, animinf);
+                uint32_t endFrmParts = CalculateFramePartsEnd(itsrcbeg, itsrcend, animinf, imginf);
+                assert(endFrmTable != 0);   //Shouldn't happen
+                assert(endFrmParts != 0);   //Shouldn't happen
+
                 if(endFrmTable == 0 || endFrmParts == 0)
                     throw std::runtime_error("ImageDB::ParseImgData(): End of frame parts, or frame refs table not found! Can't validate.");
 
@@ -528,15 +528,15 @@ namespace fmt
             return m_frames.size();
         }
 
-        uint16_t calculateLargestFrameSize()const //As nb of tiles
+        uint16_t calculateLargestFrameSize()const //As nb of char blocks
         {
-            uint16_t largest = 0; // the largest amount of tiles used out of all frames
+            uint16_t largest = 0; // the largest amount of char blocks used out of all frames
             for(const frm_t & frm : m_frames)
             {
-                uint16_t curfrmtotalsz = 0; //highest tile number + size used out of all steps
+                uint16_t curfrmtotalsz = 0; //highest char block number + size used out of all steps
                 for(const step_t & stp : frm)
                 {
-                    const uint16_t curmax = stp.getTileNum() + stp.calculateTileSize();
+                    const uint16_t curmax = stp.getCharBlockNum() + stp.calculateCharBlockSize();
                     if(curmax > curfrmtotalsz)
                         curfrmtotalsz = curmax;
                 }

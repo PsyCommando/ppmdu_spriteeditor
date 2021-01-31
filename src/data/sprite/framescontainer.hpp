@@ -12,29 +12,15 @@ extern const QString ElemName_FrameCnt;
 class FramesContainer : public TreeNodeWithChilds<MFrame>
 {
 public:
-    FramesContainer(TreeNode * sprite)
-        :TreeNodeWithChilds(sprite)
-    {}
+    FramesContainer(TreeNode * sprite);
 
-    FramesContainer(const FramesContainer & cp)
-        :TreeNodeWithChilds(cp)
-    {}
+    FramesContainer(const FramesContainer & cp);
 
-    FramesContainer(FramesContainer && mv)
-        :TreeNodeWithChilds(mv)
-    {}
+    FramesContainer(FramesContainer && mv);
 
-    FramesContainer &operator=(const FramesContainer &cp)
-    {
-        TreeNodeWithChilds::operator=(cp);
-        return *this;
-    }
+    FramesContainer &operator=(const FramesContainer &cp);
 
-    FramesContainer &operator=(FramesContainer &&mv)
-    {
-        TreeNodeWithChilds::operator=(mv);
-        return *this;
-    }
+    FramesContainer &operator=(FramesContainer &&mv);
 
     ~FramesContainer();
     TreeNode * clone()const override;
@@ -49,7 +35,7 @@ public:
 
     void importFrames( const fmt::ImageDB::frmtbl_t & frms );
     fmt::ImageDB::frmtbl_t exportFrames();
-    bool nodeIsMutable()const override {return false;}
+    bool nodeIsMutable()const override;
 
     // TreeNode interface
 public:

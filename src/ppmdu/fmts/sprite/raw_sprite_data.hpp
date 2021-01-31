@@ -12,6 +12,39 @@ namespace fmt
 //  Headers
 //-----------------------------------------------------------------------------
     /**********************************************************************
+     * hdr_wan
+     *  Sub header for the wan/wat file format
+    **********************************************************************/
+    struct hdr_wan
+    {
+        static const uint32_t LEN   {12}; //bytes
+        uint32_t ptraniminfo        {0};
+        uint32_t ptrimgdatinfo      {0};
+        uint16_t spritety           {0};
+        uint16_t unk12              {0};
+
+        template<class _init>
+            _init read( _init beg, _init end )
+        {
+            beg = utils::readBytesAs( beg, end, ptraniminfo );
+            beg = utils::readBytesAs( beg, end, ptrimgdatinfo );
+            beg = utils::readBytesAs( beg, end, spritety );
+            beg = utils::readBytesAs( beg, end, unk12 );
+            return beg;
+        }
+
+        template<class _writerhelper_t>
+            _writerhelper_t & write( _writerhelper_t & sir0hlpr)const
+        {
+            sir0hlpr.writePtr(ptraniminfo);
+            sir0hlpr.writePtr(ptrimgdatinfo);
+            sir0hlpr.writeVal(spritety);
+            sir0hlpr.writeVal(unk12);
+            return sir0hlpr;
+        }
+    };
+
+    /**********************************************************************
      * hdr_imgfmtinfo
      *      Chunk of the header containing information on the image format and data.
     **********************************************************************/
@@ -62,14 +95,14 @@ namespace fmt
         uint32_t ptrattachtbl;  //pointer to the attachment points table
         uint32_t ptranimtbl;    //pointer to the animation table
         uint16_t nbanims;       //nb of animations in the animation table
-        uint16_t maxnbusedtiles;//The number of tiles that the bigest assembled frame takes in memory
+        uint16_t maxnbusedblocks;//The number of tiles that the bigest assembled frame takes in memory
         uint16_t unk7;
         uint16_t unk8;
         uint16_t unk9;          //possibly boolean
         uint16_t unk10;
 
         hdr_animfmtinfo()
-            :ptroamtbl(0), ptrattachtbl(0),ptranimtbl(0), nbanims(0),maxnbusedtiles(0), unk7(0), unk8(0), unk9(0), unk10(0)
+            :ptroamtbl(0), ptrattachtbl(0),ptranimtbl(0), nbanims(0),maxnbusedblocks(0), unk7(0), unk8(0), unk9(0), unk10(0)
         {}
 
         template<class _init>
@@ -79,7 +112,7 @@ namespace fmt
             beg = utils::readBytesAs( beg, end, ptrattachtbl );
             beg = utils::readBytesAs( beg, end, ptranimtbl );
             beg = utils::readBytesAs( beg, end, nbanims );
-            beg = utils::readBytesAs( beg, end, maxnbusedtiles );
+            beg = utils::readBytesAs( beg, end, maxnbusedblocks );
             beg = utils::readBytesAs( beg, end, unk7 );
             beg = utils::readBytesAs( beg, end, unk8 );
             beg = utils::readBytesAs( beg, end, unk9 );
@@ -94,7 +127,7 @@ namespace fmt
             sir0hlpr.writePtr(ptrattachtbl);
             sir0hlpr.writePtr(ptranimtbl);
             sir0hlpr.writeVal(nbanims);
-            sir0hlpr.writeVal(maxnbusedtiles);
+            sir0hlpr.writeVal(maxnbusedblocks);
             sir0hlpr.writeVal(unk7);
             sir0hlpr.writeVal(unk8);
             sir0hlpr.writeVal(unk9);
@@ -102,6 +135,18 @@ namespace fmt
             return sir0hlpr;
         }
 
+        bool isNull()const
+        {
+            return ptroamtbl == 0 &&
+                   ptrattachtbl == 0 &&
+                   ptranimtbl == 0 &&
+                   nbanims == 0 &&
+                   maxnbusedblocks == 0 &&
+                   unk7 == 0 &&
+                   unk8 == 0 &&
+                   unk9 == 0 &&
+                   unk10 == 0;
+        }
     };
 
     /**********************************************************************
@@ -338,7 +383,7 @@ namespace fmt
 
         inline uint8_t getPalNb()const              {return static_cast<uint8_t>((ATTR2_PalNumberMask & attr2) >> 12);}
         inline uint8_t getPriority()const           {return static_cast<uint8_t>((ATTR2_PriorityMask  & attr2) >> 10);}
-        inline uint16_t getTileNum()const           {return (ATTR2_TileNumMask & attr2);}
+        inline uint16_t getCharBlockNum()const           {return (ATTR2_TileNumMask & attr2);}
         inline eFrameRes getResolutionType()const   {return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
 
         inline frmid_t getFrameIndex()const         {return frmidx;}
@@ -376,7 +421,7 @@ namespace fmt
 
         inline void setPalNb        (uint8_t palnb) {attr2 = (attr2 & ~ATTR2_PalNumberMask) | (ATTR2_PalNumberMask & palnb);}
         inline void setPriority     (uint8_t prio)  {attr2 = (attr2 & ~ATTR2_PriorityMask) | (ATTR2_PriorityMask & prio);}
-        inline void setTileNum      (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_TileNumMask) | (ATTR2_TileNumMask & tnum);}
+        inline void setCharBlockNum      (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_TileNumMask) | (ATTR2_TileNumMask & tnum);}
 
         inline void setFrameIndex   (frmid_t id)    {frmidx = id;}
 
@@ -387,8 +432,8 @@ namespace fmt
             attr0 = (attr0 & ~ATTR01_ResMask) | ((flagval << 12) & ATTR01_ResMask);
         }
 
-        //Returns our size in nb of tiles
-        inline uint16_t calculateTileSize()const
+        //Returns our size in nb of char blocks
+        inline uint16_t calculateCharBlockSize()const
         {
             const auto res = GetResolution();
             const int  totalpixels = res.first * res.second;

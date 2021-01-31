@@ -57,10 +57,13 @@ class SpriteContainer : public BaseContainer
 {
     Q_OBJECT
 public:
-    typedef QList<Sprite*>          list_t;
-    typedef list_t::iterator        iterator;
-    typedef list_t::const_iterator  const_iterator;
-    typedef uint32_t sprid_t;
+    typedef QList<TreeNode*>                        list_t;
+    typedef list_t::iterator                        iterator;
+    typedef list_t::const_iterator                  const_iterator;
+    typedef uint32_t                                sprid_t;
+    typedef std::vector<uint8_t>                    rawdata_container;
+    typedef std::vector<uint8_t>::iterator          rawdata_iterator;
+    typedef std::vector<uint8_t>::const_iterator    rawdata_const_iterator;
     enum struct eContainerType
     {
         NONE,
@@ -144,6 +147,11 @@ public:
     iterator         end();
     const_iterator   end()const;
     bool             empty()const;
+
+    rawdata_iterator getItemRawDataBeg(TreeNode * node);
+    rawdata_iterator getItemRawDataEnd(TreeNode * node);
+    rawdata_const_iterator getItemRawDataBeg(const TreeNode * node)const;
+    rawdata_const_iterator getItemRawDataEnd(const TreeNode * node)const;
 
     // TreeNode interface
 public:
@@ -252,9 +260,12 @@ private:
     void FetchToC(QDataStream & fdat);
     void LoadEntry(sprid_t idx);
 
+    //Run an operation on each nodes that are Sprite*
+    void forEachSprites(std::function<void(Sprite*)> && fun);
+
 private:
     QString         m_srcpath;      //Original path of the container if applicable!
-    list_t          m_spr;          //List of all the contained sprites
+    list_t          m_nodes;        //List of all the contained sprites
     eContainerType  m_cntTy     {eContainerType::NONE};
     QThread         m_workthread;
     eCompressionFmtOptions  m_cntCompression {eCompressionFmtOptions::NONE};

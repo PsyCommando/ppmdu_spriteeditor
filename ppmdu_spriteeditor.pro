@@ -71,12 +71,15 @@ SOURCES += src/main.cpp\
     src/data/sprite/models/sprite_props_model.cpp \
     src/data/sprite/palettecontainer.cpp \
     src/data/sprite/sprite_container.cpp \
+    src/data/sprite/unknown_item.cpp \
     src/extfmt/animtation_table_layout.cpp \
     src/extfmt/gpl_palette.cpp \
     src/extfmt/text_palette.cpp \
+    src/ppmdu/fmts/file_format_identifier.cpp \
     src/ppmdu/fmts/sprite/shared_sprite_constants.cpp \
     src/ppmdu/fmts/sprite/sprite_handler.cpp \
     src/ui/arguments_handler.cpp \
+    src/ui/tabs/tab_unknown.cpp \
     src/ui/windows/dialognew.cpp \
     src/ui/editor/cropper/autocropper_gizmo.cpp \
     src/ui/editor/cropper/autocropper_scene.cpp \
@@ -153,18 +156,21 @@ HEADERS  += \
     src/data/sprite/models/sprite_props_handler.hpp \
     src/data/sprite/models/sprite_props_model.hpp \
     src/data/sprite/sprite_container.hpp \
+    src/data/sprite/unknown_item.hpp \
     src/data/treeenodetypes.hpp \
     src/data/treenode.hpp \
     src/data/treenodemodel.hpp \
     src/data/treenodeterminal.hpp \
     src/data/treenodewithchilds.hpp \
     src/extfmt/animtation_table_layout.hpp \
+    src/ppmdu/fmts/file_format_identifier.hpp \
     src/ppmdu/fmts/sprite/raw_sprite_data.hpp \
     src/ppmdu/fmts/sprite/shared_sprite_constants.hpp \
     src/ppmdu/fmts/sprite/sprite_content.hpp \
     src/ppmdu/fmts/sprite/sprite_handler.hpp \
     src/ui/arguments_handler.hpp \
     src/ui/editor/frame/frame_editor_shared.hpp \
+    src/ui/tabs/tab_unknown.hpp \
     src/ui/windows/dialognew.hpp \
     src/ui/editor/cropper/autocropper_gizmo.hpp \
     src/ui/editor/cropper/autocropper_scene.hpp \
@@ -234,6 +240,7 @@ HEADERS  += \
     version.hpp
 
 FORMS    += src/ui/mainwindow.ui \
+    src/ui/tabs/tab_unknown.ui \
     src/ui/windows/dialognew.ui \
     src/ui/editor/palette/paletteeditor.ui \
     src/ui/processingconsole.ui \

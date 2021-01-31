@@ -6,6 +6,6 @@ namespace fmt
 
     void WA_SpriteHandler::setSpriteType(eSpriteType ty)
     {
-        m_sprty = ty;
+        m_wanhdr.spritety = static_cast<uint16_t>(ty);
     }
 };

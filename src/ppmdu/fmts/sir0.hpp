@@ -125,7 +125,7 @@ namespace fmt
 
 
         template<class _init>
-            bool isSIR0(_init where, _init end)
+           static bool isSIR0(_init where, _init end)
         {
             return std::equal(SIR0_MagicNum.begin(), SIR0_MagicNum.end(), where );
         }

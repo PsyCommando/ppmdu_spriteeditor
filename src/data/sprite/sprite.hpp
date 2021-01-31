@@ -176,6 +176,11 @@ public:
     inline const ImageContainer & getImages()const                  {return m_imgcnt;}
     Image                       * getImage(fmt::frmid_t idx);
     const Image                 * getImage(fmt::frmid_t idx)const;
+    Image                       * getImageByTileNum(fmt::frmid_t tilenum);
+    const Image                 * getImageByTileNum(fmt::frmid_t tilenum)const;
+
+    QVector<uint8_t>              getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const;
+    QVector<uint8_t>              getCharBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
 
 
     inline MFrame               * getFrame( fmt::frmid_t id )       {return m_frmcnt.getFrame(id);}
@@ -187,6 +192,8 @@ public:
     EffectOffsetSet             * getAttachMarkers(fmt::frmid_t frmidx); //returns attachment markers for the given mframe index
 
     //Return binary version of the sprite
+    inline void                 setRawData(rawdat_t && raw)         {m_raw = raw;}
+    inline void                 setRawData(const rawdat_t & raw)    {m_raw = raw;}
     inline rawdat_t             & getRawData()      {return m_raw;}
     inline const rawdat_t       & getRawData()const {return m_raw;}
 
@@ -237,10 +244,9 @@ public:
     typedef QVector<imgparts_t>         imgseq_t; //All the images part of a sequence
     typedef QVector<imgseq_t>           imgseqs_t; //A set of sequences
 
-    fmt::frmid_t importImageParts(const imgparts_t & img); //returns img ids of the imported parts in the same order!
-    fmt::animseqid_t importImageSequence(const imgseq_t & seq, uint8_t frmduration = 1);
-    void importImageSequences(const imgseqs_t & sequences, uint8_t frmduration = 1);
-
+    fmt::frmid_t        importImageParts    (const imgparts_t & img); //returns img ids of the imported parts in the same order!
+    fmt::animseqid_t    importImageSequence (const imgseq_t & seq, uint8_t frmduration = 1);
+    void                importImageSequences(const imgseqs_t & sequences, uint8_t frmduration = 1);
 
 private:
     bool IsRawDataCompressed(filetypes::eCompressionFormats * outfmt = nullptr)const;
@@ -271,8 +277,8 @@ private:
     AnimGroups              m_anmgrp;
 
     //Status / statistics
-    bool                                    m_bparsed{false};       //Whether the sprite's raw has been parsed to be displayed yet or not!
-    bool                                    m_bhasimagedata{false}; //Whether the sprite can be displayed or not!
+    bool                                    m_bparsed       {false};    //Whether the sprite's raw has been parsed to be displayed yet or not!
+    bool                                    m_bhasimagedata {false};    //Whether the sprite can be displayed or not!
     filetypes::eCompressionFormats          m_targetgompression{filetypes::eCompressionFormats::NONE};
 
     //UI data

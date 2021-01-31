@@ -20,7 +20,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_5">
      <item>
-      <layout class="QVBoxLayout" name="vlFrameParts" stretch="1,12">
+      <layout class="QVBoxLayout" name="vlFrameParts" stretch="0,12">
        <property name="leftMargin">
         <number>4</number>
        </property>
@@ -35,6 +35,12 @@
        </property>
        <item>
         <widget class="QLabel" name="lblFrameParts">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Images/Parts:</string>
          </property>

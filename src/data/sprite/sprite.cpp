@@ -200,29 +200,48 @@ void Sprite::ParseSpriteData()
     if(IsRawDataCompressed(&m_targetgompression))
         DecompressRawData();
 
-    //Run the low level parser
-    m_sprhndl.Parse(m_raw.begin(), m_raw.end());
+    try
+    {
+        //Run the low level parser
+        m_sprhndl.Parse(m_raw.begin(), m_raw.end());
 
-    //Fill up the nodes in our model
-    m_anmgrp.importAnimationGroups(m_sprhndl.getAnimGroups());
-    m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable(), m_anmgrp);
+        //Fill up the nodes in our model
+        m_anmgrp.importAnimationGroups(m_sprhndl.getAnimGroups());
+        m_anmtbl.importAnimationTable(m_sprhndl.getAnimationTable(), m_anmgrp);
 
-    m_palcnt.setPalette(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //convert the palette once, so we don't do it constantly
+        m_palcnt.setPalette(utils::ConvertSpritePalette(m_sprhndl.getPalette())); //convert the palette once, so we don't do it constantly
 
-    m_seqcnt.importSequences(m_sprhndl.getAnimSeqs());
-    m_frmcnt.importFrames(m_sprhndl.getFrames());
+        m_seqcnt.importSequences(m_sprhndl.getAnimSeqs());
+        m_frmcnt.importFrames(m_sprhndl.getFrames());
 
-    if( m_sprhndl.getImageFmtInfo().is256Colors() )
-        m_imgcnt.importImages8bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
-    else
-        m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
+        if(m_sprhndl.getImageFmtInfo().is256Colors())
+            m_imgcnt.importImages8bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
+        else
+            m_imgcnt.importImages4bpp(m_sprhndl.getImages(), m_sprhndl.getFrames());
 
-    if(m_sprhndl.getSpriteType() == fmt::eSpriteType::Character && m_frmcnt.nodeChildCount() > 0)
-        m_efxcnt.importEffects(m_sprhndl.getEffectOffset());
+        if(m_sprhndl.getSpriteType() == fmt::eSpriteType::Character && m_frmcnt.nodeChildCount() > 0)
+            m_efxcnt.importEffects(m_sprhndl.getEffectOffset());
 
-    m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
-    m_bparsed = true;
-    MakePreviewFrame(); //Generate preview
+        m_bhasimagedata = m_imgcnt.nodeChildCount() != 0;
+        m_bparsed = true;
+    }
+    catch(const std::exception & e)
+    {
+        std::stringstream sstr;
+        sstr << "Sprite::ParseSpriteData(): Exception caught parsing sprite #" << nodeIndex();
+        std::throw_with_nested(std::runtime_error(sstr.str()));
+    }
+
+    try
+    {
+        MakePreviewFrame();
+    }
+    catch (const std::exception & e)
+    {
+        std::stringstream sstr;
+        sstr << "Sprite::ParseSpriteData(): Exception caught generating preview for sprite #" << nodeIndex();
+        std::throw_with_nested(std::runtime_error(sstr.str()));
+    }
 }
 
 void Sprite::CommitSpriteData()
@@ -230,29 +249,38 @@ void Sprite::CommitSpriteData()
     rawdat_t   buffer;
     auto       itback = std::back_inserter(buffer);
 
-    //First convert the data from the data model
-    m_sprhndl.setPalette(utils::ConvertSpritePaletteFromQt(m_palcnt.getPalette()));
+    try
+    {
+        //First convert the data from the data model
+        m_sprhndl.setPalette(utils::ConvertSpritePaletteFromQt(m_palcnt.getPalette()));
 
-    if( m_sprhndl.getImageFmtInfo().is256Colors() ) //#FIXME : FIgure out something better!!!!
-        m_sprhndl.setImages(m_imgcnt.exportImages8bpp());
-    else
-        m_sprhndl.setImages(m_imgcnt.exportImages4bpp());
+        if( m_sprhndl.getImageFmtInfo().is256Colors() ) //#FIXME : FIgure out something better!!!!
+            m_sprhndl.setImages(m_imgcnt.exportImages8bpp());
+        else
+            m_sprhndl.setImages(m_imgcnt.exportImages4bpp());
 
-    m_sprhndl.setFrames         (m_frmcnt.exportFrames());
-    m_sprhndl.setEffectOffset   (m_efxcnt.exportEffects());
+        m_sprhndl.setFrames         (m_frmcnt.exportFrames());
+        m_sprhndl.setEffectOffset   (m_efxcnt.exportEffects());
 
-    m_sprhndl.setAnimSeqs       (m_seqcnt.exportSequences());
-    m_sprhndl.setAnimGroups     (m_anmgrp.exportAnimationGroups());
-    m_sprhndl.setAnimationTable (m_anmtbl.exportAnimationTable(m_anmgrp));
+        m_sprhndl.setAnimSeqs       (m_seqcnt.exportSequences());
+        m_sprhndl.setAnimGroups     (m_anmgrp.exportAnimationGroups());
+        m_sprhndl.setAnimationTable (m_anmtbl.exportAnimationTable(m_anmgrp));
 
-    //Write the data
-    itback = m_sprhndl.Write(itback);
-    utils::AppendPaddingBytes( itback, buffer.size(), 16, 0xAA ); //Align the whole thing on 16 bytes
-    m_raw  = qMove(buffer);
+        //Write the data
+        itback = m_sprhndl.Write(itback);
+        utils::AppendPaddingBytes( itback, buffer.size(), 16, 0xAA ); //Align the whole thing on 16 bytes
+        m_raw  = qMove(buffer);
 
-    //Compress if needed at the end!
-    if(m_targetgompression != filetypes::eCompressionFormats::INVALID)
-        CompressRawData(m_targetgompression);
+        //Compress if needed at the end!
+        if(m_targetgompression != filetypes::eCompressionFormats::INVALID)
+            CompressRawData(m_targetgompression);
+    }
+    catch(const std::exception & e)
+    {
+        std::stringstream sstr;
+        sstr << "Exception caught commiting sprite #" << nodeIndex();
+        std::throw_with_nested(std::runtime_error(sstr.str()));
+    }
 }
 
 
@@ -300,7 +328,7 @@ QPixmap &Sprite::MakePreviewFrame(bool transparency)
     {
         if(m_frmcnt.nodeHasChildren())
             return m_previewImg = QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
-        else
+        else if(!m_imgcnt.empty())
             return m_previewImg = QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette()));
     }
     return m_previewImg;
@@ -334,6 +362,25 @@ Image *Sprite::getImage(fmt::frmid_t idx)
 const Image *Sprite::getImage(fmt::frmid_t idx) const
 {
     return const_cast<Sprite*>(this)->m_imgcnt.getImage(idx);
+}
+
+Image * Sprite::getImageByTileNum(fmt::frmid_t tilenum)
+{
+     return m_imgcnt.getImageByTileNum(tilenum);
+}
+const Image * Sprite::getImageByTileNum(fmt::frmid_t tilenum)const
+{
+    return const_cast<Sprite*>(this)->getImageByTileNum(tilenum);
+}
+
+QVector<uint8_t> Sprite::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const
+{
+    return m_imgcnt.getTiles(tilenum, len);
+}
+
+QVector<uint8_t> Sprite::getCharBlocks(fmt::frmid_t num, fmt::frmid_t len)const
+{
+    return m_imgcnt.getCharBlocks(num, len);
 }
 
 const EffectOffsetSet* Sprite::getAttachMarkers(fmt::frmid_t frmidx)const

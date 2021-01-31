@@ -81,6 +81,11 @@ public:
     */
     inline Image        * getImage(fmt::frmid_t id)     { return static_cast<Image*>(nodeChild(id)); }
     inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
+    Image               * getImageByTileNum(fmt::frmid_t tilenum);
+    const Image         * getImageByTileNum(fmt::frmid_t tilenum)const;
+    QVector<uint8_t>    getTiles(fmt::frmid_t tilenum, fmt::frmid_t len) const;
+    QVector<uint8_t>    getCharBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
+
 
     /*
      * getTileData
@@ -97,6 +102,10 @@ public:
 
 
     void DumpAllImages(const QString & dirpath, const QVector<QRgb> & palette)const;
+
+
+private:
+
 };
 
 #endif // IMAGESCONTAINER_HPP

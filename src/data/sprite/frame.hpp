@@ -17,46 +17,21 @@ class MFrame : public TreeNodeWithChilds<MFramePart>
     friend class MFramePartDelegate;
     //Dynamic property for edit controls, so we can keep track of which part they edit!
     static const char * PropPartID;
-    typedef TreeNodeWithChilds<MFramePart> paren_t;
+    typedef TreeNodeWithChilds<MFramePart> parent_t;
 
 public:
-//    MFrame(FramesContainer * parent);
-//    MFrame(const MFrame &cp);
-//    MFrame(MFrame &&mv);
-
-//    MFrame & operator=(const MFrame & cp);
-//    MFrame & operator=(MFrame && mv);
-
-    MFrame(TreeNode * framescnt)
-        :TreeNodeWithChilds(framescnt)
-    {m_flags |= Qt::ItemFlag::ItemIsEditable;}
-
-    MFrame(const MFrame &cp)
-        :TreeNodeWithChilds(cp)
-    {}
-
-    MFrame(MFrame &&mv)
-        :TreeNodeWithChilds(mv)
-    {}
-
+    MFrame(TreeNode * framescnt);
+    MFrame(const MFrame &cp);
+    MFrame(MFrame &&mv);
     ~MFrame();
 
-    MFrame & operator=(const MFrame & cp)
-    {
-        TreeNodeWithChilds::operator=(cp);
-        return *this;
-    }
-
-    MFrame & operator=(MFrame && mv)
-    {
-        TreeNodeWithChilds::operator=(mv);
-        return *this;
-    }
+    MFrame & operator=(const MFrame & cp);
+    MFrame & operator=(MFrame && mv);
 
     TreeNode *          clone() const override;
     eTreeElemDataType   nodeDataTy() const override;
     const QString &     nodeDataTypeName() const override;
-    bool                nodeShowChildrenOnTreeView()const override {return false;}
+    bool                nodeShowChildrenOnTreeView()const override;
 
     bool operator==( const MFrame & other)const;
     bool operator!=( const MFrame & other)const;
@@ -78,15 +53,51 @@ public:
     QRect   calcFrameBounds()const;
 
     //For now UID is index!
-    inline int getFrameUID()const {return nodeIndex();}
+    int getFrameUID()const;
 
     //Generates a filed tile buffer based on this frame's sub-parts
     // Adds up tiles up to "uptopartidx". If its -1, adds all frames parts
-    QVector<uint8_t> generateTilesBuffer(const Sprite * spr, int uptopartidx = -1)const;
-    int calcTileLen()const;
+    //QVector<uint8_t> generateTilesBuffer(const Sprite * spr, int uptopartidx = -1)const;
+
+    int calcCharBlocksLen()const;
 
     //Function to assign tilenums in order to all the framparts
-    void optimizeTileUsage();
+    void optimizeCharBlocksUsage();
+
+    //Recurse through the hierarchy to find the parent sprite
+    const Sprite * findParentSprite()const;
+
+    //Obtain a part via tile number. Used internally for handling reference frame parts
+    MFramePart *        getPartForCharBlockNum(int tilenum);
+    const MFramePart *  getPartForCharBlockNum(int tilenum)const;
+
+//    // TreeNode interface
+public:
+//    bool _insertChildrenNode(TreeNode *node, int destrow) override;
+//    bool _insertChildrenNodes(int row, int count) override;
+//    bool _insertChildrenNodes(const QList<TreeNode *> &nodes, int destrow) override;
+//    bool _removeChildrenNode(TreeNode *node) override;
+//    bool _removeChildrenNodes(int row, int count) override;
+//    bool _removeChildrenNodes(const QList<TreeNode *> &nodes) override;
+//    bool _deleteChildrenNode(TreeNode *node) override;
+//    bool _deleteChildrenNodes(int row, int count) override;
+//    bool _deleteChildrenNodes(const QList<TreeNode *> &nodes) override;
+//    bool _moveChildrenNodes(int row, int count, int destrow, TreeNode *destnode) override;
+//    bool _moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent) override;
+//    bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent) override;
+
+//    bool _insertChildrenNode(TreeNode *node, int destrow, bool doupdate = true);
+//    bool _insertChildrenNodes(int row, int count, bool doupdate = true);
+//    bool _insertChildrenNodes(const QList<TreeNode *> &nodes, int destrow, bool doupdate = true);
+//    bool _removeChildrenNode(TreeNode *node, bool doupdate = true);
+//    bool _removeChildrenNodes(int row, int count, bool doupdate = true);
+//    bool _removeChildrenNodes(const QList<TreeNode *> &nodes, bool doupdate = true);
+//    bool _deleteChildrenNode(TreeNode *node, bool doupdate = true);
+//    bool _deleteChildrenNodes(int row, int count, bool doupdate = true);
+//    bool _deleteChildrenNodes(const QList<TreeNode *> &nodes, bool doupdate = true);
+//    bool _moveChildrenNodes(int row, int count, int destrow, TreeNode *destnode, bool doupdate = true);
+//    bool _moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent, bool doupdate = true);
+//    bool _moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent, bool doupdate = true);
 };
 
 #endif // FRAME_HPP

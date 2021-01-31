@@ -2,6 +2,7 @@
 #define SHARED_SPRITE_CONSTANTS_HPP
 #include <vector>
 #include <array>
+#include <map>
 
 namespace fmt
 {
@@ -13,7 +14,7 @@ namespace fmt
     extern const int SPR_PAL_NB_COLORS_SUBPAL;      //Amount of colors per sub-palette when in 4bpp mode
 
     //Frame resolutions
-    extern const std::array<std::pair<uint16_t,uint16_t>, 12> FrameResValues;
+    extern const std::array<std::pair<uint16_t,uint16_t>, 16> FrameResValues;
 
     //Maximum possible size for a non-double size frame
     extern const std::pair<uint16_t, uint16_t> MaxFrameResValue;
@@ -49,7 +50,6 @@ namespace fmt
         WAT         = 3,
         INVALID     = 4,
     };
-
     //Human readable names for the sprite types
     extern const std::vector<std::string> SpriteTypeNames;
 
@@ -61,14 +61,32 @@ namespace fmt
     };
     //Human readable names for mapping modes
     extern const std::map<eSpriteTileMappingModes, std::string> SpriteMappingModeNames;
+
+
     //Tiles length
     extern const int NDS_TILE_SIZE_4BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
     extern const int NDS_TILE_SIZE_8BPP; //Tiles in memory for the NDS are 8x8 32 bytes for 4bpp, and 64 bytes 8x8 for 8bpp
+    extern const int NDS_TILE_PIXEL_WIDTH;
+    extern const int NDS_TILE_PIXEL_HEIGHT;
+    extern const int NDS_TILE_PIXEL_COUNT;
+
+    extern const int NDS_TILES_PER_CHAR_BLOCK;
 
     extern const int NDS_OAM_MAX_NB_TILES; //The number of available tiles for OAM objects
     extern const int NDS_OAM_NB_PIXELS_TILES; //The number of pixels per tile
 
     extern const int NB_PIXELS_WAN_TILES; //The number of pixels per "wan" tile. The tiles as indicated in the wan file are calculated on 16x16 pixels tiles, intead of 8x8 for some reasons
+
+    //Converts between values
+    constexpr int TilesToCharBlocks(int tiles)
+    {
+        return tiles / NDS_TILES_PER_CHAR_BLOCK + (tiles % NDS_TILES_PER_CHAR_BLOCK == 0? 0 : 1); //Is at least one if we have a remainder
+    }
+    constexpr int CharBlocksToTiles(int chblocks)
+    {
+        return chblocks * NDS_TILES_PER_CHAR_BLOCK;
+    }
+
 };
 
 #endif // SHARED_SPRITE_CONSTANTS_HPP

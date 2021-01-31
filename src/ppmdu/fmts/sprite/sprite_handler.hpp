@@ -22,7 +22,7 @@ namespace fmt
         typedef std::vector<frameoffsets_t> OffsetsDB;
 
         //Returns whether the sprite is valid or not
-        bool Validate()
+        bool ValidateContent()
         {
             //Check if the amount of frames match the amount of groups of frames offsets groups
             if(m_images.m_frames.size() != m_animtions.m_attachPoints.size())
@@ -45,6 +45,7 @@ namespace fmt
             _outit Write( _outit itout )
         {
             SIR0hdr                                 hdr;                    //SIR0 wrapper header that will be written later
+            hdr_wan                                 wanhdr;
             std::vector<uint8_t>                    buffer;                 //Output buffer, contains content that will be written to file
             auto                                    itbackins = std::back_inserter(buffer);
             SIR0_WriterHelper<decltype(itbackins)>  sw(itbackins, hdr);     //Helper for handling marking pointer offsets automatically for the SIR0 wraper
@@ -55,12 +56,10 @@ namespace fmt
             uint32_t                                offspal = 0;            //Offset of the palette info chunk right after the palette data
             hdr_imgfmtinfo                          imginf  = m_imgfmt;     //img info chunk object
             hdr_animfmtinfo                         amiminf = m_animfmt;    //anim info chunk object
-            uint32_t                                ptraniminf = 0;         //pointer to the img info chunk, for the sprite header
-            uint32_t                                ptrimginf = 0;          //pointer to the anim info chunk, for the sprite header
 
             //#1. Write frame assembly
-            amiminf.maxnbusedtiles = m_images.calculateLargestFrameSize();
-            assert(amiminf.maxnbusedtiles != 0 || (amiminf.maxnbusedtiles == 0 && m_images.m_frames.size() == 0)); //Only time tile usage should be 0, is when there are no frames
+            amiminf.maxnbusedblocks = m_images.calculateLargestFrameSize();
+            assert(amiminf.maxnbusedblocks != 0 || (amiminf.maxnbusedblocks == 0 && m_images.m_frames.size() == 0)); //Only time char blocks usage should be 0, is when there are no frames
             m_images.WriteFrames(sw, frameptrs);
 
             //#2. Write animation sequences
@@ -89,8 +88,9 @@ namespace fmt
             }
             else
             {
+                eSpriteType sprty = static_cast<eSpriteType>(m_wanhdr.spritety);
                 //For some reasons when we're writing a character sprites, and there's no attachments, we still need to put the current offset for dummied-out sprites in m_attack.bin
-                if(m_sprty == eSpriteType::Character)
+                if(sprty == eSpriteType::Character)
                     amiminf.ptrattachtbl = sw.getCurOffset();
                 else
                     amiminf.ptrattachtbl = 0;                          //Don't write an effect table at all in this case!
@@ -111,19 +111,16 @@ namespace fmt
                 sw.writePtr(ptr);
 
             //#9. Write anim info chunk
-            ptraniminf = sw.getCurOffset();                     //mark chunk position for wan header
+            wanhdr.ptraniminfo = sw.getCurOffset();                     //mark chunk position for wan header
             WriteAnimInfo(sw, amiminf);
 
             //#10.Write image info chunk
-            ptrimginf = sw.getCurOffset();                      //mark chunk position for wan header
+            wanhdr.ptrimgdatinfo = sw.getCurOffset();                      //mark chunk position for wan header
             WriteImageInfo(sw, imginf);
 
             //#11.Write wan header
             hdr.ptrsub = sw.getCurOffset();                     //mark header pos in sir0 header
-            sw.writePtr(ptraniminf);
-            sw.writePtr(ptrimginf);
-            sw.writeVal(static_cast<uint16_t>(m_sprty));
-            sw.writeVal(m_unk12);
+            wanhdr.write(sw);
 
             //Padding to align the encoded ptr offset table on 16 bytes
             sw.putPadding(16, PADDING_BYTE);
@@ -167,18 +164,15 @@ namespace fmt
         inline const hdr_imgfmtinfo    & getImageFmtInfo()const                    {return m_imgfmt;}
         inline hdr_imgfmtinfo          & getImageFmtInfo()                         {return m_imgfmt;}
 
-        inline eSpriteType           getSpriteType()const                      {return m_sprty;}
+        inline eSpriteType           getSpriteType()const                      {return static_cast<eSpriteType>(m_wanhdr.spritety);}
         void                         setSpriteType(eSpriteType ty);
 
-        inline const uint16_t      & getUnk12()const                           {return m_unk12;}
-        inline uint16_t            & getUnk12()                                {return m_unk12;}
+        inline const uint16_t      & getUnk12()const                           {return m_wanhdr.unk12;}
+        inline uint16_t            & getUnk12()                                {return m_wanhdr.unk12;}
 
     private:
         //Sprite Header
-        uint32_t    m_offsetAnimInfo{0};
-        uint32_t    m_offsetImgInfo {0};
-        eSpriteType m_sprty         {eSpriteType::INVALID};
-        uint16_t    m_unk12         {0};
+        hdr_wan     m_wanhdr;
 
         //Info chunks
         hdr_imgfmtinfo  m_imgfmt;
@@ -199,20 +193,22 @@ namespace fmt
             itbeg = hdr.Read(itbeg, itend);
 
             //#2. Parse Sprite hdr
-            itbeg = std::next( itsrcbeg, hdr.ptrsub );
-            itbeg = utils::readBytesAs( itbeg, itend, m_offsetAnimInfo );
-            itbeg  = utils::readBytesAs( itbeg, itend, m_offsetImgInfo );
-            m_sprty = static_cast<eSpriteType>(utils::readBytesAs<uint16_t>( itbeg, itend ));
-            itbeg = utils::readBytesAs( itbeg, itend, m_unk12 );
+            itbeg = m_wanhdr.read(std::next( itsrcbeg, hdr.ptrsub ), itend);
+            eSpriteType sprty = static_cast<eSpriteType>(m_wanhdr.spritety);
 
-            if( m_sprty >= eSpriteType::INVALID )
-                throw std::runtime_error("WA_SpriteHandler::Parse(): Invalid sprite type!!"); //STOP HERE!!
+            if(sprty >= eSpriteType::INVALID )
+            {
+                std::string error;
+                std::stringstream sstr(error);
+                sstr << "WA_SpriteHandler::Parse(): Invalid sprite type " << static_cast<unsigned int>(sprty) <<"!";
+                throw std::runtime_error(error); //STOP HERE!!
+            }
 
-            if( m_offsetAnimInfo != 0 )
-                m_animfmt.read(std::next( itsrcbeg, m_offsetAnimInfo ), itend); //Parse anim info chunk
+            if(m_wanhdr.ptraniminfo != 0)
+                m_animfmt.read(std::next( itsrcbeg, m_wanhdr.ptraniminfo ), itend); //Parse anim info chunk
 
-            if( m_offsetImgInfo != 0 ) //Effects often have no image data
-                m_imgfmt.read(std::next( itsrcbeg, m_offsetImgInfo ), itend);
+            if(m_wanhdr.ptrimgdatinfo != 0) //Effects often have no image data
+                m_imgfmt.read(std::next( itsrcbeg, m_wanhdr.ptrimgdatinfo ), itend);
         }
 
         template<class _init>
@@ -230,7 +226,8 @@ namespace fmt
             //Parse attachment table if its there
             if(m_animfmt.ptrattachtbl != 0)
             {
-                if(m_sprty != eSpriteType::Character)
+                eSpriteType sprty = static_cast<eSpriteType>(m_wanhdr.spritety);
+                if(sprty != eSpriteType::Character)
                     assert(false);
                 m_animtions.ParseAttachmentOffsets(itbeg, itend, m_animfmt, m_images.getNbFrames());
                 m_attachPoints = m_animtions.m_attachPoints;

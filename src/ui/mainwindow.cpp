@@ -22,6 +22,8 @@
 #include <src/ui/windows/diagsingleimgcropper.hpp>
 #include <src/data/sprite/sprite_container.hpp>
 #include <src/data/contents_selection_manager.hpp>
+#include <src/data/sprite/unknown_item.hpp>
+#include <src/utility/ui_helpers.hpp>
 
 //Utiliy method to run a lambda on all BaseSpriteTab in the main stacked widget!
 void MainWindow::forEachTab(std::function<void(BaseSpriteTab*)> fun)
@@ -255,6 +257,9 @@ void MainWindow::DisplayTabForElement(TreeNode * item)
 
     else if(item->nodeDataTypeName() == ElemName_Image)
         ShowATab(ui->tabImages, manager.modelIndexOf(item));
+
+    else if(item->nodeDataTypeName() == ElemName_UnknownItem)
+        ShowATab(ui->tabUnknown, manager.modelIndexOf(item));
     else
         HideAllTabs();
 }
@@ -294,12 +299,17 @@ void MainWindow::LoadContainer(const QString &path)
         }
         else
         {
-            qInfo() << "Failed to open file \"" <<path <<"\"!";
+            Warn(QString("Couldn't open \"`%1\"!").arg(path), QString("File \"%1\" does not exists!").arg(path));
+            qWarning() << "File \"" <<path <<"\" does not exists!";
         }
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::LoadContainer(): loading file \"" <<path <<"\" failed with exception: \'" << e.what() << "\'";
+        QString excepttext = GetNestedExceptionsText(e);
+        Warn(QString("Couldn't open \"`%1\"!").arg(path), QString("Encountered exception:\n%1").arg(excepttext));
+        qWarning() << "MainWindow::LoadContainer(): loading file \"" <<path <<"\" failed with exception: " << excepttext;
+        PrepareForNewContainer(); //Cleanup on failure
+        DisplayStartScreen();
     }
 }
 
@@ -315,7 +325,9 @@ void MainWindow::SaveContainer(const QString &path)
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::SaveContainer(): Saving file \"" <<path <<"\" failed with exception: \'" << e.what() << "\'";
+        QString excepttext = GetNestedExceptionsText(e);
+        Warn(QString("Couldn't save \"`%1\"!").arg(path), QString("Encountered exception:\n%1").arg(excepttext));
+        qWarning() << "MainWindow::SaveContainer(): Saving file \"" <<path <<"\" failed with exception: \'" << excepttext << "\'";
     }
 }
 
@@ -337,7 +349,9 @@ void MainWindow::SaveAs(const QString &path)
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::SaveAs(): Saving file \"" <<path <<"\" failed with exception: \'" << e.what() << "\'";
+        QString excepttext = GetNestedExceptionsText(e);
+        Warn(QString("Couldn't save \"`%1\"!").arg(path), QString("Encountered exception:\n%1").arg(excepttext));
+        qWarning() << "MainWindow::SaveAs(): Saving file \"" <<path <<"\" failed with exception: \'" << excepttext << "\'";
     }
 }
 
@@ -351,7 +365,9 @@ void MainWindow::ExportContainer(const QString &path, const QString &exportType)
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::ExportContainer(): Exporting file \"" <<path <<"\" as type \"" <<exportType <<"\" failed with exception: \'" << e.what() << "\'";
+        QString excepttext = GetNestedExceptionsText(e);
+        Warn(QString("Couldn't export \"`%1\"!").arg(path), QString("Encountered exception:\n%1").arg(excepttext));
+        qWarning() << "MainWindow::ExportContainer(): Exporting file \"" <<path <<"\" as type \"" <<exportType <<"\" failed with exception: \'" << excepttext << "\'";
     }
 }
 
@@ -365,7 +381,11 @@ void MainWindow::ImportContainer(const QString &path)
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::ImportContainer(): Importing file \"" <<path <<"\" failed with exception: \'" << e.what() << "\'";
+        QString excepttext = GetNestedExceptionsText(e);
+        Warn(QString("Couldn't import \"`%1\"!").arg(path), QString("Encountered exception:\n%1").arg(excepttext));
+        qWarning() << "MainWindow::ImportContainer(): Importing file \"" <<path <<"\" failed with exception: \'" << excepttext << "\'";
+        PrepareForNewContainer(); //Cleanup on failure
+        DisplayStartScreen();
     }
 }
 
@@ -409,7 +429,11 @@ void MainWindow::NewContainer(QString cnttype)
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::NewContainer(): Creating new container failed with exception: \'" << e.what() << "\'";
+        QString excepttext = GetNestedExceptionsText(e);
+        Warn("Couldn't create new container!", QString("Encountered exception:\n%1").arg(excepttext));
+        qWarning() << "MainWindow::NewContainer(): Creating new container failed with exception: \'" << excepttext << "\'";
+        PrepareForNewContainer(); //Cleanup on failure
+        DisplayStartScreen();
     }
 }
 
@@ -576,7 +600,6 @@ void MainWindow::on_actionSave_As_triggered()
     if(!SupportedFileFiltersByTypename.contains(cnttype))
     {
         Warn(tr("Invalid Type!"), tr("The container you're trying to save doesn't seems to have a type somehow. Try changing the type of container."));
-        Q_ASSERT(false);
         return;
     }
     filetypestr = SupportedFileFiltersByTypename[manager.getContainerType()];
@@ -599,7 +622,8 @@ void MainWindow::on_actionNewSprite_triggered()
     }
     catch (const std::exception & e)
     {
-        qWarning() << "MainWindow::on_actionNewSprite_triggered(): failed with exception: \'" << e.what() << "\'";
+        Warn("Couldn't add new sprite!", QString("Encountered exception:\n%1").arg(e.what()));
+        qWarning() << "MainWindow::on_actionNewSprite_triggered(): failed with exception: \'" << GetNestedExceptionsText(e) << "\'";
     }
 }
 
@@ -617,7 +641,8 @@ void MainWindow::on_actionNewSprite_Pack_File_triggered()
     }
     catch (const std::exception & e)
     {
-        qWarning() << "MainWindow::on_actionNewSprite_Pack_File_triggered(): failed with exception: \'" << e.what() << "\'";
+        Warn("Couldn't create new sprite pack file!", QString("Encountered exception:\n%1").arg(e.what()));
+        qWarning() << "MainWindow::on_actionNewSprite_Pack_File_triggered(): failed with exception: \'" << GetNestedExceptionsText(e) << "\'";
     }  
 }
 
@@ -711,7 +736,7 @@ void MainWindow::HandleItemRemoval(QModelIndex spriteidx)
     }
     catch(const std::exception &e)
     {
-        qWarning() << "MainWindow::HandleItemRemoval(): failed with exception: \'" << e.what() << "\'";
+        qWarning() << "MainWindow::HandleItemRemoval(): failed with exception: \'" << GetNestedExceptionsText(e) << "\'";
     }
 }
 
@@ -751,7 +776,7 @@ void MainWindow::on_tv_sprcontent_expanded(const QModelIndex &index)
     }
     catch(const std::exception & e)
     {
-        qWarning() << "MainWindow::on_tv_sprcontent_expanded(): failed with exception: \'" << e.what() << "\'";
+        qWarning() << "MainWindow::on_tv_sprcontent_expanded(): failed with exception: \'" << GetNestedExceptionsText(e) << "\'";
     }
 }
 
@@ -956,6 +981,7 @@ void MainWindow::on_actionAdvanced_triggered()
     }
     catch (const std::exception & e)
     {
+        Warn("Encountered a problem creating the new container!", QString("Encountered exception:\n%1").arg(GetNestedExceptionsText(e)));
         qWarning() << "MainWindow::on_actionAdvanced_triggered(): failed with exception: \'" << e.what() << "\'";
     }
 }

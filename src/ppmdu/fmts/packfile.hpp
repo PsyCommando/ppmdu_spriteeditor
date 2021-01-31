@@ -73,7 +73,7 @@ namespace fmt
         }
 
         template<class outit>
-            outit CopyEntryData( size_t idx, outit dest )
+            outit CopyEntryData( size_t idx, outit dest )const
         {
             //Get offset
             const packfile_hdr::fentry & entry = m_hdr.tocentries.at(idx);
@@ -88,6 +88,14 @@ namespace fmt
         inline size_t size()const { return m_hdr.tocentries.size(); }
 
         inline const packfile_hdr::fentry & GetEntryInfo(size_t idx)const { return m_hdr.tocentries.at(idx); }
+
+        inline std::vector<uint8_t> getEntryData(size_t idx)const
+        {
+            std::vector<uint8_t> raw;
+            raw.resize(GetEntryInfo(idx).length, 0);
+            CopyEntryData(idx, raw.begin());
+            return raw;
+        }
 
     private:
         packfile_hdr         m_hdr;

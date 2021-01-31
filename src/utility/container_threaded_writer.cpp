@@ -88,12 +88,16 @@ void ContainerThreadedWriter::_WritePack()
     //Commit all sprites that need it!
     op1 = QtConcurrent::map( sprcnt->begin(),
                                sprcnt->end(),
-                               [&](Sprite * curspr)
+                               [&](TreeNode * node)
     {
         try
         {
-            if(curspr->hasUnsavedChanges())
-                curspr->CommitSpriteData();
+            if(node->nodeDataTy() == eTreeElemDataType::sprite)
+            {
+                Sprite * curspr = static_cast<Sprite*>(node);
+                if(curspr->hasUnsavedChanges())
+                    curspr->CommitSpriteData();
+            }
         }
         catch(const std::exception & e)
         {
@@ -105,8 +109,10 @@ void ContainerThreadedWriter::_WritePack()
         op1.waitForFinished();
         //Fill up the packfilewriter
         fmt::PackFileWriter writer;
-        for( Sprite * spr : *sprcnt )
-            writer.AppendSubFile( spr->getRawData().begin(), spr->getRawData().end() );
+        for(TreeNode * node : *sprcnt )
+        {
+            writer.AppendSubFile(sprcnt->getItemRawDataBeg(node), sprcnt->getItemRawDataEnd(node));
+        }
 
         //Build the packfile
         QDataStream outstr(savefile.data());
