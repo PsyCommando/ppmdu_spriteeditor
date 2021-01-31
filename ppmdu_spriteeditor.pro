@@ -74,6 +74,7 @@ SOURCES += src/main.cpp\
     src/extfmt/animtation_table_layout.cpp \
     src/extfmt/gpl_palette.cpp \
     src/extfmt/text_palette.cpp \
+    src/ppmdu/fmts/sprite/shared_sprite_constants.cpp \
     src/ppmdu/fmts/sprite/sprite_handler.cpp \
     src/ui/arguments_handler.cpp \
     src/ui/windows/dialognew.cpp \
