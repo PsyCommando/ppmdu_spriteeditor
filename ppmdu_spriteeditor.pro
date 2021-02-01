@@ -15,13 +15,18 @@ RC_FILE = resources.rc
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
 QMAKE_CXXFLAGS_WARN_OFF +=
 
+# Since gitversion is a pain in the ass to grab on all platform, I just included all versions until I can setup continuous integration..
 win32 {
 GIT_VERSION            = $$system(cd gitversion & gitversion.exe "../../ppmdu_spriteeditor" -output json -showvariable SemVer & cd ..)
 GIT_MAJORMINOR_VERSION = $$system(cd gitversion & gitversion.exe "../../ppmdu_spriteeditor" -output json -showvariable MajorMinorPatch & cd ..)
 }
-unix {
-GIT_VERSION            = $$system(mono ./gitversion/gitversion.exe -output json -showvariable SemVer)
-GIT_MAJORMINOR_VERSION = $$system(mono ./gitversion/gitversion.exe -output json -showvariable MajorMinorPatch)
+macosx{
+GIT_VERSION            = $$system(./gitversion/osx/gitversion -output json -showvariable SemVer)
+GIT_MAJORMINOR_VERSION = $$system(./gitversion/osx/gitversion -output json -showvariable MajorMinorPatch)
+}
+linux {
+GIT_VERSION            = $$system(./gitversion/linux/gitversion -output json -showvariable SemVer)
+GIT_MAJORMINOR_VERSION = $$system(./gitversion/linux/gitversion -output json -showvariable MajorMinorPatch)
 }
 
 # The following define makes your compiler emit warnings if you use
