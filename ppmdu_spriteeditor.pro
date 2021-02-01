@@ -4,20 +4,25 @@
 #
 #-------------------------------------------------
 
-QT       += core gui concurrent svg
+QT += core gui concurrent svg
+greaterThan(QT_MAJOR_VERSION, 4):QT += widgets
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-GIT_VERSION = $$system(GitVersion -output json -showvariable SemVer) ##(git --git-dir $$PWD/.git --work-tree $$PWD describe --always --tags)
-GIT_MAJORMINOR_VERSION = $$system(GitVersion -output json -showvariable MajorMinorPatch)
 TARGET_FILENAME = ppmdu_spriteeditor
-
-
 TARGET = ppmdu_spriteeditor
 TEMPLATE = app
-
 CONFIG += c++17
-
 RC_FILE = resources.rc
+QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
+QMAKE_CXXFLAGS_WARN_OFF +=
+
+win32 {
+GIT_VERSION            = $$system(cd gitversion & gitversion.exe "../../ppmdu_spriteeditor" -output json -showvariable SemVer & cd ..)
+GIT_MAJORMINOR_VERSION = $$system(cd gitversion & gitversion.exe "../../ppmdu_spriteeditor" -output json -showvariable MajorMinorPatch & cd ..)
+}
+unix {
+GIT_VERSION            = $$system(mono ./gitversion/gitversion.exe -output json -showvariable SemVer)
+GIT_MAJORMINOR_VERSION = $$system(mono ./gitversion/gitversion.exe -output json -showvariable MajorMinorPatch)
+}
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -260,9 +265,6 @@ FORMS    += src/ui/mainwindow.ui \
 
 RESOURCES += \
     appres.qrc
-
-QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
-QMAKE_CXXFLAGS_WARN_OFF +=
 
 DISTFILES += \
     readme.md \
