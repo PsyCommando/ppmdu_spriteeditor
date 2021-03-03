@@ -1,6 +1,8 @@
 #include "graphics_util.hpp"
 #include <src/data/sprite/sprite.hpp>
+#include <src/data/sprite/frame.hpp>
 
+const QSize COMBO_SMALL_ICON_SZ {64, 64};
 const char * MinusOneImgRes     {":/resources/imgs/minus_one.png"};
 const char * MFramePart_TileRef {"ID:-1 Tile Reference"};
 
@@ -16,15 +18,16 @@ int RotateHue(int hue, int shift)
     return hue + shift;
 }
 
-void FillComboBoxWithSpriteImages(const Sprite * spr, QComboBox & cmb)
+void FillComboBoxWithSpriteImages(const Sprite * spr, QComboBox & cmb, bool includerefentry)
 {
     cmb.clear();
     const ImageContainer * pcnt = &(spr->getImages());
-    cmb.setIconSize( QSize(32,32) );
+    cmb.setIconSize(COMBO_SMALL_ICON_SZ);
     cmb.setStyleSheet(pcnt->ComboBoxStyleSheet());
 
     //Add tile reference ID
-    cmb.addItem(QPixmap::fromImage(GetMinusOneImage()), MFramePart_TileRef, QVariant(-1)); //Set user data to -1
+    if(includerefentry)
+        cmb.addItem(QPixmap::fromImage(GetMinusOneImage()), MFramePart_TileRef, QVariant(-1)); //Set user data to -1
     //Add actual images!
     for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
     {
@@ -61,6 +64,47 @@ void FillComboBoxWithFramePartPriorities(QComboBox & cmb)
     cmb.clear();
     cmb.setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
     cmb.addItems(FRAME_PART_PRIORITY_NAMES);
+}
+
+void FillComboBoxWithSpriteBlocks(const Sprite * spr, QComboBox & cmb)
+{
+    cmb.clear();
+    cmb.setIconSize(COMBO_SMALL_ICON_SZ);
+    const ImageContainer * pcnt = &(spr->getImages());
+
+    //Add block ranges for every images in the sprite
+    int curblockid = 0;
+    for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
+    {
+        const Image* pimg = pcnt->getImage(cntimg);
+        QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
+        QString text = QString("[%1-%2[").arg(curblockid).arg(curblockid + pimg->getBlockLen());
+        QVariant userval;
+        userval.setValue(QPair(curblockid, pimg->getBlockLen()));
+        cmb.addItem( QIcon(pmap), text, QVariant(curblockid) ); //Set user data to the starting block's id
+        curblockid += pimg->getBlockLen(); //increment block id counter
+    }
+    cmb.setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+}
+
+void FillComboBoxWithFrameBlocks(const Sprite * spr, const MFrame * frm, QComboBox & cmb)
+{
+    cmb.clear();
+    cmb.setIconSize(COMBO_SMALL_ICON_SZ);
+    for(int cntpart = 0; cntpart < frm->nodeChildCount() ; ++cntpart)
+    {
+        const MFramePart * part = static_cast<const MFramePart*>(frm->nodeChild(cntpart));
+        if(!part->isPartReference())
+        {
+            const Image* pimg = spr->getImage(part->getFrameIndex());
+            QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
+            QString text = QString("[%1-%2[").arg(part->getBlockNum()).arg(part->getBlockNum() + pimg->getBlockLen());
+            QVariant userval;
+            userval.setValue(QPair(part->getBlockNum(), part->getBlockLen()));
+            cmb.addItem(QIcon(pmap), text, userval); //Set user data to the starting block's id
+        }
+    }
+
 }
 
 const QImage &GetMinusOneImage()

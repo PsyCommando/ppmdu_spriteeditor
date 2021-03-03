@@ -22,7 +22,7 @@ public:
         ShadowY,
         Flags,
         //Everything below this is not displayed as header column
-        NBColumns [[maybe_unused]],
+        NBColumns,
     };
     static const std::map<eColumns, QString> ColumnNames;
 

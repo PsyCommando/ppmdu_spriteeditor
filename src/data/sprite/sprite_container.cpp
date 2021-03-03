@@ -292,15 +292,22 @@ void SpriteContainer::LoadContainer()
             {
                 Sprite * spr = static_cast<Sprite*>(node);
                 if(spr->canParse() && !spr->wasParsed())
-                    spr->ParseSpriteData();
+                {
+                    try
+                    {
+                        spr->ParseSpriteData();
+                    }
+                    catch (const std::exception & e)
+                    {
+                        qWarning() << "SpriteContainer::LoadContainer(): Caught exception while parsing sprite.. " <<e.what() << "\nSkipping...";
+                        if(spr)
+                            spr->setErrored(true);
+                        continue;
+                    }
+                }
                 if(!firstspr)
                     firstspr = spr;
             }
-//            else if(node->nodeDataTypeName() == ElemName_UnknownItem)
-//            {
-//            }
-//            else
-//                Q_ASSERT(false);
 
         }
 
@@ -952,7 +959,11 @@ void SpriteContainerMenu::InitContent()
     addSeparator()->setText(tr("Compression"));
 
     m_actionGrp.reset(new QActionGroup(this));
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     m_actionGrp->setExclusionPolicy(QActionGroup::ExclusionPolicy::Exclusive);
+#else
+    m_actionGrp->setExclusive(true);
+#endif
 
     //Fill up compression options
     for(int i = 0; i < CompressionFmtOptions.size(); ++i)

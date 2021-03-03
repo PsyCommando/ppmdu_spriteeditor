@@ -31,6 +31,7 @@ public:
 private:
     QVariant dataImgPreview     (const MFramePart * part, int role)const;
     QVariant dataImgId          (const MFramePart * part, int role)const;
+    QVariant dataBlockUsed      (const MFramePart * part, int role)const;
     QVariant dataImgSize        (const MFramePart * part, int role)const;
     QVariant dataUnk0           (const MFramePart * part, int role)const;
     QVariant dataXOffset        (const MFramePart * part, int role)const;
@@ -42,7 +43,7 @@ private:
     QVariant dataRotCanvas      (const MFramePart * part, int role)const;
     QVariant dataPaletteID      (const MFramePart * part, int role)const;
     QVariant dataPriority       (const MFramePart * part, int role)const;
-    QVariant dataTileNum        (const MFramePart * part, int role)const;
+    QVariant dataBlockNum       (const MFramePart * part, int role)const;
     QVariant dataMosaic         (const MFramePart * part, int role)const;
     QVariant dataMode           (const MFramePart * part, int role)const;
 

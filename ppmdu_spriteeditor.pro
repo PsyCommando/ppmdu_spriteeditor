@@ -3,6 +3,17 @@
 # Project created by QtCreator 2017-04-02T16:42:42
 #
 #-------------------------------------------------
+greaterThan(QT_MAJOR_VERSION, 5) | equals(QT_MAJOR_VERSION, 5){
+    lessThan(QT_MINOR_VERSION, 12){
+        error("QT version must be at least 5.12!!");
+    }
+}
+else{
+    error("QT version must be at least 5.12!!");
+}
+!versionAtLeast(QT_VERSION, 5.15.0){
+    warning("QT version 5.15 is recommended!")
+}
 
 QT += core gui concurrent svg
 greaterThan(QT_MAJOR_VERSION, 4):QT += widgets
@@ -12,8 +23,11 @@ TARGET = ppmdu_spriteeditor
 TEMPLATE = app
 CONFIG += c++17
 RC_FILE = resources.rc
-QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
-QMAKE_CXXFLAGS_WARN_OFF +=
+#QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter #-Wno-reorder -Wno-extra
+#QMAKE_CXXFLAGS_WARN_OFF +=
+
+OBJECTS_DIR = objs/
+MOC_DIR = moc/
 
 # Since gitversion is a pain in the ass to grab on all platform, I just included all versions until I can setup continuous integration..
 win32 {
@@ -47,6 +61,7 @@ SOURCES += src/main.cpp\
     src/data/content_factory.cpp \
     src/data/content_manager.cpp \
     src/data/contents_selection_manager.cpp \
+    src/data/models/unknown_item_model.cpp \
     src/data/sprite/animframe.cpp \
     src/data/sprite/animgroup.cpp \
     src/data/sprite/animgroups_container.cpp \
@@ -105,6 +120,7 @@ SOURCES += src/main.cpp\
     src/utility/graphics_util.cpp \
     src/utility/long_task_helper.cpp \
     src/utility/palette_helpers.cpp \
+    src/utility/portability.cpp \
     src/utility/program_settings.cpp \
     src/utility/randomgenhelper.cpp \
     src/ui/editor/frame/frame_editor.cpp \
@@ -144,6 +160,7 @@ HEADERS  += \
     src/data/content_factory.hpp \
     src/data/content_manager.hpp \
     src/data/contents_selection_manager.hpp \
+    src/data/models/unknown_item_model.hpp \
     src/data/sprite/animgroups_container.hpp \
     src/data/sprite/effectoffsetset.hpp \
     src/data/sprite/models/animframe_delegate.hpp \
@@ -209,6 +226,7 @@ HEADERS  += \
     src/utility/graphics_util.hpp \
     src/utility/long_task_helper.hpp \
     src/utility/palette_helpers.hpp \
+    src/utility/portability.hpp \
     src/utility/program_settings.hpp \
     src/utility/randomgenhelper.hpp \
     src/data/sprite/sprite.hpp \

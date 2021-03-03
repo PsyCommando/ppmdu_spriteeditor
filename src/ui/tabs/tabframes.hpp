@@ -45,6 +45,7 @@ private:
     void clearFrame();
     void updateListAndEditor();
     void _MovePart(bool up);
+    void updatePartImgSource();
 
 private slots:
     void OnFrameEditorZoom(int diff);
@@ -67,6 +68,8 @@ private slots:
     void on_tvAttachments_clicked(const QModelIndex &index);
 
     void selectPart(const QModelIndex & index);
+
+    void on_chkImgSourceRef_toggled(bool checked);
 
 signals:
     void partSelected(const QModelIndexList & selected);

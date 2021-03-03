@@ -6,6 +6,31 @@
 #include <src/extfmt/riff_palette.hpp>
 #include <src/extfmt/text_palette.hpp>
 #include <src/extfmt/gpl_palette.hpp>
+#include <src/utility/portability.hpp>
+#include <QBrush>
+#include <QPainter>
+
+QPixmap PaintPaletteToPixmap( const QVector<QRgb> & colors )
+{
+    static const int NbColorsPerRow = 16;
+    static const int ColorSquareRes = 16;
+
+    const int NbRows = (colors.size() % NbColorsPerRow == 0)? (colors.size() / NbColorsPerRow) : ((colors.size() / NbColorsPerRow) + 1);
+    QPixmap palette( ColorSquareRes * NbColorsPerRow, ColorSquareRes * NbRows);
+    QPainter mypaint(&palette);
+
+    int curY = 0;
+    for( int cntcol = 0; cntcol < colors.size();)
+    {
+        for( int cntr = 0; (cntr < NbColorsPerRow) && (cntcol < colors.size()); ++cntr, ++cntcol )
+        {
+            mypaint.setBrush(QBrush( QColor(colors.at(cntcol)) ));
+            mypaint.drawRect( cntr * ColorSquareRes, curY, ColorSquareRes, ColorSquareRes );
+        }
+        curY += NbColorsPerRow;
+    }
+    return palette;
+}
 
 //=================================================================
 // Palette Handling
@@ -23,21 +48,21 @@ void ImportPalette(Sprite *spr, const QString &path, ePaletteDumpType type)
         {
             //can't use move here since we need the implicit convertion on copy
             std::vector<uint32_t> imported = utils::ImportFrom_RIFF_Palette(fdata, utils::RGBToARGB);
-            spr->setPalette(QVector<QRgb>(imported.begin(), imported.end())); //since QRgb is ARGB, we use this encoder!
+            spr->setPalette( QVECTOR_RAMGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) ); //since QRgb is ARGB, we use this encoder!
             break;
         }
     case ePaletteDumpType::TEXT_Pal:
         {
             //can't use move here since we need the implicit convertion on copy
             std::vector<uint32_t> imported = utils::ImportPaletteAsTextPalette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVector<QRgb>(imported.begin(), imported.end()) );
+            spr->setPalette( QVECTOR_RAMGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) );
             break;
         }
     case ePaletteDumpType::GIMP_PAL:
         {
             //can't use move here since we need the implicit convertion on copy
             std::vector<uint32_t> imported = utils::ImportGimpPalette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVector<QRgb>(imported.begin(), imported.end()) );
+            spr->setPalette( QVECTOR_RAMGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) );
             break;
         }
     case ePaletteDumpType::PNG_PAL:

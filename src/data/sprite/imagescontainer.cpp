@@ -58,13 +58,14 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
 
+
     //Resize the internal container first
     _removeChildrenNodes(0, nodeChildCount());
     _insertChildrenNodes(0, imgs.size());
 
     int newimgcharblock = 0;
     for(int cntimage = 0;cntimage < m_container.size(); ++cntimage)
-        newimgcharblock += m_container[cntimage]->getCharBlockLen();
+        newimgcharblock += m_container[cntimage]->getBlockLen();
 
     for( size_t cntid = 0; cntid < imgs.size(); ++cntid )
     {
@@ -91,7 +92,10 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
             {
                 //Import but mark it as broken
                 m_container[cntid]->importBrokenImage(imgs[cntid]);
-                newimgcharblock += fmt::TilesToCharBlocks(NbTiles);
+                if(is256col)
+                    newimgcharblock += fmt::TilesToBlocks_8bpp(NbTiles);
+                else
+                    newimgcharblock += fmt::TilesToBlocks_4bpp(NbTiles);
                 continue;
             }
         }
@@ -109,7 +113,7 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
             {
                 auto res = itstep->GetResolution();
                 if(static_cast<size_t>(itstep->frmidx) == cntid ||
-                    (spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D && itstep->isReference() && itstep->getCharBlockNum() == newimgcharblock))
+                    (spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D && itstep->isReference() && itstep->getBlockNum() == newimgcharblock))
                 {
                     //pstep = &(*itstep);
                     w = res.first;
@@ -164,10 +168,16 @@ void ImageContainer::importImages(const fmt::ImageDB::imgtbl_t &imgs, const fmt:
         //3. Depending on the format of the parent sprite, we'll import the image in 8bpp or 4bpp format
         //const bool is256col = (pstep && pstep->isColorPal256()) || (!pstep && spr->is256Colors());
         if(is256col)
-            m_container[cntid]->importImage8bpp(imgs[cntid], w, h, true);
+        {
+            newimgcharblock += fmt::TilesToBlocks_8bpp(NbTiles);
+            m_container[cntid]->importImage8bpp(imgs[cntid], w, h);
+        }
         else
-            m_container[cntid]->importImage4bpp(imgs[cntid], w, h, true);
-        newimgcharblock += fmt::TilesToCharBlocks(NbTiles);
+        {
+            newimgcharblock += fmt::TilesToBlocks_4bpp(NbTiles);
+            m_container[cntid]->importImage4bpp(imgs[cntid], w, h);
+        }
+
     }
 }
 
@@ -180,7 +190,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages()
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-        images[cntid] = m_container[cntid]->exportImage4bpp(w, h, true);
+        images[cntid] = m_container[cntid]->exportImage4bpp(w, h);
     return images;
 }
 
@@ -192,7 +202,7 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages4bpp()
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-        images[cntid] = m_container[cntid]->exportImage4bpp(w, h, true);
+        images[cntid] = m_container[cntid]->exportImage4bpp(w, h);
     return images;
 }
 
@@ -204,13 +214,13 @@ fmt::ImageDB::imgtbl_t ImageContainer::exportImages8bpp()
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
     Q_ASSERT(spr);
     for( int cntid = 0; cntid < nodeChildCount(); ++cntid )
-        images[cntid] = m_container[cntid]->exportImage8bpp(w, h, true);
+        images[cntid] = m_container[cntid]->exportImage8bpp(w, h);
     return images;
 }
 
-QVector<uint8_t> ImageContainer::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const
+std::vector<uint8_t> ImageContainer::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const
 {
-    QVector<uint8_t> tiles;
+    std::vector<uint8_t> tiles;
     auto itinsert = std::back_inserter(tiles);
     int cntTotalTiles = 0;
     bool iscopying = false;
@@ -262,12 +272,9 @@ QVector<uint8_t> ImageContainer::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len
     return tiles;
 }
 
-QVector<uint8_t> ImageContainer::getCharBlocks(fmt::frmid_t num, fmt::frmid_t len) const
+std::vector<uint8_t> ImageContainer::getBlocks(fmt::frmid_t num, fmt::frmid_t len) const
 {
-    //return getTiles(fmt::CharBlocksToTiles(num), fmt::CharBlocksToTiles(len));
-
-
-    QVector<uint8_t> blocks;
+    std::vector<uint8_t> blocks;
     auto itinsert = std::back_inserter(blocks);
     int cntTotalBlocks = 0;
     bool iscopying = false;
@@ -275,14 +282,14 @@ QVector<uint8_t> ImageContainer::getCharBlocks(fmt::frmid_t num, fmt::frmid_t le
     for(int cntimg = 0; cntimg < m_container.size() && len != 0; ++cntimg)
     {
         Image * pcur = m_container[cntimg];
-        int imgBlockLen = pcur->getCharBlockLen();
+        int imgBlockLen = pcur->getBlockLen();
         if(!iscopying && num < (cntTotalBlocks + imgBlockLen))
         {
             iscopying = true;
             //We start copying tiles from this image!
             for(int i = num - cntTotalBlocks; i < imgBlockLen && len != 0; ++i, --len)
             {
-                std::copy(pcur->getCharBlockBeg(i), pcur->getCharBlockEnd(i), itinsert);
+                std::copy(pcur->getBlockBeg(i), pcur->getBlockEnd(i), itinsert);
             }
         }
         else if((cntTotalBlocks + imgBlockLen) > num)
@@ -290,7 +297,7 @@ QVector<uint8_t> ImageContainer::getCharBlocks(fmt::frmid_t num, fmt::frmid_t le
             //We're currently copying tiles over, so keep going with this new image!
             for(int i = 0; i < imgBlockLen && len != 0; ++i, --len)
             {
-                std::copy(pcur->getCharBlockBeg(i), pcur->getCharBlockEnd(i), itinsert);
+                std::copy(pcur->getBlockBeg(i), pcur->getBlockEnd(i), itinsert);
             }
         }
         cntTotalBlocks += imgBlockLen;
@@ -326,17 +333,17 @@ const Image *ImageContainer::getImageByTileNum(fmt::frmid_t tilenum) const
     return const_cast<ImageContainer*>(this)->getImageByTileNum(tilenum);
 }
 
-QVector<uint8_t> ImageContainer::getTileData(int id, int len) const
+std::vector<uint8_t> ImageContainer::getTileData(int id, int len) const
 {
     return getTileDataFromImage(0, id, len);
 }
 
-QVector<uint8_t> ImageContainer::getTileDataFromImage(int imgidx, int id, int len) const
+std::vector<uint8_t> ImageContainer::getTileDataFromImage(int imgidx, int id, int len) const
 {
     const Sprite * spr = static_cast<const Sprite*>(parentNode());
-    QVector<uint8_t> data;
+    std::vector<uint8_t> data;
 
-    const int tileLen = spr->is256Colors() ? fmt::NDS_TILE_SIZE_8BPP : fmt::NDS_TILE_SIZE_4BPP;
+    const size_t tileLen = spr->is256Colors() ? fmt::NDS_TILE_SIZE_8BPP : fmt::NDS_TILE_SIZE_4BPP;
     const int tileEnd = (id + len);
     data.reserve(len * tileLen);
 
@@ -353,7 +360,8 @@ QVector<uint8_t> ImageContainer::getTileDataFromImage(int imgidx, int id, int le
             if(totalTiles >= id && totalTiles < tileEnd)
             {
                 std::vector<uint8_t> atile = img->getTile(cntImgTiles);
-                data.append(QVector<uint8_t>(atile.begin(), atile.end()));
+                std::copy(atile.begin(), atile.end(), std::back_inserter(data));
+//                data.append(std::vector<uint8_t>(atile.begin(), atile.end()));
             }
             else if(totalTiles >= tileEnd)
                 break; //Break when we have everything we need

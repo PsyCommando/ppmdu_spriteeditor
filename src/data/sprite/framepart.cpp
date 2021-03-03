@@ -8,7 +8,8 @@ const std::map<eFramePartColumnsType, QString>  FramePartHeaderColumnNames
     {eFramePartColumnsType::Preview,        "Preview"},
     {eFramePartColumnsType::ImgID,          "Image ID"},
     {eFramePartColumnsType::ImgSz,          "Image Size"},
-    {eFramePartColumnsType::TileNum,        "Block ID"},
+    {eFramePartColumnsType::BlockUsed,      "Blocks Used"},
+    {eFramePartColumnsType::BlockNum,       "Block Num"},
     {eFramePartColumnsType::PaletteID,      "Palette"},
     {eFramePartColumnsType::XOffset,        "X"},
     {eFramePartColumnsType::YOffset,        "Y"},
@@ -136,6 +137,7 @@ Qt::ItemFlags MFramePart::nodeFlags(int column) const
 
     switch(static_cast<eFramePartColumnsType>(column))
     {
+        case eFramePartColumnsType::BlockUsed:
         case eFramePartColumnsType::ImgSz:
         case eFramePartColumnsType::Preview:
         {
@@ -176,181 +178,25 @@ Qt::ItemFlags MFramePart::nodeFlags(int column) const
 
 QImage MFramePart::drawPart(const Sprite * spr, bool transparencyenabled) const
 {
-    //const int TILESZ = fmt::NDS_TILE_SIZE_8BPP * 4;
-    QImage          imgo;
-    QVector<QRgb>   newpal = getPartPalette(spr->getPalette()); //Grab the part of the palette we care about
-    const MFrame * parent = static_cast<const MFrame*>(parentNode());
-    //QVector<uint8_t> tilebuffer = parent->getCachedTileBuffer(); //parent->generateTilesBuffer(spr, nodeIndex());
+    QImage imgo = getSrcImageData(spr);
 
     //If there's transparency, setup first color to be transparent
-    if(transparencyenabled)
+    if(transparencyenabled && imgo.colorCount() > 0)
     {
-        if(newpal.size() > 0)
-            newpal.front() = (~(0xFF << 24)) & newpal.front(); //Format is ARGB
+        QRgb alphacol = (~(0xFF << 24)) & imgo.color(0); //Format is ARGB
+        imgo.setColor(0, alphacol);
     }
-
-    int imgidx = getFrameIndex();
-    if(imgidx >= 0)
-    {
-        //Frames with valid image id
-        const Image * pimg = spr->getImage(imgidx);
-        if(!pimg)
-        {
-            qWarning("MFramePart::drawPart(): Invalid image reference!!\n");
-            return QImage();
-        }
-        imgo = pimg->makeImage(newpal);
-    }
-    else
-    {
-        //-1 image id frames
-        const MFramePart * ref = parent->getPartForCharBlockNum(getCharBlockNum());
-        if(ref)
-        {
-            imgidx = ref->getFrameIndex();
-            const Image * pimg = spr->getImage(imgidx);
-            if(!pimg)
-                return QImage();
-            imgo = pimg->makeImage(newpal);
-        }
-        else if(spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D)
-        {
-            //Refs are usually invalid in 1D tiling for some reasons
-            QVector<uint8_t> tiles = spr->getCharBlocks(getCharBlockNum(), getCharBlockLen());
-            const auto resolution = GetResolution();
-            //Need to re-organize the image by tiles
-            imgo = utils::RawToImg(resolution.first, resolution.second, tiles, newpal).copy(); //Need a copy because the buffer is gonna go away later
-        }
-    }
-
-
-
-#if 0
-
-    //Actual frame
-    //if(getFrameIndex() < 0)
-    {
-        //-1 frame
-        const MFramePart * ref = parent->getPartForTileNum(getTileNum());
-        if(ref)
-        {
-            const int imgidx = ref->getFrameIndex();
-            const Image * pimg = spr->getImage(imgidx);
-            if(!pimg)
-                return QImage();
-            imgo = pimg->makeImage(newpal);
-        }
-    }
-#endif
-#if 0
-        //QVector<uint8_t> tiles = spr->getImages().getTileDataFromImage(firstFrmIdx, getTileNum(), getTileLen());
-        const int frmbytelen = getTileLen() * TILESZ;
-        const int frmbytebeg = getTileNum() * TILESZ;
-        auto itTileBeg = tilebuffer.begin();
-        auto itTileEnd = tilebuffer.end();
-
-        if(frmbytebeg > tilebuffer.size())
-            throw BaseException("MFramePart::drawPart(): WAH");
-        std::advance(itTileBeg, frmbytebeg);
-        if((frmbytelen + frmbytebeg) < tilebuffer.size())
-        {
-            itTileEnd = itTileBeg;
-            std::advance(itTileEnd, frmbytelen);
-        }
-        QVector<uint8_t> tiles = QVector<uint8_t>(itTileBeg, itTileEnd);
-        auto res = GetResolution(); //get the actual resolution
-        imgo = utils::RawToImg(res.first, res.second, tiles, newpal);
-        imgo = imgo.copy(); //test
-        //imgo.save(QString("D:/Users/Guill/Documents/CodingProjects/ppmdu_spriteeditor/workdir/test_%1_%2.png").arg(parent->nodeIndex()).arg(nodeIndex()), "PNG");
-    }
-#endif
-//    else
-//    {
-//        //valid frame
-//        const int imgidx = getFrameIndex();
-//        const Image * pimg = spr->getImage(imgidx);
-//        if(!pimg)
-//        {
-//            qWarning("MFramePart::drawPart(): Invalid image reference!!\n");
-//            return QImage();
-//        }
-//        imgo = pimg->makeImage(newpal);
-//    }
 
     imgo = imgo.convertToFormat(QImage::Format::Format_ARGB32_Premultiplied);
     applyTransforms(imgo);
-
     return imgo;
 }
-//{
-//    int imgindex = -1;
 
-//    if(m_data.getFrameIndex() < 0)
-//    {
-//        qInfo("MFramePart::drawPart(): was asked to draw a -1 frame!!\n");
-
-//        if(nodeIndex() > 0)
-//        {
-//            const MFrame * frm = static_cast<const MFrame*>(parentNode());
-//            if(!frm)
-//            {
-//                qWarning("MFramePart::drawPart(): Can't access parent frame!!\n");
-//                return QImage(); //Can't do much here!
-//            }
-
-//            //find previous non -1 frame part!
-//            for( int cntlkb = nodeIndex(); cntlkb >= 0; --cntlkb )
-//            {
-//                const fmt::step_t * p = frm->getPart(cntlkb);
-//                Q_ASSERT(p);
-//                if(p->getFrameIndex() >= 0)
-//                {
-//                    imgindex = p->getFrameIndex();
-//                    break;
-//                }
-//            }
-//        }
-
-//        //If we didn't find a replacement frame, just return an empty image.
-//        if(imgindex < 0)
-//            return QImage();
-//        //Otherwise continue with the valid index!
-//    }
-//    else
-//    {
-//        imgindex = m_data.getFrameIndex();
-//    }
-
-//    //auto res = m_data.GetResolution();
-//    QImage imgo;
-//    Q_ASSERT(spr);
-//    const Image * pimg = spr->getImage( imgindex );
-//    if(!pimg)
-//    {
-//        qWarning("MFramePart::drawPart(): Invalid image reference!!\n");
-//        return QImage();
-//    }
-
-//    if(spr->unk13() == 1)
-//        qDebug("MFramePart::drawPart(): This part probably won't be drawn correctly, since it appears to be set to 1D mapping!\n");
-
-
-//    if(transparencyenabled)
-//    {
-//        QVector<QRgb> newpal = spr->getPalette();
-//        if(newpal.size() > 0)
-//            newpal.front() = (~(0xFF << 24)) & newpal.front(); //Format is ARGB
-//        imgo = pimg->makeImage(newpal);
-//    }
-//    else
-//    {
-//        imgo = pimg->makeImage(spr->getPalette());
-//    }
-
-//    imgo = imgo.convertToFormat(QImage::Format::Format_ARGB32_Premultiplied);
-//    applyTransforms(imgo);
-//    return imgo;
-//}
+QPixmap MFramePart::drawPartToPixmap(const Sprite *spr, bool transparencyenabled) const
+{
+    //#TODO: optimize maybe?
+    return QPixmap::fromImage(drawPart(spr, transparencyenabled));
+}
 
 void MFramePart::importPart(const fmt::step_t &part)
 {
@@ -377,12 +223,22 @@ bool MFramePart::isPartReference() const
     return m_data.isReference();
 }
 
-uint16_t MFramePart::getCharBlockLen() const
+void MFramePart::setIsReference(bool isref)
+{
+    if(isref)
+        setFrameIndex(-1);
+    else if(getFrameIndex() < 0)
+        setFrameIndex(0);
+    //We don't want to clear the frame index for an existing frame accidently here!! So do nothing if the frame index was already bigger than 0
+}
+
+uint16_t MFramePart::getBlockLen() const
 {
     const auto res = GetResolution();
     const int totalnbpixels = (res.first * res.second);
     const int nbtiles = totalnbpixels / fmt::NDS_TILE_PIXEL_COUNT;
-    const int clampedlen = std::max(nbtiles / fmt::NDS_TILES_PER_CHAR_BLOCK, 1);
+    const int clampedlen = (isColorPal256())? std::max(nbtiles / fmt::WAN_BLOCK_NB_TILES_8BPP, 1) :
+                                              std::max(nbtiles / fmt::WAN_BLOCK_NB_TILES_4BPP, 1);
     return static_cast<uint16_t>(clampedlen);
 }
 
@@ -405,7 +261,13 @@ QVector<QRgb> MFramePart::getPartPalette(const QVector<QRgb> &src) const
                 itpalend = itpalbeg;
                 std::advance(itpalend, palend);
             }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
             newpal = QVector<QRgb>(itpalbeg, itpalend);
+#else
+            const int distance = std::distance(itpalbeg, itpalend);
+            newpal = QVector<QRgb>(distance);
+            std::copy(itpalbeg, itpalend, newpal.begin());
+#endif
         }
         else
             qWarning() << "MFramePart::getPartPalette(): Palette for frame part " << nodeIndex() <<" is out of the palette range!!";//if we're out of range of the palette just pop a warning
@@ -416,6 +278,57 @@ QVector<QRgb> MFramePart::getPartPalette(const QVector<QRgb> &src) const
 void MFramePart::applyTransforms(QImage &srcimg) const
 {
     srcimg = srcimg.transformed( QTransform().scale( m_data.isHFlip()? -1 : 1,
-                                                    m_data.isVFlip()? -1 : 1) ) ;
+                                                     m_data.isVFlip()? -1 : 1) ) ;
+}
+
+QImage MFramePart::getSrcImageData(const Sprite * spr) const
+{
+    QImage imgo;
+    const QVector<QRgb> pal = getPartPalette(spr->getPalette());
+    const MFrame * parent = static_cast<const MFrame*>(parentNode());
+    int imgidx = getFrameIndex();
+    if(imgidx >= 0)
+    {
+        //Frames with valid image id
+        const Image * pimg = spr->getImage(imgidx);
+        if(!pimg)
+        {
+            qWarning("MFramePart::getSrcImageData(): Invalid image reference!!\n");
+            return QImage();
+        }
+        imgo = pimg->makeImage(pal);
+    }
+    else
+    {
+        //-1 image id frames
+        const MFramePart * ref = parent->getPartForBlockNum(getBlockNum());
+        if(ref)
+        {
+            imgidx = ref->getFrameIndex();
+            const Image * pimg = spr->getImage(imgidx);
+            if(!pimg)
+                return QImage();
+            imgo = pimg->makeImage(pal);
+        }
+        else //if(spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D)
+        {
+            //Refs are usually invalid in 1D tiling for some reasons
+            const uint16_t blocknum = getBlockNum();
+            const uint16_t blocklen = getBlockLen();
+            std::vector<uint8_t> tiles = spr->getBlocks(blocknum, blocklen);
+            const auto resolution = GetResolution();
+            if(!tiles.empty())
+            {
+                //Need to re-organize the image by tiles
+                if(spr->is256Colors())
+                    imgo = utils::Raw8bppToImg(resolution.first, resolution.second, utils::Untile8bpp(resolution.first, resolution.second, tiles), pal);
+                else
+                    imgo = utils::Raw4bppToImg(resolution.first, resolution.second, utils::Untile4bpp(resolution.first, resolution.second, tiles), pal);
+            }
+            else
+                qWarning() << QString("MFramePart::getSrcImageData(): Empty image block range (num: %1, len: %2) for frame#%3!").arg(blocknum).arg(blocklen).arg(nodeIndex());
+        }
+    }
+    return imgo;
 }
 

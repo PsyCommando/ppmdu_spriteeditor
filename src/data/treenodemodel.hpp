@@ -10,11 +10,12 @@
 class TreeNodeModel : public QAbstractItemModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(TreeNodeModel); //Base class won't allow it
 public:
     using node_t = TreeNode; //Type of the base node we're using
 
     TreeNodeModel(QObject* parent = nullptr) : QAbstractItemModel(parent) {}
+    TreeNodeModel(TreeNodeModel&&) = delete;
+    TreeNodeModel(const TreeNodeModel&) = delete;
     virtual ~TreeNodeModel(){}
 
     virtual Qt::ItemFlags flags(const QModelIndex &index) const override

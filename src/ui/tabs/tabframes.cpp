@@ -294,7 +294,7 @@ void TabFrames::on_btnFrmAdPart_clicked()
     if(insertpos == curframe->nodeChildCount() -1)
     {
         //If inserted at the end, set the old tile len as the tilenumber for the inserted frame
-        QModelIndex newidx = m_frmModel->index(insertpos, static_cast<int>(eFramePartColumnsType::TileNum), QModelIndex());
+        QModelIndex newidx = m_frmModel->index(insertpos, static_cast<int>(eFramePartColumnsType::BlockNum), QModelIndex());
         m_frmModel->setData(newidx, oldtilelen, Qt::EditRole);
     }
     else
@@ -340,6 +340,40 @@ void TabFrames::_MovePart(bool up)
     //Gotta re-calc each times things move
     curframe->optimizeCharBlocksUsage();
     updateListAndEditor();
+}
+
+void TabFrames::updatePartImgSource()
+{
+    QModelIndex ind = ui->tblframeparts->currentIndex();
+    if(!ind.isValid())
+        return;
+
+    MFramePart* ppart = static_cast<MFramePart*>(ind.internalPointer());
+    if(ppart->isPartReference())
+    {
+        ui->cmbPartImage->setEnabled(false);
+        ui->cmbBlock->setEnabled(true);
+        //#TODO: Move me into some function plz!
+        {
+            Sprite * spr = currentSprite();
+
+            //Fill up the currently used blocks, or in effect sprites the content of all image data
+            if(spr->type() == fmt::eSpriteType::Effect)
+            {
+                FillComboBoxWithSpriteBlocks(spr, *ui->cmbBlock);
+            }
+            else
+            {
+                FillComboBoxWithFrameBlocks(spr, currentFrame(), *ui->cmbBlock);
+            }
+        }
+    }
+    else
+    {
+        ui->cmbPartImage->setEnabled(true);
+        ui->cmbBlock->setEnabled(false);
+    }
+
 }
 
 void TabFrames::on_btnFrmMvUp_clicked()
@@ -506,10 +540,21 @@ void TabFrames::selectPart(const QModelIndex & index)
         emit partSelected(ui->tblframeparts->selectionModel()->selectedRows());
         return;
     }
+    ui->tabwFramesEdit->setCurrentWidget(ui->tabPartProps);
     ui->tabPartProps->setEnabled(true);
     MFramePart * part = static_cast<MFramePart*>(index.internalPointer());
     FillComboBoxWithSpritePalettes(currentSprite(), *ui->cmbPartPal, part->isColorPal256());
     m_frmdatmapper->setCurrentModelIndex(index);
     ui->tblframeparts->setCurrentIndex(index);
     emit partSelected(ui->tblframeparts->selectionModel()->selectedRows());
+}
+
+void TabFrames::on_chkImgSourceRef_toggled(bool checked)
+{
+    QModelIndex index = ui->tblframeparts->selectionModel()->currentIndex();
+    if(!index.isValid())
+        return;
+    MFramePart * part = static_cast<MFramePart*>(index.internalPointer());
+    part->setIsReference(checked);
+    updatePartImgSource();
 }

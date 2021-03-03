@@ -77,7 +77,7 @@ QWidget *MFramePartDelegate::createEditor(QWidget *parent, const QStyleOptionVie
     case eFramePartColumnsType::ImgID:
         pedit = makeImgSelect(parent, index);
         break;
-    case eFramePartColumnsType::TileNum:
+    case eFramePartColumnsType::BlockNum:
         pedit = makeTileIdSelect(parent, index.row());
         break;
     case eFramePartColumnsType::PaletteID:
@@ -181,11 +181,11 @@ void MFramePartDelegate::setEditorData(QWidget *editor, const QModelIndex &index
             pprio->setCurrentIndex(part->getPriority());
             break;
         }
-        case eFramePartColumnsType::TileNum:
+        case eFramePartColumnsType::BlockNum:
         {
             QSpinBox *ptid = static_cast<QSpinBox*>(editor);
             Q_ASSERT(ptid);
-            ptid->setValue(part->getCharBlockNum());
+            ptid->setValue(part->getBlockNum());
             break;
         }
         case eFramePartColumnsType::RnSParam:
@@ -224,7 +224,7 @@ void MFramePartDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
         case eFramePartColumnsType::RnSParam:
         case eFramePartColumnsType::XOffset:
         case eFramePartColumnsType::YOffset:
-        case eFramePartColumnsType::TileNum:
+        case eFramePartColumnsType::BlockNum:
         {
             QSpinBox * poff = static_cast<QSpinBox*>(editor);
             Q_ASSERT(poff);

@@ -2,14 +2,13 @@
 
 QRect FindLargestFrameBounds(const AnimSequence & seq, const Sprite & sprt)
 {
-    //QRect boundsbiggest;
+    int x1 = 512; //#TODO: Constants?
+    int y1 = 512; //#TODO: Constants?
+    int x2 = 0;   //#TODO: Constants?
+    int y2 = 0;   //#TODO: Constants?
 
-    int x1 = 512;
-    int y1 = 512;
-    int x2 = 0;
-    int y2 = 0;
     //First pass, find largest frame
-    for(const auto afrm : seq )
+    Q_FOREACH(const auto * afrm, seq )
     {
         QRect  area;
         const MFrame * pfrm = sprt.getFrame(afrm->frmidx());
@@ -31,7 +30,6 @@ QRect FindLargestFrameBounds(const AnimSequence & seq, const Sprite & sprt)
 
 SpriteRenderer::~SpriteRenderer()
 {
-
 }
 
 QPair<QVector<cachedframe>, QVector<QColor> > SpriteRenderer::RenderSequence(const Sprite & sprt, SpriteRenderer::animseqid_t seqid) const
@@ -50,7 +48,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
         QRect boundsbiggest = FindLargestFrameBounds(*pseq, sprt); //Image relative
 
         //Second pass, assemble and crop to largest frame
-        for(const auto afrm : (*pseq) )
+        Q_FOREACH(const auto afrm, (*pseq))
         {
             QImage target;
             QRect  area;
@@ -73,7 +71,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
         }
 
         //Align all the frames so they're all center aligned to eachothers
-        for(auto & afrm : cachedframes )
+        for(auto & afrm : cachedframes)
         {
             //try to align frames
             if( afrm.area.x() > boundsbiggest.x() )
@@ -84,7 +82,7 @@ QVector<cachedframe> SpriteRenderer::RenderFrames(const Sprite & sprt, SpriteRen
     }
     else
     {
-        throw ExBadAnimSequence( QString("SpriteRenderer::RenderFrames(): Invalid sequence id %d!\n").arg(seqid) );
+        throw ExBadAnimSequence(QString("SpriteRenderer::RenderFrames(): Invalid sequence id %d!\n").arg(seqid));
     }
     return cachedframes;
 }
@@ -123,6 +121,6 @@ QVector<QColor> SpriteRenderer::ConvertPalette(const Sprite & sprt) const
 QImage SpriteRenderer::RenderAnimationSheet(const Sprite &/*sprt*/) const
 {
     QImage result;
-    //#TODO
+    //#TODO: Render animation sheet for sprite
     return result;
 }

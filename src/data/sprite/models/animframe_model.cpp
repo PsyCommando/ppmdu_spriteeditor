@@ -205,7 +205,12 @@ QVariant AnimFramesModel::headerData(int section, Qt::Orientation orientation, i
             if(role == Qt::SizeHintRole)
             {
                 QSize sz = CalculateTextSizeForView(itcol->second);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
                 return sz.grownBy(QMargins(8,0,8,0));
+#else
+                sz.setWidth(sz.width() + 16);
+                return sz;
+#endif
             }
             else
                 return itcol->second;

@@ -223,7 +223,9 @@ void SpriteScene::beginAnimationPlayback()
 
     m_timer.reset(new QTimer);
     connect(m_timer.data(), &QTimer::timeout, this, &SpriteScene::TimerTick );
-    m_timer->setInterval(ProgramSettings::Instance().previewFramerate());
+    const int framerate = ProgramSettings::Instance().previewFramerate();
+    m_timer->setInterval(framerate);
+    qDebug() <<"playback framerate " <<framerate <<"msec per ticks";
     m_timer->start();
 }
 
@@ -265,7 +267,7 @@ void SpriteScene::loadAnimation()
         m_animsprite.reset(new AnimatedSpriteItem(qMove(rendered.first), qMove(rendered.second)));
         ConnectSpriteSignals();
         m_animScene.addItem(m_animsprite.get());
-        m_animsprite->setScale(2.0);
+        //m_animsprite->setScale(2.0);
         emit rangechanged(0, m_animsprite->getNbFrames());
     }
     catch (const ExBadAnimSequence & e)

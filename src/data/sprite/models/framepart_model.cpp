@@ -34,6 +34,7 @@ QVariant MFramePartModel::data(const QModelIndex &index, int role) const
     case eFramePartColumnsType::Preview:        return dataImgPreview   (part, role);
     case eFramePartColumnsType::ImgID:          return dataImgId        (part, role);
     case eFramePartColumnsType::ImgSz:          return dataImgSize      (part, role);
+    case eFramePartColumnsType::BlockUsed:      return dataBlockUsed    (part, role);
     case eFramePartColumnsType::PaletteID:      return dataPaletteID    (part, role);
     case eFramePartColumnsType::VFlip:          return dataVFlip        (part, role);
     case eFramePartColumnsType::HFlip:          return dataHFlip        (part, role);
@@ -42,7 +43,7 @@ QVariant MFramePartModel::data(const QModelIndex &index, int role) const
     case eFramePartColumnsType::Priority:       return dataPriority     (part, role);
 
     //Advanced stuff
-    case eFramePartColumnsType::TileNum:        return dataTileNum      (part, role);
+    case eFramePartColumnsType::BlockNum:       return dataBlockNum     (part, role);
     case eFramePartColumnsType::Mosaic:         return dataMosaic       (part, role);
     case eFramePartColumnsType::Mode:           return dataMode         (part, role);
 
@@ -127,14 +128,14 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
             }
             break;
         }
-        case eFramePartColumnsType::TileNum:
+        case eFramePartColumnsType::BlockNum:
         {
             if(role == Qt::EditRole)
             {
                 const int tileid = value.toInt(&bok);
                 if(!bok)
                     break;
-                part.setCharBlockNum(tileid);
+                part.setBlockNum(tileid);
             }
             break;
         }
@@ -296,12 +297,25 @@ QVariant MFramePartModel::dataImgId(const MFramePart * part, int role) const
     return QVariant();
 }
 
+QVariant MFramePartModel::dataBlockUsed(const MFramePart *part, int role) const
+{
+    if(role == Qt::DisplayRole)
+    {
+        return QString("[%L1 - %L2[").arg(static_cast<int>(part->getBlockNum())).arg(static_cast<int>(part->getBlockNum() + part->getBlockLen()));
+    }
+    else if(role == Qt::SizeHintRole)
+    {
+        return calcTextSize(dataBlockNum(part, Qt::DisplayRole).toString());
+    }
+    return QVariant();
+}
+
 QVariant MFramePartModel::dataImgSize(const MFramePart * part, int role)const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
         auto res = part->GetResolution();
-        return QString("%1x%2 (%3 blocks)").arg(res.first).arg(res.second).arg(part->getCharBlockLen());
+        return QString("%1x%2 (%3 blocks)").arg(res.first).arg(res.second).arg(part->getBlockLen());
     }
     else if(role == Qt::SizeHintRole)
     {
@@ -488,15 +502,15 @@ QVariant MFramePartModel::dataPriority(const MFramePart * part, int role) const
     return QVariant();
 }
 
-QVariant MFramePartModel::dataTileNum(const MFramePart * part, int role) const
+QVariant MFramePartModel::dataBlockNum(const MFramePart * part, int role) const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
-        return static_cast<int>(part->getCharBlockNum());
+        return static_cast<int>(part->getBlockNum());
     }
     else if(role == Qt::SizeHintRole)
     {
-        return calcTextSize(dataTileNum(part, Qt::DisplayRole).toString());
+        return calcTextSize(dataBlockNum(part, Qt::DisplayRole).toString());
     }
     return QVariant();
 }

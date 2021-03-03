@@ -30,7 +30,6 @@ namespace settings_consts
 
     extern const QString SETTING_ADVANCED_MODE;
     extern const QString SETTING_LAST_PROJECT_PATH;
-
 };
 
 /*
@@ -43,19 +42,26 @@ class ProgramSettings : public QObject
     ProgramSettings();
 
 public:
-    static const QString GeneralSettingsGroupName; //Name for general settings group
+    static const QString GeneralSettingsGroupName;  //Name for general settings group
+    static const QString UserSettingsGroupName;     //Name for user settings group
     static  QSettings        & Settings();
     static  ProgramSettings  & Instance();
 
     //Settings quick access
     bool isAdvancedMode();
+    void setAdvancedMode(bool bon);
     bool isAutoplayEnabled();
+    void setAutoplayEnabled(bool bon);
 
     int previewFramerate();
+    void setPreviewFramerate(int frmpt);
     int editorDefaultZoom();
+    void setEditorDefaultZoom(int percent);
     int editorZoomIncrements();
+    void setEditorZoomIncrements(int percent);
 
     QString lastProjectPath();
+    void setLastProjectPath(QString path);
 
 public slots:
     void WriteSettings(const QString & groupname, std::function<void(QSettings&)> writefun);
@@ -64,6 +70,9 @@ public slots:
     //Save/load settings to file
     void Sync();
 
+private:
+    bool CheckSettings()const;
+    bool CheckKeyPresent(const QString & key)const;
 private:
     QSettings m_settings;
 };

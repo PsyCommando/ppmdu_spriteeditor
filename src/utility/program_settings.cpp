@@ -29,7 +29,8 @@ namespace settings_consts
     const QString SETTING_PREVIEW_AUTO      {"preview_autoplay"};
 };
 
-const QString ProgramSettings::GeneralSettingsGroupName{"General"};
+const QString ProgramSettings::UserSettingsGroupName    {"User"};
+const QString ProgramSettings::GeneralSettingsGroupName {"General"};
 
 ProgramSettings::ProgramSettings()
     :QObject(nullptr),
@@ -56,10 +57,12 @@ void ProgramSettings::WriteSettings(const QString & groupname, std::function<voi
     m_settings.beginGroup(groupname);
     writefun(m_settings);
     m_settings.endGroup();
+    Sync();
 }
 
 void ProgramSettings::ReadSettings(const QString & groupname, std::function<void (QSettings&)> readfun)
 {
+    CheckSettings();
     m_settings.beginGroup(groupname);
     readfun(m_settings);
     m_settings.endGroup();
@@ -70,56 +73,144 @@ void ProgramSettings::Sync()
     m_settings.sync();
 }
 
+bool ProgramSettings::CheckSettings() const
+{
+    if(m_settings.status() != QSettings::Status::NoError)
+    {
+        qWarning()  << "ProgramSettings: Error reading settings ini file! "
+                    << ((m_settings.status() == QSettings::Status::FormatError)?
+                            ("Formatting error!") :
+                            ("File access error!"));
+        return false;
+    }
+    return true;
+}
+
+bool ProgramSettings::CheckKeyPresent(const QString &key) const
+{
+    bool bkeypresent = m_settings.contains(key);
+    if(!bkeypresent)
+        qWarning() << "ProgramSettings::CheckKeyPresent(): Missing key \"" << key <<"\"!";
+    return bkeypresent;
+}
+
 bool ProgramSettings::isAdvancedMode()
 {
     using namespace settings_consts;
+    CheckSettings();
     m_settings.beginGroup(GeneralSettingsGroupName);
+    if(!CheckKeyPresent(SETTING_ADVANCED_MODE))
+        m_settings.setValue(SETTING_ADVANCED_MODE, DV_ADVANCED_MODE);
     bool advanced = m_settings.value(SETTING_ADVANCED_MODE, DV_ADVANCED_MODE).toBool();
     m_settings.endGroup();
     return advanced;
 }
 
-bool ProgramSettings::isAutoplayEnabled()
+void ProgramSettings::setAdvancedMode(bool bon)
 {
     using namespace settings_consts;
     m_settings.beginGroup(GeneralSettingsGroupName);
+    m_settings.setValue(SETTING_ADVANCED_MODE, bon);
+    m_settings.endGroup();
+    Sync();
+}
+
+bool ProgramSettings::isAutoplayEnabled()
+{
+    using namespace settings_consts;
+    CheckSettings();
+    m_settings.beginGroup(GeneralSettingsGroupName);
+    CheckKeyPresent(SETTING_PREVIEW_AUTO);
     bool autop = m_settings.value(SETTING_PREVIEW_AUTO, DV_PREVIEW_AUTO).toBool();
     m_settings.endGroup();
     return autop;
 }
 
-int ProgramSettings::previewFramerate()
+void ProgramSettings::setAutoplayEnabled(bool bon)
 {
     using namespace settings_consts;
     m_settings.beginGroup(GeneralSettingsGroupName);
+    m_settings.setValue(SETTING_PREVIEW_AUTO, bon);
+    m_settings.endGroup();
+    Sync();
+}
+
+int ProgramSettings::previewFramerate()
+{
+    using namespace settings_consts;
+    CheckSettings();
+    m_settings.beginGroup(GeneralSettingsGroupName);
+    CheckKeyPresent(SETTING_PREVIEW_FRMRATE);
     int fpt = m_settings.value(SETTING_PREVIEW_FRMRATE, DV_PREVIEW_FRAMERATE).toInt();
     m_settings.endGroup();
     return fpt;
 }
 
-int ProgramSettings::editorDefaultZoom()
+void ProgramSettings::setPreviewFramerate(int frmpt)
 {
     using namespace settings_consts;
     m_settings.beginGroup(GeneralSettingsGroupName);
+    m_settings.setValue(SETTING_PREVIEW_FRMRATE, frmpt);
+    m_settings.endGroup();
+    Sync();
+}
+
+int ProgramSettings::editorDefaultZoom()
+{
+    using namespace settings_consts;
+    CheckSettings();
+    m_settings.beginGroup(GeneralSettingsGroupName);
+    CheckKeyPresent(SETTING_EDITOR_ZOOM_DEF);
     int zoom = m_settings.value(SETTING_EDITOR_ZOOM_DEF, DV_EDITOR_ZOOM_DEF).toInt();
     m_settings.endGroup();
     return zoom;
 }
 
-int ProgramSettings::editorZoomIncrements()
+void ProgramSettings::setEditorDefaultZoom(int percent)
 {
     using namespace settings_consts;
     m_settings.beginGroup(GeneralSettingsGroupName);
+    m_settings.setValue(SETTING_EDITOR_ZOOM_DEF, percent);
+    m_settings.endGroup();
+    Sync();
+}
+
+int ProgramSettings::editorZoomIncrements()
+{
+    using namespace settings_consts;
+    CheckSettings();
+    m_settings.beginGroup(GeneralSettingsGroupName);
+    CheckKeyPresent(SETTING_EDITOR_ZOOM_INCR);
     int zoomincr = m_settings.value(SETTING_EDITOR_ZOOM_INCR, DV_EDITOR_ZOOM_INCR).toInt();
     m_settings.endGroup();
     return zoomincr;
 }
 
-QString ProgramSettings::lastProjectPath()
+void ProgramSettings::setEditorZoomIncrements(int percent)
 {
     using namespace settings_consts;
     m_settings.beginGroup(GeneralSettingsGroupName);
+    m_settings.setValue(SETTING_EDITOR_ZOOM_INCR, percent);
+    m_settings.endGroup();
+    Sync();
+}
+
+QString ProgramSettings::lastProjectPath()
+{
+    using namespace settings_consts;
+    CheckSettings();
+    m_settings.beginGroup(UserSettingsGroupName);
+    CheckKeyPresent(SETTING_LAST_PROJECT_PATH);
     QString lastpath = m_settings.value(SETTING_LAST_PROJECT_PATH, "").toString();
     m_settings.endGroup();
     return lastpath;
+}
+
+void ProgramSettings::setLastProjectPath(QString path)
+{
+    using namespace settings_consts;
+    m_settings.beginGroup(UserSettingsGroupName);
+    m_settings.setValue(SETTING_LAST_PROJECT_PATH, path);
+    m_settings.endGroup();
+    Sync();
 }

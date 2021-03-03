@@ -130,7 +130,8 @@ void TabImages::ClearImage()
     ui->tblviewImages->clearSelection();
     m_currentImage = QModelIndex();
     ui->lbl_imgpreview->setPixmap(m_pmainwindow->getDefaultImage());
-    m_imgdatmapper->setCurrentModelIndex(QModelIndex());
+    if(m_imgdatmapper)
+        m_imgdatmapper->setCurrentModelIndex(QModelIndex());
     ui->lblImgResValue->setText("");
     ui->lblImgSizeValue->setText("");
 }
@@ -237,11 +238,11 @@ void TabImages::TryImportImage(const QString &path)
 
     //Convert the QImage to raw
     fmt::ImageDB::img_t newimgdata;
-    newimgdata.unk2 = 0;
-    newimgdata.unk14 = 0;
-
-    //All image data is stored as 8bpp
-    newimgdata.data = utils::ImgToRaw(img);
+    Sprite * spr = currentSprite();
+    if(spr->is256Colors())
+        newimgdata.data = utils::ImgToRaw8bpp(img);
+    else
+        newimgdata.data = utils::ImgToRaw4bpp(img);
 
     //Insert at the end of the list
     bool succ = ui->tblviewImages->model()->insertRow( ui->tblviewImages->model()->rowCount());
@@ -253,7 +254,10 @@ void TabImages::TryImportImage(const QString &path)
         Q_ASSERT(newimg);
 
         //Replace selected image
-        newimg->importImage8bpp(newimgdata, img.width(), img.height(), false);
+        if(spr->is256Colors())
+            newimg->importImage8bpp(newimgdata, img.width(), img.height());
+        else
+            newimg->importImage4bpp(newimgdata, img.width(), img.height());
     }
     else
         Warn(tr("Import Failed!"),tr("Couldn't create a new row at the end of the list! Qt refused!"));
@@ -290,7 +294,7 @@ void TabImages::on_btnExport_clicked()
         Q_ASSERT(pimg);
         QImage img = pimg->makeImage(m_imgListModel->getOwnerSprite()->getPalette());
         QFileInfo finfo(filename);
-        QString newpath = QString("%1/%2%3.%4") .arg(finfo.absolutePath()) .arg(finfo.baseName());
+        QString newpath = QString("%1/%2%3.%4") .arg(finfo.absolutePath(), finfo.baseName());
         newpath = (bmultiple? newpath.arg(successcnt) : newpath.arg(""));
         newpath = newpath.arg(finfo.completeSuffix());
 
@@ -328,13 +332,18 @@ void TabImages::on_btnImport_clicked()
         Sprite * spr = m_imgListModel->getOwnerSprite();
         Image * newimg = spr->getImages().appendNewImage();
         //Convert the QImage to raw
-        fmt::ImageDB::img_t newimgdata;
-        newimgdata.unk2 = 0;
-        newimgdata.unk14 = 0;
+        fmt::ImageDB::img_t newimgdata;;
         QImage loaded(filenames[i]);
-        newimgdata.data = utils::ImgToRaw(loaded);
-        newimg->importImage8bpp(newimgdata, loaded.width(), loaded.height(), false);
-
+        if(spr->is256Colors())
+        {
+            newimgdata.data = utils::ImgToRaw8bpp(loaded);
+            newimg->importImage8bpp(newimgdata, loaded.width(), loaded.height());
+        }
+        else
+        {
+            newimgdata.data = utils::ImgToRaw4bpp(loaded);
+            newimg->importImage4bpp(newimgdata, loaded.width(), loaded.height());
+        }
     }
     ui->tblviewImages->repaint();
     ShowStatusMessage(QString(tr("Imported %1 image(s)!")).arg(filenames.size()));

@@ -18,7 +18,7 @@ public:
         GroupID = 0,
         GroupName,
         NbSlots,
-        NbColumns  [[maybe_unused]],
+        NbColumns,
     };
     static const std::map<AnimTableModel::eColumns, QString> ColumnNames;
 

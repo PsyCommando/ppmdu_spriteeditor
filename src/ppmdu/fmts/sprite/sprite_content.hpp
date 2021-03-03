@@ -19,8 +19,8 @@ namespace fmt
     **********************************************************************/
     struct ImageDB
     {
-        static const int FRAME_TILE_SZ_BYTES; //Size of a frame in the loaded image data. Fixed, since we force 8bpp during import
-        static const int FRAME_TILE_SZ_PIXELS; //Size of a single tile loaded in pixel
+//        static const int FRAME_TILE_SZ_BYTES; //Size of a frame in the loaded image data. Fixed, since we force 8bpp during import
+//        static const int FRAME_TILE_SZ_PIXELS; //Size of a single tile loaded in pixel
         struct img_t
         {
             std::vector<uint8_t> data;
@@ -536,7 +536,7 @@ namespace fmt
                 uint16_t curfrmtotalsz = 0; //highest char block number + size used out of all steps
                 for(const step_t & stp : frm)
                 {
-                    const uint16_t curmax = stp.getCharBlockNum() + stp.calculateCharBlockSize();
+                    const uint16_t curmax = stp.getBlockNum() + stp.calculateBlockSize();
                     if(curmax > curfrmtotalsz)
                         curfrmtotalsz = curmax;
                 }

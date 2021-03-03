@@ -62,7 +62,7 @@ QVariant ImageListModel::data(const QModelIndex &index, int role) const
         case eColumns::Depth: //depth
         {
             if( role == Qt::DisplayRole )
-                res.setValue(QString("%1bpp").arg(img->getImageOriginalDepth()));
+                res.setValue(QString("%1bpp").arg(static_cast<int>(img->getImageOriginalDepth())));
             break;
         }
         case eColumns::Resolution: //resolution
@@ -172,7 +172,7 @@ QVariant ImageListModelCondensed::data(const QModelIndex &index, int role) const
         QString condensed = "ID:%1 %2bpp %3x%4";
         condensed = condensed
                 .arg(img->nodeIndex())
-                .arg(img->getImageOriginalDepth())
+                .arg(static_cast<int>(img->getImageOriginalDepth()))
                 .arg(resolution.width())
                 .arg(resolution.height());
         res = condensed;

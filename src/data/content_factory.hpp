@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
+#include <src/utility/portability.hpp>
 
 /*
  * Contains details to instantiate the correct kind of container

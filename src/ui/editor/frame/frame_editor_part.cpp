@@ -6,7 +6,7 @@
 #include <QGraphicsTextItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QApplication>
-#include <QColorSpace>
+
 
 //=======================================================================================================
 //  FramePart

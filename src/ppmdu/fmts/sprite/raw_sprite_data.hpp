@@ -91,19 +91,15 @@ namespace fmt
     **********************************************************************/
     struct hdr_animfmtinfo
     {
-        uint32_t ptroamtbl;     //pointer to the frame assembly table/oam data
-        uint32_t ptrattachtbl;  //pointer to the attachment points table
-        uint32_t ptranimtbl;    //pointer to the animation table
-        uint16_t nbanims;       //nb of animations in the animation table
-        uint16_t maxnbusedblocks;//The number of tiles that the bigest assembled frame takes in memory
-        uint16_t unk7;
-        uint16_t unk8;
-        uint16_t unk9;          //possibly boolean
-        uint16_t unk10;
-
-        hdr_animfmtinfo()
-            :ptroamtbl(0), ptrattachtbl(0),ptranimtbl(0), nbanims(0),maxnbusedblocks(0), unk7(0), unk8(0), unk9(0), unk10(0)
-        {}
+        uint32_t ptroamtbl      {0};    //pointer to the frame assembly table/oam data
+        uint32_t ptrattachtbl   {0};    //pointer to the attachment points table
+        uint32_t ptranimtbl     {0};    //pointer to the animation table
+        uint16_t nbanims        {0};    //nb of animations in the animation table
+        uint16_t maxnbusedblocks{0};    //The number of tiles that the bigest assembled frame takes in memory
+        uint16_t unk7           {0};
+        uint16_t unk8           {0};
+        uint16_t unk9           {0};    //possibly boolean
+        uint16_t unk10          {0};
 
         template<class _init>
         _init read( _init beg, _init end )
@@ -160,10 +156,10 @@ namespace fmt
 
         rbgx24pal_t colors;
         //uint32_t ptrpalbeg; //
-        uint16_t unk3;      //force4bb
-        uint16_t nbcol;
-        uint16_t unk4;
-        uint16_t unk5;
+        uint16_t unk3   {0};      //force4bb
+        uint16_t nbcol  {0};
+        uint16_t unk4   {0};
+        uint16_t unk5   {0};
         //4bytes of zeroes here
     };
 
@@ -177,8 +173,8 @@ namespace fmt
     struct offset_t
     {
         static const uint32_t LEN {4}; //in bytes
-        int16_t xoff = 0;
-        int16_t yoff = 0;
+        int16_t xoff {0};
+        int16_t yoff {0};
 
         template<class _init>
         _init read( _init beg, _init end )
@@ -264,6 +260,32 @@ namespace fmt
     **********************************************************************/
     struct step_t
     {
+        /*********************
+         * eObjMode
+        *********************/
+        enum struct eObjMode: uint16_t
+        {
+            Normal      = 0,
+            SemiTransp,
+            Window,
+            Bitmap,
+            Invalid,
+        };
+
+        /*********************
+         * ePriority
+        *********************/
+        //Draw priority for the frame part
+        enum struct ePriority: uint8_t
+        {
+            Highest = 0,
+            High    = 1,
+            Low     = 2,
+            Lowest  = 3,
+            NbLevels,
+        };
+
+        //Constants
         static const uint32_t FRAME_LEN          = 10;       //bytes, size of the structure in the file
         static const uint16_t ATTR0_FlagBitsMask = 0xFF00;   //1111 1111 0000 0000
         static const uint16_t ATTR1_FlagBitsMask = 0xFE00;   //1111 1110 0000 0000
@@ -284,7 +306,7 @@ namespace fmt
 
         static const uint16_t ATTR2_PalNumberMask= 0xF000;   //1111 0000 0000 0000 //
         static const uint16_t ATTR2_PriorityMask = 0x0C00;   //0000 1100 0000 0000 //
-        static const uint16_t ATTR2_TileNumMask  = 0x03FF;   //0000 0011 1111 1111 //Image tile id mask
+        static const uint16_t ATTR2_BlockNumMask  = 0x03FF;   //0000 0011 1111 1111 //Image tile id mask
 
         static const uint16_t  ATTR01_ResMask    = 0xC000;   //1100 0000 0000 0000 //Resolution enum value mask
 
@@ -295,33 +317,7 @@ namespace fmt
         static const uint8_t   MAX_NB_PAL        = 16;      //16 palettes maximum
         static const uint8_t   NB_RNS_PARAM      = 32;      //32 possible values for the RnS param
 
-        /*
-         * eObjMode
-        */
-        //
-        enum struct eObjMode: uint16_t
-        {
-            Normal      = 0,
-            SemiTransp,
-            Window,
-            Bitmap,
-            Invalid,
-        };
-
-        /*
-         * ePriority
-        */
-        //Draw priority for the frame part
-        enum struct ePriority: uint8_t
-        {
-            Highest = 0,
-            High    = 1,
-            Low     = 2,
-            Lowest  = 3,
-            NbLevels,
-        };
-
-
+        //vars
         frmid_t  frmidx;
         uint16_t unk0;
         uint16_t attr0;
@@ -383,25 +379,16 @@ namespace fmt
 
         inline uint8_t getPalNb()const              {return static_cast<uint8_t>((ATTR2_PalNumberMask & attr2) >> 12);}
         inline uint8_t getPriority()const           {return static_cast<uint8_t>((ATTR2_PriorityMask  & attr2) >> 10);}
-        inline uint16_t getCharBlockNum()const           {return (ATTR2_TileNumMask & attr2);}
+        inline uint16_t getBlockNum()const           {return (ATTR2_BlockNumMask & attr2);}
         inline eFrameRes getResolutionType()const   {return static_cast<eFrameRes>( ( (attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ); }
 
         inline frmid_t getFrameIndex()const         {return frmidx;}
 
         inline std::pair<uint16_t,uint16_t> GetResolution()const
         {
-            uint8_t  flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
+            uint8_t flagresval = ((attr1 & ATTR01_ResMask) >> 14) | ( (attr0 & ATTR01_ResMask) >> 12 ) ; //Combine both into a number
             assert(flagresval < FrameResValues.size());
-
-//            if(isDoubleSize())
-//            {
-//                auto res = FrameResValues[flagresval];
-//                res.first  *= 2;
-//                res.second *= 2;
-//                return res;
-//            }
-//            else
-                return FrameResValues[flagresval];
+            return FrameResValues.at(flagresval);
         }
 
 
@@ -421,7 +408,7 @@ namespace fmt
 
         inline void setPalNb        (uint8_t palnb) {attr2 = (attr2 & ~ATTR2_PalNumberMask) | (ATTR2_PalNumberMask & palnb);}
         inline void setPriority     (uint8_t prio)  {attr2 = (attr2 & ~ATTR2_PriorityMask) | (ATTR2_PriorityMask & prio);}
-        inline void setCharBlockNum      (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_TileNumMask) | (ATTR2_TileNumMask & tnum);}
+        inline void setBlockNum     (uint16_t tnum) {attr2 = (attr2 & ~ATTR2_BlockNumMask) | (ATTR2_BlockNumMask & tnum);}
 
         inline void setFrameIndex   (frmid_t id)    {frmidx = id;}
 
@@ -433,11 +420,14 @@ namespace fmt
         }
 
         //Returns our size in nb of char blocks
-        inline uint16_t calculateCharBlockSize()const
+        inline uint16_t calculateBlockSize()const
         {
             const auto res = GetResolution();
             const int  totalpixels = res.first * res.second;
-            return static_cast<uint16_t>(totalpixels / NB_PIXELS_WAN_TILES);
+            if(isColorPal256())
+                return static_cast<uint16_t>(totalpixels / WAN_BLOCK_PIXEL_SIZE_8BPP);
+            else
+                return static_cast<uint16_t>(totalpixels / WAN_BLOCK_PIXEL_SIZE_4BPP);
         }
     };
 
@@ -450,18 +440,13 @@ namespace fmt
     {
         static const size_t LEN = 12;
 
-        uint8_t duration;
-        uint8_t flag;
-        int16_t frmidx;
-        int16_t xoffs;
-        int16_t yoffs;
-        int16_t shadowxoffs;
-        int16_t shadowyoffs;
-
-        animfrm_t()
-            :duration(0), flag(0), frmidx(0), xoffs(0), yoffs(0), shadowxoffs(0), shadowyoffs(0)
-        {
-        }
+        uint8_t duration    {0};
+        uint8_t flag        {0};
+        int16_t frmidx      {0};
+        int16_t xoffs       {0};
+        int16_t yoffs       {0};
+        int16_t shadowxoffs {0};
+        int16_t shadowyoffs {0};
 
         bool isnull()const
         {

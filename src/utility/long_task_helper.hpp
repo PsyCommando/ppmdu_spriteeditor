@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QThread>
 #include <src/ui/windows/dialogprogressbar.hpp>
+#include <src/utility/portability.hpp>
 
 /*
  * Utility for displaying progress and running "long" async tasks.

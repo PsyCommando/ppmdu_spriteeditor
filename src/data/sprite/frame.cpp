@@ -1,5 +1,6 @@
 #include "frame.hpp"
 #include <QImage>
+#include <QBitmap>
 
 #include <src/data/sprite/sprite.hpp>
 #include <src/data/sprite/image.hpp>
@@ -142,16 +143,18 @@ QPixmap MFrame::AssembleFrameToPixmap(int xoffset, int yoffset, QRect cropto, QR
     return qMove( QPixmap::fromImage(AssembleFrame(xoffset, yoffset, cropto, out_area, true, parentsprite)) );
 }
 
-QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out_area/*=nullptr*/, bool makebgtransparent/*=true*/, const Sprite* parentsprite) const
+QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out_area, bool makebgtransparent, const Sprite* parentsprite) const
 {
     qDebug() << "MFrame::AssembleFrame(): starting";
     if(parentsprite->getPalette().empty()) //no point drawing anything..
         return QImage();
 
     //#TODO: Implement checks for the other paramters for a frame, and for mosaic and etc!
-    QImage      imgres(512,512, QImage::Format_ARGB32_Premultiplied);
-    QPainter    painter(&imgres);
-    QRect       bounds = calcFrameBounds();
+    QImage                  imgres(512,512, QImage::Format_ARGB32_Premultiplied);
+    QImage                  bg;
+    QPainter                painter(&imgres);
+    QRect                   bounds = calcFrameBounds();
+    const QVector<QRgb> &   pal = parentsprite->getPalette();
 
     //Try to make the bounds match cropto if smaller
     if( !cropto.isNull() )
@@ -167,7 +170,6 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
             bounds.setHeight( cropto.height() );
     }
 
-    //QVector<QRgb> pal = parentsprite->getPalette();
     //Make first color transparent
     if(makebgtransparent)
     {
@@ -176,26 +178,18 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
     else
     {
         //Set first pal color as bg color!
-        painter.setBackground( QColor(parentsprite->getPalette().front()) );
-        painter.setBackgroundMode(Qt::BGMode::OpaqueMode);
-
+        //painter.setBackground(QColor(pal.front()));
+        //painter.setBackgroundMode(Qt::BGMode::OpaqueMode);
+        bg = QImage(512,512, QImage::Format_ARGB32_Premultiplied);
     }
 
+    QPainter bgpainter(&bg);
     //Draw all the parts of the frame
-    //const fmt::step_t * plast = nullptr; //A reference on the last valid frame, so we can properly copy it when encountering a -1 frame!
-    for( const MFramePart * pwrap : m_container )
+    Q_FOREACH(const MFramePart * part, m_container)
     {
-        const fmt::step_t & part = pwrap->getPartData();
-
-        //If frame index is completely out of range, something weird is up
-//        if(part.getFrameIndex() > parentsprite->getImages().size())
-//        {
-//            //This means something is very off
-//            qDebug() << "MFrame::AssembleFrame() : Got a reference to an image completely out of range!!";
-//            break;
-//        }
+        //const fmt::step_t & pdat = part->getPartData();
         qDebug() << "MFrame::AssembleFrame(): Drawing part!";
-        QImage pix = pwrap->drawPart(parentsprite);
+        QPixmap pix = part->drawPartToPixmap(parentsprite);
 
 //        const Image* pimg = parentsprite->getImage(part.getFrameIndex()); // returns null if -1 frame or out of range!
 //        QImage pix;
@@ -217,22 +211,40 @@ QImage MFrame::AssembleFrame(int xoffset, int yoffset, QRect cropto, QRect * out
 //        if(part.isVFlip())
 //            pix = pix.transformed( QTransform().scale(1, -1) );
 
-        int finalx = (part.getXOffset());
-        int finaly = (part.getYOffset() < 128)? part.getYOffset() + 255 : part.getYOffset(); //simulate wrap-around past 256 Y
-        painter.drawImage(xoffset + finalx, yoffset + finaly, pix );
+        const int           finalx    = part->getXOffset();
+        const int           finaly    = part->getYWrappedOffset(); //simulate wrap-around past 256 Y
+        const QVector<QRgb> partpal   = part->getPartPalette(pal);
+        const QColor        alphacol  = partpal.empty()? QRgb() : partpal.front();
+        const QBitmap       blendmask = pix.createMaskFromColor(alphacol, Qt::MaskMode::MaskInColor);
+        if(!makebgtransparent)
+        {
+            QRect bgrect = pix.rect();
+            bgrect.moveTo(xoffset + finalx, yoffset + finaly);
+            bgpainter.setBrush(alphacol);
+            bgpainter.setPen(Qt::PenStyle::NoPen);
+            bgpainter.drawRect(bgrect);
+        }
+        pix.setMask(blendmask);
+        painter.drawPixmap(xoffset + finalx, yoffset + finaly, pix);
         qDebug() << "MFrame::AssembleFrame(): Painted part to image!";
     }
+    painter.end(); //Release the image immediately after painting, so we don't get sigsev when destroying the qpainter
+
+    if(!makebgtransparent)
+    {
+        qDebug() << "MFrame::AssembleFrame(): Merging background layer..!";
+        //Draw the actual image pixels over the background, and slap the result into the output image
+        bgpainter.drawImage(0,0, imgres, Qt::ImageConversionFlag::AutoColor);
+        imgres = bg;
+        qDebug() << "MFrame::AssembleFrame(): Merged!";
+    }
+    qDebug() << "MFrame::AssembleFrame(): Painted all parts!";
 
     if(out_area)
+    {
         *out_area = bounds;
-
-//    imgres.save("./mframeassemble.png", "png");
-
-//    imgres.copy( xoffset + bounds.x(),
-//                        yoffset + bounds.y(),
-//                        bounds.width(),
-//                        bounds.height() ).save("./mframeassemble_cropped.png", "png");
-
+        qDebug() << "MFrame::AssembleFrame(): Set bounds!";
+    }
     return imgres.copy( xoffset + bounds.x(),
                         yoffset + bounds.y(),
                         bounds.width(),
@@ -246,22 +258,20 @@ QRect MFrame::calcFrameBounds() const
     int smallesty  = 512;
     int biggesty  = 0;
 
-    for( const MFramePart * pwrap : m_container )
+    Q_FOREACH(const MFramePart * part, m_container)
     {
-        const fmt::step_t & part = pwrap->getPartData();
+        const auto  imgres = part->GetResolution();
+        const int   xoff = part->getXOffset();
+        const int   yoff = part->getYWrappedOffset(); //wrap around handling
 
-        auto imgres = part.GetResolution();
-        int xoff = part.getXOffset();
-        int yoff = (part.getYOffset() < 128)? part.getYOffset() + 255 : part.getYOffset(); //wrap around handling
-
-        if( xoff < smallestx)
+        if(xoff < smallestx)
             smallestx = xoff;
-        if( (xoff + imgres.first) >= biggestx )
+        if((xoff + imgres.first) >= biggestx)
             biggestx = (xoff + imgres.first);
 
-        if( yoff < smallesty)
+        if(yoff < smallesty)
             smallesty = yoff;
-        if( (yoff + imgres.second) >= biggesty )
+        if((yoff + imgres.second) >= biggesty)
             biggesty = (yoff + imgres.second);
     }
 
@@ -273,76 +283,18 @@ int MFrame::getFrameUID() const
     return nodeIndex();
 }
 
-#if 0
-QVector<uint8_t> MFrame::generateTilesBuffer(const Sprite * spr, int uptopartidx) const
-{
-    //const int TILESZ = fmt::NDS_TILE_SIZE_8BPP * 4; //Always 8bpp since we converted image data to 8bpp when importing
-    QVector<uint8_t> tilebuffer(fmt::NDS_OAM_MAX_NB_TILES * fmt::ImageDB::FRAME_TILE_SZ_BYTES, 0);
-    const int lastEntry = uptopartidx != -1 ? uptopartidx : nodeChildCount();
-
-    for(int i = 0; i < lastEntry; ++i)
-    {
-        const MFramePart * part = m_container[i];
-        //We only place things when there's an actual valid frame index
-        if(part->getFrameIndex() >= 0)
-        {
-            int tileoffset = part->getTileNum() * fmt::ImageDB::FRAME_TILE_SZ_BYTES;
-            const Image * img = spr->getImage(part->getFrameIndex());
-            if(!img)
-                continue;
-            auto itbuf = tilebuffer.begin();
-            std::advance(itbuf, tileoffset);
-
-            if((tileoffset + img->getByteSize()) > tilebuffer.size())
-                throw BaseException("MFrame::generateTilesBuffer(): Data past end of buffer!");
-            std::vector<uint8_t> raw;
-            raw = img->getRaw();
-            std::copy(raw.begin(), raw.end(), itbuf);
-        }
-    }
-    return tilebuffer;
-}
-#endif
-
-//const QVector<QImage> & MFrame::updateTileBuffer()
-//{
-//    qDebug() << "MFrame::updateTileBuffer(): Updating frame#" <<nodeIndex() <<"'s buffer..";
-//    const Sprite * spr = findParentSprite();
-//    if(!spr)
-//        throw BaseException("MFrame::updateTileBuffer(): No parent sprite in hierarchy found!!");
-//    m_cachedTileBuffer.resize(0);
-//    QVector<uint8_t> raw = generateTilesBuffer(spr);
-//    const int nbTiles = raw.size() / fmt::ImageDB::FRAME_TILE_SZ_BYTES;
-//    int offset = 0;
-//    for(int i = 0; i < nbTiles; ++i)
-//    {
-//        unsigned char * tilebeg = raw.data() + offset;
-//        QImage tmp(tilebeg, fmt::ImageDB::FRAME_TILE_SZ_PIXELS, fmt::ImageDB::FRAME_TILE_SZ_PIXELS, QImage::Format::Format_Indexed8);
-//        tmp.setColorTable(spr->getPalette());
-//        m_cachedTileBuffer.push_back(tmp);
-//        offset += fmt::ImageDB::FRAME_TILE_SZ_BYTES;
-//    }
-//    qDebug() << "MFrame::updateTileBuffer(): Updated!";
-//    return m_cachedTileBuffer;
-//}
-
-//const QVector<QImage> &MFrame::getCachedTileBuffer() const
-//{
-//    return m_cachedTileBuffer;
-//}
-
-MFramePart * MFrame::getPartForCharBlockNum(int tilenum)
+MFramePart * MFrame::getPartForBlockNum(int tilenum)
 {
     Q_FOREACH(MFramePart * part, m_container)
     {
-        if(!part->isPartReference() && tilenum == part->getCharBlockNum())
+        if(!part->isPartReference() && tilenum == part->getBlockNum())
             return part;
     }
     return nullptr;
 }
-const MFramePart * MFrame::getPartForCharBlockNum(int tilenum)const
+const MFramePart * MFrame::getPartForBlockNum(int tilenum)const
 {
-    return const_cast<MFrame*>(this)->getPartForCharBlockNum(tilenum);
+    return const_cast<MFrame*>(this)->getPartForBlockNum(tilenum);
 }
 
 int MFrame::calcCharBlocksLen() const
@@ -352,10 +304,10 @@ int MFrame::calcCharBlocksLen() const
     for(int i = 0; i < nodeChildCount(); ++i)
     {
         const MFramePart * part = m_container[i];
-        if(curtilenum < part->getCharBlockNum())
+        if(curtilenum < part->getBlockNum())
         {
-            curtilenum = part->getCharBlockNum();
-            totallen = part->getCharBlockNum() + part->getCharBlockLen();
+            curtilenum = part->getBlockNum();
+            totallen = part->getBlockNum() + part->getBlockLen();
         }
     }
     return totallen;
@@ -371,7 +323,7 @@ void MFrame::optimizeCharBlocksUsage()
     {
         MFramePart * part = m_container[i];
         if(part->isPartReference())
-            tileidrefs[part->getCharBlockNum()].push_back(part);
+            tileidrefs[part->getBlockNum()].push_back(part);
     }
 
     // Re-calculate the frame part tile number for each frame parts in the sprite
@@ -382,8 +334,8 @@ void MFrame::optimizeCharBlocksUsage()
         if(part->isPartReference()) //Skip reference parts
             continue;
 
-        qDebug() << "MFrame::optimizeTileUsage(): Changing part #" <<part->nodeIndex() <<" tile id from " <<part->getCharBlockNum() <<" to " <<curtileofs <<"!";
-        part->setTileNum(curtileofs);
+        qDebug() << "MFrame::optimizeTileUsage(): Changing part #" <<part->nodeIndex() <<" tile id from " <<part->getBlockNum() <<" to " <<curtileofs <<"!";
+        part->setBlockNum(curtileofs);
 
         //Update references if any
         auto itrefs = tileidrefs.find(curtileofs);
@@ -391,12 +343,12 @@ void MFrame::optimizeCharBlocksUsage()
         {
             for( MFramePart * ref : itrefs->second)
             {
-                qDebug() << "MFrame::optimizeTileUsage(): Ref #" <<ref->nodeIndex() <<" to part #" <<part->nodeIndex() <<" tile id changed from " <<ref->getCharBlockNum() <<" to " <<curtileofs <<"!";
-                ref->setTileNum(curtileofs);
+                qDebug() << "MFrame::optimizeTileUsage(): Ref #" <<ref->nodeIndex() <<" to part #" <<part->nodeIndex() <<" tile id changed from " <<ref->getBlockNum() <<" to " <<curtileofs <<"!";
+                ref->setBlockNum(curtileofs);
             }
         }
 
-        curtileofs += part->getCharBlockLen(); //Add up the tiles to get the next available offset
+        curtileofs += part->getBlockLen(); //Add up the tiles to get the next available offset
     }
 }
 
@@ -436,100 +388,3 @@ bool MFrame::nodeShowChildrenOnTreeView() const
 {
     return false;
 }
-
-
-//bool MFrame::_insertChildrenNode(TreeNode *node, int destrow, bool doupdate)
-//{
-//    bool result = parent_t::_insertChildrenNode(node, destrow);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_insertChildrenNodes(int row, int count, bool doupdate)
-//{
-//    bool result = parent_t::_insertChildrenNodes(row, count);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_insertChildrenNodes(const QList<TreeNode *> &nodes, int destrow, bool doupdate)
-//{
-//    bool result = parent_t::_insertChildrenNodes(nodes, destrow);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_removeChildrenNode(TreeNode *node, bool doupdate)
-//{
-//    bool result = parent_t::_removeChildrenNode(node);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_removeChildrenNodes(int row, int count, bool doupdate)
-//{
-//    bool result = parent_t::_removeChildrenNodes(row, count);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_removeChildrenNodes(const QList<TreeNode *> &nodes, bool doupdate)
-//{
-//    bool result = parent_t::_removeChildrenNodes(nodes);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_deleteChildrenNode(TreeNode *node, bool doupdate)
-//{
-//    bool result = parent_t::_deleteChildrenNode(node);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_deleteChildrenNodes(int row, int count, bool doupdate)
-//{
-//    bool result = parent_t::_deleteChildrenNodes(row, count);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_deleteChildrenNodes(const QList<TreeNode *> &nodes, bool doupdate)
-//{
-//    bool result = parent_t::_deleteChildrenNodes(nodes);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_moveChildrenNodes(int row, int count, int destrow, TreeNode *destnode, bool doupdate)
-//{
-//    bool result = parent_t::_moveChildrenNodes(row, count, destrow, destnode);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_moveChildrenNodes(const QModelIndexList &indices, int destrow, QModelIndex destparent, bool doupdate)
-//{
-//    bool result = parent_t::_moveChildrenNodes(indices, destrow, destparent);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}
-
-//bool MFrame::_moveChildrenNodes(const QList<TreeNode *> &nodes, int destrow, QModelIndex destparent, bool doupdate)
-//{
-//    bool result = parent_t::_moveChildrenNodes(nodes, destrow, destparent);
-//    if(doupdate)
-//        updateTileBuffer();
-//    return result;
-//}

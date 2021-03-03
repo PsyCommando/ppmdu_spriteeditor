@@ -18,10 +18,10 @@ public:
         UID,
         Depth,
         Resolution,
-        NbColumns [[maybe_unused]],
+        NbColumns,
 
-        direct_Unk2 [[maybe_unused]],    //Extra columns that don't count in the NbColumns
-        direct_Unk14 [[maybe_unused]],
+        direct_Unk2,    //Extra columns that don't count in the NbColumns
+        direct_Unk14,
     };
     static const std::map<eColumns, QString> ColumnNames;
 

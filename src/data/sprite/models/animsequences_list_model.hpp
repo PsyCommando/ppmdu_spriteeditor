@@ -17,7 +17,7 @@ public:
     {
         Preview = 0,
         NbFrames,
-        NbColumns [[maybe_unused]],
+        NbColumns,
     };
     static const std::map<eColumns, QString> ColumnNames;
 

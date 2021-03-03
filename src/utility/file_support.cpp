@@ -8,6 +8,7 @@
 #include <src/extfmt/gpl_palette.hpp>
 #include <src/data/content_manager.hpp>
 #include <src/utility/program_settings.hpp>
+#include <src/utility/portability.hpp>
 #include <QFileDialog>
 #include <QWidget>
 #include <QApplication>
@@ -202,7 +203,7 @@ public:
     void InitSupported()override
     {
         m_supported = SupportedExportPaletteFilesFilters;
-        m_supported.insert(SupportedImageFilesFilters);
+        QMAP_INSERT_QMAP(SupportedImageFilesFilters, m_supported);
         SupportedFilters::InitSupported();
     }
 

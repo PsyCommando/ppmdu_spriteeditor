@@ -13,13 +13,9 @@ class FramesContainer : public TreeNodeWithChilds<MFrame>
 {
 public:
     FramesContainer(TreeNode * sprite);
-
     FramesContainer(const FramesContainer & cp);
-
     FramesContainer(FramesContainer && mv);
-
     FramesContainer &operator=(const FramesContainer &cp);
-
     FramesContainer &operator=(FramesContainer &&mv);
 
     ~FramesContainer();
@@ -28,7 +24,9 @@ public:
     MFrame *        getFrame(fmt::frmid_t id);
     const MFrame *  getFrame(fmt::frmid_t id)const;
     bool ClearImageReferences(const QModelIndexList & indices, bool bdelete = false);
-    uint16_t getMaxTileUsage()const; //Returns the highest amount of tiles used out of all frames
+
+    //Returns the highest amount of blocks used by a single frame out of all of them
+    uint16_t getMaxBlocksUsage()const;
 
     //Create and append a new MFrame, return pointer to it
     MFrame * appendNewFrame();

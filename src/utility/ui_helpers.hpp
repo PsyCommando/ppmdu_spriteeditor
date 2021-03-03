@@ -14,6 +14,7 @@ extern const QFont DefaultModelViewFont;
 QSize CalculateTextSizeForView(const QString &text, const QFont * font = nullptr);
 
 
-QString GetNestedExceptionsText(const std::exception & e);
+QString GetNestedExceptionsText(const std::exception & e)noexcept;
+QString GetNestedExceptionsText(std::exception_ptr e)noexcept;
 
 #endif // UI_HELPERS_HPP

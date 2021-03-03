@@ -88,7 +88,7 @@ bool FramesContainer::ClearImageReferences(const QModelIndexList &indices, bool 
     return bfoundref;
 }
 
-uint16_t FramesContainer::getMaxTileUsage() const
+uint16_t FramesContainer::getMaxBlocksUsage() const
 {
     uint16_t largest = 0; // the largest amount of tiles used out of all frames
     for(const MFrame * frm : m_container)
@@ -96,7 +96,7 @@ uint16_t FramesContainer::getMaxTileUsage() const
         uint16_t curfrmtotalsz = 0; //highest tile number + size used out of all steps
         for(const MFramePart * part : *frm)
         {
-            const uint16_t curmax = part->getCharBlockNum() + part->getCharBlockLen();
+            const uint16_t curmax = part->getBlockNum() + part->getBlockLen();
             if(curmax > curfrmtotalsz)
                 curfrmtotalsz = curmax;
         }

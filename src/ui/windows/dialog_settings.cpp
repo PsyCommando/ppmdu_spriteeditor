@@ -17,22 +17,28 @@ DialogSettings::~DialogSettings()
     delete ui;
 }
 
-void DialogSettings::writeSettings(QSettings &settings)
+void DialogSettings::writeSettings(QSettings &/*settings*/)
 {
-    using namespace settings_consts;
-    settings.setValue(SETTING_ADVANCED_MODE,    ui->chkAdvancedSettings->isChecked());
-    settings.setValue(SETTING_PREVIEW_FRMRATE,  ui->spbFramerate->value());
-    settings.setValue(SETTING_PREVIEW_AUTO,     ui->chkAutoplay->isChecked());
+    ProgramSettings & ps = ProgramSettings::Instance(); //Just use the built-in parser for those
+    //General
+    ps.setAdvancedMode          (ui->chkAdvancedSettings->isChecked());
+
+    //Previews
+    ps.setPreviewFramerate      (ui->spbFramerate->value());
+    ps.setAutoplayEnabled       (ui->chkAutoplay->isChecked());
 
     //Editor Settings
-    settings.setValue(SETTING_EDITOR_ZOOM_DEF,  ui->spbFrmEditZoom->value());
-    settings.setValue(SETTING_EDITOR_ZOOM_INCR, ui->spbFrmEditZoomIncr->value());
+    ps.setEditorDefaultZoom     (ui->spbFrmEditZoom->value());
+    ps.setEditorZoomIncrements  (ui->spbFrmEditZoomIncr->value());
 }
 
 void DialogSettings::readSettings(QSettings &/*settings*/)
 {
     ProgramSettings & ps = ProgramSettings::Instance(); //Just use the built-in parser for those
+    //General
     ui->chkAdvancedSettings->   setChecked  (ps.isAdvancedMode());
+
+    //Previews
     ui->spbFramerate->          setValue    (ps.previewFramerate());
     ui->chkAutoplay->           setChecked  (ps.isAutoplayEnabled());
 
@@ -43,8 +49,9 @@ void DialogSettings::readSettings(QSettings &/*settings*/)
 
 void DialogSettings::commitSettings()
 {
-    ProgramSettings::Instance().WriteSettings(ProgramSettings::GeneralSettingsGroupName,
-                                              std::bind(&DialogSettings::writeSettings, this, std::placeholders::_1));
+    ProgramSettings & ps = ProgramSettings::Instance();
+    ps.WriteSettings(ProgramSettings::GeneralSettingsGroupName,
+                     std::bind(&DialogSettings::writeSettings, this, std::placeholders::_1));
 }
 
 void DialogSettings::on_DialogSettings_accepted()

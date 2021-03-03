@@ -59,13 +59,18 @@ namespace fmt
     const int NDS_TILE_PIXEL_HEIGHT = 8;
     const int NDS_TILE_PIXEL_COUNT  = 64;
 
-    const int NDS_TILES_PER_CHAR_BLOCK = 4;
+    const int WAN_BLOCK_SIZE            = 128;
+    const int WAN_BLOCK_NB_TILES_4BPP   = 4;
+    const int WAN_BLOCK_NB_TILES_8BPP   = 2;
+    const int WAN_BLOCK_PIXEL_SIZE_4BPP   = WAN_BLOCK_NB_TILES_4BPP * NDS_TILE_PIXEL_COUNT;
+    const int WAN_BLOCK_PIXEL_SIZE_8BPP   = WAN_BLOCK_NB_TILES_8BPP * NDS_TILE_PIXEL_COUNT;
+
 
     const int NDS_OAM_MAX_NB_TILES = 1024;
-    const int NDS_OAM_NB_PIXELS_TILES = 64;
+    //const int NDS_OAM_NB_PIXELS_TILES = 64;
 
-    const int NB_PIXELS_WAN_TILES = 256;
+    //const int NB_PIXELS_WAN_TILES = 256;
 
-    const int ImageDB::FRAME_TILE_SZ_BYTES  = fmt::NDS_TILE_SIZE_8BPP * 4;
-    const int ImageDB::FRAME_TILE_SZ_PIXELS = fmt::NDS_OAM_NB_PIXELS_TILES * 4;
+//    const int ImageDB::FRAME_TILE_SZ_BYTES  = fmt::NDS_TILE_SIZE_8BPP * 4;
+//    const int ImageDB::FRAME_TILE_SZ_PIXELS = fmt::NDS_OAM_NB_PIXELS_TILES * 4;
 };

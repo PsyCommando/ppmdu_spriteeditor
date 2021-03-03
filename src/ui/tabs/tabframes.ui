@@ -704,7 +704,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tabPartProps">
         <attribute name="title">
@@ -728,9 +728,15 @@
            <property name="flat">
             <bool>false</bool>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="spacing">
-             <number>2</number>
+           <layout class="QFormLayout" name="formLayout">
+            <property name="fieldGrowthPolicy">
+             <enum>QFormLayout::FieldsStayAtSizeHint</enum>
+            </property>
+            <property name="horizontalSpacing">
+             <number>4</number>
+            </property>
+            <property name="verticalSpacing">
+             <number>4</number>
             </property>
             <property name="leftMargin">
              <number>4</number>
@@ -744,134 +750,159 @@
             <property name="bottomMargin">
              <number>4</number>
             </property>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_3">
-              <property name="leftMargin">
-               <number>0</number>
+            <item row="0" column="0">
+             <widget class="QLabel" name="lblImgSrc">
+              <property name="text">
+               <string>Image Source:</string>
               </property>
-              <property name="topMargin">
-               <number>4</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>4</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="lblImage">
-                <property name="text">
-                 <string>Image:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="cmbPartImage">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>192</width>
-                  <height>64</height>
-                 </size>
-                </property>
-                <property name="sizeAdjustPolicy">
-                 <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
-                </property>
-                <property name="minimumContentsLength">
-                 <number>128</number>
-                </property>
-                <property name="frame">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <item>
-               <widget class="QLabel" name="lblPalette">
-                <property name="text">
-                 <string>Palette:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="cmbPartPal">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>192</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="sizeAdjustPolicy">
-                 <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
-                </property>
-                <property name="minimumContentsLength">
-                 <number>128</number>
-                </property>
-                <property name="frame">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
+            <item row="1" column="0">
+             <widget class="QLabel" name="lblImage">
+              <property name="text">
+               <string>Image:</string>
+              </property>
+             </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="hlPriority">
-              <property name="topMargin">
-               <number>4</number>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="cmbPartImage">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-              <property name="bottomMargin">
-               <number>4</number>
+              <property name="minimumSize">
+               <size>
+                <width>192</width>
+                <height>64</height>
+               </size>
               </property>
-              <item>
-               <widget class="QLabel" name="lblPriority">
-                <property name="text">
-                 <string>Priority:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="cmbPartPriority">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>192</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Z priority for all parts in the frame to the one chosen!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="sizeAdjustPolicy">
-                 <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
-                </property>
-                <property name="minimumContentsLength">
-                 <number>128</number>
-                </property>
-                <property name="frame">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What &lt;span style=&quot; font-weight:600;&quot;&gt;image&lt;/span&gt; is the &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt; using if the &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt; doesn't refer to an existing image &lt;span style=&quot; font-weight:600;&quot;&gt;blocks&lt;/span&gt; range.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="sizeAdjustPolicy">
+               <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+              </property>
+              <property name="minimumContentsLength">
+               <number>128</number>
+              </property>
+              <property name="frame">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="lblBlock">
+              <property name="text">
+               <string>Block:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="cmbBlock">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>192</width>
+                <height>64</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Selected range of image data &lt;span style=&quot; font-weight:600;&quot;&gt;blocks&lt;/span&gt; that can be referenced by this &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt;.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Used by reference &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt; to refer to a previous &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt;'s content, and in &lt;span style=&quot; font-weight:600;&quot;&gt;effect sprites&lt;/span&gt; to select what image data the &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt; will be using.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;In all &lt;span style=&quot; font-weight:600;&quot;&gt;sprite types&lt;/span&gt; but &lt;span style=&quot; font-weight:600;&quot;&gt;effect sprites&lt;/span&gt;, its used by a &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt; to use an image already in use by a previous &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt;, thereby saving video memory space. In &lt;span style=&quot; font-weight:600;&quot;&gt;effect sprites&lt;/span&gt; it refers to all available images in the &lt;span style=&quot; font-weight:600;&quot;&gt;sprite&lt;/span&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="sizeAdjustPolicy">
+               <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+              </property>
+              <property name="minimumContentsLength">
+               <number>128</number>
+              </property>
+              <property name="frame">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="lblPalette">
+              <property name="text">
+               <string>Palette:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QComboBox" name="cmbPartPal">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>192</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="sizeAdjustPolicy">
+               <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+              </property>
+              <property name="minimumContentsLength">
+               <number>128</number>
+              </property>
+              <property name="frame">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="lblPriority">
+              <property name="text">
+               <string>Priority:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QComboBox" name="cmbPartPriority">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>192</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Z priority for all parts in the frame to the one chosen!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="sizeAdjustPolicy">
+               <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+              </property>
+              <property name="minimumContentsLength">
+               <number>128</number>
+              </property>
+              <property name="frame">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="chkImgSourceRef">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the &lt;span style=&quot; font-weight:600;&quot;&gt;part&lt;/span&gt; is a reference to a &lt;span style=&quot; font-weight:600;&quot;&gt;block&lt;/span&gt; or not.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;In short, in all sprites types but &lt;span style=&quot; font-weight:600;&quot;&gt;effect sprites&lt;/span&gt;, all &lt;span style=&quot; font-weight:600;&quot;&gt;parts&lt;/span&gt; within a &lt;span style=&quot; font-weight:600;&quot;&gt;frame&lt;/span&gt; must occupy a set of &lt;span style=&quot; font-weight:600;&quot;&gt;blocks&lt;/span&gt; to be displayed. This allows &lt;span style=&quot; font-weight:600;&quot;&gt;parts&lt;/span&gt; to refer to previously assigned &lt;span style=&quot; font-weight:600;&quot;&gt;blocks&lt;/span&gt; without loading an image multiple times in the NDS's memory.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;In the case of &lt;span style=&quot; font-weight:600;&quot;&gt;effect sprites&lt;/span&gt; it works differently. You should assume that all the images all occupy a range of &lt;span style=&quot; font-weight:600;&quot;&gt;blocks&lt;/span&gt; already even if your &lt;span style=&quot; font-weight:600;&quot;&gt;frame&lt;/span&gt; is empty. So if you want to display image one, you'd check this checkbox and pick a &lt;span style=&quot; font-weight:600;&quot;&gt;block&lt;/span&gt; in the combo box.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Block Reference</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>

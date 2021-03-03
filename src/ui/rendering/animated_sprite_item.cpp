@@ -156,7 +156,7 @@ void AnimatedSpriteItem::setCurFrame(int frmid)
         m_ticksnextfrm = m_cachedframes[m_curfrm].duration;
         m_tickselapsed = 0;
         for(int i = 0; i < m_curfrm; ++i)
-            m_tickselapsed += m_cachedframes[i].duration;
+            m_tickselapsed += m_cachedframes[i].duration; //Increase the timer by the elapsed time between the first frame and the target frame
         emit frame_changed(m_curfrm, boundingRect());
     }
 }

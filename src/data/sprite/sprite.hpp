@@ -123,6 +123,8 @@ public:
 
     //Returns whether the sprite can be parsed, or not if there is something wrong with the raw data
     bool canParse()const;
+    bool hasErrored()const; //Whether the sprite errored and should be ignored
+    void setErrored(bool berrored);
 
     //Parse the data from the internal raw container
     void ParseSpriteData();
@@ -179,8 +181,8 @@ public:
     Image                       * getImageByTileNum(fmt::frmid_t tilenum);
     const Image                 * getImageByTileNum(fmt::frmid_t tilenum)const;
 
-    QVector<uint8_t>              getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const;
-    QVector<uint8_t>              getCharBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
+    std::vector<uint8_t>        getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const;
+    std::vector<uint8_t>        getBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
 
 
     inline MFrame               * getFrame( fmt::frmid_t id )       {return m_frmcnt.getFrame(id);}
@@ -215,7 +217,7 @@ public:
     inline void                             setTileMappingMode(fmt::eSpriteTileMappingModes mode)   {mappingMode(static_cast<bool>(mode));}
     inline bool                             is2DMapped()const                                       {return mappingMode() == static_cast<int>(fmt::eSpriteTileMappingModes::Mapping2D);}
     inline bool                             is1DMapped()const                                       {return mappingMode() == static_cast<int>(fmt::eSpriteTileMappingModes::Mapping1D);}
-    uint16_t                                getMaxTileUsage()const;
+    uint16_t                                getMaxBlocksUsage()const;
 
     void                                    setTargetCompression(filetypes::eCompressionFormats fmt){ m_targetgompression = fmt;}
     inline filetypes::eCompressionFormats   getTargetCompression()const                             {return m_targetgompression;}
@@ -279,6 +281,7 @@ private:
     //Status / statistics
     bool                                    m_bparsed       {false};    //Whether the sprite's raw has been parsed to be displayed yet or not!
     bool                                    m_bhasimagedata {false};    //Whether the sprite can be displayed or not!
+    bool                                    m_bErrored      {false};    //Whether the sprite errored during processing and should be ignored
     filetypes::eCompressionFormats          m_targetgompression{filetypes::eCompressionFormats::NONE};
 
     //UI data

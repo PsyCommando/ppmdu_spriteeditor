@@ -68,8 +68,8 @@ public:
     const Sprite * findParentSprite()const;
 
     //Obtain a part via tile number. Used internally for handling reference frame parts
-    MFramePart *        getPartForCharBlockNum(int tilenum);
-    const MFramePart *  getPartForCharBlockNum(int tilenum)const;
+    MFramePart *        getPartForBlockNum(int tilenum);
+    const MFramePart *  getPartForBlockNum(int tilenum)const;
 
 //    // TreeNode interface
 public:

@@ -7,26 +7,27 @@
 
 enum struct eFramePartColumnsType : int
 {
-    Preview = 0,
-    ImgID,
-    ImgSz,
-    PaletteID,
-    XOffset,
-    YOffset,
-    VFlip,
-    HFlip,
-    Priority,
-    LastColumnsBasicMode = Priority, //So we don't count the nb columns
+    Preview = 0,                        //Preview image column
+    ImgID,                              //Image index in the image data
+    ImgSz,                              //Image resolution
+    BlockUsed,                          //Block range in use for the frame part
+    PaletteID,                          //Palette in use by the part
+    XOffset,                            //X offset of the part in screen coordinates
+    YOffset,                            //Y offset of the part in screen coordinates
+    VFlip,                              //Is the part vertically flipped
+    HFlip,                              //Is the part horizontally flipped
+    Priority,                           //Draw priority of the part in relation to the background
+    LastColumnsBasicMode = Priority,    //So we don't count the nb columns
 
     //Advanced Controls
-    TileNum,
-    Mosaic,
-    Mode,
+    BlockNum,                           //Starting block number for the frame part
+    Mosaic,                             //Whether mosaic mode is enabled for this part
+    Mode,                               //Mode for displaying this part
 
     //Rotation and scaling
-    RnS,
-    RnSParam,
-    RnSCanvasRot,
+    RnS,                                //Whether rotation and scaling is enabled or not
+    RnSParam,                           //Parameter for rotation and scaling
+    RnSCanvasRot,                       //Whether rotations in rns mode are done to the whole canvas or to the part only. (AKA "double size flag")
 
     //Research stuff
     Unk0,
@@ -76,6 +77,8 @@ public:
     */
     QImage drawPart(const Sprite * spr, bool transparencyenabled = false)const;
 
+    QPixmap drawPartToPixmap(const Sprite * spr, bool transparencyenabled = false)const;
+
 public:
     void        importPart(const fmt::step_t & part);
     fmt::step_t exportPart()const;
@@ -85,9 +88,10 @@ public:
 
     //Whether the part is a reference on another part, AKA a -1 frame
     bool isPartReference()const;
+    void setIsReference(bool isref);
 
     //Returns the length in tiles this part is
-    uint16_t getCharBlockLen()const;
+    uint16_t getBlockLen()const;
 
     //Returns the right sub-palette from the src that matches the palette number of the framepart
     QVector<QRgb> getPartPalette(const QVector<QRgb> & src)const;
@@ -101,6 +105,7 @@ public:
     //inline bool     isDoubleSize()const             {return m_data.isDoubleSize();} //Misnomer from doc, actually rotates the "canvas" with the sprite instead of rotating the sprite in the "canvas"
     inline bool     isRotAndScalingOn()const        {return m_data.isRotAndScalingOn();}
     inline uint16_t getYOffset()const               {return m_data.getYOffset();}
+    inline uint16_t getYWrappedOffset()const        {return (getYOffset() < 128)? getYOffset() + 255 : getYOffset();} //simulate wrap-around past 256 Y
 
     //Before checking VFlip and HFlip, make sure RnS isn't on!!!
     inline bool                     isVFlip()const          {return m_data.isVFlip();}
@@ -112,7 +117,7 @@ public:
 
     inline uint8_t          getPalNb()const                 {return m_data.getPalNb();}
     inline uint8_t          getPriority()const              {return m_data.getPriority();}
-    inline uint16_t         getCharBlockNum()const               {return m_data.getCharBlockNum();}
+    inline uint16_t         getBlockNum()const              {return m_data.getBlockNum();}
     inline fmt::eFrameRes   getResolutionType()const        {return m_data.getResolutionType();}
     inline fmt::frmid_t     getFrameIndex()const            {return m_data.getFrameIndex();}
     inline std::pair<uint16_t,uint16_t> GetResolution()const {return m_data.GetResolution();}
@@ -133,12 +138,15 @@ public:
 
     inline void setPalNb            (uint8_t palnb)         {m_data.setPalNb(palnb);}
     inline void setPriority         (uint8_t prio)          {m_data.setPriority(prio);}
-    inline void setTileNum          (uint16_t tnum)         {m_data.setCharBlockNum(tnum);}
+    inline void setBlockNum          (uint16_t tnum)        {m_data.setBlockNum(tnum);}
     inline void setFrameIndex       (fmt::frmid_t id)       {m_data.setFrameIndex(id);}
     inline void setResolutionType   (fmt::eFrameRes res)    {m_data.setResolutionType(res);}
 private:
     //Transform the given image according to the parameters stored in this class!
     void applyTransforms(QImage & srcimg)const;
+
+    //Obtains the image data depending on the source used by the part, with the part's palette applied
+    QImage getSrcImageData(const Sprite * spr)const;
 
 private:
     fmt::step_t  m_data;

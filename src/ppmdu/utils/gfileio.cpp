@@ -35,7 +35,7 @@ namespace utils
     {
         std::vector<uint8_t> output;
         ReadFileToByteVector(path, output);
-        return std::move( output );
+        return output;
     }
 
     /*
@@ -79,7 +79,7 @@ namespace utils
             stringlist.push_back(tmp);
         }
 
-        return std::move(stringlist);
+        return stringlist;
     }
 
     void WriteTextFileLineByLine( const std::vector<std::string> & data, const std::string & filepath, const std::locale & txtloc )

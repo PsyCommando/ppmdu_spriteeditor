@@ -79,22 +79,22 @@ public:
         getImage
             Helper method that casts the childs directly to the appropriate type.
     */
-    inline Image        * getImage(fmt::frmid_t id)     { return static_cast<Image*>(nodeChild(id)); }
-    inline const Image  * getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
-    Image               * getImageByTileNum(fmt::frmid_t tilenum);
-    const Image         * getImageByTileNum(fmt::frmid_t tilenum)const;
-    QVector<uint8_t>    getTiles(fmt::frmid_t tilenum, fmt::frmid_t len) const;
-    QVector<uint8_t>    getCharBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
+    inline Image        *   getImage(fmt::frmid_t id)     { return static_cast<Image*>(nodeChild(id)); }
+    inline const Image  *   getImage(fmt::frmid_t id)const { return static_cast<Image*>(const_cast<ImageContainer*>(this)->nodeChild(id)); }
+    Image               *   getImageByTileNum(fmt::frmid_t tilenum);
+    const Image         *   getImageByTileNum(fmt::frmid_t tilenum)const;
+    std::vector<uint8_t>    getTiles(fmt::frmid_t tilenum, fmt::frmid_t len) const;
+    std::vector<uint8_t>    getBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
 
 
     /*
      * getTileData
      *      Allow access to all the image data as if it was in tile memory
     */
-    QVector<uint8_t> getTileData(int id, int len)const;
+    std::vector<uint8_t> getTileData(int id, int len)const;
 
     //Same as above, but starts to lookup at the specified image
-    QVector<uint8_t> getTileDataFromImage(int imgidx, int id, int len)const;
+    std::vector<uint8_t> getTileDataFromImage(int imgidx, int id, int len)const;
 
     //Whether the node should be movable
     bool    nodeIsMutable()const override {return false;}

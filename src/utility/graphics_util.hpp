@@ -9,9 +9,12 @@
 int RotateHue(int hue, int shift);
 
 class Sprite;
-void FillComboBoxWithSpriteImages(const Sprite * spr, QComboBox & cmb);
+class MFrame;
+void FillComboBoxWithSpriteImages(const Sprite * spr, QComboBox & cmb, bool includerefentry = true);
 void FillComboBoxWithSpritePalettes(const Sprite * spr, QComboBox & cmb, bool is256color);
 void FillComboBoxWithFramePartPriorities(QComboBox & cmb);
+void FillComboBoxWithSpriteBlocks(const Sprite * spr, QComboBox & cmb);
+void FillComboBoxWithFrameBlocks(const Sprite * spr, const MFrame * frm, QComboBox & cmb);
 
 
 extern const char * MinusOneImgRes;

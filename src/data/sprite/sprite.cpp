@@ -5,6 +5,7 @@
 #include <src/ppmdu/fmts/wa_sprite.hpp>
 #include <src/data/sprite/sprite_container.hpp>
 #include <src/ui/errorhelper.hpp>
+#include <src/utility/palette_helpers.hpp>
 
 const QString ElemName_Sprite = "Sprite";
 
@@ -190,7 +191,17 @@ int Sprite::nodeChildCount() const
 
 bool Sprite::canParse()const
 {
-    return m_raw.size() != 0;
+    return m_raw.size() != 0 && !hasErrored();
+}
+
+bool Sprite::hasErrored()const
+{
+    return m_bErrored;
+}
+
+void Sprite::setErrored(bool berrored)
+{
+    m_bErrored = berrored;
 }
 
 void Sprite::ParseSpriteData()
@@ -229,7 +240,7 @@ void Sprite::ParseSpriteData()
     {
         std::stringstream sstr;
         sstr << "Sprite::ParseSpriteData(): Exception caught parsing sprite #" << nodeIndex();
-        std::throw_with_nested(std::runtime_error(sstr.str()));
+        std::throw_with_nested(std::runtime_error(std::string(sstr.str())));
     }
 
     try
@@ -240,7 +251,7 @@ void Sprite::ParseSpriteData()
     {
         std::stringstream sstr;
         sstr << "Sprite::ParseSpriteData(): Exception caught generating preview for sprite #" << nodeIndex();
-        std::throw_with_nested(std::runtime_error(sstr.str()));
+        std::throw_with_nested(std::runtime_error(std::string(sstr.str())));
     }
 }
 
@@ -309,12 +320,14 @@ void Sprite::DumpSpriteToFile(const QString & fpath)
 
 QPixmap &Sprite::MakePreviewPalette()
 {
-    return (m_previewPal = utils::PaintPaletteToPixmap(getPalette()));
+    return (m_previewPal = const_cast<const Sprite*>(this)->MakePreviewPalette());
 }
 
 QPixmap Sprite::MakePreviewPalette()const
 {
-    return utils::PaintPaletteToPixmap(getPalette());
+    if(hasErrored())
+        return QPixmap();
+    return PaintPaletteToPixmap(getPalette());
 }
 
 const QPixmap & Sprite::getCachedPreviewPalette()const
@@ -324,19 +337,19 @@ const QPixmap & Sprite::getCachedPreviewPalette()const
 
 QPixmap &Sprite::MakePreviewFrame(bool transparency)
 {
-    if(hasImageData())
-    {
-        if(m_frmcnt.nodeHasChildren())
-            return m_previewImg = QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
-        else if(!m_imgcnt.empty())
-            return m_previewImg = QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette()));
-    }
-    return m_previewImg;
+//    if(hasImageData() && !hasErrored())
+//    {
+//        if(m_frmcnt.nodeHasChildren())
+//            return m_previewImg = QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
+//        else if(!m_imgcnt.empty())
+//            return m_previewImg = QPixmap::fromImage(m_imgcnt.getImage(0)->makeImage(getPalette()));
+//    }
+    return m_previewImg = const_cast<const Sprite*>(this)->MakePreviewFrame(transparency);
 }
 
 QPixmap Sprite::MakePreviewFrame(bool transparency)const
 {
-    if(hasImageData())
+    if(hasImageData() && !hasErrored())
     {
         if(m_frmcnt.nodeHasChildren())
             return QPixmap::fromImage(m_frmcnt.getFrame(0)->AssembleFrame(0,0, QRect(), nullptr, transparency, this));
@@ -373,14 +386,14 @@ const Image * Sprite::getImageByTileNum(fmt::frmid_t tilenum)const
     return const_cast<Sprite*>(this)->getImageByTileNum(tilenum);
 }
 
-QVector<uint8_t> Sprite::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const
+std::vector<uint8_t> Sprite::getTiles(fmt::frmid_t tilenum, fmt::frmid_t len)const
 {
     return m_imgcnt.getTiles(tilenum, len);
 }
 
-QVector<uint8_t> Sprite::getCharBlocks(fmt::frmid_t num, fmt::frmid_t len)const
+std::vector<uint8_t> Sprite::getBlocks(fmt::frmid_t num, fmt::frmid_t len)const
 {
-    return m_imgcnt.getCharBlocks(num, len);
+    return m_imgcnt.getBlocks(num, len);
 }
 
 const EffectOffsetSet* Sprite::getAttachMarkers(fmt::frmid_t frmidx)const
@@ -572,9 +585,17 @@ fmt::frmid_t Sprite::importImageParts(const imgparts_t & img)
         fmt::ImageDB::img_t newimgdata;
         newimgdata.unk2 = 0;
         newimgdata.unk14 = 0;
-        //All image data is stored as 8bpp
-        newimgdata.data = utils::ImgToRaw(part.second);
-        newimg->importImage8bpp(newimgdata, part.second.width(), part.second.height(), false);
+
+        if(is256Colors())
+        {
+            newimgdata.data = utils::ImgToRaw8bpp(part.second);
+            newimg->importImage8bpp(newimgdata, part.second.width(), part.second.height());
+        }
+        else
+        {
+            newimgdata.data = utils::ImgToRaw4bpp(part.second);
+            newimg->importImage4bpp(newimgdata, part.second.width(), part.second.height());
+        }
 
         MFramePart * newpart = newfrm->appendNewFramePart();
         newpart->setColorPal256(is256Colors());
@@ -610,9 +631,9 @@ bool Sprite::hasUnsavedChanges()const
     return !hasRawData(); //#FIXME: Maybe a better system should be implemented since loaded sprites will always have raw data
 }
 
-uint16_t Sprite::getMaxTileUsage()const
+uint16_t Sprite::getMaxBlocksUsage()const
 {
-    return m_frmcnt.getMaxTileUsage();
+    return m_frmcnt.getMaxBlocksUsage();
 }
 
 QPixmap Sprite::MakePreviewSubPalette(int subpalid)const
@@ -631,5 +652,5 @@ QPixmap Sprite::MakePreviewSubPalette(int subpalid)const
             subpal.push_back(QRgb());
         }
     }
-    return  utils::PaintPaletteToPixmap(subpal);
+    return  PaintPaletteToPixmap(subpal);
 }

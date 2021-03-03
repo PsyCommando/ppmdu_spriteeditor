@@ -294,6 +294,7 @@ void MainWindow::LoadContainer(const QString &path)
             qInfo() <<"MainWindow::LoadContainer() : " <<path <<"!\n";
             manager.OpenContainer(path);
             qInfo() <<"\nLoaded!\n";
+            ProgramSettings::Instance().setLastProjectPath(manager.getContainerParentDir());
             m_lastSavePath = path;
             SetupUIForNewContainer(manager.getContainer());
         }
@@ -321,7 +322,10 @@ void MainWindow::SaveContainer(const QString &path)
         manager.SaveContainer(path);
         updateActions();
         if(manager.getContainer())
+        {
             setWindowFilePath(manager.getContainer()->GetContainerSrcPath());
+            ProgramSettings::Instance().setLastProjectPath(manager.getContainerParentDir());
+        }
     }
     catch(const std::exception & e)
     {
@@ -335,14 +339,15 @@ void MainWindow::SaveAs(const QString &path)
 {
     try
     {
-        ContentManager & sprman = ContentManager::Instance();
+        ContentManager & manager = ContentManager::Instance();
         if (!path.isEmpty())
         {
             qInfo() <<"Saving file " <<path <<"!\n";
-            int wrotelen = sprman.SaveContainer(path);
+            int wrotelen = manager.SaveContainer(path);
             ShowStatusMessage( QString(tr("Wrote %1 bytes!")).arg(wrotelen) );
             qInfo() <<path <<" saved!\n";
             m_lastSavePath = path;
+            ProgramSettings::Instance().setLastProjectPath(manager.getContainerParentDir());
         }
         else
             qWarning() << "Got an empty path!\n";
@@ -453,11 +458,8 @@ void MainWindow::updateActions()
     }
 }
 
-void MainWindow::addMultiItemActions(const QString & itemname)
+void MainWindow::addMultiItemActions(const QString & /*itemname*/)
 {
-//    m_pActionAddCnt = ui->menu_Edit->addAction(QString(tr("Add %1..")).arg(itemname),      this, &MainWindow::OnActionAddTopItem);
-//    m_pActionRemCnt = ui->menu_Edit->addAction(QString(tr("Remove %1..")).arg(itemname),   this, &MainWindow::OnActionRemTopItem);
-
     //Add container menu
     ContentManager & manager = ContentManager::Instance();
     BaseContainer * cnt = manager.getContainer();
@@ -468,11 +470,6 @@ void MainWindow::addMultiItemActions(const QString & itemname)
 
 void MainWindow::remMultiItemActions()
 {
-//    ui->menu_Edit->removeAction(m_pActionAddCnt.data());
-//    ui->menu_Edit->removeAction(m_pActionRemCnt.data());
-//    m_pActionAddCnt = nullptr;
-//    m_pActionRemCnt = nullptr;
-
     if(m_pContainerMenuAction)
         ui->menuBar->removeAction(m_pContainerMenuAction);
     if(m_pContainerMenu)

@@ -59,6 +59,7 @@ public:
 
     inline unsigned int getTimeElapsed()const{return m_tickselapsed;}
 
+    //Get the area within which the frames for this animation move/appear
     inline QRect getTravelRange()const {return m_frameTraverse;}
 
 // QGraphicsItem interface
