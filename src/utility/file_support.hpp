@@ -71,5 +71,13 @@ QString GetXMLSaveFile(const QString & title, QWidget * parent = nullptr);
 
 //Helper to obtain the path file dialogs should open at whenever one is opened
 QString GetFileDialogDefaultPath();
+QString GetFileDialogDefaultExportPath();
+QString GetFileDialogDefaultImportPath();
+
+//Helper to update the path we last used for a project, export, or import operation in the file dialog!
+// Save the value to the program settins and make sure the last past can be restored in the file dialog.
+void UpdateFileDialogProjectPath(const QString & newpath);
+void UpdateFileDialogExportPath(const QString & newpath);
+void UpdateFileDialogImportPath(const QString & newpath);
 
 #endif // FILE_SUPPORT_HPP

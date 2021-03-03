@@ -30,6 +30,8 @@ namespace settings_consts
 
     extern const QString SETTING_ADVANCED_MODE;
     extern const QString SETTING_LAST_PROJECT_PATH;
+    extern const QString SETTING_LAST_EXPORT_PATH;
+    extern const QString SETTING_LAST_IMPORT_PATH;
 };
 
 /*
@@ -63,6 +65,12 @@ public:
     QString lastProjectPath();
     void setLastProjectPath(QString path);
 
+    QString lastExportPath();
+    void setLastExportPath(QString path);
+
+    QString lastImportPath();
+    void setLastImportPath(QString path);
+
 public slots:
     void WriteSettings(const QString & groupname, std::function<void(QSettings&)> writefun);
     void ReadSettings (const QString & groupname, std::function<void(QSettings&)> readfun);
@@ -73,6 +81,9 @@ public slots:
 private:
     bool CheckSettings()const;
     bool CheckKeyPresent(const QString & key)const;
+
+    QVariant getGeneralSetting(const QString & key, const QVariant & defval);
+    QVariant getUserSetting(const QString & key, const QVariant & defval);
 private:
     QSettings m_settings;
 };

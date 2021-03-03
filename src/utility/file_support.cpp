@@ -287,12 +287,48 @@ std::optional<QSize> GetNextBestImgPartResolution(QSize srcres)
 //
 QString GetFileDialogDefaultPath()
 {
+    const QString lastpath = ProgramSettings::Instance().lastProjectPath();
+    if(!lastpath.isNull())
+        return lastpath;
     ContentManager & manager = ContentManager::Instance();
     if(manager.isContainerLoaded())
         return manager.getContainerParentDir();
-    ProgramSettings & settings = ProgramSettings::Instance();
-    const QString lastpath = settings.lastProjectPath();
+    return QApplication::applicationDirPath();
+}
+
+QString GetFileDialogDefaultExportPath()
+{
+    const QString lastpath = ProgramSettings::Instance().lastExportPath();
     if(!lastpath.isNull())
         return lastpath;
-    return QApplication::applicationDirPath();
+    return GetFileDialogDefaultPath();
+}
+
+QString GetFileDialogDefaultImportPath()
+{
+    const QString lastpath = ProgramSettings::Instance().lastImportPath();
+    if(!lastpath.isNull())
+        return lastpath;
+    return GetFileDialogDefaultPath();
+}
+
+void UpdateFileDialogProjectPath(const QString &newpath)
+{
+    QDir fdir = QFileInfo(newpath).absoluteDir();
+    if(fdir.exists())
+        ProgramSettings::Instance().setLastProjectPath(fdir.absolutePath());
+}
+
+void UpdateFileDialogExportPath(const QString &newpath)
+{
+    QDir fdir = QFileInfo(newpath).absoluteDir();
+    if(fdir.exists())
+        ProgramSettings::Instance().setLastExportPath(fdir.absolutePath());
+}
+
+void UpdateFileDialogImportPath(const QString &newpath)
+{
+    QDir fdir = QFileInfo(newpath).absoluteDir();
+    if(fdir.exists())
+        ProgramSettings::Instance().setLastImportPath(fdir.absolutePath());
 }

@@ -8,7 +8,6 @@
 #include <src/data/sprite/models/sprite_props_delegate.hpp>
 #include <src/utility/file_support.hpp>
 #include <src/utility/palette_helpers.hpp>
-
 #include <QFileDialog>
 
 TabProperties::TabProperties(QWidget *parent) :
@@ -112,12 +111,12 @@ void TabProperties::on_btnImportPalette_clicked()
     ePaletteDumpType ftype;
     QString filename = QFileDialog::getOpenFileName(this,
                                                     QString(tr("Import Palette File")),
-                                                    GetFileDialogDefaultPath(),
+                                                    GetFileDialogDefaultImportPath(),
                                                     AllSupportedImportPaletteFilesFilter(),
                                                     &selectedfilter );
     if(filename.isNull())
         return;
-
+    UpdateFileDialogImportPath(filename);
     ftype = FilterStringToPaletteType(selectedfilter);
 
     try
@@ -156,12 +155,13 @@ void TabProperties::on_btnExportPalette_clicked()
         qInfo("MainWindow::on_btnExportPalette_clicked(): Exporting palette!");
         QString filename = QFileDialog::getSaveFileName(this,
                             QString(tr("Save Palette Dump As")),
-                            GetFileDialogDefaultPath(),
+                            GetFileDialogDefaultExportPath(),
                             AllSupportedExportPaletteFilesFilter(),
                             &selectedfilter);
 
         if(filename.isNull())
             return;
+        UpdateFileDialogExportPath(filename);
 
         qDebug() << QString("Palette Length to export is %1").arg(spr->getPalette().size());
 

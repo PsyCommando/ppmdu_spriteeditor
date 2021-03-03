@@ -15,6 +15,7 @@
 #include <src/data/sprite/imagescontainer.hpp>
 #include <src/utility/file_support.hpp>
 #include <src/data/sprite/models/images_list_model.hpp>
+#include <src/utility/file_support.hpp>
 
 const QString TabImages::IMG_FORMAT_IO = "PNG";
 
@@ -280,10 +281,11 @@ void TabImages::on_btnExport_clicked()
 
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image(s)"),
-                        GetFileDialogDefaultPath(),
+                        GetFileDialogDefaultExportPath(),
                         AllSupportedImagesFilesFilter());
     if(filename.isNull())
         return;
+    UpdateFileDialogExportPath(filename);
 
     int successcnt = 0;
     QList<QString> failed;
@@ -323,9 +325,10 @@ void TabImages::on_btnExport_clicked()
 
 void TabImages::on_btnImport_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), GetFileDialogDefaultPath(), AllSupportedImagesFilesFilter());
+    QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Import images.."), GetFileDialogDefaultImportPath(), AllSupportedImagesFilesFilter());
     if(filenames.isEmpty())
         return;
+    UpdateFileDialogImportPath(filenames.back());
 
     for(int i = 0; i < filenames.size(); ++i)
     {

@@ -294,7 +294,7 @@ void MainWindow::LoadContainer(const QString &path)
             qInfo() <<"MainWindow::LoadContainer() : " <<path <<"!\n";
             manager.OpenContainer(path);
             qInfo() <<"\nLoaded!\n";
-            ProgramSettings::Instance().setLastProjectPath(manager.getContainerParentDir());
+            UpdateFileDialogProjectPath(manager.getContainerParentDir());
             m_lastSavePath = path;
             SetupUIForNewContainer(manager.getContainer());
         }
@@ -324,7 +324,7 @@ void MainWindow::SaveContainer(const QString &path)
         if(manager.getContainer())
         {
             setWindowFilePath(manager.getContainer()->GetContainerSrcPath());
-            ProgramSettings::Instance().setLastProjectPath(manager.getContainerParentDir());
+            UpdateFileDialogProjectPath(manager.getContainerParentDir());
         }
     }
     catch(const std::exception & e)
@@ -347,7 +347,7 @@ void MainWindow::SaveAs(const QString &path)
             ShowStatusMessage( QString(tr("Wrote %1 bytes!")).arg(wrotelen) );
             qInfo() <<path <<" saved!\n";
             m_lastSavePath = path;
-            ProgramSettings::Instance().setLastProjectPath(manager.getContainerParentDir());
+            UpdateFileDialogProjectPath(manager.getContainerParentDir());
         }
         else
             qWarning() << "Got an empty path!\n";
@@ -367,6 +367,8 @@ void MainWindow::ExportContainer(const QString &path, const QString &exportType)
         ContentManager & manager = ContentManager::Instance();
         manager.ExportContainer(path, exportType);
         updateActions();
+        QFileInfo finf(path);
+        UpdateFileDialogExportPath(finf.dir().absolutePath());
     }
     catch(const std::exception & e)
     {
@@ -383,6 +385,8 @@ void MainWindow::ImportContainer(const QString &path)
         ContentManager & manager = ContentManager::Instance();
         manager.ImportContainer(path);
         SetupUIForNewContainer(manager.getContainer());
+        QFileInfo finf(path);
+        UpdateFileDialogImportPath(finf.dir().absolutePath());
     }
     catch(const std::exception & e)
     {
@@ -573,8 +577,6 @@ void MainWindow::on_action_Quit_triggered()
     QApplication::instance()->exit();
     qDebug() <<"After exit call!\n";
 }
-
-
 
 void MainWindow::on_action_Save_triggered()
 {

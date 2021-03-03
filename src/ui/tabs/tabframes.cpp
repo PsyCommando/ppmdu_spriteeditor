@@ -465,11 +465,12 @@ void TabFrames::on_btnFrmExport_clicked()
 
     QString filename = QFileDialog::getSaveFileName(this,
                         tr("Export Image"),
-                        GetFileDialogDefaultPath(),
+                        GetFileDialogDefaultExportPath(),
                         AllSupportedImagesFilesFilter());
 
     if(filename.isNull())
         return;
+    UpdateFileDialogExportPath(filename);
 
     QImage img(pfrm->AssembleFrame(0, 0, pfrm->calcFrameBounds(), nullptr, true, currentSprite()));
     if(img.save(filename))

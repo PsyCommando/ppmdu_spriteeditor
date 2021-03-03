@@ -21,12 +21,15 @@ namespace settings_consts
     //
     const QString SETTING_ADVANCED_MODE     {"advanced_mode"};
     const QString SETTING_LAST_PROJECT_PATH {"last_project_path"};
+    const QString SETTING_LAST_EXPORT_PATH  {"last_export_path"};
+    const QString SETTING_LAST_IMPORT_PATH  {"last_import_path"};
 
     const QString SETTING_EDITOR_ZOOM_DEF   {"editor_zoom_default"};
     const QString SETTING_EDITOR_ZOOM_INCR  {"editor_zoom_increment"};
 
     const QString SETTING_PREVIEW_FRMRATE   {"preview_framerate"};
     const QString SETTING_PREVIEW_AUTO      {"preview_autoplay"};
+
 };
 
 const QString ProgramSettings::UserSettingsGroupName    {"User"};
@@ -94,15 +97,30 @@ bool ProgramSettings::CheckKeyPresent(const QString &key) const
     return bkeypresent;
 }
 
-bool ProgramSettings::isAdvancedMode()
+QVariant ProgramSettings::getGeneralSetting(const QString &key, const QVariant &defval)
 {
     using namespace settings_consts;
     CheckSettings();
     m_settings.beginGroup(GeneralSettingsGroupName);
-    if(!CheckKeyPresent(SETTING_ADVANCED_MODE))
-        m_settings.setValue(SETTING_ADVANCED_MODE, DV_ADVANCED_MODE);
-    bool advanced = m_settings.value(SETTING_ADVANCED_MODE, DV_ADVANCED_MODE).toBool();
+    QVariant var = m_settings.value(key, defval);
     m_settings.endGroup();
+    return var;
+}
+
+QVariant ProgramSettings::getUserSetting(const QString &key, const QVariant &defval)
+{
+    using namespace settings_consts;
+    CheckSettings();
+    m_settings.beginGroup(UserSettingsGroupName);
+    QVariant var = m_settings.value(key, defval);
+    m_settings.endGroup();
+    return var;
+}
+
+bool ProgramSettings::isAdvancedMode()
+{
+    using namespace settings_consts;
+    bool advanced = getGeneralSetting(SETTING_ADVANCED_MODE, DV_ADVANCED_MODE).toBool();
     return advanced;
 }
 
@@ -118,11 +136,7 @@ void ProgramSettings::setAdvancedMode(bool bon)
 bool ProgramSettings::isAutoplayEnabled()
 {
     using namespace settings_consts;
-    CheckSettings();
-    m_settings.beginGroup(GeneralSettingsGroupName);
-    CheckKeyPresent(SETTING_PREVIEW_AUTO);
-    bool autop = m_settings.value(SETTING_PREVIEW_AUTO, DV_PREVIEW_AUTO).toBool();
-    m_settings.endGroup();
+    bool autop = getGeneralSetting(SETTING_PREVIEW_AUTO, DV_PREVIEW_AUTO).toBool();
     return autop;
 }
 
@@ -138,11 +152,7 @@ void ProgramSettings::setAutoplayEnabled(bool bon)
 int ProgramSettings::previewFramerate()
 {
     using namespace settings_consts;
-    CheckSettings();
-    m_settings.beginGroup(GeneralSettingsGroupName);
-    CheckKeyPresent(SETTING_PREVIEW_FRMRATE);
-    int fpt = m_settings.value(SETTING_PREVIEW_FRMRATE, DV_PREVIEW_FRAMERATE).toInt();
-    m_settings.endGroup();
+    int fpt = getGeneralSetting(SETTING_PREVIEW_FRMRATE, DV_PREVIEW_FRAMERATE).toInt();
     return fpt;
 }
 
@@ -158,11 +168,7 @@ void ProgramSettings::setPreviewFramerate(int frmpt)
 int ProgramSettings::editorDefaultZoom()
 {
     using namespace settings_consts;
-    CheckSettings();
-    m_settings.beginGroup(GeneralSettingsGroupName);
-    CheckKeyPresent(SETTING_EDITOR_ZOOM_DEF);
-    int zoom = m_settings.value(SETTING_EDITOR_ZOOM_DEF, DV_EDITOR_ZOOM_DEF).toInt();
-    m_settings.endGroup();
+    int zoom = getGeneralSetting(SETTING_EDITOR_ZOOM_DEF, DV_EDITOR_ZOOM_DEF).toInt();
     return zoom;
 }
 
@@ -178,11 +184,7 @@ void ProgramSettings::setEditorDefaultZoom(int percent)
 int ProgramSettings::editorZoomIncrements()
 {
     using namespace settings_consts;
-    CheckSettings();
-    m_settings.beginGroup(GeneralSettingsGroupName);
-    CheckKeyPresent(SETTING_EDITOR_ZOOM_INCR);
-    int zoomincr = m_settings.value(SETTING_EDITOR_ZOOM_INCR, DV_EDITOR_ZOOM_INCR).toInt();
-    m_settings.endGroup();
+    int zoomincr = getGeneralSetting(SETTING_EDITOR_ZOOM_INCR, DV_EDITOR_ZOOM_INCR).toInt();
     return zoomincr;
 }
 
@@ -198,11 +200,7 @@ void ProgramSettings::setEditorZoomIncrements(int percent)
 QString ProgramSettings::lastProjectPath()
 {
     using namespace settings_consts;
-    CheckSettings();
-    m_settings.beginGroup(UserSettingsGroupName);
-    CheckKeyPresent(SETTING_LAST_PROJECT_PATH);
-    QString lastpath = m_settings.value(SETTING_LAST_PROJECT_PATH, "").toString();
-    m_settings.endGroup();
+    QString lastpath = getUserSetting(SETTING_LAST_PROJECT_PATH, "").toString();
     return lastpath;
 }
 
@@ -211,6 +209,38 @@ void ProgramSettings::setLastProjectPath(QString path)
     using namespace settings_consts;
     m_settings.beginGroup(UserSettingsGroupName);
     m_settings.setValue(SETTING_LAST_PROJECT_PATH, path);
+    m_settings.endGroup();
+    Sync();
+}
+
+QString ProgramSettings::lastExportPath()
+{
+    using namespace settings_consts;
+    QString lastpath = getUserSetting(SETTING_LAST_EXPORT_PATH, "").toString();
+    return lastpath;
+}
+
+void ProgramSettings::setLastExportPath(QString path)
+{
+    using namespace settings_consts;
+    m_settings.beginGroup(UserSettingsGroupName);
+    m_settings.setValue(SETTING_LAST_EXPORT_PATH, path);
+    m_settings.endGroup();
+    Sync();
+}
+
+QString ProgramSettings::lastImportPath()
+{
+    using namespace settings_consts;
+    QString lastpath = getUserSetting(SETTING_LAST_IMPORT_PATH, "").toString();
+    return lastpath;
+}
+
+void ProgramSettings::setLastImportPath(QString path)
+{
+    using namespace settings_consts;
+    m_settings.beginGroup(UserSettingsGroupName);
+    m_settings.setValue(SETTING_LAST_IMPORT_PATH, path);
     m_settings.endGroup();
     Sync();
 }
