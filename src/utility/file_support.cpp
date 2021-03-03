@@ -60,7 +60,7 @@ protected:
         for(const auto & entry : htable)
         {
             if(supportedext.size() > 0)
-                supportedext = QString("%1, *.%2").arg(supportedext).arg(htable.key(entry));
+                supportedext = QString("%1 *.%2").arg(supportedext).arg(htable.key(entry));
             else
                 supportedext = QString("*.%1").arg(htable.key(entry));
         }
