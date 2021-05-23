@@ -490,56 +490,6 @@ BaseContainer *MainWindow::getContainer()
     return ContentManager::Instance().getContainer();
 }
 
-//void MainWindow::OnActionAddTopItem()
-//{
-//    try
-//    {
-//        qInfo() <<"MainWindow::OnActionAddSprite(): Adding sprite!\n";
-//        ContentManager & manager = ContentManager::Instance();
-
-//        //Insert at the end if nothing selected, or at the selected item otherwise
-//        TreeNode * topnode = manager.getOwnerNode(m_curItem);
-//        int insertpos = 0;
-//        if(!m_curItem.isValid() || !topnode)
-//            insertpos = manager.rowCount();
-//        else
-//            insertpos = topnode->nodeIndex();
-//        manager.insertRow(insertpos);
-//    }
-//    catch(const std::exception & e)
-//    {
-//        qWarning() << "MainWindow::OnActionAddTopItem():Adding a new item failed with exception: \'" << e.what() << "\'";
-//    }
-//}
-
-//void MainWindow::OnActionRemTopItem()
-//{
-//    try
-//    {
-//        if(!m_curItem.isValid())
-//        {
-//            Q_ASSERT(false);
-//            return;
-//        }
-//        qInfo() <<"MainWindow::OnActionRemSprite(): Removing sprite!\n";
-//        ContentManager & manager = ContentManager::Instance();
-
-//        //Insert at the end if nothing selected, or at the selected item otherwise
-//        TreeNode * topnode = manager.getOwnerNode(m_curItem);
-
-//        if(!topnode)
-//        {
-//            Q_ASSERT(false);
-//            return ;
-//        }
-//        manager.removeRow(topnode->nodeIndex());
-//    }
-//    catch(const std::exception & e)
-//    {
-//        qWarning() << "MainWindow::OnActionAddTopItem():Adding a new item failed with exception: \'" << e.what() << "\'";
-//    }
-//}
-
 QPixmap MainWindow::RenderNoImageSvg()
 {
     QImage image(QString(":/imgs/resources/imgs/noimg.png"));
@@ -947,8 +897,8 @@ void MainWindow::OnRowInserted(const QModelIndex &parent, int /*first*/, int las
 
 void MainWindow::selectTreeViewNode(const TreeNode * node)
 {
-    const TreeNodeModel * pmodel = static_cast<const TreeNodeModel *>(ui->tv_sprcontent->model());
-    QModelIndex index = pmodel->indexOfChildNode(node);
+    ContentManager & manager = ContentManager::Instance();
+    QModelIndex index = manager.modelIndexOf(node);
     selectTreeViewNode(index);
 }
 
@@ -956,6 +906,40 @@ void MainWindow::selectTreeViewNode(const QModelIndex &index)
 {
     m_curItem = index;
     ui->tv_sprcontent->setCurrentIndex(m_curItem);
+}
+
+void MainWindow::openTreeViewNode(const TreeNode *node)
+{
+    if(!node)
+    {
+        qWarning() << "MainWindow::openTreeViewNode(): Tried to display tab for a null pointer!";
+        return;
+    }
+    selectTreeViewNode(node);
+    DisplayTabForElement(m_curItem);
+    {
+        QSignalBlocker blk(ui->tv_sprcontent);
+        if(!ui->tv_sprcontent->isExpanded(m_curItem.parent()))
+            ui->tv_sprcontent->expand(m_curItem.parent());
+    }
+    ui->tv_sprcontent->viewport()->update();
+}
+
+void MainWindow::openTreeViewNode(const QModelIndex &index)
+{
+    if(!index.isValid())
+    {
+        qWarning() << "MainWindow::openTreeViewNode(): Tried to display tab for bad model index!";
+        return;
+    }
+    selectTreeViewNode(index);
+    DisplayTabForElement(index);
+    {
+        QSignalBlocker blk(ui->tv_sprcontent);
+        if(!ui->tv_sprcontent->isExpanded(index.parent()))
+            ui->tv_sprcontent->expand(index.parent());
+    }
+    ui->tv_sprcontent->viewport()->update();
 }
 
 void MainWindow::on_actionSprite_Sheet_Auto_Importer_triggered()

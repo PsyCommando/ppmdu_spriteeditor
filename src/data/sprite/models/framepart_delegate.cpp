@@ -78,7 +78,7 @@ QWidget *MFramePartDelegate::createEditor(QWidget *parent, const QStyleOptionVie
         pedit = makeImgSelect(parent, index);
         break;
     case eFramePartColumnsType::BlockNum:
-        pedit = makeTileIdSelect(parent, index.row());
+        pedit = makeBlockNumSelect(parent, index);
         break;
     case eFramePartColumnsType::PaletteID:
         pedit = makePaletteIDSelect(parent, index);
@@ -183,6 +183,10 @@ void MFramePartDelegate::setEditorData(QWidget *editor, const QModelIndex &index
         }
         case eFramePartColumnsType::BlockNum:
         {
+            //Keep in mind that, blocknums can go to really high numbers on specific sprite types. Numbers that don't make sense for block nums
+
+
+            Q_ASSERT(false); //Need to fix this since we wanna use a combobox for looking up blocks instead of just numbers
             QSpinBox *ptid = static_cast<QSpinBox*>(editor);
             Q_ASSERT(ptid);
             ptid->setValue(part->getBlockNum());
@@ -236,6 +240,7 @@ void MFramePartDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
         case eFramePartColumnsType::PaletteID:
         case eFramePartColumnsType::Mode:
         case eFramePartColumnsType::Priority:
+        case eFramePartColumnsType::BlockRange:
         {
             QComboBox *pcombo = static_cast<QComboBox*>(editor);
             Q_ASSERT(pcombo);
@@ -292,12 +297,28 @@ QWidget *MFramePartDelegate::makePrioritySelect(QWidget *parent, int /*row*/) co
     return pselect;
 }
 
-QWidget *MFramePartDelegate::makeTileIdSelect(QWidget *parent, int /*row*/) const
+//QWidget *MFramePartDelegate::makeBlockNumSelect(QWidget *parent, const QModelIndex & index) const
+//{
+//    const TreeNodeModel * model = static_cast<const TreeNodeModel*>(index.model());
+//    const Sprite * pspr = model->getOwnerSprite();
+//    QComboBox    *pselect = new QComboBox(parent);
+//    if(pspr->type() == fmt::eSpriteType::Character)
+//        FillComboBoxWithFrameBlocks(pspr, static_cast<const MFrame*>(index.parent().internalPointer()), *pselect);
+//    else
+//        FillComboBoxWithSpriteBlocks(pspr, *pselect);
+//    return pselect;
+//}
+
+QWidget *MFramePartDelegate::makeBlockRangeSelect(QWidget *parent, const QModelIndex & index) const
 {
-    QSpinBox *ptileid = new QSpinBox(parent);
-    ptileid->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
-    ptileid->setRange(0, fmt::step_t::TILENUM_MAX);
-    return ptileid;
+    const TreeNodeModel * model = static_cast<const TreeNodeModel*>(index.model());
+    const Sprite * pspr = model->getOwnerSprite();
+    QComboBox    *pselect = new QComboBox(parent);
+    if(pspr->type() == fmt::eSpriteType::Character)
+        FillComboBoxWithFrameBlocks(pspr, static_cast<const MFrame*>(index.parent().internalPointer()), *pselect);
+    else
+        FillComboBoxWithSpriteBlocks(pspr, *pselect);
+    return pselect;
 }
 
 QWidget *MFramePartDelegate::makeModeSelect(QWidget *parent, int /*row*/) const

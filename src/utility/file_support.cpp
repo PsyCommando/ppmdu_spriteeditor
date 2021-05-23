@@ -88,10 +88,9 @@ const QString FileExtTXTPAL = QString::fromStdString(utils::TEXT_PAL_Filext);
 //=================================================================
 // Misc File Filters
 //=================================================================
-const QString XMLFileFilter = "XML files (*.xml)";
-
 const QString &AllSupportedXMLFileFilter()
 {
+    static const QString XMLFileFilter = "XML files (*.xml)";
     return XMLFileFilter;
 }
 
@@ -152,7 +151,7 @@ const QString &AllSupportedGameSpritesFileFilter()
 const QMap<QString, QString> SupportedImageFilesFilters
 {
     {FileExtPNG, "PNG Image File (*.png)"},
-//    {FileExtBMP, "Bitmap Image File (*.bmp)"},
+    {FileExtBMP, "Bitmap Image File (*.bmp)"},
 };
 
 class all_supported_images_filetypes : public SupportedFilters<all_supported_images_filetypes>
@@ -177,6 +176,8 @@ const QMap<QString, QString> SupportedExportPaletteFilesFilters
     {FileExtGPL,    "GIMP GPL Palette (*.gpl)"},
     {FileExtPAL,    "Microsoft RIFF Palette (*.pal)"},
     {FileExtTXTPAL, "Text File Hex Color (*.txt)"},
+    {FileExtPNG,    SupportedImageFilesFilters[FileExtPNG]},
+    {FileExtBMP,    SupportedImageFilesFilters[FileExtBMP]},
 };
 
 ePaletteDumpType FilterStringToPaletteType( const QString & selectedfilter )
@@ -188,9 +189,9 @@ ePaletteDumpType FilterStringToPaletteType( const QString & selectedfilter )
         fty = ePaletteDumpType::TEXT_Pal;
     else if(selectedfilter == SupportedExportPaletteFilesFilters[FileExtGPL])
         fty = ePaletteDumpType::GIMP_PAL;
-    else if(selectedfilter == SupportedImageFilesFilters[FileExtPNG])
+    else if(selectedfilter == SupportedExportPaletteFilesFilters[FileExtPNG])
         fty = ePaletteDumpType::PNG_PAL;
-    else if(selectedfilter == SupportedImageFilesFilters[FileExtBMP])
+    else if(selectedfilter == SupportedExportPaletteFilesFilters[FileExtBMP])
         fty = ePaletteDumpType::BMP_PAL;
     Q_ASSERT(fty < ePaletteDumpType::INVALID);
     return fty;
@@ -240,22 +241,22 @@ const QString &AllSupportedExportPaletteFilesFilter()
 
 QStringList GetImagesPathsFromDialog(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getOpenFileNames(parent, title, GetFileDialogDefaultPath(), AllSupportedImagesFilesFilter());
+    return QFileDialog::getOpenFileNames(parent, title, GetFileDialogDefaultImportPath(), AllSupportedImagesFilesFilter());
 }
 
 QString GetImagePathFromDialog(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getOpenFileName(parent, title, GetFileDialogDefaultPath(), AllSupportedImagesFilesFilter());
+    return QFileDialog::getOpenFileName(parent, title, GetFileDialogDefaultImportPath(), AllSupportedImagesFilesFilter());
 }
 
 QString GetXMLOpenFile(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getOpenFileName(parent, title, GetFileDialogDefaultPath(), XMLFileFilter);
+    return QFileDialog::getOpenFileName(parent, title, GetFileDialogDefaultImportPath(), AllSupportedXMLFileFilter());
 }
 
 QString GetXMLSaveFile(const QString &title, QWidget *parent)
 {
-    return QFileDialog::getSaveFileName(parent, title, GetFileDialogDefaultPath(), XMLFileFilter);
+    return QFileDialog::getSaveFileName(parent, title, GetFileDialogDefaultExportPath(), AllSupportedXMLFileFilter());
 }
 
 bool IsImageResolutionValid(QSize imgres)
@@ -314,21 +315,33 @@ QString GetFileDialogDefaultImportPath()
 
 void UpdateFileDialogProjectPath(const QString &newpath)
 {
-    QDir fdir = QFileInfo(newpath).absoluteDir();
-    if(fdir.exists())
-        ProgramSettings::Instance().setLastProjectPath(fdir.absolutePath());
+    const QFileInfo finf = newpath;
+    if(!finf.exists())
+        return;
+    const QString lastprojpath = (finf.isDir())?
+                                    finf.absolutePath() :
+                                    finf.absoluteDir().absolutePath();
+    ProgramSettings::Instance().setLastProjectPath(lastprojpath);
 }
 
 void UpdateFileDialogExportPath(const QString &newpath)
 {
-    QDir fdir = QFileInfo(newpath).absoluteDir();
-    if(fdir.exists())
-        ProgramSettings::Instance().setLastExportPath(fdir.absolutePath());
+    const QFileInfo finf = newpath;
+    if(!finf.exists())
+        return;
+    const QString lastexportpath = (finf.isDir())?
+                                        finf.absolutePath() :
+                                        finf.absoluteDir().absolutePath();
+    ProgramSettings::Instance().setLastExportPath(lastexportpath);
 }
 
 void UpdateFileDialogImportPath(const QString &newpath)
 {
-    QDir fdir = QFileInfo(newpath).absoluteDir();
-    if(fdir.exists())
-        ProgramSettings::Instance().setLastImportPath(fdir.absolutePath());
+    const QFileInfo finf = newpath;
+    if(!finf.exists())
+        return;
+    const QString lastimportpath = (finf.isDir())?
+                                        finf.absolutePath() :
+                                        finf.absoluteDir().absolutePath();
+    ProgramSettings::Instance().setLastImportPath(lastimportpath);
 }

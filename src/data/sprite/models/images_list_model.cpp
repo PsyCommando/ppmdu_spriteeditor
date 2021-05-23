@@ -6,9 +6,11 @@
 const std::map<ImageListModel::eColumns, QString> ImageListModel::ColumnNames
 {
     {ImageListModel::eColumns::Preview,     "Preview"},
-    {ImageListModel::eColumns::UID,         "UID"},
+    //{ImageListModel::eColumns::UID,         "UID"},
     {ImageListModel::eColumns::Depth,       "Bit Depth"},
     {ImageListModel::eColumns::Resolution,  "Resolution"},
+    {ImageListModel::eColumns::Block,       "Block Number"},
+    {ImageListModel::eColumns::BlockLen,    "Lenght in blocks"},
     //The names for the extra values aren't here, because they're not displayed
 };
 
@@ -53,12 +55,12 @@ QVariant ImageListModel::data(const QModelIndex &index, int role) const
             }
             break;
         }
-        case eColumns::UID:
-        {
-            if( role == Qt::DisplayRole || role == Qt::EditRole )
-                res.setValue(img->getImageUID());
-            break;
-        }
+//        case eColumns::UID:
+//        {
+//            if( role == Qt::DisplayRole || role == Qt::EditRole )
+//                res.setValue(img->getImageUID());
+//            break;
+//        }
         case eColumns::Depth: //depth
         {
             if( role == Qt::DisplayRole )
@@ -71,6 +73,22 @@ QVariant ImageListModel::data(const QModelIndex &index, int role) const
             {
                 const QSize imgsz = img->getImageSize();
                 res.setValue(QString("%1x%2").arg(imgsz.width()).arg(imgsz.height()));
+            }
+            break;
+        }
+        case eColumns::Block:
+        {
+            if(role == Qt::DisplayRole)
+            {
+                res.setValue(m_sprite->getImages().findBlockOfImage(img));
+            }
+            break;
+        }
+        case eColumns::BlockLen:
+        {
+            if(role == Qt::DisplayRole)
+            {
+                res.setValue(QString("%1 block(s)").arg(img->getBlockLen()));
             }
             break;
         }
@@ -119,9 +137,11 @@ bool ImageListModel::setData(const QModelIndex &index, const QVariant &value, in
             break;
         }
         case eColumns::Preview:
-        case eColumns::UID:
+//        case eColumns::UID:
         case eColumns::Depth:
         case eColumns::Resolution:
+        case eColumns::Block:
+        case eColumns::BlockLen:
         default: //To get rid of warnings
             succ = false;
             break;
@@ -169,12 +189,15 @@ QVariant ImageListModelCondensed::data(const QModelIndex &index, int role) const
     else if( role == Qt::DisplayRole )
     {
         QSize resolution = img->getImageSize();
-        QString condensed = "ID:%1 %2bpp %3x%4";
+        QString condensed = "ID:%1 %2bpp %3x%4 blk:%5 blklen:%6";
+        const int blocknum = getOwnerSprite()->getImages().findBlockOfImage(img);
         condensed = condensed
                 .arg(img->nodeIndex())
                 .arg(static_cast<int>(img->getImageOriginalDepth()))
                 .arg(resolution.width())
-                .arg(resolution.height());
+                .arg(resolution.height())
+                .arg(blocknum)
+                .arg(img->getBlockLen());
         res = condensed;
     }
     else if(role == Qt::EditRole)

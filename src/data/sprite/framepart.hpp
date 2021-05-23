@@ -10,7 +10,7 @@ enum struct eFramePartColumnsType : int
     Preview = 0,                        //Preview image column
     ImgID,                              //Image index in the image data
     ImgSz,                              //Image resolution
-    BlockUsed,                          //Block range in use for the frame part
+    BlockRange,                         //Block range in use for the frame part
     PaletteID,                          //Palette in use by the part
     XOffset,                            //X offset of the part in screen coordinates
     YOffset,                            //Y offset of the part in screen coordinates
@@ -20,6 +20,7 @@ enum struct eFramePartColumnsType : int
     LastColumnsBasicMode = Priority,    //So we don't count the nb columns
 
     //Advanced Controls
+    ImgIsRef,                           //Convenience column meant to display if the part is a reference to something else. Hidden by default
     BlockNum,                           //Starting block number for the frame part
     Mosaic,                             //Whether mosaic mode is enabled for this part
     Mode,                               //Mode for displaying this part

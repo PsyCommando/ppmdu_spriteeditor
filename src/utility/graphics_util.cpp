@@ -66,6 +66,7 @@ void FillComboBoxWithFramePartPriorities(QComboBox & cmb)
     cmb.addItems(FRAME_PART_PRIORITY_NAMES);
 }
 
+//Fill combo box with block references within the entire sprite, not the current frame
 void FillComboBoxWithSpriteBlocks(const Sprite * spr, QComboBox & cmb)
 {
     cmb.clear();
@@ -73,20 +74,21 @@ void FillComboBoxWithSpriteBlocks(const Sprite * spr, QComboBox & cmb)
     const ImageContainer * pcnt = &(spr->getImages());
 
     //Add block ranges for every images in the sprite
-    int curblockid = 0;
+    uint16_t curblockid = 0;
     for( int cntimg = 0; cntimg < pcnt->nodeChildCount(); ++cntimg )
     {
         const Image* pimg = pcnt->getImage(cntimg);
         QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
         QString text = QString("[%1-%2[").arg(curblockid).arg(curblockid + pimg->getBlockLen());
         QVariant userval;
-        userval.setValue(QPair(curblockid, pimg->getBlockLen()));
-        cmb.addItem( QIcon(pmap), text, QVariant(curblockid) ); //Set user data to the starting block's id
+        userval.setValue(QPair<uint16_t, uint16_t>(curblockid, curblockid + pimg->getBlockLen()));
+        cmb.addItem( QIcon(pmap), text, userval ); //Set user data to the starting block's id
         curblockid += pimg->getBlockLen(); //increment block id counter
     }
     cmb.setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
 }
 
+//Fill combo box with block references to blocks already used in the frame
 void FillComboBoxWithFrameBlocks(const Sprite * spr, const MFrame * frm, QComboBox & cmb)
 {
     cmb.clear();
@@ -100,7 +102,7 @@ void FillComboBoxWithFrameBlocks(const Sprite * spr, const MFrame * frm, QComboB
             QPixmap pmap = QPixmap::fromImage(pimg->makeImage(spr->getPalette()));
             QString text = QString("[%1-%2[").arg(part->getBlockNum()).arg(part->getBlockNum() + pimg->getBlockLen());
             QVariant userval;
-            userval.setValue(QPair(part->getBlockNum(), part->getBlockLen()));
+            userval.setValue(QPair(part->getBlockNum(), part->getBlockNum() + part->getBlockLen()));
             cmb.addItem(QIcon(pmap), text, userval); //Set user data to the starting block's id
         }
     }

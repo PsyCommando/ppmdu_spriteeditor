@@ -47,25 +47,28 @@ public:
     void setCachedFrames(QVector<cachedframe> && frames, QVector<QColor> && palette);
 
     /*
-     *
+     * Dumps all the rendered frames of the animation to a vector of images.
     */
     QVector<QImage> DumpFrames()const;
 
+    //Get the total amount of frames this item's animation has
     inline size_t getNbFrames()const{return m_cachedframes.size();}
 
+    //Get the frame this item is currently displaying
     inline int getCurrentFrame()const{return m_curfrm;}
 
+    //Get the total duration it takes for the animation of this item to play
     inline unsigned int getDuration()const{return m_cachedDuration;}
 
+    //Get the amount of ticks elapsed between the currently displayed frame and the start of the animation
     inline unsigned int getTimeElapsed()const{return m_tickselapsed;}
 
-    //Get the area within which the frames for this animation move/appear
+    //Get the area within which the frames for this animation move/appear. Useful for resizing the viewport and having the whole thing fit in.
     inline QRect getTravelRange()const {return m_frameTraverse;}
 
 // QGraphicsItem interface
 public:
     QRectF boundingRect() const override;
-
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 private:

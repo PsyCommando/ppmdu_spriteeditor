@@ -61,9 +61,9 @@ private:
 
     QWidget * makePaletteIDSelect       (QWidget * parent, const QModelIndex & index)const;
     QWidget * makePrioritySelect        (QWidget * parent, int row)const;
-    QWidget * makeTileIdSelect          (QWidget * parent, int row)const;
     QWidget * makeModeSelect            (QWidget * parent, int row)const;
     QWidget * makeRotnScalingParamSelect(QWidget * parent)const;
+    QWidget * makeBlockRangeSelect      (QWidget * parent, const QModelIndex & index)const;
 
 private:
     MFrame *m_pfrm{nullptr};

@@ -16,7 +16,6 @@ void FillComboBoxWithFramePartPriorities(QComboBox & cmb);
 void FillComboBoxWithSpriteBlocks(const Sprite * spr, QComboBox & cmb);
 void FillComboBoxWithFrameBlocks(const Sprite * spr, const MFrame * frm, QComboBox & cmb);
 
-
 extern const char * MinusOneImgRes;
 //Returns the empty image for representing a minus one frame
 const QImage & GetMinusOneImage();

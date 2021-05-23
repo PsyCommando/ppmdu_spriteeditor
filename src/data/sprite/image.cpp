@@ -158,15 +158,17 @@ int Image::getByteSize()const
 
 int Image::getTileSize()const
 {
-    const int tiles     = getByteSize() / fmt::NDS_TILE_SIZE_8BPP;
-    const int remainder = getByteSize() % fmt::NDS_TILE_SIZE_8BPP;
+    const int TILE_LEN = (m_depth == fmt::eColorDepths::_4Bpp)? fmt::NDS_TILE_SIZE_4BPP : fmt::NDS_TILE_SIZE_4BPP;
+    const int tiles     = getByteSize() / TILE_LEN;
+    const int remainder = getByteSize() % TILE_LEN;
     return remainder == 0? tiles : tiles + 1; //Is at least 1 tile if has more than 0 byte
 }
 
 int Image::getBlockLen() const
 {
     //Blocks are always 0x80 bytes long
-    return getByteSize() / fmt::WAN_BLOCK_SIZE;
+    const int blocks = getByteSize() / fmt::WAN_BLOCK_SIZE;
+    return (blocks == 0 && getByteSize() > 0)? 1 : blocks; //If we get 0 blocks, but there's more than 0 bytes in this image, return 1 block, otherwise 0. No images can be smaller than one block!
 //    const fmt::eColorDepths depth = getImageOriginalDepth();
 //    Q_ASSERT(depth != fmt::eColorDepths::Invalid);
 //    int nbblocks = 0;

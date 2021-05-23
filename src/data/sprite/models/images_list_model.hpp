@@ -15,9 +15,11 @@ public:
     enum struct eColumns : int
     {
         Preview = 0,
-        UID,
+        //UID,
         Depth,
         Resolution,
+        Block,
+        BlockLen,
         NbColumns,
 
         direct_Unk2,    //Extra columns that don't count in the NbColumns

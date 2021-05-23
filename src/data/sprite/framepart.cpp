@@ -8,8 +8,9 @@ const std::map<eFramePartColumnsType, QString>  FramePartHeaderColumnNames
     {eFramePartColumnsType::Preview,        "Preview"},
     {eFramePartColumnsType::ImgID,          "Image ID"},
     {eFramePartColumnsType::ImgSz,          "Image Size"},
-    {eFramePartColumnsType::BlockUsed,      "Blocks Used"},
+    {eFramePartColumnsType::BlockRange,      "Blocks Used"},
     {eFramePartColumnsType::BlockNum,       "Block Num"},
+    {eFramePartColumnsType::ImgIsRef,       "Reference"},
     {eFramePartColumnsType::PaletteID,      "Palette"},
     {eFramePartColumnsType::XOffset,        "X"},
     {eFramePartColumnsType::YOffset,        "Y"},
@@ -137,7 +138,7 @@ Qt::ItemFlags MFramePart::nodeFlags(int column) const
 
     switch(static_cast<eFramePartColumnsType>(column))
     {
-        case eFramePartColumnsType::BlockUsed:
+        case eFramePartColumnsType::BlockRange:
         case eFramePartColumnsType::ImgSz:
         case eFramePartColumnsType::Preview:
         {
@@ -145,6 +146,7 @@ Qt::ItemFlags MFramePart::nodeFlags(int column) const
             newflags.setFlag(Qt::ItemFlag::ItemIsEditable, false);
             break;
         }
+        case eFramePartColumnsType::ImgIsRef:
         case eFramePartColumnsType::RnS:
         case eFramePartColumnsType::Mosaic:
         {
@@ -245,7 +247,7 @@ uint16_t MFramePart::getBlockLen() const
 QVector<QRgb> MFramePart::getPartPalette(const QVector<QRgb> &src) const
 {
     QVector<QRgb> newpal = src;
-    //Parts may use palette 0 to 16
+    //If the part isn't 8bpp we use sub-palettes
     if(!isColorPal256())
     {
         //Offset the palette so we use the correct colors
@@ -304,29 +306,34 @@ QImage MFramePart::getSrcImageData(const Sprite * spr) const
         const MFramePart * ref = parent->getPartForBlockNum(getBlockNum());
         if(ref)
         {
+            //-- Handle block references to previous blocks --
             imgidx = ref->getFrameIndex();
             const Image * pimg = spr->getImage(imgidx);
             if(!pimg)
                 return QImage();
             imgo = pimg->makeImage(pal);
         }
-        else //if(spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D)
+        else if(spr->type() == fmt::eSpriteType::Effect) //if(spr->getTileMappingMode() == fmt::eSpriteTileMappingModes::Mapping1D)
         {
-            //Refs are usually invalid in 1D tiling for some reasons
+            //-- Handle block reference to all image blocks (Only used in some sprite types!!)--
             const uint16_t blocknum = getBlockNum();
             const uint16_t blocklen = getBlockLen();
-            std::vector<uint8_t> tiles = spr->getBlocks(blocknum, blocklen);
+            std::vector<uint8_t> bytes = spr->getBlocks(blocknum, blocklen);
             const auto resolution = GetResolution();
-            if(!tiles.empty())
+            if(!bytes.empty())
             {
-                //Need to re-organize the image by tiles
-                if(spr->is256Colors())
-                    imgo = utils::Raw8bppToImg(resolution.first, resolution.second, utils::Untile8bpp(resolution.first, resolution.second, tiles), pal);
+                //Need to untile the image and convert to something displayable
+                if(isColorPal256())
+                    imgo = utils::Raw8bppToImg(resolution.first, resolution.second, utils::Untile8bpp(resolution.first, resolution.second, bytes), pal);
                 else
-                    imgo = utils::Raw4bppToImg(resolution.first, resolution.second, utils::Untile4bpp(resolution.first, resolution.second, tiles), pal);
+                    imgo = utils::Raw4bppToImg(resolution.first, resolution.second, utils::Untile4bpp(resolution.first, resolution.second, bytes), pal);
             }
             else
                 qWarning() << QString("MFramePart::getSrcImageData(): Empty image block range (num: %1, len: %2) for frame#%3!").arg(blocknum).arg(blocklen).arg(nodeIndex());
+        }
+        else
+        {
+            qWarning() <<"MFramePart::getSrcImageData(): Bad block reference in frame#" <<nodeIndex() <<"!";
         }
     }
     return imgo;

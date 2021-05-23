@@ -61,7 +61,6 @@ void TabAnimTable::ConnectControls()
     connect(m_animTableModel.data(), &QAbstractItemModel::dataChanged, this, &TabAnimTable::OnModelDataChanged);
     connect(ui->tvAnimTbl,          &QTableView::clicked,   this, &TabAnimTable::OnAnimTableItemActivate);
     connect(ui->tvAnimTbl,          &QTableView::activated, this, &TabAnimTable::OnAnimTableItemActivate);
-    connect(ui->lblPreviewSeqName,  &QLabel::linkActivated, [&](const QString&){OpenCurrentAnimSequence();});
 }
 
 void TabAnimTable::DisconnectControls()
@@ -72,7 +71,6 @@ void TabAnimTable::DisconnectControls()
     }
     disconnect(ui->tvAnimTbl,           &QTableView::clicked,   this, &TabAnimTable::OnAnimTableItemActivate);
     disconnect(ui->tvAnimTbl,           &QTableView::activated, this, &TabAnimTable::OnAnimTableItemActivate);
-    disconnect(ui->lblPreviewSeqName,   &QLabel::linkActivated, nullptr, nullptr);
 }
 
 bool TabAnimTable::setAnimTable(QPersistentModelIndex table, Sprite *spr)
@@ -116,7 +114,21 @@ void TabAnimTable::OnSelectGroup(const QItemSelection &selection)
         //Grow the slider to the appropriate length
         {
             QSignalBlocker blk(ui->sldrSubSequence);
-            ui->sldrSubSequence->setRange(0, pgrp->nodeChildCount()-1);
+            QSignalBlocker blk2(ui->spbSubSequence);
+            const int range = pgrp->nodeChildCount()-1;
+            if(range > 0)
+            {
+                ui->sldrSubSequence->setEnabled(true);
+                ui->spbSubSequence->setEnabled(true);
+                ui->sldrSubSequence->setRange(0, range);
+                ui->spbSubSequence->setRange(0, range);
+            }
+            else
+            {
+                ui->sldrSubSequence->setEnabled(false);
+                ui->spbSubSequence->setEnabled(false);
+                ui->spbSubSequence->setValue(0);
+            }
         }
         ui->sldrSubSequence->setValue(0);
         ui->sldrSubSequence->update();
@@ -143,7 +155,10 @@ void TabAnimTable::OnDeselectAll()
     //Clear the slider
     {
         QSignalBlocker blk(ui->sldrSubSequence);
-        ui->sldrSubSequence->setRange(0, 1);
+        QSignalBlocker blk2(ui->spbSubSequence);
+        ui->sldrSubSequence->setRange(0,0);
+        ui->spbSubSequence->setRange(0,0);
+        ui->spbSubSequence->setValue(0);
     }
     ui->sldrSubSequence->setValue(0);
     ui->sldrSubSequence->update();
@@ -171,7 +186,9 @@ void TabAnimTable::PreviewGroupAnimSequence(int idxsubseq, bool bplaynow)
             const AnimSequence * seq = spr->getAnimSequence(grp->getAnimSlotRef(idxsubseq));
             ui->lblPreviewSeqName->setText(tr("Group slot: %1 => [Sequence: %2]()").arg(idxsubseq).arg(seq->nodeIndex()));
             ui->lblPreviewSeqName->setEnabled(true);
-            ui->lblPreviewSeqName->setOpenExternalLinks(true);
+            ui->lblPreviewSeqName->setTextInteractionFlags(Qt::LinksAccessibleByMouse | Qt::LinksAccessibleByKeyboard);
+            ui->btnToSequence->setEnabled(true);
+
             m_previewrender->InstallAnimPreview(ui->gvAnimTablePreview, spr, seq);
             if(bplaynow)
                 m_previewrender->beginAnimationPlayback();
@@ -187,6 +204,7 @@ void TabAnimTable::ClearPreview()
 {
     ui->lblPreviewSeqName->setText("");
     ui->lblPreviewSeqName->setEnabled(false);
+    ui->btnToSequence->setEnabled(false);
     if(m_previewrender)
     {
         m_previewrender->endAnimationPlayback();
@@ -204,7 +222,7 @@ void TabAnimTable::OpenCurrentAnimSequence()
 
     fmt::animseqid_t seqid = curgrp->getAnimSlotRef(ui->sldrSubSequence->value());
     Sprite * spr = currentSprite();
-    getMainWindow()->selectTreeViewNode(spr->getAnimSequence(seqid));
+    getMainWindow()->openTreeViewNode(spr->getAnimSequence(seqid));
 }
 
 void TabAnimTable::OpenCurrentGroup()
@@ -212,7 +230,7 @@ void TabAnimTable::OpenCurrentGroup()
     if(!m_previewedGroupRef.isValid())
         return;
     const TreeNode * pgrp = currentAnimGroup();
-    getMainWindow()->selectTreeViewNode(pgrp);
+    getMainWindow()->openTreeViewNode(pgrp);
 }
 
 void TabAnimTable::PrepareForNewContainer()
@@ -269,12 +287,39 @@ void TabAnimTable::on_btnStop_clicked()
     if(!m_previewrender)
         return;
     m_previewrender->endAnimationPlayback();
-    m_previewrender->setCurFrm(0);
+    emit m_previewrender->setCurFrm(0);
 }
 
 void TabAnimTable::on_sldrSubSequence_valueChanged(int value)
 {
+    const AnimGroup * grp = currentAnimGroup();
+    if(!grp)
+        return;
+    const int range = grp->nodeChildCount();
+    if(value < 0 || value >= range)
+        return;
     PreviewGroupAnimSequence(value, ProgramSettings::Instance().isAutoplayEnabled());
+    //Update spin box
+    {
+        QSignalBlocker blk(ui->spbSubSequence);
+        ui->spbSubSequence->setValue(value);
+    }
+}
+
+void TabAnimTable::on_spbSubSequence_valueChanged(int arg1)
+{
+    const AnimGroup * grp = currentAnimGroup();
+    if(!grp)
+        return;
+    const int range = grp->nodeChildCount();
+    if(arg1 < 0 || arg1 >= range)
+        return;
+    PreviewGroupAnimSequence(arg1, ProgramSettings::Instance().isAutoplayEnabled());
+    //Update slider
+    {
+        QSignalBlocker blk(ui->sldrSubSequence);
+        ui->sldrSubSequence->setValue(arg1);
+    }
 }
 
 void TabAnimTable::on_chkAutoPlay_toggled(bool checked)
@@ -406,4 +451,14 @@ void TabAnimTable::on_actionExport_animation_table_triggered()
 
     //save layout to xml
     ExportAnimTableLayout(m_animTableModel.data(), fpath);
+}
+
+void TabAnimTable::on_lblPreviewSeqName_linkActivated(const QString &/*link*/)
+{
+    OpenCurrentAnimSequence();
+}
+
+void TabAnimTable::on_btnToSequence_clicked()
+{
+    OpenCurrentAnimSequence();
 }

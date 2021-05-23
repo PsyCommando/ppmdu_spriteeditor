@@ -272,37 +272,85 @@ std::vector<uint8_t> ImageContainer::getTiles(fmt::frmid_t tilenum, fmt::frmid_t
     return tiles;
 }
 
-std::vector<uint8_t> ImageContainer::getBlocks(fmt::frmid_t num, fmt::frmid_t len) const
+std::vector<uint8_t> ImageContainer::getBlocks(fmt::frmid_t blknum, fmt::frmid_t blklen) const
 {
     std::vector<uint8_t> blocks;
     auto itinsert = std::back_inserter(blocks);
-    int cntTotalBlocks = 0;
-    bool iscopying = false;
+//    int cntTotalBlocks = 0;
+//    bool iscopying = false;
+    int cntblocks = 0;
+    const int blkend = blknum + blklen;
 
-    for(int cntimg = 0; cntimg < m_container.size() && len != 0; ++cntimg)
+    Q_FOREACH(const Image * img, m_container)
     {
-        Image * pcur = m_container[cntimg];
-        int imgBlockLen = pcur->getBlockLen();
-        if(!iscopying && num < (cntTotalBlocks + imgBlockLen))
+        //find the image we should start copying from
+        if(cntblocks < blkend &&
+            (cntblocks >= blknum || cntblocks + img->getBlockLen() > blknum))
         {
-            iscopying = true;
-            //We start copying tiles from this image!
-            for(int i = num - cntTotalBlocks; i < imgBlockLen && len != 0; ++i, --len)
-            {
-                std::copy(pcur->getBlockBeg(i), pcur->getBlockEnd(i), itinsert);
-            }
+            //We found an image starting at the block we want, or which contains the block we want
+            const int blockslefttocopy = blklen - (blocks.size() / fmt::WAN_BLOCK_SIZE);
+            const int blocksavailable = std::min(blockslefttocopy, static_cast<int>(img->getBlockLen()));
+            const int firstblock = (blknum - cntblocks);
+            const int lastblock = firstblock + blocksavailable;
+            std::copy(img->getBlockBeg(firstblock), img->getBlockEnd(lastblock), itinsert);
+            cntblocks += blocksavailable; //add the blocks we copied
         }
-        else if((cntTotalBlocks + imgBlockLen) > num)
-        {
-            //We're currently copying tiles over, so keep going with this new image!
-            for(int i = 0; i < imgBlockLen && len != 0; ++i, --len)
-            {
-                std::copy(pcur->getBlockBeg(i), pcur->getBlockEnd(i), itinsert);
-            }
-        }
-        cntTotalBlocks += imgBlockLen;
+        else
+            cntblocks += img->getBlockLen();
+        if(cntblocks == blkend)
+            break;
     }
+
+    //Add padding at the end so its size match exactly a block
+    const int leftoverbytes = (blocks.size() % fmt::WAN_BLOCK_SIZE);
+    const int paddingneeded = (leftoverbytes > 0)? fmt::WAN_BLOCK_SIZE - leftoverbytes : 0;
+    std::fill_n(itinsert, paddingneeded, 0);
+
+
+//    for(int cntimg = 0; cntimg < m_container.size() && blklen != 0; ++cntimg)
+//    {
+//        const Image * pcur = m_container[cntimg];
+//        const int imgBlockLen = pcur->getBlockLen();
+//        if(!iscopying && blknum == cntTotalBlocks && blknum < (cntTotalBlocks + imgBlockLen))
+//        {
+//            iscopying = true;
+//            //We start copying blocks from this image!
+//            for(int i = blknum - cntTotalBlocks; i < imgBlockLen && blklen != 0; ++i, --blklen)
+//            {
+//                std::copy(pcur->getBlockBeg(i), pcur->getBlockEnd(i), itinsert);
+//            }
+//        }
+//        else if((cntTotalBlocks + imgBlockLen) > blknum)
+//        {
+//            //Keep copying blocks over with a new image
+//            for(int i = 0; i < imgBlockLen && blklen != 0; ++i, --blklen)
+//            {
+//                std::copy(pcur->getBlockBeg(i), pcur->getBlockEnd(i), itinsert);
+//            }
+//        }
+//        cntTotalBlocks += imgBlockLen;
+//    }
     return blocks;
+}
+
+int ImageContainer::getTotalBlockLen() const
+{
+    int curblock = 0;
+    for(int cntimg = 0; cntimg < m_container.size(); ++cntimg, curblock += m_container[cntimg]->getBlockLen());
+    return curblock;
+}
+
+int ImageContainer::findBlockOfImage(const Image *img) const
+{
+    int curblock = 0;
+    for(int cntimg = 0; cntimg < m_container.size(); ++cntimg)
+    {
+        const Image * pcur = m_container[cntimg];
+        if(pcur == img)
+            return curblock;
+        curblock += pcur->getBlockLen();
+    }
+    return curblock;
 }
 
 Image *ImageContainer::getImageByTileNum(fmt::frmid_t tilenum)

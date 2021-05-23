@@ -136,12 +136,12 @@ void ContentManager::ImportContainer(const QString &fname)
     Q_ASSERT(false);
 }
 
-QModelIndex ContentManager::modelIndexOf(TreeNode *ptr) const
+QModelIndex ContentManager::modelIndexOf(const TreeNode *ptr) const
 {
     if (!ptr || !isContainerLoaded())
         return QModelIndex();
-    TreeNode * parent = ptr->parentNode();
-    return createIndex(parent->indexOfChild(ptr), 0, ptr);
+    const TreeNode * parent = ptr->parentNode();
+    return createIndex(parent->indexOfChild(ptr), 0, const_cast<TreeNode *>(ptr));
 }
 
 TreeNode *ContentManager::getOwnerNode(const QModelIndex &index)

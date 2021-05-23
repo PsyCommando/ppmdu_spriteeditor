@@ -39,7 +39,6 @@ void ImportPalette(Sprite *spr, const QString &path, ePaletteDumpType type)
 {
     if(!spr)
         throw std::range_error("ImportPalette(): Invalid sprite index!!");
-
     std::vector<uint8_t> fdata = utils::ReadFileToByteVector(path.toStdString());
 
     switch(type)
@@ -48,21 +47,21 @@ void ImportPalette(Sprite *spr, const QString &path, ePaletteDumpType type)
         {
             //can't use move here since we need the implicit convertion on copy
             std::vector<uint32_t> imported = utils::ImportFrom_RIFF_Palette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVECTOR_RAMGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) ); //since QRgb is ARGB, we use this encoder!
+            spr->setPalette( QVECTOR_RANGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) ); //since QRgb is ARGB, we use this encoder!
             break;
         }
     case ePaletteDumpType::TEXT_Pal:
         {
             //can't use move here since we need the implicit convertion on copy
             std::vector<uint32_t> imported = utils::ImportPaletteAsTextPalette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVECTOR_RAMGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) );
+            spr->setPalette( QVECTOR_RANGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) );
             break;
         }
     case ePaletteDumpType::GIMP_PAL:
         {
             //can't use move here since we need the implicit convertion on copy
             std::vector<uint32_t> imported = utils::ImportGimpPalette(fdata, utils::RGBToARGB);
-            spr->setPalette( QVECTOR_RAMGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) );
+            spr->setPalette( QVECTOR_RANGE_CTOR(QVector<QRgb>, imported.begin(), imported.end()) );
             break;
         }
     case ePaletteDumpType::PNG_PAL:
@@ -98,9 +97,11 @@ void DumpPalette(const Sprite * spr, const QString &path, ePaletteDumpType type)
     if(!spr)
         throw std::range_error("DumpPalette(): Invalid sprite index!!");
 
-    std::vector<uint8_t> fdata;
+    const QVector<QRgb> & sourcepal = spr->getPalette();
+    QByteArray fdata;
+    //std::vector<uint8_t> fdata;
     std::vector<uint32_t> pal;
-    for(const QRgb & col : spr->getPalette())
+    for(const QRgb & col : sourcepal)
     {
         pal.push_back(static_cast<uint32_t>(col));
     }
@@ -109,37 +110,54 @@ void DumpPalette(const Sprite * spr, const QString &path, ePaletteDumpType type)
     {
     case ePaletteDumpType::RIFF_Pal:
         {
-            qDebug("Exporting RIFF Palette\n");
-            fdata = utils::ExportTo_RIFF_Palette(pal, utils::ARGBToComponents); //sice QRgb is ARGB, we use this decoder!
-            qDebug("Exporting RIFF Palette, conversion complete!\n");
+            std::vector<uint8_t> dat = utils::ExportTo_RIFF_Palette(pal, utils::ARGBToComponents); //sice QRgb is ARGB, we use this decoder!
+            fdata = QByteArray::fromRawData(reinterpret_cast<char *>(dat.data()), dat.size());
             break;
         }
     case ePaletteDumpType::TEXT_Pal:
         {
-            fdata = utils::ExportPaletteAsTextPalette(pal, utils::ARGBToComponents);
+            std::vector<uint8_t> dat = utils::ExportPaletteAsTextPalette(pal, utils::ARGBToComponents);
+            fdata = QByteArray::fromRawData(reinterpret_cast<char *>(dat.data()), dat.size());
             break;
         }
     case ePaletteDumpType::GIMP_PAL:
         {
-            fdata = utils::ExportGimpPalette(pal, utils::ARGBToComponents);
+            std::vector<uint8_t> dat = utils::ExportGimpPalette(pal, utils::ARGBToComponents);
+            fdata = QByteArray::fromRawData(reinterpret_cast<char *>(dat.data()), dat.size());
+            break;
+        }
+    case ePaletteDumpType::PNG_PAL:
+        {
+            QBuffer buf(&fdata);
+            QPixmap pixpal = PaintPaletteToPixmap(sourcepal);
+            buf.open(QIODevice::WriteOnly);
+            pixpal.save(&buf, "PNG");
+            break;
+        }
+    case ePaletteDumpType::BMP_PAL:
+        {
+            QBuffer buf(&fdata);
+            QPixmap pixpal = PaintPaletteToPixmap(sourcepal);
+            buf.open(QIODevice::WriteOnly);
+            pixpal.save(&buf, "BMP");
             break;
         }
     default:
         throw std::invalid_argument("DumpPalette(): Invalid palette destination type!");
     };
 
-    qDebug("Exporting Palette, Writing to file!\n");
+    qDebug("DumpPalette(): Exporting Palette, Writing to file!\n");
     QSaveFile sf(path);
     if(!sf.open( QSaveFile::WriteOnly ))
         throw std::runtime_error(QString("DumpPalette(): Couldn't open file \"%1\" for writing!\n").arg(path).toStdString());
 
-    if( sf.write( (char*)fdata.data(), fdata.size() ) < static_cast<qint64>(fdata.size()) )
+    if(sf.write( (char*)fdata.data(), fdata.size() ) < static_cast<qint64>(fdata.size()))
         qWarning("DumpPalette(): The amount of bytes written to file differs from the expected filesize!\n");
 
-    qDebug("Exporting Palette, written! Now commiting\n");
+    qDebug("DumpPalette(): Exporting Palette, written! Now commiting\n");
 
     if(!sf.commit())
         throw std::runtime_error(QString("DumpPalette(): Commit to \"%1\" failed!\n").arg(path).toStdString());
-    qDebug("Exporting Palette, commited!\n");
+    qDebug("DumpPalette(): Exporting Palette, commited!\n");
 }
 

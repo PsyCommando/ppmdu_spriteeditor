@@ -79,6 +79,8 @@ public:
 
     void selectTreeViewNode(const TreeNode * node);
     void selectTreeViewNode(const QModelIndex &index);
+    void openTreeViewNode(const TreeNode * node);
+    void openTreeViewNode(const QModelIndex &index);
     const QPixmap & getDefaultImage()const {return m_imgNoImg;}
 
 public slots:

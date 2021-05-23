@@ -34,7 +34,7 @@ QVariant MFramePartModel::data(const QModelIndex &index, int role) const
     case eFramePartColumnsType::Preview:        return dataImgPreview   (part, role);
     case eFramePartColumnsType::ImgID:          return dataImgId        (part, role);
     case eFramePartColumnsType::ImgSz:          return dataImgSize      (part, role);
-    case eFramePartColumnsType::BlockUsed:      return dataBlockUsed    (part, role);
+    case eFramePartColumnsType::BlockRange:      return dataBlockRange    (part, role);
     case eFramePartColumnsType::PaletteID:      return dataPaletteID    (part, role);
     case eFramePartColumnsType::VFlip:          return dataVFlip        (part, role);
     case eFramePartColumnsType::HFlip:          return dataHFlip        (part, role);
@@ -114,6 +114,20 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
                 if(!bok)
                     break;
                 part.setMosaicOn(chkst == Qt::CheckState::Checked);
+            }
+            break;
+        }
+        case eFramePartColumnsType::ImgIsRef:
+        {
+            if(role == Qt::CheckStateRole)
+            {
+                const Qt::CheckState chkst = static_cast<Qt::CheckState>(value.toInt(&bok));
+                if(!bok)
+                    break;
+                if(chkst)
+                    part.setFrameIndex(-1);
+                else
+                    part.setFrameIndex(0); //That's a biiit hacky tbh
             }
             break;
         }
@@ -216,6 +230,15 @@ bool MFramePartModel::setData(const QModelIndex &index, const QVariant &value, i
             }
             break;
         }
+        case eFramePartColumnsType::BlockRange:
+        {
+            if(role == Qt::EditRole)
+            {
+                const QPair<uint16_t, uint16_t> blk = value.value<QPair<uint16_t, uint16_t>>();
+                part.setBlockNum(blk.first);
+            }
+            break;
+        }
         default:
             break;
     };
@@ -278,7 +301,7 @@ QVariant MFramePartModel::dataImgId(const MFramePart * part, int role) const
     if(role == Qt::DisplayRole)
     {
         if(part->isPartReference())
-            return QString("Tile Reference");
+            return QString(tr("Block Reference"));
         else
             return QString("Img#%1").arg(static_cast<int>(part->getFrameIndex()));
     }
@@ -297,7 +320,20 @@ QVariant MFramePartModel::dataImgId(const MFramePart * part, int role) const
     return QVariant();
 }
 
-QVariant MFramePartModel::dataBlockUsed(const MFramePart *part, int role) const
+QVariant MFramePartModel::dataImgIsRef(const MFramePart *part, int role) const
+{
+    if(role == Qt::CheckStateRole)
+        return part->isPartReference()? Qt::Checked : Qt::Unchecked;
+    else if(role == Qt::SizeHintRole)
+    {
+        QSize sz = calcTextSize(dataImgIsRef(part, Qt::DisplayRole).toString());
+        sz.setWidth(sz.width() + 20);
+        return sz;
+    }
+    return QVariant();
+}
+
+QVariant MFramePartModel::dataBlockRange(const MFramePart *part, int role) const
 {
     if(role == Qt::DisplayRole)
     {
@@ -306,6 +342,12 @@ QVariant MFramePartModel::dataBlockUsed(const MFramePart *part, int role) const
     else if(role == Qt::SizeHintRole)
     {
         return calcTextSize(dataBlockNum(part, Qt::DisplayRole).toString());
+    }
+    else if(role == Qt::EditRole)
+    {
+        QVariant ret;
+        ret.setValue(QPair<uint16_t,uint16_t>(part->getBlockNum(), part->getBlockNum() + part->getBlockLen()));
+        return ret;
     }
     return QVariant();
 }
@@ -504,7 +546,11 @@ QVariant MFramePartModel::dataPriority(const MFramePart * part, int role) const
 
 QVariant MFramePartModel::dataBlockNum(const MFramePart * part, int role) const
 {
-    if(role == Qt::DisplayRole || role == Qt::EditRole)
+    if(role == Qt::DisplayRole)
+    {
+        return QString(tr("block %1")).arg(static_cast<int>(part->getBlockNum()));
+    }
+    else if(role == Qt::EditRole)
     {
         return static_cast<int>(part->getBlockNum());
     }

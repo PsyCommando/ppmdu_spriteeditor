@@ -116,6 +116,8 @@ void FrameEditor::initScene()
     m_yAxisGuide->setPen( QPen(QBrush(QColor(0, 200, 0, 180)), 2, Qt::PenStyle::DashLine) );
     m_xAxisGuide->setVisible(false);
     m_yAxisGuide->setVisible(false);
+
+    setEditorMode(eEditorMode::FrameParts);
 }
 
 void FrameEditor::deInitScene()
@@ -284,9 +286,6 @@ void FrameEditor::setTransparencyEnabled(bool benabled)
 
 void FrameEditor::setEditorMode(eEditorMode mode)
 {
-    if(mode == m_mode)
-        return; //Nothing to do
-
     m_mode = mode;
     //Toggle part states depending on the mode
     bool bpartsEnabled = m_mode == eEditorMode::FrameParts;
@@ -298,6 +297,7 @@ void FrameEditor::setEditorMode(eEditorMode mode)
     Q_FOREACH(auto & p, m_markers)
     {
         p->setEnabled(bmarkerEnabled);
+        p->setVisible(bmarkerEnabled);
     }
     update();
 }

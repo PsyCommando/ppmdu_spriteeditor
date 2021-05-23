@@ -85,6 +85,8 @@ public:
     const Image         *   getImageByTileNum(fmt::frmid_t tilenum)const;
     std::vector<uint8_t>    getTiles(fmt::frmid_t tilenum, fmt::frmid_t len) const;
     std::vector<uint8_t>    getBlocks(fmt::frmid_t num, fmt::frmid_t len)const;
+    int                     getTotalBlockLen()const;    //Return the total sum of the block len of all images in the container
+    int                     findBlockOfImage(const Image * img)const; //Attempts to find the image pointer in the container, if none is found returns the total block len of all the images. If found returns the block at which the image begins at
 
 
     /*

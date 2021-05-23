@@ -55,7 +55,7 @@ private slots:
     void OnEditorSelectionChanged(QList<EditableItem *> parts);
     void OnOffsetSelected(QModelIndex selected);
 
-    void on_btnEditAttachments_toggled(bool checked);
+    //void on_btnEditAttachments_toggled(bool checked);
     void on_chkGridSnap_toggled(bool checked);
     void on_tblframeparts_clicked(const QModelIndex &index);
     void on_btnFrmExport_clicked();
@@ -70,6 +70,11 @@ private slots:
     void selectPart(const QModelIndex & index);
 
     void on_chkImgSourceRef_toggled(bool checked);
+
+    void OnFrameTabChanged(int tabindex);
+    void OnTabMarkersDisplayed();
+    void OnTabMarkersHidden();
+
 
 signals:
     void partSelected(const QModelIndexList & selected);

@@ -11,8 +11,8 @@ class MFramePart;
 class MFramePartModel : public TreeNodeModel
 {
     Q_OBJECT
-public:
 
+public:
     explicit MFramePartModel(MFrame* pmfrm, Sprite* pspr);
     ~MFramePartModel();
 
@@ -31,7 +31,8 @@ public:
 private:
     QVariant dataImgPreview     (const MFramePart * part, int role)const;
     QVariant dataImgId          (const MFramePart * part, int role)const;
-    QVariant dataBlockUsed      (const MFramePart * part, int role)const;
+    QVariant dataImgIsRef       (const MFramePart * part, int role)const;
+    QVariant dataBlockRange      (const MFramePart * part, int role)const;
     QVariant dataImgSize        (const MFramePart * part, int role)const;
     QVariant dataUnk0           (const MFramePart * part, int role)const;
     QVariant dataXOffset        (const MFramePart * part, int role)const;

@@ -54,8 +54,9 @@ void TabFrames::ConnectSignals()
     //Connect mapper
     connect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
 
-    //Connect offset table
+    //Connect marker table
     connect(ui->tvAttachments, &QTableView::activated, this, &TabFrames::OnOffsetSelected);
+    connect(ui->tabwFramesEdit, &QTabWidget::currentChanged, this, &TabFrames::OnFrameTabChanged);
 }
 
 void TabFrames::DisconnectSignals()
@@ -88,6 +89,7 @@ void TabFrames::DisconnectSignals()
         disconnect(ui->tblframeparts, &QTableView::clicked, m_frmdatmapper.data(), &QDataWidgetMapper::setCurrentModelIndex);
 
     disconnect(ui->tvAttachments, &QTableView::activated, this, &TabFrames::OnOffsetSelected);
+    disconnect(ui->tabwFramesEdit, &QTabWidget::currentChanged, this, &TabFrames::OnFrameTabChanged);
 }
 
 bool TabFrames::setFrame(QPersistentModelIndex element, Sprite *spr)
@@ -374,6 +376,10 @@ void TabFrames::updatePartImgSource()
         ui->cmbBlock->setEnabled(false);
     }
 
+    {
+        QSignalBlocker blk(ui->chkImgSourceRef);
+        ui->chkImgSourceRef->setChecked(ppart->isPartReference());
+    }
 }
 
 void TabFrames::on_btnFrmMvUp_clicked()
@@ -427,8 +433,14 @@ void TabFrames::setupMappedControls()
     m_frmdatmapper->setItemDelegate(m_frmDelegate.data());
     m_frmdatmapper->setSubmitPolicy(QDataWidgetMapper::SubmitPolicy::AutoSubmit);
 
+    m_frmdatmapper->addMapping(ui->chkImgSourceRef, static_cast<int>(eFramePartColumnsType::ImgIsRef));
+
     m_frmdatmapper->addMapping(ui->cmbPartImage,    static_cast<int>(eFramePartColumnsType::ImgID));
     FillComboBoxWithSpriteImages(currentSprite(), *ui->cmbPartImage);
+
+    m_frmdatmapper->addMapping(ui->cmbBlock,        static_cast<int>(eFramePartColumnsType::BlockNum));
+    FillComboBoxWithFrameBlocks(currentSprite(), currentFrame(), *ui->cmbBlock);
+
     m_frmdatmapper->addMapping(ui->cmbPartPal,      static_cast<int>(eFramePartColumnsType::PaletteID));
     m_frmdatmapper->addMapping(ui->spbPartXOffset,  static_cast<int>(eFramePartColumnsType::XOffset));
     m_frmdatmapper->addMapping(ui->spbPartYOffset,  static_cast<int>(eFramePartColumnsType::YOffset));
@@ -504,10 +516,10 @@ void TabFrames::OnOffsetSelected(QModelIndex selected)
     m_frmeditor->selectMarker(selected);
 }
 
-void TabFrames::on_btnEditAttachments_toggled(bool checked)
-{
-    m_frmeditor->setEditorMode(checked? eEditorMode::AttachmentPoints : eEditorMode::FrameParts);
-}
+//void TabFrames::on_btnEditAttachments_toggled(bool checked)
+//{
+//    m_frmeditor->setEditorMode(checked? eEditorMode::AttachmentPoints : eEditorMode::FrameParts);
+//}
 
 void TabFrames::on_tblframeparts_clicked(const QModelIndex &index)
 {
@@ -550,12 +562,34 @@ void TabFrames::selectPart(const QModelIndex & index)
     emit partSelected(ui->tblframeparts->selectionModel()->selectedRows());
 }
 
-void TabFrames::on_chkImgSourceRef_toggled(bool checked)
+void TabFrames::on_chkImgSourceRef_toggled(bool /*checked*/)
 {
-    QModelIndex index = ui->tblframeparts->selectionModel()->currentIndex();
-    if(!index.isValid())
-        return;
-    MFramePart * part = static_cast<MFramePart*>(index.internalPointer());
-    part->setIsReference(checked);
-    updatePartImgSource();
+//    QModelIndex index = ui->tblframeparts->selectionModel()->currentIndex();
+//    if(!index.isValid())
+//        return;
+//    MFramePart * part = static_cast<MFramePart*>(index.internalPointer());
+//    part->setIsReference(checked);
+//    updatePartImgSource();
+}
+
+void TabFrames::OnFrameTabChanged(int /*tabindex*/)
+{
+    if(ui->tabwFramesEdit->currentWidget() == ui->tabAttachPoints)
+    {
+        OnTabMarkersDisplayed();
+    }
+    else
+    {
+        OnTabMarkersHidden();
+    }
+}
+
+void TabFrames::OnTabMarkersDisplayed()
+{
+    m_frmeditor->setEditorMode(eEditorMode::AttachmentPoints);
+}
+
+void TabFrames::OnTabMarkersHidden()
+{
+    m_frmeditor->setEditorMode(eEditorMode::FrameParts);
 }

@@ -71,6 +71,12 @@ private slots:
 
     void on_actionExport_animation_table_triggered();
 
+    void on_lblPreviewSeqName_linkActivated(const QString &link);
+
+    void on_spbSubSequence_valueChanged(int arg1);
+
+    void on_btnToSequence_clicked();
+
 private:
     Ui::TabAnimTable*                   ui;
     QScopedPointer<SpriteScene>         m_previewrender;

@@ -46,7 +46,7 @@ public:
     void ImportContainer(const QString & fname);
 
     //Helpers
-    QModelIndex modelIndexOf(TreeNode *ptr) const;
+    QModelIndex modelIndexOf(const TreeNode *ptr) const;
     TreeNode *getItem(const QModelIndex &index);
     const TreeNode *getItem(const QModelIndex &index)const {return const_cast<ContentManager*>(this)->getItem(index);}
     TreeNode *getOwnerNode(const QModelIndex &index);

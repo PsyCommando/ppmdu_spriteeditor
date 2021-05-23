@@ -57,7 +57,8 @@ ProgramSettings &ProgramSettings::Instance()
 
 void ProgramSettings::WriteSettings(const QString & groupname, std::function<void (QSettings&)> writefun)
 {
-    m_settings.beginGroup(groupname);
+    if(m_settings.group() != groupname)
+        m_settings.beginGroup(groupname);
     writefun(m_settings);
     m_settings.endGroup();
     Sync();
@@ -66,7 +67,8 @@ void ProgramSettings::WriteSettings(const QString & groupname, std::function<voi
 void ProgramSettings::ReadSettings(const QString & groupname, std::function<void (QSettings&)> readfun)
 {
     CheckSettings();
-    m_settings.beginGroup(groupname);
+    if(m_settings.group() != groupname)
+        m_settings.beginGroup(groupname);
     readfun(m_settings);
     m_settings.endGroup();
 }
